@@ -1,7 +1,7 @@
-package com.gemini.obtuseloot.engine;
+package com.falcoignis.obtuseloot.engine;
 
-import com.gemini.obtuseloot.data.PlayerSoulState;
-import com.gemini.obtuseloot.data.SoulData;
+import com.falcoignis.obtuseloot.data.PlayerSoulState;
+import com.falcoignis.obtuseloot.data.SoulData;
 
 import org.bukkit.*;
 import org.bukkit.block.data.type.Light;
