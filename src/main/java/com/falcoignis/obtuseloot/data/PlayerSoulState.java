@@ -1,4 +1,4 @@
-package com.gemini.obtuseloot.data;
+package com.falcoignis.obtuseloot.data;
 
 /**
  * Immutable snapshot of which soul effects a player currently has active, keyed by
