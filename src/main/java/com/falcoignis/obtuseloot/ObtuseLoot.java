@@ -1,14 +1,14 @@
-package com.gemini.obtuseloot;
+package com.falcoignis.obtuseloot;
 
-import com.gemini.obtuseloot.data.SoulData;
-import com.gemini.obtuseloot.engine.SoulEngine;
-import com.gemini.obtuseloot.lore.Histories;
-import com.gemini.obtuseloot.lore.Observations;
-import com.gemini.obtuseloot.lore.Epithets;
-import com.gemini.obtuseloot.lore.Secrets;
-import com.gemini.obtuseloot.names.Generic;
-import com.gemini.obtuseloot.names.Prefixes;
-import com.gemini.obtuseloot.names.Suffixes;
+import com.falcoignis.obtuseloot.data.SoulData;
+import com.falcoignis.obtuseloot.engine.SoulEngine;
+import com.falcoignis.obtuseloot.lore.Histories;
+import com.falcoignis.obtuseloot.lore.Observations;
+import com.falcoignis.obtuseloot.lore.Epithets;
+import com.falcoignis.obtuseloot.lore.Secrets;
+import com.falcoignis.obtuseloot.names.Generic;
+import com.falcoignis.obtuseloot.names.Prefixes;
+import com.falcoignis.obtuseloot.names.Suffixes;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -60,11 +60,11 @@ import java.util.stream.Stream;
  *
  * <h3>Package layout</h3>
  * <pre>
- *   com.gemini.obtuseloot            — plugin main class (this file)
- *   com.gemini.obtuseloot.data       — SoulData, PlayerSoulState records
- *   com.gemini.obtuseloot.engine     — SoulEngine (particle + event logic)
- *   com.gemini.obtuseloot.lore       — Observations, Histories, Secrets default lists
- *   com.gemini.obtuseloot.names      — Prefixes, Suffixes, Generic default lists
+ *   com.falcoignis.obtuseloot            — plugin main class (this file)
+ *   com.falcoignis.obtuseloot.data       — SoulData, PlayerSoulState records
+ *   com.falcoignis.obtuseloot.engine     — SoulEngine (particle + event logic)
+ *   com.falcoignis.obtuseloot.lore       — Observations, Histories, Secrets default lists
+ *   com.falcoignis.obtuseloot.names      — Prefixes, Suffixes, Generic default lists
  * </pre>
  */
 public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {

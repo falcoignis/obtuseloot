@@ -1,4 +1,4 @@
-package com.gemini.obtuseloot.data;
+package com.falcoignis.obtuseloot.data;
 
 import org.bukkit.Particle;
 
