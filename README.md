@@ -20,3 +20,50 @@ then the issue is not Java source compilation — Maven cannot download required
    ```
 2. If your environment blocks Maven Central, configure a reachable mirror in Maven `settings.xml` (user or CI level).
 3. In restricted CI environments, pre-populate a local Maven repository cache and run with `-o` (offline) when possible.
+
+### Sample `settings.xml` for CI / self-hosted artifact proxies
+Use this as a starting point when your build runners can only access an internal Maven proxy (Nexus/Artifactory/Archiva).
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- Mirror all repositories (including plugin repositories) through your internal proxy -->
+  <mirrors>
+    <mirror>
+      <id>internal-proxy</id>
+      <name>Company Maven Proxy</name>
+      <url>https://maven-proxy.example.internal/repository/maven-all/</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <!-- Optional credentials if your proxy requires authentication -->
+  <servers>
+    <server>
+      <id>internal-proxy</id>
+      <username>${env.MAVEN_PROXY_USER}</username>
+      <password>${env.MAVEN_PROXY_PASS}</password>
+    </server>
+  </servers>
+
+  <!-- Keep an explicit profile for deterministic CI behavior -->
+  <profiles>
+    <profile>
+      <id>ci-default</id>
+      <properties>
+        <!-- Example: speed up transfer retries/noise in CI -->
+        <maven.wagon.http.retryHandler.count>3</maven.wagon.http.retryHandler.count>
+      </properties>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>ci-default</activeProfile>
+  </activeProfiles>
+</settings>
+```
+
+CI tip: mount this file into `${MAVEN_CONFIG}/settings.xml` (or `~/.m2/settings.xml`) before running `mvn`.
