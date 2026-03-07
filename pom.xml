@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ObtuseLoot — pom.xml
+  ─────────────────────────────────────────────────────────────────────────────
+  Build with:   mvn clean package
+  Output:       target/obtuseloot-1.0.0.jar
+  Deploy:       Drop that JAR into your server's plugins/ folder.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  All Bukkit/Paper/Adventure APIs are provided by the Purpur server JAR at
+  runtime — they are declared "provided" here so they are NOT bundled into the
+  plugin JAR. The plugin JAR therefore contains only ObtuseLoot's own compiled
+  classes and plugin.yml, with zero extra dependencies to shade.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.gemini</groupId>
+    <artifactId>obtuseloot</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>ObtuseLoot</name>
+    <description>Procedural loot generation with soul-bound particle effects.</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <!-- Purpur API repository -->
+        <repository>
+            <id>purpur</id>
+            <url>https://repo.purpurmc.org/snapshots</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!--
+          Purpur API — "provided" because the full server JAR supplies this
+          at runtime. Never bundled into the plugin JAR.
+
+          Check https://repo.purpurmc.org/snapshots/org/purpurmc/purpur/purpur-api/
+          for the exact build string for your server version.
+          The version below targets Purpur 1.21.1.
+        -->
+        <dependency>
+            <groupId>org.purpurmc.purpur</groupId>
+            <artifactId>purpur-api</artifactId>
+            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!-- The final JAR is named obtuseloot-{version}.jar -->
+        <finalName>obtuseloot-${project.version}</finalName>
+
+        <plugins>
+            <!--
+              maven-compiler-plugin — compile to Java 21 with full records,
+              sealed classes, and switch expressions support (all used by this plugin).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <release>${java.version}</release>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!--
+              maven-jar-plugin — ensures plugin.yml from src/main/resources
+              is included at the root of the JAR (required by Bukkit's plugin loader).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <!--
+          src/main/resources is the standard Maven location for non-Java files
+          that need to end up at the root of the compiled JAR.
+          plugin.yml must live here so Bukkit can find it on load.
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+    </build>
+
+</project>
