@@ -4,10 +4,10 @@
 ObtuseLoot is a Java 21 Minecraft plugin for Purpur/Paper-style servers that generates custom artifacts with procedural names/lore and optional "soul" powers and particle behaviors.
 
 ## High-level structure
-- `src/main/java/com/gemini/obtuseloot/ObtuseLoot.java`: plugin entrypoint, config/data loading, artifact generation, event hooks, and command handling.
-- `src/main/java/com/gemini/obtuseloot/engine/SoulEngine.java`: runtime soul effect engine (particles, ability behaviors, scheduled tasks, and combat/movement hooks).
-- `src/main/java/com/gemini/obtuseloot/data/`: immutable records (`SoulData`, `PlayerSoulState`) shared between loader and runtime engine.
-- `src/main/java/com/gemini/obtuseloot/lore/` and `.../names/`: curated default text pools used when first creating data files.
+- `src/main/java/com/falcoignis/obtuseloot/ObtuseLoot.java`: plugin entrypoint, config/data loading, artifact generation, event hooks, and command handling.
+- `src/main/java/com/falcoignis/obtuseloot/engine/SoulEngine.java`: runtime soul effect engine (particles, ability behaviors, scheduled tasks, and combat/movement hooks).
+- `src/main/java/com/falcoignis/obtuseloot/data/`: immutable records (`SoulData`, `PlayerSoulState`) shared between loader and runtime engine.
+- `src/main/java/com/falcoignis/obtuseloot/lore/` and `.../names/`: curated default text pools used when first creating data files.
 - `src/main/resources/plugin.yml`: Bukkit metadata (main class, command registration, permissions).
 - `pom.xml`: Maven build config targeting Java 21 and `purpur-api` as a provided dependency.
 
