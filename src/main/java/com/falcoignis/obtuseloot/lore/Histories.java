@@ -1,4 +1,4 @@
-package com.gemini.obtuseloot.lore;
+package com.falcoignis.obtuseloot.lore;
 
 import java.util.Arrays;
 import java.util.List;

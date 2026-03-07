@@ -6,9 +6,9 @@
 
 name:        ObtuseLoot
 version:     1.0.0
-main:        com.gemini.obtuseloot.ObtuseLoot
+main:        com.falcoignis.obtuseloot.ObtuseLoot
 description: Procedural loot generation with soul-bound particle effects.
-authors:     [ gemini ]
+authors:     [ falcoignis ]
 website:     ""
 
 # Minimum Bukkit/Paper/Purpur API version this plugin targets.
