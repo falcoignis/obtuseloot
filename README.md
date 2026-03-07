@@ -67,3 +67,27 @@ Use this as a starting point when your build runners can only access an internal
 ```
 
 CI tip: mount this file into `${MAVEN_CONFIG}/settings.xml` (or `~/.m2/settings.xml`) before running `mvn`.
+
+
+### Implemented workaround in this repo
+This repository now includes helper scripts so restricted CI can build through an internal mirror/proxy:
+
+- `scripts/diagnose-maven-access.sh` — quickly checks direct vs proxy Maven Central reachability.
+- `scripts/mvn-via-mirror.sh` — generates a temporary Maven `settings.xml` with `mirrorOf=*` and builds through your internal artifact proxy.
+
+Usage:
+
+```bash
+# 1) Diagnose current network constraints
+./scripts/diagnose-maven-access.sh
+
+# 2) Build through your internal proxy/mirror
+export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-all/"
+# optional if auth is required:
+export MAVEN_PROXY_USER="ci-user"
+export MAVEN_PROXY_PASS="ci-pass"
+
+./scripts/mvn-via-mirror.sh -DskipTests
+```
+
+This avoids hardcoding credentials and makes CI pipelines reproducible in environments where Maven Central is blocked.
