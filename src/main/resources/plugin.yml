@@ -24,20 +24,7 @@ commands:
     usage:        |
       /<command> help
       /<command> info
-      /<command> souls [page]
-      /<command> reload
-      /<command> setloot <on|off>
-      /<command> ability <id> <on|off>
-      /<command> give [player] [rarity]
-      /<command> givesoul [player] <soul> [rarity]
-      /<command> convert [player] [rarity]
       /<command> inspect [player]
-      /<command> findartifacts [player]
-      /<command> clearitem [player]
-      /<command> clearinventory [player]
-      /<command> add <list> <entry...>
-      /<command> remove <list> <entry...>
-      /<command> list <list> [page]
     aliases:      [ ol ]
     permission:   obtuseloot.use
 
@@ -63,7 +50,7 @@ permissions:
 
   # ── Informational (safe for all players) ───────────────────────────────────
   obtuseloot.use:
-    description: Allows /ol help, info, and souls. Granted to all players by default.
+    description: Allows /ol help and info. Granted to all players by default.
     default:     true
 
   # ── Administrative ──────────────────────────────────────────────────────────

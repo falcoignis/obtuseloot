@@ -1,26 +1,31 @@
 package com.falcoignis.obtuseloot.names;
 
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
+
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Deterministic display-name generator so the large default name pools are actually used.
+ * Display-name generator backed by configurable runtime settings and persisted name pools.
  */
 public final class ArtifactNameGenerator {
     private ArtifactNameGenerator() {
     }
 
     public static String generate(UUID ownerId) {
-        long seed = Math.abs(ownerId.getMostSignificantBits() ^ ownerId.getLeastSignificantBits());
-        Random random = new Random(seed);
+        RuntimeSettings.Snapshot settings = RuntimeSettings.get();
+        Random random = settings.namingUseDeterministicOwnerSeed()
+                ? new Random(Math.abs(ownerId.getMostSignificantBits() ^ ownerId.getLeastSignificantBits()))
+                : ThreadLocalRandom.current();
 
-        List<String> prefixes = Prefixes.get();
-        List<String> suffixes = Suffixes.get();
-        List<String> generic = Generic.get();
+        List<String> prefixes = NamePoolManager.prefixes();
+        List<String> suffixes = NamePoolManager.suffixes();
+        List<String> generic = NamePoolManager.generic();
 
-        int roll = random.nextInt(100);
-        if (roll < 60) {
+        int prefixSuffixChancePercent = Math.max(0, Math.min(100, settings.namingPrefixSuffixChancePercent()));
+        if (random.nextInt(100) < prefixSuffixChancePercent) {
             return prefixes.get(random.nextInt(prefixes.size())) + " " + suffixes.get(random.nextInt(suffixes.size()));
         }
 
