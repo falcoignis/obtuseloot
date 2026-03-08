@@ -13,4 +13,8 @@ public final class ArtifactManager {
     public static Artifact getOrCreate(UUID playerId) {
         return ARTIFACTS.computeIfAbsent(playerId, ArtifactGenerator::generateFor);
     }
+
+    public static void remove(UUID playerId) {
+        ARTIFACTS.remove(playerId);
+    }
 }

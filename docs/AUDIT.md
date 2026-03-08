@@ -1,35 +1,74 @@
 # Audit Report
 
 ## Scope
-This audit focused on repository health and build viability in the current execution environment.
+Audit focus requested:
+- completeness
+- commentation/documentation clarity
+- configurability
+- lag-friendliness/performance safety
 
 ## Checks run
 1. `mvn -q -DskipTests package`
-2. `bash scripts/diagnose-maven-access.sh`
+2. Manual code review of the plugin lifecycle, hot-path processors, and runtime configuration surface.
 
 ## Findings
 
-### 1) Build is currently blocked by repository access (High)
-- `mvn -q -DskipTests package` fails before compilation because Maven cannot download `org.apache.maven.plugins:maven-resources-plugin:3.3.1` from Maven Central.
-- Error observed: HTTP `403 Forbidden` from `https://repo.maven.apache.org/maven2`.
+### 1) Build remains blocked by Maven repository access (High, Environment)
+- Packaging still fails before Java compilation due to inability to resolve Maven plugin artifacts from Maven Central (`403 Forbidden`).
+- This is an environment/network artifact resolution issue, not a source syntax failure in reviewed files.
 
-**Impact**
-- CI or local builds in similarly restricted networks will fail even if source code is valid.
-- Security and quality tooling that depends on Maven resolution cannot run until repository access is restored or mirrored.
+### 2) Completeness gaps (Medium)
+- `plugin.yml` declares a broad command/permission surface not represented by command executor code in current sources.
+- Plugin lifecycle had no explicit `onDisable` shutdown call path, risking future leaks if async/scheduled work is added.
 
-**Recommended remediation**
-- Use the existing mirror workflow documented in `README.md`:
-  - configure `MAVEN_MIRROR_URL`
-  - build through `scripts/mvn-via-mirror.sh`
-- In CI, mount a `settings.xml` with `mirrorOf=*` to force plugin and dependency resolution through your internal proxy.
+### 3) Configurability gaps (Medium)
+- Core balancing values were hardcoded in multiple engines (combat thresholds, evolution gates, drift formula, awakening gates).
+- Operators had no runtime tuning point except source edits/rebuild.
 
-### 2) Diagnostic tooling for network-restricted builds is present (Informational)
-- The repository already includes:
-  - `scripts/diagnose-maven-access.sh` to verify direct/proxy access.
-  - `scripts/mvn-via-mirror.sh` to build through an internal artifact mirror.
+### 4) Lag-friendliness concerns (Medium)
+- Action bar updates occurred on every relevant event, creating avoidable spam in high-frequency combat.
 
-**Impact**
-- This reduces mean-time-to-diagnosis and provides an immediate workaround path for locked-down environments.
+### 5) Commentation and maintainability (Low)
+- Critical orchestration code lacked explicit hot-path intent/comments.
+
+## Remediations implemented in this pass
+
+1. Added central runtime settings loader (`RuntimeSettings`) backed by `config.yml`.
+   - Consolidates balancing values for combat, evolution, drift, awakening, and lore update cadence.
+
+2. Added default plugin configuration file with commented tuning options (`src/main/resources/config.yml`).
+   - Improves operational configurability without recompiling.
+
+3. Wired startup lifecycle to load persisted config and runtime settings.
+   - `onEnable`: save/load config snapshot.
+   - `onDisable`: explicit engine shutdown.
+
+4. Updated progression engines to consume configurable thresholds.
+   - `ArtifactProcessor`, `EvolutionEngine`, `DriftEngine`, `AwakeningEngine` now read from runtime settings.
+
+5. Added lore/action-bar throttling.
+   - `LoreEngine` now tracks last update per-player and enforces `lore.min-update-interval-ms` to reduce event-spam overhead.
+
+6. Improved code comments in hot-path orchestration.
+   - Clarifies performance intent and why implementations avoid unnecessary overhead.
+
+## Remaining recommendations
+
+1. Implement or remove declared commands in `plugin.yml` to align behavior and metadata.
+2. Add lightweight unit tests for deterministic logic:
+   - evolution tier thresholds
+   - drift clamp behavior
+   - awakening gate precedence
+3. Add optional periodic cleanup of in-memory player maps for long-lived servers (e.g., on quit events) to avoid stale entries.
+4. Once Maven access is restored, run full static checks and integration smoke tests.
 
 ## Conclusion
-No source-level runtime defects were validated in this environment because Maven dependency/plugin resolution fails before compilation and test execution. The top priority is restoring artifact resolution (directly or via internal mirror) and then re-running full compile/test/security checks.
+This audit pass improved configurability and runtime efficiency without expanding hot-path complexity. The primary blocker for full validation remains external Maven artifact access.
+
+
+## Follow-up wiring pass
+Additional loose/unwired code remediation completed:
+- Wired `/obtuseloot` command to a concrete executor (`info`, `help`, `inspect`) so plugin.yml command metadata has runtime handling.
+- Wired the large static name pools (`Prefixes`, `Suffixes`, `Generic`) through a deterministic `ArtifactNameGenerator` used at artifact creation time.
+- Added player quit cleanup listener to remove in-memory artifact/reputation/lore-throttle state and avoid stale map growth.
+- Removed unused `SoulData` model that had no call sites.

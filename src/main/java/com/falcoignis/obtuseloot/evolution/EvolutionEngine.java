@@ -2,6 +2,7 @@ package com.falcoignis.obtuseloot.evolution;
 
 import com.falcoignis.obtuseloot.artifacts.Artifact;
 import com.falcoignis.obtuseloot.artifacts.ArtifactManager;
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
 import com.falcoignis.obtuseloot.reputation.ArtifactReputation;
 
 import org.bukkit.entity.Player;
@@ -12,12 +13,14 @@ public final class EvolutionEngine {
 
     public static void checkEvolution(Player player, ArtifactReputation rep) {
         Artifact artifact = ArtifactManager.getOrCreate(player.getUniqueId());
+        RuntimeSettings.Snapshot settings = RuntimeSettings.get();
+        int score = rep.score();
 
-        if (rep.score() >= 250) {
+        if (score >= settings.hybridScore()) {
             artifact.setEvolutionPath(HybridEvolutionResolver.resolve(rep));
-        } else if (rep.score() >= 120) {
+        } else if (score >= settings.mythicScore()) {
             artifact.setEvolutionPath("mythic");
-        } else if (rep.score() >= 40) {
+        } else if (score >= settings.temperedScore()) {
             artifact.setEvolutionPath("tempered");
         }
     }

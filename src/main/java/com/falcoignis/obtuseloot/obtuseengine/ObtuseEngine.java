@@ -14,6 +14,7 @@ public class ObtuseEngine {
     public void initialize() {
         Bukkit.getPluginManager().registerEvents(new EventCore(), plugin);
         Bukkit.getPluginManager().registerEvents(new CombatCore(), plugin);
+        Bukkit.getPluginManager().registerEvents(new PlayerStateCleanupListener(), plugin);
 
         plugin.getLogger().info("ObtuseEngine online.");
     }
