@@ -6,6 +6,17 @@ Vibe-coded Minecraft paper plugin to add custom look generation to naturally spa
 mvn clean package
 ```
 
+
+## Runtime tuning
+ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
+
+- combat precision threshold damage
+- evolution and awakening thresholds
+- drift probability coefficients
+- lore action bar throttle interval (`lore.min-update-interval-ms`) to reduce combat spam/lag
+
+After editing config, restart or reload the plugin to apply changes.
+
 ## Build troubleshooting
 If Maven fails before compilation with an error similar to:
 

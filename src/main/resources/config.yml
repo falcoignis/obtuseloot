@@ -1,0 +1,36 @@
+# ObtuseLoot runtime tuning
+# These values are intentionally conservative for lower-lag servers.
+
+combat:
+  # Damage at/above this value records precision, otherwise brutality.
+  precision-threshold-damage: 10.0
+
+evolution:
+  # Reputation score thresholds for progression states.
+  tempered-score: 40
+  mythic-score: 120
+  hybrid-score: 250
+
+drift:
+  # Final chance formula:
+  # base-chance + chaos*chaos-multiplier - consistency*consistency-reduction
+  # The result is then clamped to [0, max-chance].
+  base-chance: 0.03
+  chaos-multiplier: 0.01
+  consistency-reduction: 0.005
+  max-chance: 0.60
+
+lore:
+  # Prevents action bar spam and reduces per-tick overhead in combat-heavy scenarios.
+  min-update-interval-ms: 500
+
+awakening:
+  executioners-oath:
+    min-score: 500
+    min-boss-kills: 1
+  stormblade:
+    min-precision: 120
+    min-mobility: 80
+  last-survivor:
+    min-survival: 120
+    min-consistency: 100

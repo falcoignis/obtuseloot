@@ -2,6 +2,7 @@ package com.falcoignis.obtuseloot.awakening;
 
 import com.falcoignis.obtuseloot.artifacts.Artifact;
 import com.falcoignis.obtuseloot.artifacts.ArtifactManager;
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
 import com.falcoignis.obtuseloot.reputation.ArtifactReputation;
 
 import org.bukkit.entity.Player;
@@ -16,11 +17,14 @@ public final class AwakeningEngine {
             return;
         }
 
-        if (rep.score() >= 500 && rep.bossKills() >= 1) {
+        RuntimeSettings.Snapshot settings = RuntimeSettings.get();
+
+        if (rep.score() >= settings.executionersOathMinScore() && rep.bossKills() >= settings.executionersOathMinBossKills()) {
             artifact.setAwakeningPath("Executioner's Oath");
-        } else if (rep.precision() >= 120 && rep.mobility() >= 80) {
+        } else if (rep.precision() >= settings.stormbladeMinPrecision() && rep.mobility() >= settings.stormbladeMinMobility()) {
             artifact.setAwakeningPath("Stormblade");
-        } else if (rep.survival() >= 120 && rep.consistency() >= 100) {
+        } else if (rep.survival() >= settings.lastSurvivorMinSurvival()
+                && rep.consistency() >= settings.lastSurvivorMinConsistency()) {
             artifact.setAwakeningPath("Last Survivor");
         }
     }
