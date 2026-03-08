@@ -31,13 +31,17 @@ The repo includes GitHub workflows at `.github/workflows/ci.yml` and `.github/wo
 
 It also uploads `target/obtuseloot-*.jar` as a release asset when triggered from a published GitHub Release.
 
-For local/manual publishing, run:
+For local/manual publishing, use the helper:
 ```bash
-mvn -B -ntp clean deploy \
-  -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/<owner>/<repo>
+export GITHUB_TOKEN="<token-with-packages-write>"
+# optional when no git remote is configured:
+# export GITHUB_REPOSITORY="<owner>/<repo>"
+./scripts/publish.sh
 ```
 
-If you need explicit credentials in local CI, configure Maven `settings.xml` with server id `github`.
+It resolves the repository slug from `GITHUB_REPOSITORY` (or `remote.origin.url`), writes a temporary Maven `settings.xml` with server id `github`, and deploys to:
+
+`https://maven.pkg.github.com/<owner>/<repo>`
 
 If you are behind a restricted network, use the mirror helper and append publish goals:
 ```bash
