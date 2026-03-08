@@ -17,13 +17,6 @@ ObtuseLoot now loads balancing and performance knobs from `src/main/resources/co
 
 After editing config, restart or reload the plugin to apply changes.
 
-
-## Command wiring status
-The base `/obtuseloot` command is now wired and supports:
-- `/obtuseloot help`
-- `/obtuseloot info`
-- `/obtuseloot inspect [player]`
-
 ## Build troubleshooting
 If Maven fails before compilation with an error similar to:
 

@@ -3,6 +3,7 @@ package com.falcoignis.obtuseloot;
 import com.falcoignis.obtuseloot.commands.ObtuseLootCommand;
 import com.falcoignis.obtuseloot.config.RuntimeSettings;
 import com.falcoignis.obtuseloot.obtuseengine.ObtuseEngine;
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
