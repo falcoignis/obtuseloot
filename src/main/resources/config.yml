@@ -200,26 +200,54 @@ naming:
   use-deterministic-owner-seed: true
 
 awakening:
-  # Unlock requirements for the "executioners-oath" awakening path.
-  executioners-oath:
-    # Minimum total reputation score required.
-    min-score: 500
+  # Ravager awakening route (formerly executioner-style ability soul behavior).
+  ravager:
+    # Minimum brutality score required.
+    min-brutality: 140
     # Minimum boss kills required.
     min-boss-kills: 1
 
-  # Unlock requirements for the "stormblade" awakening path.
-  stormblade:
+  # Deadeye awakening route (formerly stormblade-style ability soul behavior).
+  deadeye:
     # Minimum precision score required.
     min-precision: 120
     # Minimum mobility score required.
     min-mobility: 80
 
-  # Unlock requirements for the "last-survivor" awakening path.
-  last-survivor:
+  # Vanguard awakening route.
+  vanguard:
+    # Minimum survival score required.
+    min-survival: 140
+    # Minimum consistency score required.
+    min-consistency: 100
+
+  # Strider awakening route.
+  strider:
+    # Minimum mobility score required.
+    min-mobility: 140
+    # Minimum precision score required.
+    min-precision: 100
+
+  # Harbinger awakening route.
+  harbinger:
+    # Minimum chaos score required.
+    min-chaos: 120
+    # Minimum boss kills required.
+    min-boss-kills: 2
+
+  # Warden awakening route (formerly last-survivor style ability soul behavior).
+  warden:
     # Minimum survival score required.
     min-survival: 120
     # Minimum consistency score required.
     min-consistency: 100
+
+  # Paragon fallback awakening route.
+  paragon:
+    # Minimum total reputation score required.
+    min-score: 500
+    # Minimum consistency score required.
+    min-consistency: 120
 
 # Command reference (documentation-only; these entries do not alter command behavior)
 commands:

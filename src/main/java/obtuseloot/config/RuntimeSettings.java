@@ -35,12 +35,20 @@ public final class RuntimeSettings {
                 config.getLong("lore.min-update-interval-ms", 500L),
                 config.getInt("naming.prefix-suffix-chance-percent", 60),
                 config.getBoolean("naming.use-deterministic-owner-seed", true),
-                config.getInt("awakening.executioners-oath.min-score", 500),
-                config.getInt("awakening.executioners-oath.min-boss-kills", 1),
-                config.getInt("awakening.stormblade.min-precision", 120),
-                config.getInt("awakening.stormblade.min-mobility", 80),
-                config.getInt("awakening.last-survivor.min-survival", 120),
-                config.getInt("awakening.last-survivor.min-consistency", 100)
+                config.getInt("awakening.ravager.min-brutality", 140),
+                config.getInt("awakening.ravager.min-boss-kills", 1),
+                config.getInt("awakening.deadeye.min-precision", 120),
+                config.getInt("awakening.deadeye.min-mobility", 80),
+                config.getInt("awakening.vanguard.min-survival", 140),
+                config.getInt("awakening.vanguard.min-consistency", 100),
+                config.getInt("awakening.strider.min-mobility", 140),
+                config.getInt("awakening.strider.min-precision", 100),
+                config.getInt("awakening.harbinger.min-chaos", 120),
+                config.getInt("awakening.harbinger.min-boss-kills", 2),
+                config.getInt("awakening.warden.min-survival", 120),
+                config.getInt("awakening.warden.min-consistency", 100),
+                config.getInt("awakening.paragon.min-score", 500),
+                config.getInt("awakening.paragon.min-consistency", 120)
         );
     }
 
@@ -92,12 +100,20 @@ public final class RuntimeSettings {
             long loreMinUpdateIntervalMs,
             int namingPrefixSuffixChancePercent,
             boolean namingUseDeterministicOwnerSeed,
-            int executionersOathMinScore,
-            int executionersOathMinBossKills,
-            int stormbladeMinPrecision,
-            int stormbladeMinMobility,
-            int lastSurvivorMinSurvival,
-            int lastSurvivorMinConsistency
+            int ravagerMinBrutality,
+            int ravagerMinBossKills,
+            int deadeyeMinPrecision,
+            int deadeyeMinMobility,
+            int vanguardMinSurvival,
+            int vanguardMinConsistency,
+            int striderMinMobility,
+            int striderMinPrecision,
+            int harbingerMinChaos,
+            int harbingerMinBossKills,
+            int wardenMinSurvival,
+            int wardenMinConsistency,
+            int paragonMinScore,
+            int paragonMinConsistency
     ) {
         private static Snapshot defaults() {
             return new Snapshot(
@@ -116,12 +132,20 @@ public final class RuntimeSettings {
                     500L,
                     60,
                     true,
-                    500,
+                    140,
                     1,
                     120,
                     80,
+                    140,
+                    100,
+                    140,
+                    100,
                     120,
-                    100
+                    2,
+                    120,
+                    100,
+                    500,
+                    120
             );
         }
     }
