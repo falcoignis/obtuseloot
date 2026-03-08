@@ -4,6 +4,7 @@ import com.falcoignis.obtuseloot.awakening.AwakeningEngine;
 import com.falcoignis.obtuseloot.config.RuntimeSettings;
 import com.falcoignis.obtuseloot.drift.DriftEngine;
 import com.falcoignis.obtuseloot.evolution.EvolutionEngine;
+import com.falcoignis.obtuseloot.evolution.FusionEngine;
 import com.falcoignis.obtuseloot.lore.LoreEngine;
 import com.falcoignis.obtuseloot.reputation.ArtifactReputation;
 import com.falcoignis.obtuseloot.reputation.ReputationManager;
@@ -31,6 +32,7 @@ public final class ArtifactProcessor {
         }
 
         AwakeningEngine.checkAwakening(player, rep);
+        FusionEngine.checkFusion(player, rep);
         LoreEngine.refreshLore(player, rep);
     }
 
