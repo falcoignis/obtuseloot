@@ -6,9 +6,9 @@
 
 name:        ObtuseLoot
 version:     1.0.0
-main:        com.gemini.obtuseloot.ObtuseLoot
+main:        com.obtuseloot.ObtuseLoot
 description: Procedural loot generation with soul-bound particle effects.
-authors:     [ gemini ]
+authors:     [ falcoignis ]
 website:     ""
 
 # Minimum Bukkit/Paper/Purpur API version this plugin targets.
@@ -24,22 +24,9 @@ commands:
     usage:        |
       /<command> help
       /<command> info
-      /<command> souls [page]
-      /<command> reload
-      /<command> setloot <on|off>
-      /<command> ability <id> <on|off>
-      /<command> give [player] [rarity]
-      /<command> givesoul [player] <soul> [rarity]
-      /<command> convert [player] [rarity]
       /<command> inspect [player]
-      /<command> findartifacts [player]
-      /<command> clearitem [player]
-      /<command> clearinventory [player]
-      /<command> add <list> <entry...>
-      /<command> remove <list> <entry...>
-      /<command> list <list> [page]
     aliases:      [ ol ]
-    permission:   obtuseloot.use
+    permission:   obtuseloot.help
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Permissions
@@ -53,6 +40,8 @@ permissions:
     default:     op
     children:
       obtuseloot.admin:            true
+      obtuseloot.help:             true
+      obtuseloot.info:             true
       obtuseloot.give:             true
       obtuseloot.givesoul:         true
       obtuseloot.convert:          true
@@ -62,8 +51,12 @@ permissions:
       obtuseloot.edit:             true
 
   # ── Informational (safe for all players) ───────────────────────────────────
-  obtuseloot.use:
-    description: Allows /ol help, info, and souls. Granted to all players by default.
+  obtuseloot.help:
+    description: Allows /ol help — list all console + in-game command usage.
+    default:     true
+
+  obtuseloot.info:
+    description: Allows /ol info — show plugin runtime status.
     default:     true
 
   # ── Administrative ──────────────────────────────────────────────────────────
