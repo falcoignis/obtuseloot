@@ -26,8 +26,8 @@ import org.bukkit.Particle;
  * </pre>
  *
  * <p>The {@code ability} field is an empty string when no special ability is assigned.
- * SoulEngine checks this field and routes to the correct handler. The ability
- * is slot-specific; the SoulEngine dispatches it only when the item is equipped
+ * ObtuseEngine checks this field and routes to the correct handler. The ability
+ * is slot-specific; the ObtuseEngine dispatches it only when the item is equipped
  * in the correct slot as defined by ObtuseLoot#soulAllowedForCategory.
  */
 record SoulData(

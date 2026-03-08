@@ -1,4 +1,4 @@
-package com.falcoignis.obtuseloot.engine;
+package com.falcoignis.obtuseloot.obtuseengine;
 
 import com.falcoignis.obtuseloot.data.PlayerSoulState;
 import com.falcoignis.obtuseloot.data.SoulData;
@@ -65,12 +65,12 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <h3>Usage</h3>
  * <pre>
- *   engine = new SoulEngine(this, soulKey);                                    // registers event listener
+ *   engine = new ObtuseEngine(this, soulKey);                                    // registers event listener
  *   engine.reload(activeSouls, abilityEnabled, abilityParams, color, glyph);  // call after every config load
  *   engine.stop();                                                              // call from onDisable
  * </pre>
  */
-final class SoulEngine implements Listener {
+public final class ObtuseEngine implements Listener {
 
     // ── Timing ────────────────────────────────────────────────────────────────
 
@@ -486,7 +486,7 @@ final class SoulEngine implements Listener {
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    SoulEngine(Plugin plugin, NamespacedKey soulKey) {
+    public ObtuseEngine(Plugin plugin, NamespacedKey soulKey) {
         this.plugin        = plugin;
         this.soulKey       = soulKey;
         this.breadcrumbKey = new NamespacedKey(plugin, "breadcrumb_data");
@@ -505,7 +505,7 @@ final class SoulEngine implements Listener {
      * @param abilityParams  map of ability parameter key → integer value from config.yml
      *                       (e.g. {@code "sinkhole-duration"} → ticks)
      */
-    void reload(Map<String, SoulData> activeSouls,
+    public void reload(Map<String, SoulData> activeSouls,
                 Map<String, Boolean>  abilityEnabled,
                 Map<String, Integer>  abilityParams,
                 net.kyori.adventure.text.format.NamedTextColor soulTagColor,
@@ -526,7 +526,7 @@ final class SoulEngine implements Listener {
     }
 
     /** Cancels all tasks and removes any ability-placed blocks still in the world. Safe to call before the engine has started. */
-    void stop() {
+    public void stop() {
         if (cacheTask          != null && !cacheTask.isCancelled())          cacheTask.cancel();
         if (particleTask       != null && !particleTask.isCancelled())       particleTask.cancel();
         if (projectileTask     != null && !projectileTask.isCancelled())     projectileTask.cancel();

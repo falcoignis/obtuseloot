@@ -1,7 +1,7 @@
 package com.falcoignis.obtuseloot;
 
 import com.falcoignis.obtuseloot.data.SoulData;
-import com.falcoignis.obtuseloot.engine.SoulEngine;
+import com.falcoignis.obtuseloot.obtuseengine.ObtuseEngine;
 import com.falcoignis.obtuseloot.lore.Histories;
 import com.falcoignis.obtuseloot.lore.Observations;
 import com.falcoignis.obtuseloot.lore.Epithets;
@@ -62,7 +62,7 @@ import java.util.stream.Stream;
  * <pre>
  *   com.falcoignis.obtuseloot            — plugin main class (this file)
  *   com.falcoignis.obtuseloot.data       — SoulData, PlayerSoulState records
- *   com.falcoignis.obtuseloot.engine     — SoulEngine (particle + event logic)
+ *   com.falcoignis.obtuseloot.obtuseengine — ObtuseEngine (particle + event logic)
  *   com.falcoignis.obtuseloot.lore       — Observations, Histories, Secrets default lists
  *   com.falcoignis.obtuseloot.names      — Prefixes, Suffixes, Generic default lists
  * </pre>
@@ -293,7 +293,7 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
      */
     private final Set<String> pendingChests = new HashSet<>();
 
-    private SoulEngine soulEngine;
+    private ObtuseEngine soulEngine;
 
     // Volatile so they are safely visible in the runTask lambda without requiring
     // a full synchronized block. Snapshotted into locals at the top of every method
@@ -382,7 +382,7 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
         this.soulKey      = new NamespacedKey(this, "soul_effect");
         this.generatedKey = new NamespacedKey(this, "chest_generated");
         this.artifactKey  = new NamespacedKey(this, "artifact");
-        this.soulEngine = new SoulEngine(this, soulKey);
+        this.soulEngine = new ObtuseEngine(this, soulKey);
 
         initDefaultConfig();
         setupFolders();
@@ -2279,7 +2279,7 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
             abilityEnabled = Collections.unmodifiableMap(ae);
         }
 
-        // Numeric ability parameters — passed alongside the boolean enables so SoulEngine
+        // Numeric ability parameters — passed alongside the boolean enables so ObtuseEngine
         // can read configurable values without needing a back-reference to ObtuseLoot.
         Map<String, Integer> abilityParams = new HashMap<>();
         abilityParams.put("groundpound-min-fall",
@@ -3621,7 +3621,7 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
         Map<String, Boolean> updated = new HashMap<>(abilityEnabled);
         updated.put(id, enable);
         abilityEnabled = Collections.unmodifiableMap(updated);
-        // Push the updated map to SoulEngine so it reads the new value immediately.
+        // Push the updated map to ObtuseEngine so it reads the new value immediately.
         soulEngine.reload(activeSouls, abilityEnabled, abilityParams, soulTagColor, soulGlyph);
         s.sendMessage(Component.text(
             "Ability '" + id + "' " + (enable ? "enabled" : "disabled") + ". "
