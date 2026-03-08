@@ -6,7 +6,7 @@
 
 name:        ObtuseLoot
 version:     1.0.0
-main:        com.obtuseloot.ObtuseLoot
+main:        obtuseloot.ObtuseLoot
 description: Procedural loot generation with soul-bound particle effects.
 authors:     [ falcoignis ]
 website:     ""
