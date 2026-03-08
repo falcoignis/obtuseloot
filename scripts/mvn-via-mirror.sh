@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build helper for restricted environments where Maven Central is blocked.
+# Maven runner for restricted environments where Maven Central is blocked.
 # Requires an internal repository manager/proxy (Nexus/Artifactory/etc).
 
 if [[ -z "${MAVEN_MIRROR_URL:-}" ]]; then
@@ -37,4 +37,8 @@ cat > "$SETTINGS_FILE" <<XML
 </settings>
 XML
 
-exec mvn -s "$SETTINGS_FILE" clean package "$@"
+if [[ "$#" -eq 0 ]]; then
+  set -- clean package
+fi
+
+exec mvn -B -ntp -s "$SETTINGS_FILE" "$@"

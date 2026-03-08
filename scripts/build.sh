@@ -7,13 +7,16 @@ set -euo pipefail
 # 2) If blocked and MAVEN_MIRROR_URL is set, route via the mirror helper.
 # 3) Otherwise fail with actionable instructions.
 
-MAVEN_CMD=(mvn -B -ntp clean package)
 CENTRAL_URL="https://repo.maven.apache.org/maven2/"
+
+if [[ "$#" -eq 0 ]]; then
+  set -- clean package
+fi
 
 is_reachable() {
   local code
   code="$(curl -IsS --max-time 8 -o /dev/null -w '%{http_code}' "$1" || true)"
-  [[ "$code" =~ ^2|3 ]]
+  [[ "$code" =~ ^[23] ]]
 }
 
 echo "== ObtuseLoot build helper =="
@@ -21,8 +24,8 @@ echo
 
 if is_reachable "$CENTRAL_URL"; then
   echo "Maven Central probe: reachable"
-  echo "Running: ${MAVEN_CMD[*]}"
-  exec "${MAVEN_CMD[@]}" "$@"
+  echo "Running: mvn -B -ntp $*"
+  exec mvn -B -ntp "$@"
 fi
 
 echo "Maven Central probe: unreachable or blocked."
