@@ -102,3 +102,28 @@ Additional loose/unwired code remediation completed:
 1. Configure repository secrets for mirror/proxy if runners cannot access Maven Central directly.
 2. Add branch protection requiring the `ci` workflow to pass before merge.
 3. Add signing/publishing credentials in GitHub Environments with least privilege.
+
+## 2026-03-08 audit + build + publish execution
+
+### Checks run
+1. `./scripts/diagnose-maven-access.sh`
+2. `./scripts/build.sh`
+3. `./scripts/publish.sh`
+
+### Results
+
+1. **Audit/build status (Pass)**
+   - Maven dependency/plugin resolution works in the current environment when proxy settings are applied.
+   - Full project package build succeeds and produces `target/obtuseloot-1.0.0.jar`.
+
+2. **Publish status (Blocked by repository credentials/configuration)**
+   - Local publish helper requires `GITHUB_TOKEN` and a resolvable `GITHUB_REPOSITORY` or `remote.origin.url`.
+   - Current environment has no `GITHUB_TOKEN` and no configured git remote, so publish cannot be executed from this workspace.
+
+### Action needed to complete publishing
+
+1. Set credentials/environment:
+   - `export GITHUB_TOKEN="<token-with-packages-write>"`
+   - `export GITHUB_REPOSITORY="<owner>/<repo>"` (required when no `origin` remote exists)
+2. Run:
+   - `./scripts/publish.sh`
