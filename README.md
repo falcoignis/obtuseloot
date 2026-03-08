@@ -9,6 +9,7 @@ mvn -B -ntp clean package
 ```
 
 ### Publish build (maven-publish workflow)
+The repo now includes GitHub workflows at `.github/workflows/ci.yml` and `.github/workflows/maven-publish.yml` for verification and release publishing.
 Use your publish-enabled Maven `settings.xml` (repository credentials + server ID), then run:
 ```bash
 mvn -B -ntp clean deploy
