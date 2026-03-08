@@ -20,7 +20,7 @@ import org.bukkit.Particle;
  *     only-when-moving: true            # Only spawn particles when the player is moving
  *     ability:          ""              # Optional special ability ID (omit or leave blank
  *                                       # for particles-only souls). 32 abilities exist across
- *                                       # 16 equipment slots; see ObtuseLoot#soulAllowedForCategory.
+ *                                       # 16 equipment slots in the configured system rules.
  *                                       # Examples: "lantern", "bloom" (boots), "lifesteal" (swords),
  *                                       # "comet" (elytra), "surveyor" (crossbows), etc.
  * </pre>

@@ -10,35 +10,6 @@ import com.falcoignis.obtuseloot.names.Generic;
 import com.falcoignis.obtuseloot.names.Prefixes;
 import com.falcoignis.obtuseloot.names.Suffixes;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
-import org.bukkit.*;
-import org.bukkit.block.Banner;
-import org.bukkit.block.Block;
-import org.bukkit.block.Container;
-import org.bukkit.block.banner.PatternType;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BlockStateMeta;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.loot.Lootable;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -389,17 +360,10 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
         initDefaultFiles();
         loadAllData();
 
-        getServer().getPluginManager().registerEvents(this, this);
+        engine = new ObtuseEngine(this);
+        engine.initialize();
 
-        PluginCommand cmd = getCommand("obtuseloot");
-        if (cmd != null) {
-            cmd.setExecutor(this);
-            cmd.setTabCompleter(this);
-        } else {
-            getLogger().warning("Command 'obtuseloot' not found in plugin.yml — admin commands unavailable.");
-        }
-
-        getLogger().info("ObtuseLoot enabled.");
+        getLogger().info("ObtuseLoot engine initialized.");
     }
 
     @Override
@@ -2713,34 +2677,10 @@ public class ObtuseLoot extends JavaPlugin implements Listener, CommandExecutor,
             String chosenCat = named.get(roll - gw);
             pool = categoryMaterials.getOrDefault(chosenCat, ARTIFACT_MATERIALS);
         }
-
-        Material m = pool[rng.nextInt(pool.length)];
-        ItemStack item = new ItemStack(m);
-        applyArtifactMeta(item, null);
-        return item;
     }
 
-    /**
-     * Overload that forces a specific soul onto the generated item, bypassing the
-     * random soul selection. Used by {@code /obtuseloot givesoul}.
-     *
-     * @param item        the item to modify
-     * @param rarity      the rarity to apply; {@code null} rolls a weighted random rarity
-     * @param forcedSoul  the soul to bind; not subject to category filtering
-     */
-    void applyArtifactMeta(ItemStack item, Rarity rarity, SoulData forcedSoul) {
-        applyArtifactMetaImpl(item, rarity, forcedSoul);
-    }
-
-    /**
-     * Stamps ObtuseLoot metadata (display name, rarity, procedural lore, soul tag)
-     * onto {@code item} in-place. Existing enchantments are preserved.
-     *
-     * @param item   the item to modify; must have a non-null material that has ItemMeta
-     * @param rarity the rarity to apply; pass {@code null} to roll a weighted random rarity
-     */
-    void applyArtifactMeta(ItemStack item, Rarity rarity) {
-        applyArtifactMetaImpl(item, rarity, null);
+    public static ObtuseLoot get() {
+        return instance;
     }
 
     private void applyArtifactMetaImpl(ItemStack item, Rarity rarity, SoulData forcedSoul) {
