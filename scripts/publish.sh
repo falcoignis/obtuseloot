@@ -16,10 +16,27 @@ if [[ -z "${GITHUB_TOKEN:-}" ]]; then
   exit 2
 fi
 
+normalize_repo_slug() {
+  local slug="$1"
+
+  slug="${slug#github.com/}"
+  slug="${slug%.git}"
+  if [[ "$slug" == *:* && "$slug" != *"/"* ]]; then
+    slug="${slug/:/\/}"
+  fi
+
+  if [[ "$slug" =~ ^[^/]+/[^/]+$ ]]; then
+    printf '%s\n' "$slug"
+    return 0
+  fi
+
+  return 1
+}
+
 resolve_repo_slug() {
   if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
-    printf '%s\n' "$GITHUB_REPOSITORY"
-    return 0
+    normalize_repo_slug "$GITHUB_REPOSITORY"
+    return $?
   fi
 
   local remote_url
@@ -38,12 +55,8 @@ resolve_repo_slug() {
   remote_url="${remote_url#https://x-access-token:${GITHUB_TOKEN}@github.com/}"
   remote_url="${remote_url%.git}"
 
-  if [[ "$remote_url" =~ ^[^/]+/[^/]+$ ]]; then
-    printf '%s\n' "$remote_url"
-    return 0
-  fi
-
-  return 1
+  normalize_repo_slug "$remote_url"
+  return $?
 }
 
 build_proxy_xml() {
@@ -92,7 +105,7 @@ PY
 REPO_SLUG="$(resolve_repo_slug || true)"
 if [[ -z "$REPO_SLUG" ]]; then
   echo "ERROR: Could not determine GitHub repository slug."
-  echo "Set GITHUB_REPOSITORY=<owner>/<repo> and rerun."
+  echo "Set GITHUB_REPOSITORY=<owner>/<repo> (or <owner>:<repo>) and rerun."
   exit 2
 fi
 

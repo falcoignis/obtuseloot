@@ -8,6 +8,19 @@ Vibe-coded Minecraft paper plugin to add custom look generation to naturally spa
 ./scripts/build.sh
 ```
 
+### One-command build + publish to GitHub Packages
+```bash
+export GITHUB_TOKEN="<token-with-packages-write>"
+# optional when no git remote is configured:
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
+./scripts/build-and-publish.sh
+```
+
+You can pass build arguments before `--` and publish arguments after `--`:
+```bash
+./scripts/build-and-publish.sh clean package -- -DskipTests
+```
+
 The build helper auto-detects Maven Central reachability and falls back to `scripts/mvn-via-mirror.sh`
 when `MAVEN_MIRROR_URL` is set.
 
@@ -35,7 +48,7 @@ For local/manual publishing, use the helper:
 ```bash
 export GITHUB_TOKEN="<token-with-packages-write>"
 # optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
 ./scripts/publish.sh
 ```
 
