@@ -1,6 +1,7 @@
 package com.falcoignis.obtuseloot;
 
 import com.falcoignis.obtuseloot.obtuseengine.ObtuseEngine;
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -12,6 +13,8 @@ public class ObtuseLoot extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        saveDefaultConfig();
+        RuntimeSettings.load(getConfig());
 
         engine = new ObtuseEngine(this);
         engine.initialize();
@@ -25,5 +28,12 @@ public class ObtuseLoot extends JavaPlugin {
 
     public ObtuseEngine getEngine() {
         return engine;
+    }
+
+    @Override
+    public void onDisable() {
+        if (engine != null) {
+            engine.shutdown();
+        }
     }
 }
