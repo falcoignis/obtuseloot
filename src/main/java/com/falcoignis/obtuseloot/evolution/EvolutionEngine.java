@@ -16,12 +16,21 @@ public final class EvolutionEngine {
         RuntimeSettings.Snapshot settings = RuntimeSettings.get();
         int score = rep.score();
 
+        if (score < settings.archetypeScore()) {
+            return;
+        }
+
+        String archetype = ArchetypeResolver.resolve(rep, settings.archetypeDominanceDelta());
+        artifact.setArchetypePath(archetype);
+
         if (score >= settings.hybridScore()) {
-            artifact.setEvolutionPath(HybridEvolutionResolver.resolve(rep));
+            artifact.setEvolutionPath(HybridEvolutionResolver.resolve(archetype, rep));
         } else if (score >= settings.mythicScore()) {
-            artifact.setEvolutionPath("mythic");
+            artifact.setEvolutionPath(archetype + "-ascendant");
         } else if (score >= settings.temperedScore()) {
-            artifact.setEvolutionPath("tempered");
+            artifact.setEvolutionPath(archetype + "-adept");
+        } else {
+            artifact.setEvolutionPath(archetype + "-initiate");
         }
     }
 }

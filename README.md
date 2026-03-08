@@ -1,21 +1,37 @@
 # ObtuseLoot
 Vibe-coded Minecraft paper plugin to add custom look generation to naturally spawned chests/vaults with extreme configurability and extensibility 
 
-## Build
+## Build & publish (Maven workflow)
+
+### Local build (no publish)
 ```bash
-mvn clean package
+mvn -B -ntp clean package
 ```
 
+### Publish build (maven-publish workflow)
+Use your publish-enabled Maven `settings.xml` (repository credentials + server ID), then run:
+```bash
+mvn -B -ntp clean deploy
+```
+
+If you are behind a restricted network, use the mirror helper and append publish goals:
+```bash
+export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-all/"
+./scripts/mvn-via-mirror.sh deploy
+```
 
 ## Runtime tuning
 ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
 
 - combat precision threshold damage
-- evolution and awakening thresholds
+- evolution archetype/threshold tuning and fusion recipes
+- awakening thresholds
 - drift probability coefficients
 - lore action bar throttle interval (`lore.min-update-interval-ms`) to reduce combat spam/lag
 
 After editing config, restart or reload the plugin to apply changes.
+
+See `docs/EVOLUTION_FUSION_TABLE.md` for the archetype matrix and fusion balancing table.
 
 ## Build troubleshooting
 If Maven fails before compilation with an error similar to:

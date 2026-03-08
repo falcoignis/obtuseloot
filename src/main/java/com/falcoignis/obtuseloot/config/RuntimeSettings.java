@@ -1,6 +1,10 @@
 package com.falcoignis.obtuseloot.config;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Centralized runtime configuration for balancing and event throttling.
@@ -17,9 +21,13 @@ public final class RuntimeSettings {
     public static void load(FileConfiguration config) {
         current = new Snapshot(
                 config.getDouble("combat.precision-threshold-damage", 10.0D),
+                config.getInt("evolution.archetype-score", 20),
+                config.getInt("evolution.archetype-dominance-delta", 8),
                 config.getInt("evolution.tempered-score", 40),
                 config.getInt("evolution.mythic-score", 120),
                 config.getInt("evolution.hybrid-score", 250),
+                config.getInt("fusion.min-score", 320),
+                loadFusionRecipes(config.getConfigurationSection("fusion.recipes")),
                 config.getDouble("drift.base-chance", 0.03D),
                 config.getDouble("drift.chaos-multiplier", 0.01D),
                 config.getDouble("drift.consistency-reduction", 0.005D),
@@ -36,15 +44,47 @@ public final class RuntimeSettings {
         );
     }
 
+    private static List<FusionRecipe> loadFusionRecipes(ConfigurationSection section) {
+        if (section == null) {
+            return List.of();
+        }
+
+        List<FusionRecipe> recipes = new ArrayList<>();
+        for (String id : section.getKeys(false)) {
+            ConfigurationSection recipeSection = section.getConfigurationSection(id);
+            if (recipeSection == null) {
+                continue;
+            }
+
+            recipes.add(new FusionRecipe(
+                    id,
+                    recipeSection.getString("archetype", "paragon"),
+                    recipeSection.getInt("min-precision", 0),
+                    recipeSection.getInt("min-brutality", 0),
+                    recipeSection.getInt("min-survival", 0),
+                    recipeSection.getInt("min-mobility", 0),
+                    recipeSection.getInt("min-chaos", 0),
+                    recipeSection.getInt("min-consistency", 0),
+                    recipeSection.getInt("min-boss-kills", 0)
+            ));
+        }
+
+        return List.copyOf(recipes);
+    }
+
     public static Snapshot get() {
         return current;
     }
 
     public record Snapshot(
             double precisionThresholdDamage,
+            int archetypeScore,
+            int archetypeDominanceDelta,
             int temperedScore,
             int mythicScore,
             int hybridScore,
+            int fusionMinScore,
+            List<FusionRecipe> fusionRecipes,
             double driftBaseChance,
             double driftChaosMultiplier,
             double driftConsistencyReduction,
@@ -62,9 +102,13 @@ public final class RuntimeSettings {
         private static Snapshot defaults() {
             return new Snapshot(
                     10.0D,
+                    20,
+                    8,
                     40,
                     120,
                     250,
+                    320,
+                    List.of(),
                     0.03D,
                     0.01D,
                     0.005D,
@@ -80,5 +124,18 @@ public final class RuntimeSettings {
                     100
             );
         }
+    }
+
+    public record FusionRecipe(
+            String id,
+            String archetype,
+            int minPrecision,
+            int minBrutality,
+            int minSurvival,
+            int minMobility,
+            int minChaos,
+            int minConsistency,
+            int minBossKills
+    ) {
     }
 }

@@ -6,10 +6,93 @@ combat:
   precision-threshold-damage: 10.0
 
 evolution:
+  # Minimum score before an archetype can be assigned from behavior vectors.
+  archetype-score: 20
+
+  # Required lead over second-place archetype score before a definitive archetype is locked.
+  # Lower values switch archetypes faster; higher values create more stable identities.
+  archetype-dominance-delta: 8
+
   # Reputation score thresholds for progression states.
   tempered-score: 40
   mythic-score: 120
   hybrid-score: 250
+
+fusion:
+  # Fusion can only occur after this total reputation score is reached.
+  min-score: 320
+
+  # Draft recipe table for archetype-driven fusions.
+  recipes:
+    stormglass-reaver:
+      archetype: deadeye
+      min-precision: 150
+      min-brutality: 40
+      min-survival: 60
+      min-mobility: 120
+      min-chaos: 20
+      min-consistency: 110
+      min-boss-kills: 2
+
+    aegis-paragon:
+      archetype: vanguard
+      min-precision: 60
+      min-brutality: 50
+      min-survival: 160
+      min-mobility: 40
+      min-chaos: 10
+      min-consistency: 140
+      min-boss-kills: 2
+
+    cataclyst-tyrant:
+      archetype: ravager
+      min-precision: 20
+      min-brutality: 160
+      min-survival: 70
+      min-mobility: 80
+      min-chaos: 150
+      min-consistency: 50
+      min-boss-kills: 3
+
+    horizon-keeper:
+      archetype: warden
+      min-precision: 120
+      min-brutality: 30
+      min-survival: 140
+      min-mobility: 70
+      min-chaos: 20
+      min-consistency: 120
+      min-boss-kills: 2
+
+    windscar-phantom:
+      archetype: strider
+      min-precision: 140
+      min-brutality: 60
+      min-survival: 70
+      min-mobility: 160
+      min-chaos: 40
+      min-consistency: 90
+      min-boss-kills: 2
+
+    voidhymn-oracle:
+      archetype: harbinger
+      min-precision: 80
+      min-brutality: 70
+      min-survival: 130
+      min-mobility: 90
+      min-chaos: 150
+      min-consistency: 100
+      min-boss-kills: 3
+
+    crown-of-twins:
+      archetype: paragon
+      min-precision: 120
+      min-brutality: 120
+      min-survival: 120
+      min-mobility: 120
+      min-chaos: 80
+      min-consistency: 120
+      min-boss-kills: 4
 
 drift:
   # Final chance formula:
@@ -23,7 +106,6 @@ drift:
 lore:
   # Prevents action bar spam and reduces per-tick overhead in combat-heavy scenarios.
   min-update-interval-ms: 500
-
 
 naming:
   # Chance (0-100) to generate "<prefix> <suffix>" instead of a generic full-name entry.

@@ -43,11 +43,15 @@ public final class LoreEngine {
 
     public static List<String> buildLore(Artifact artifact, ArtifactReputation rep) {
         List<String> lines = new ArrayList<>();
-        lines.add("The artifact hums with a " + artifact.getEvolutionPath() + " resonance.");
-        if (!"dormant".equals(artifact.getAwakeningPath())) {
-            lines.add("It now answers the path of " + artifact.getAwakeningPath() + ".");
+        lines.add("Archetype " + artifact.getArchetypePath() + " resonates as " + artifact.getEvolutionPath() + ".");
+        if (!"none".equals(artifact.getFusionPath())) {
+            lines.add("Fusion awakened: " + artifact.getFusionPath() + ".");
         }
-        lines.add("Its legacy reflects precision " + rep.precision() + " and chaos " + rep.chaos() + ".");
+        if (!"dormant".equals(artifact.getAwakeningPath())) {
+            lines.add("Awakening path: " + artifact.getAwakeningPath() + ".");
+        }
+        lines.add("Legacy vector P" + rep.precision() + " B" + rep.brutality() + " S" + rep.survival()
+                + " M" + rep.mobility() + " C" + rep.consistency() + " X" + rep.chaos() + ".");
         return lines;
     }
 }
