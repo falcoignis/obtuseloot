@@ -2,8 +2,7 @@ package com.falcoignis.obtuseloot.data;
 
 /**
  * Immutable snapshot of which soul effects a player currently has active, keyed by
- * equipment slot. Rebuilt every {@link com.falcoignis.obtuseloot.engine.ObtuseEngine#CACHE_INTERVAL} ticks by the
- * cache refresher task — never read from inside that task.
+ * equipment slot. Rebuilt by the engine cache refresher task and never read from inside that task.
  *
  * <p>Slot semantics:
  * <ul>
