@@ -24,6 +24,15 @@ lore:
   # Prevents action bar spam and reduces per-tick overhead in combat-heavy scenarios.
   min-update-interval-ms: 500
 
+
+naming:
+  # Chance (0-100) to generate "<prefix> <suffix>" instead of a generic full-name entry.
+  prefix-suffix-chance-percent: 60
+
+  # If true, a player UUID always maps to the same generated name roll pattern.
+  # Set false to allow fully random naming each generation event.
+  use-deterministic-owner-seed: true
+
 awakening:
   executioners-oath:
     min-score: 500

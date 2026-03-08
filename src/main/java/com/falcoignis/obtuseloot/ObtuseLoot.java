@@ -2,8 +2,8 @@ package com.falcoignis.obtuseloot;
 
 import com.falcoignis.obtuseloot.commands.ObtuseLootCommand;
 import com.falcoignis.obtuseloot.config.RuntimeSettings;
+import com.falcoignis.obtuseloot.names.NamePoolManager;
 import com.falcoignis.obtuseloot.obtuseengine.ObtuseEngine;
-import com.falcoignis.obtuseloot.config.RuntimeSettings;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -15,8 +15,13 @@ public class ObtuseLoot extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        // Ensure default config.yml is persisted before loading runtime snapshots.
         saveDefaultConfig();
         RuntimeSettings.load(getConfig());
+
+        // Ensure configurable name list files are present on disk and loaded.
+        NamePoolManager.initialize(this);
 
         if (getCommand("obtuseloot") != null) {
             getCommand("obtuseloot").setExecutor(new ObtuseLootCommand());
