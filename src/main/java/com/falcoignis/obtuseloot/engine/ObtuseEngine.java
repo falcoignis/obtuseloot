@@ -65,12 +65,12 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <h3>Usage</h3>
  * <pre>
- *   engine = new SoulEngine(this, soulKey);                                    // registers event listener
+ *   engine = new ObtuseEngine(this, soulKey);                                    // registers event listener
  *   engine.reload(activeSouls, abilityEnabled, abilityParams, color, glyph);  // call after every config load
  *   engine.stop();                                                              // call from onDisable
  * </pre>
  */
-final class SoulEngine implements Listener {
+public final class ObtuseEngine implements Listener {
 
     // ── Timing ────────────────────────────────────────────────────────────────
 
@@ -216,6 +216,7 @@ final class SoulEngine implements Listener {
 
     private final Plugin        plugin;
     private final NamespacedKey soulKey;
+    private final EngineEventPipeline eventPipeline;
 
     /** Active soul data — replaced atomically on every reload(). */
     private Map<String, SoulData> souls = new HashMap<>();
@@ -486,12 +487,20 @@ final class SoulEngine implements Listener {
 
     // ─────────────────────────────────────────────────────────────────────────
 
-    SoulEngine(Plugin plugin, NamespacedKey soulKey) {
+    public ObtuseEngine(Plugin plugin, NamespacedKey soulKey) {
         this.plugin        = plugin;
         this.soulKey       = soulKey;
         this.breadcrumbKey = new NamespacedKey(plugin, "breadcrumb_data");
         this.witnessKey    = new NamespacedKey(plugin, "witness_journal");
         this.compendiumKey = new NamespacedKey(plugin, "compendium_kills");
+        this.eventPipeline = new EngineEventPipeline(List.of(
+            new ArtifactProcessor(this),
+            new ReputationEngine(this),
+            new EvolutionEngine(this),
+            new DriftEngine(this),
+            new AwakeningEngine(this),
+            new LoreEngine(this)
+        ));
         // Register once; survives reload() calls.
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -505,7 +514,7 @@ final class SoulEngine implements Listener {
      * @param abilityParams  map of ability parameter key → integer value from config.yml
      *                       (e.g. {@code "sinkhole-duration"} → ticks)
      */
-    void reload(Map<String, SoulData> activeSouls,
+    public void reload(Map<String, SoulData> activeSouls,
                 Map<String, Boolean>  abilityEnabled,
                 Map<String, Integer>  abilityParams,
                 net.kyori.adventure.text.format.NamedTextColor soulTagColor,
@@ -526,7 +535,7 @@ final class SoulEngine implements Listener {
     }
 
     /** Cancels all tasks and removes any ability-placed blocks still in the world. Safe to call before the engine has started. */
-    void stop() {
+    public void stop() {
         if (cacheTask          != null && !cacheTask.isCancelled())          cacheTask.cancel();
         if (particleTask       != null && !particleTask.isCancelled())       particleTask.cancel();
         if (projectileTask     != null && !projectileTask.isCancelled())     projectileTask.cancel();
@@ -1360,6 +1369,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onPlayerInteract(PlayerInteractEvent e) {
+        eventPipeline.onPlayerInteract(e);
         // Protect managed blocks from all interaction — check first, regardless of soul state.
         if (e.getClickedBlock() != null
                 && managedBlocks.containsKey(e.getClickedBlock().getLocation())) {
@@ -1440,6 +1450,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onBlockBreak(BlockBreakEvent e) {
+        eventPipeline.onBlockBreak(e);
         // Protect managed blocks — cancel before checking tool soul.
         if (managedBlocks.containsKey(e.getBlock().getLocation())) {
             e.setCancelled(true);
@@ -1707,6 +1718,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent e) {
+        eventPipeline.onPlayerMove(e);
         // Skip rotation-only events — Paper API; avoids processing every head turn.
         if (!e.hasChangedPosition()) return;
 
@@ -1881,6 +1893,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityDamageHeal(EntityDamageByEntityEvent e) {
+        eventPipeline.onEntityDamageByEntity(e);
         // Only arrow projectiles from tracked bows/crossbows carry the heal ability.
         if (!(e.getDamager() instanceof Projectile proj)) return;
         SoulData soul = trackedProjectiles.get(proj.getUniqueId());
@@ -1969,6 +1982,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDamaged(EntityDamageEvent e) {
+        eventPipeline.onPlayerDamaged(e);
         if (!(e.getEntity() instanceof Player p)) return;
         PlayerSoulState state = playerStateCache.get(p.getUniqueId());
         if (state == null || state.chestplate() == null) return;
@@ -2069,6 +2083,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
+        eventPipeline.onEntityDamageByEntity(e);
         SoulData soul = null;
         Player attacker = null;
 
@@ -2255,6 +2270,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDeath(EntityDeathEvent e) {
+        eventPipeline.onEntityDeath(e);
         Player killer = e.getEntity().getKiller();
         if (killer == null) return;
 
@@ -2411,6 +2427,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onProjectileLaunch(ProjectileLaunchEvent e) {
+        eventPipeline.onProjectileLaunch(e);
         if (!(e.getEntity().getShooter() instanceof Player shooter)) return;
         Projectile proj = e.getEntity();
         SoulData soul   = null;
@@ -2494,6 +2511,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onProjectileHit(ProjectileHitEvent e) {
+        eventPipeline.onProjectileHit(e);
         SoulData soul = trackedProjectiles.remove(e.getEntity().getUniqueId());
         if (soul == null) return;
 
@@ -2598,6 +2616,7 @@ final class SoulEngine implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockDropItem(BlockDropItemEvent e) {
+        eventPipeline.onBlockDropItem(e);
         if (e.getPlayer() == null) return;
         PlayerSoulState state = playerStateCache.get(e.getPlayer().getUniqueId());
         if (state == null || state.tool() == null) return;
