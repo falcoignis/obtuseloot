@@ -62,6 +62,20 @@ export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-a
 ./scripts/mvn-via-mirror.sh deploy
 ```
 
+## Command reference (console + in-game)
+All registered `/obtuseloot` (`/ol`) subcommands are available to both in-game players and console, with permissions enforced per subcommand.
+
+| Command | In-game | Console | Required permission |
+| --- | --- | --- | --- |
+| `/ol help` | ✅ | ✅ | `obtuseloot.help` |
+| `/ol info` | ✅ | ✅ | `obtuseloot.info` |
+| `/ol inspect [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.inspect` |
+
+Permission notes:
+- `obtuseloot.*` grants every defined command/admin/edit permission.
+- `obtuseloot.help` and `obtuseloot.info` default to `true` for general visibility.
+- `obtuseloot.inspect` remains operator-level (`default: op`).
+
 ## Runtime tuning
 ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
 

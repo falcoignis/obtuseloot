@@ -26,7 +26,7 @@ commands:
       /<command> info
       /<command> inspect [player]
     aliases:      [ ol ]
-    permission:   obtuseloot.use
+    permission:   obtuseloot.help
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Permissions
@@ -40,6 +40,8 @@ permissions:
     default:     op
     children:
       obtuseloot.admin:            true
+      obtuseloot.help:             true
+      obtuseloot.info:             true
       obtuseloot.give:             true
       obtuseloot.givesoul:         true
       obtuseloot.convert:          true
@@ -49,8 +51,12 @@ permissions:
       obtuseloot.edit:             true
 
   # ── Informational (safe for all players) ───────────────────────────────────
-  obtuseloot.use:
-    description: Allows /ol help and info. Granted to all players by default.
+  obtuseloot.help:
+    description: Allows /ol help — list all console + in-game command usage.
+    default:     true
+
+  obtuseloot.info:
+    description: Allows /ol info — show plugin runtime status.
     default:     true
 
   # ── Administrative ──────────────────────────────────────────────────────────
