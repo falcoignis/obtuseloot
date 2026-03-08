@@ -8,6 +8,19 @@ Vibe-coded Minecraft paper plugin to add custom look generation to naturally spa
 ./scripts/build.sh
 ```
 
+### One-command build + publish to GitHub Packages
+```bash
+export GITHUB_TOKEN="<token-with-packages-write>"
+# optional when no git remote is configured:
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
+./scripts/build-and-publish.sh
+```
+
+You can pass build arguments before `--` and publish arguments after `--`:
+```bash
+./scripts/build-and-publish.sh clean package -- -DskipTests
+```
+
 The build helper auto-detects Maven Central reachability and falls back to `scripts/mvn-via-mirror.sh`
 when `MAVEN_MIRROR_URL` is set.
 
@@ -35,7 +48,7 @@ For local/manual publishing, use the helper:
 ```bash
 export GITHUB_TOKEN="<token-with-packages-write>"
 # optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
 ./scripts/publish.sh
 ```
 
@@ -48,6 +61,20 @@ If you are behind a restricted network, use the mirror helper and append publish
 export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-all/"
 ./scripts/mvn-via-mirror.sh deploy
 ```
+
+## Command reference (console + in-game)
+All registered `/obtuseloot` (`/ol`) subcommands are available to both in-game players and console, with permissions enforced per subcommand.
+
+| Command | In-game | Console | Required permission |
+| --- | --- | --- | --- |
+| `/ol help` | ✅ | ✅ | `obtuseloot.help` |
+| `/ol info` | ✅ | ✅ | `obtuseloot.info` |
+| `/ol inspect [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.inspect` |
+
+Permission notes:
+- `obtuseloot.*` grants every defined command/admin/edit permission.
+- `obtuseloot.help` and `obtuseloot.info` default to `true` for general visibility.
+- `obtuseloot.inspect` remains operator-level (`default: op`).
 
 ## Runtime tuning
 ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
