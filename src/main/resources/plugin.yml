@@ -25,6 +25,9 @@ commands:
       /<command> help
       /<command> info
       /<command> inspect [player]
+      /<command> refresh [player]
+      /<command> reset [player]
+      /<command> reload
     aliases:      [ ol ]
     permission:   obtuseloot.help
 
@@ -61,7 +64,7 @@ permissions:
 
   # ── Administrative ──────────────────────────────────────────────────────────
   obtuseloot.admin:
-    description: Allows /ol reload, setloot, and ability — full server-side control.
+    description: Allows /ol reload, /ol refresh, and /ol reset — server-side administrative control.
     default:     op
 
   # ── Item generation ─────────────────────────────────────────────────────────

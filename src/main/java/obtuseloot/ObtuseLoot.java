@@ -24,7 +24,9 @@ public class ObtuseLoot extends JavaPlugin {
         NamePoolManager.initialize(this);
 
         if (getCommand("obtuseloot") != null) {
-            getCommand("obtuseloot").setExecutor(new ObtuseLootCommand());
+            ObtuseLootCommand command = new ObtuseLootCommand(this);
+            getCommand("obtuseloot").setExecutor(command);
+            getCommand("obtuseloot").setTabCompleter(command);
         } else {
             getLogger().warning("Command 'obtuseloot' is missing from plugin.yml; command wiring skipped.");
         }

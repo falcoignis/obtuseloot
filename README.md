@@ -70,6 +70,9 @@ All registered `/obtuseloot` (`/ol`) subcommands are available to both in-game p
 | `/ol help` | ✅ | ✅ | `obtuseloot.help` |
 | `/ol info` | ✅ | ✅ | `obtuseloot.info` |
 | `/ol inspect [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.inspect` |
+| `/ol refresh [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
+| `/ol reset [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
+| `/ol reload` | ✅ | ✅ | `obtuseloot.admin` |
 
 Permission notes:
 - `obtuseloot.*` grants every defined command/admin/edit permission.

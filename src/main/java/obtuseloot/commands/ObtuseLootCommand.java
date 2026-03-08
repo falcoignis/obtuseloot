@@ -1,19 +1,36 @@
 package obtuseloot.commands;
 
+import obtuseloot.ObtuseLoot;
+import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactManager;
+import obtuseloot.config.RuntimeSettings;
 import obtuseloot.debug.ArtifactDebugger;
+import obtuseloot.names.NamePoolManager;
+import obtuseloot.reputation.ReputationManager;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Minimal command wiring to ensure plugin.yml command metadata is backed by runtime behavior.
+ * Runtime command handling for both player and console senders.
  */
-public final class ObtuseLootCommand implements CommandExecutor {
+public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION_HELP = "obtuseloot.help";
     private static final String PERMISSION_INFO = "obtuseloot.info";
     private static final String PERMISSION_INSPECT = "obtuseloot.inspect";
+    private static final String PERMISSION_ADMIN = "obtuseloot.admin";
+
+    private final ObtuseLoot plugin;
+
+    public ObtuseLootCommand(ObtuseLoot plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -27,6 +44,12 @@ public final class ObtuseLootCommand implements CommandExecutor {
             sender.sendMessage("§7/" + label + " info §8- §fShow plugin runtime status §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " inspect [player] §8- §fInspect tracked artifact state for a player §8["
                     + PERMISSION_INSPECT + "]");
+            sender.sendMessage("§7/" + label + " refresh [player] §8- §fRegenerate a player's artifact profile §8["
+                    + PERMISSION_ADMIN + "]");
+            sender.sendMessage("§7/" + label + " reset [player] §8- §fClear a player's tracked artifact and reputation state §8["
+                    + PERMISSION_ADMIN + "]");
+            sender.sendMessage("§7/" + label + " reload §8- §fReload config-driven runtime settings and name pools §8["
+                    + PERMISSION_ADMIN + "]");
             return true;
         }
 
@@ -62,8 +85,134 @@ public final class ObtuseLootCommand implements CommandExecutor {
             return true;
         }
 
+        if ("refresh".equalsIgnoreCase(args[0])) {
+            if (!hasPermission(sender, PERMISSION_ADMIN)) {
+                return true;
+            }
+
+            Player target = resolveTarget(sender, args, label, "refresh");
+            if (target == null) {
+                return true;
+            }
+
+            ArtifactManager.remove(target.getUniqueId());
+            Artifact refreshed = ArtifactManager.getOrCreate(target.getUniqueId());
+
+            sender.sendMessage("§aRefreshed artifact profile for §f" + target.getName() + "§a: §d" + refreshed.getName());
+            if (!sender.equals(target)) {
+                target.sendMessage("§dYour ObtuseLoot artifact profile was refreshed by an administrator.");
+            }
+            return true;
+        }
+
+        if ("reset".equalsIgnoreCase(args[0])) {
+            if (!hasPermission(sender, PERMISSION_ADMIN)) {
+                return true;
+            }
+
+            Player target = resolveTarget(sender, args, label, "reset");
+            if (target == null) {
+                return true;
+            }
+
+            ArtifactManager.remove(target.getUniqueId());
+            ReputationManager.remove(target.getUniqueId());
+            sender.sendMessage("§aCleared tracked ObtuseLoot state for §f" + target.getName() + "§a.");
+            if (!sender.equals(target)) {
+                target.sendMessage("§dYour ObtuseLoot progression state was reset by an administrator.");
+            }
+            return true;
+        }
+
+        if ("reload".equalsIgnoreCase(args[0])) {
+            if (!hasPermission(sender, PERMISSION_ADMIN)) {
+                return true;
+            }
+
+            plugin.reloadConfig();
+            RuntimeSettings.load(plugin.getConfig());
+            NamePoolManager.initialize(plugin);
+            sender.sendMessage("§aObtuseLoot config/runtime snapshots reloaded.");
+            return true;
+        }
+
         sender.sendMessage("§cUnknown subcommand. Try /" + label + " help");
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1) {
+            List<String> candidates = new ArrayList<>();
+            addIfPermitted(sender, candidates, "help", PERMISSION_HELP);
+            addIfPermitted(sender, candidates, "info", PERMISSION_INFO);
+            addIfPermitted(sender, candidates, "inspect", PERMISSION_INSPECT);
+            addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
+            addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
+            addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
+            return filterByPrefix(candidates, args[0]);
+        }
+
+        if (args.length == 2 && isPlayerTargetCommand(args[0])) {
+            if (("inspect".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_INSPECT))
+                    || (("refresh".equalsIgnoreCase(args[0]) || "reset".equalsIgnoreCase(args[0]))
+                    && !sender.hasPermission(PERMISSION_ADMIN))) {
+                return List.of();
+            }
+
+            List<String> names = new ArrayList<>();
+            for (Player player : sender.getServer().getOnlinePlayers()) {
+                names.add(player.getName());
+            }
+            return filterByPrefix(names, args[1]);
+        }
+
+        return List.of();
+    }
+
+    private boolean isPlayerTargetCommand(String subcommand) {
+        return "inspect".equalsIgnoreCase(subcommand)
+                || "refresh".equalsIgnoreCase(subcommand)
+                || "reset".equalsIgnoreCase(subcommand);
+    }
+
+    private Player resolveTarget(CommandSender sender, String[] args, String label, String subcommand) {
+        if (args.length >= 2) {
+            Player target = sender.getServer().getPlayerExact(args[1]);
+            if (target == null) {
+                sender.sendMessage("§cPlayer not found: " + args[1]);
+                return null;
+            }
+            return target;
+        }
+
+        if (sender instanceof Player player) {
+            return player;
+        }
+
+        sender.sendMessage("§cConsole must provide a player: /" + label + " " + subcommand + " <player>");
+        return null;
+    }
+
+    private void addIfPermitted(CommandSender sender, List<String> candidates, String value, String permission) {
+        if (sender.hasPermission(permission)) {
+            candidates.add(value);
+        }
+    }
+
+    private List<String> filterByPrefix(List<String> candidates, String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            return candidates;
+        }
+
+        String lowered = prefix.toLowerCase();
+        List<String> filtered = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (candidate.toLowerCase().startsWith(lowered)) {
+                filtered.add(candidate);
+            }
+        }
+        return filtered;
     }
 
     private boolean hasPermission(CommandSender sender, String permission) {
