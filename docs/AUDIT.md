@@ -72,3 +72,33 @@ Additional loose/unwired code remediation completed:
 - Wired the large static name pools (`Prefixes`, `Suffixes`, `Generic`) through a deterministic `ArtifactNameGenerator` used at artifact creation time.
 - Added player quit cleanup listener to remove in-memory artifact/reputation/lore-throttle state and avoid stale map growth.
 - Removed unused `SoulData` model that had no call sites.
+
+## 2026-03-08 full audit pass
+
+### Additional checks run
+1. `./scripts/diagnose-maven-access.sh`
+2. `mvn -B -ntp clean test`
+3. Workflow inventory check: `git ls-files | rg '^\.github/'`
+
+### Additional findings
+
+1. **Critical CI governance gap (High)**  
+   The repository had no `.github/workflows` files tracked, so there was no automated enforcement for build/test/publish policy.
+
+2. **Build policy mismatch (Medium)**  
+   README documented a `maven-publish` workflow, but no corresponding workflow file existed.
+
+3. **Network-constrained build reliability (Medium, Environment)**  
+   Direct Maven execution still fails in this environment because Maven Central access returns `403`, so workflows should explicitly support mirror-based execution.
+
+### Remediation implemented in this pass
+
+1. Added `.github/workflows/ci.yml` to enforce checkout + JDK setup + Maven access diagnosis + test execution on push/PR.
+2. Added `.github/workflows/maven-publish.yml` to enforce publish pipeline on release/workflow dispatch.
+3. Both workflows now support restricted-network mirrors via existing `MAVEN_MIRROR_URL` / proxy secret inputs and `scripts/mvn-via-mirror.sh`.
+
+### Recommended next steps
+
+1. Configure repository secrets for mirror/proxy if runners cannot access Maven Central directly.
+2. Add branch protection requiring the `ci` workflow to pass before merge.
+3. Add signing/publishing credentials in GitHub Environments with least privilege.
