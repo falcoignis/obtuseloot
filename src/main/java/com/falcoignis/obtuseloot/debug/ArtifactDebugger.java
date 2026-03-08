@@ -15,7 +15,8 @@ public final class ArtifactDebugger {
     public static String describe(UUID playerId) {
         Artifact artifact = ArtifactManager.getOrCreate(playerId);
         ArtifactReputation rep = ReputationManager.get(playerId);
-        return "artifactId=" + artifact.getSeed()
+        return "artifactName=\"" + artifact.getName() + "\""
+                + ", artifactId=" + artifact.getSeed()
                 + ", evolution=" + artifact.getEvolutionPath()
                 + ", driftNow=" + DriftEngine.shouldDrift(rep)
                 + ", reputation={precision=" + rep.precision()

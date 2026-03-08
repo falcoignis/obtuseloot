@@ -1,5 +1,7 @@
 package com.falcoignis.obtuseloot;
 
+import com.falcoignis.obtuseloot.commands.ObtuseLootCommand;
+import com.falcoignis.obtuseloot.config.RuntimeSettings;
 import com.falcoignis.obtuseloot.obtuseengine.ObtuseEngine;
 import com.falcoignis.obtuseloot.config.RuntimeSettings;
 
@@ -15,6 +17,12 @@ public class ObtuseLoot extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         RuntimeSettings.load(getConfig());
+
+        if (getCommand("obtuseloot") != null) {
+            getCommand("obtuseloot").setExecutor(new ObtuseLootCommand());
+        } else {
+            getLogger().warning("Command 'obtuseloot' is missing from plugin.yml; command wiring skipped.");
+        }
 
         engine = new ObtuseEngine(this);
         engine.initialize();

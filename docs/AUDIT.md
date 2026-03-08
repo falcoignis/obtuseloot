@@ -64,3 +64,11 @@ Audit focus requested:
 
 ## Conclusion
 This audit pass improved configurability and runtime efficiency without expanding hot-path complexity. The primary blocker for full validation remains external Maven artifact access.
+
+
+## Follow-up wiring pass
+Additional loose/unwired code remediation completed:
+- Wired `/obtuseloot` command to a concrete executor (`info`, `help`, `inspect`) so plugin.yml command metadata has runtime handling.
+- Wired the large static name pools (`Prefixes`, `Suffixes`, `Generic`) through a deterministic `ArtifactNameGenerator` used at artifact creation time.
+- Added player quit cleanup listener to remove in-memory artifact/reputation/lore-throttle state and avoid stale map growth.
+- Removed unused `SoulData` model that had no call sites.

@@ -13,4 +13,8 @@ public final class ReputationManager {
     public static ArtifactReputation get(UUID playerId) {
         return REPUTATION.computeIfAbsent(playerId, id -> new ArtifactReputation());
     }
+
+    public static void remove(UUID playerId) {
+        REPUTATION.remove(playerId);
+    }
 }

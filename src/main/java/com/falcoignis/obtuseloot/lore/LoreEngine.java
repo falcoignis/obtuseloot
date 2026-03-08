@@ -37,6 +37,10 @@ public final class LoreEngine {
         }
     }
 
+    public static void removePlayer(UUID playerId) {
+        LAST_ACTIONBAR_UPDATE_MS.remove(playerId);
+    }
+
     public static List<String> buildLore(Artifact artifact, ArtifactReputation rep) {
         List<String> lines = new ArrayList<>();
         lines.add("The artifact hums with a " + artifact.getEvolutionPath() + " resonance.");
