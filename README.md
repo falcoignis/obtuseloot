@@ -23,11 +23,21 @@ mvn -B -ntp clean package
 ```
 
 ### Publish build (maven-publish workflow)
-The repo now includes GitHub workflows at `.github/workflows/ci.yml` and `.github/workflows/maven-publish.yml` for verification and release publishing.
-Use your publish-enabled Maven `settings.xml` (repository credentials + server ID), then run:
+The repo includes GitHub workflows at `.github/workflows/ci.yml` and `.github/workflows/maven-publish.yml` for verification and first-jar publishing.
+
+`maven-publish.yml` now publishes the package to GitHub Packages using `GITHUB_TOKEN` and the repository URL:
+
+`https://maven.pkg.github.com/<owner>/<repo>`
+
+It also uploads `target/obtuseloot-*.jar` as a release asset when triggered from a published GitHub Release.
+
+For local/manual publishing, run:
 ```bash
-mvn -B -ntp clean deploy
+mvn -B -ntp clean deploy \
+  -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/<owner>/<repo>
 ```
+
+If you need explicit credentials in local CI, configure Maven `settings.xml` with server id `github`.
 
 If you are behind a restricted network, use the mirror helper and append publish goals:
 ```bash
