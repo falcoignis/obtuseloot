@@ -64,6 +64,36 @@ fusion:
       min-consistency: 120
       min-boss-kills: 2
 
+    windscar-phantom:
+      archetype: strider
+      min-precision: 140
+      min-brutality: 60
+      min-survival: 70
+      min-mobility: 160
+      min-chaos: 40
+      min-consistency: 90
+      min-boss-kills: 2
+
+    voidhymn-oracle:
+      archetype: harbinger
+      min-precision: 80
+      min-brutality: 70
+      min-survival: 130
+      min-mobility: 90
+      min-chaos: 150
+      min-consistency: 100
+      min-boss-kills: 3
+
+    crown-of-twins:
+      archetype: paragon
+      min-precision: 120
+      min-brutality: 120
+      min-survival: 120
+      min-mobility: 120
+      min-chaos: 80
+      min-consistency: 120
+      min-boss-kills: 4
+
 drift:
   # Final chance formula:
   # base-chance + chaos*chaos-multiplier - consistency*consistency-reduction

@@ -2,9 +2,9 @@
 <!--
   ObtuseLoot — pom.xml
   ─────────────────────────────────────────────────────────────────────────────
-  Build with:   mvn clean package
-  Output:       target/obtuseloot-1.0.0.jar
-  Deploy:       Drop that JAR into your server's plugins/ folder.
+  Local build:  mvn -B -ntp clean package
+  Publish:      mvn -B -ntp clean deploy
+  Output:       target/obtuseloot-<version>.jar
   ─────────────────────────────────────────────────────────────────────────────
 
   All Bukkit/Paper/Adventure APIs are provided by the Purpur server JAR at
