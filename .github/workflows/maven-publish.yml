@@ -22,23 +22,9 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Configure Maven mirror settings
-        if: ${{ secrets.MAVEN_MIRROR_URL != '' }}
-        env:
-          MAVEN_MIRROR_URL: ${{ secrets.MAVEN_MIRROR_URL }}
-          MAVEN_PROXY_USER: ${{ secrets.MAVEN_PROXY_USER }}
-          MAVEN_PROXY_PASS: ${{ secrets.MAVEN_PROXY_PASS }}
-        run: |
-          ./scripts/mvn-via-mirror.sh -DskipTests help:effective-settings
-
       - name: Publish package
         env:
           MAVEN_MIRROR_URL: ${{ secrets.MAVEN_MIRROR_URL }}
           MAVEN_PROXY_USER: ${{ secrets.MAVEN_PROXY_USER }}
           MAVEN_PROXY_PASS: ${{ secrets.MAVEN_PROXY_PASS }}
-        run: |
-          if [ -n "${MAVEN_MIRROR_URL}" ]; then
-            ./scripts/mvn-via-mirror.sh deploy
-          else
-            mvn -B -ntp deploy
-          fi
+        run: ./scripts/build.sh deploy

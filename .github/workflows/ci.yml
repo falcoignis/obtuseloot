@@ -29,9 +29,4 @@ jobs:
           MAVEN_MIRROR_URL: ${{ secrets.MAVEN_MIRROR_URL }}
           MAVEN_PROXY_USER: ${{ secrets.MAVEN_PROXY_USER }}
           MAVEN_PROXY_PASS: ${{ secrets.MAVEN_PROXY_PASS }}
-        run: |
-          if [ -n "${MAVEN_MIRROR_URL}" ]; then
-            ./scripts/mvn-via-mirror.sh test
-          else
-            mvn -B -ntp test
-          fi
+        run: ./scripts/build.sh test

@@ -5,6 +5,20 @@ Vibe-coded Minecraft paper plugin to add custom look generation to naturally spa
 
 ### Local build (no publish)
 ```bash
+./scripts/build.sh
+```
+
+The build helper auto-detects Maven Central reachability and falls back to `scripts/mvn-via-mirror.sh`
+when `MAVEN_MIRROR_URL` is set.
+
+You can pass Maven goals/phases explicitly, for example:
+```bash
+./scripts/build.sh test
+./scripts/build.sh deploy
+```
+
+If you prefer to invoke Maven directly:
+```bash
 mvn -B -ntp clean package
 ```
 
