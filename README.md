@@ -12,7 +12,7 @@ Vibe-coded Minecraft paper plugin to add custom look generation to naturally spa
 ```bash
 export GITHUB_TOKEN="<token-with-packages-write>"
 # optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
 ./scripts/build-and-publish.sh
 ```
 
@@ -48,7 +48,7 @@ For local/manual publishing, use the helper:
 ```bash
 export GITHUB_TOKEN="<token-with-packages-write>"
 # optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"
+# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
 ./scripts/publish.sh
 ```
 
