@@ -11,7 +11,8 @@ mvn clean package
 ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
 
 - combat precision threshold damage
-- evolution and awakening thresholds
+- evolution archetype/threshold tuning and fusion recipes
+- awakening thresholds
 - drift probability coefficients
 - lore action bar throttle interval (`lore.min-update-interval-ms`) to reduce combat spam/lag
 
