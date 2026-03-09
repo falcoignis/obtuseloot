@@ -15,7 +15,7 @@ public final class ArtifactDebugger {
         Artifact artifact = ObtuseLoot.get().getArtifactManager().getOrCreate(playerId);
         ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(playerId);
         return "artifactName=\"" + artifact.getName() + "\""
-                + ", artifactId=" + Math.abs(playerId.getMostSignificantBits() ^ playerId.getLeastSignificantBits())
+                + ", artifactSeed=" + artifact.getArtifactSeed()
                 + ", archetype=" + artifact.getArchetypePath()
                 + ", evolution=" + artifact.getEvolutionPath()
                 + ", fusion=" + artifact.getFusionPath()

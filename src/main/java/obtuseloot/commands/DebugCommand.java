@@ -62,6 +62,7 @@ public class DebugCommand {
             case "archetype" -> archetype(sender, label, args);
             case "path" -> path(sender, label, args);
             case "simulate" -> simulate(sender, label, args);
+            case "seed" -> seed(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -81,7 +82,7 @@ public class DebugCommand {
         sender.sendMessage("§7awakening=§f" + artifact.getAwakeningPath() + " §7fusion=§f" + artifact.getFusionPath());
         sender.sendMessage("§7driftLevel=§f" + artifact.getDriftLevel() + " §7totalDrifts=§f" + artifact.getTotalDrifts()
                 + " §7driftAlignment=§f" + artifact.getDriftAlignment());
-        sender.sendMessage("§7lineage=§f" + artifact.getLatentLineage() + " §7instability=§f" + artifact.getCurrentInstabilityState());
+        sender.sendMessage("§7seed=§f" + artifact.getArtifactSeed() + " §7lineage=§f" + artifact.getLatentLineage() + " §7instability=§f" + artifact.getCurrentInstabilityState());
         sender.sendMessage("§7seed affinities: §f" + formatStatMap(artifact));
         sender.sendMessage("§7drift bias: §f" + artifact.getDriftBiasAdjustments());
         sender.sendMessage("§7awakening bias: §f" + artifact.getAwakeningBiasAdjustments());
@@ -535,6 +536,82 @@ public class DebugCommand {
         return true;
     }
 
+
+    private boolean seed(CommandSender sender, String label, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /" + label + " debug seed <show|reroll|set|export|import> ...");
+            return true;
+        }
+
+        String mode = args[1].toLowerCase(Locale.ROOT);
+        return switch (mode) {
+            case "show" -> seedShow(sender, label, args);
+            case "reroll" -> seedReroll(sender, label, args);
+            case "set" -> seedSet(sender, label, args, false);
+            case "import" -> seedSet(sender, label, args, true);
+            case "export" -> seedExport(sender, label, args);
+            default -> {
+                sender.sendMessage("§cUnknown seed mode. Use show/reroll/set/export/import.");
+                yield true;
+            }
+        };
+    }
+
+    private boolean seedShow(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "seed show");
+        if (target == null) return true;
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        sender.sendMessage("§a" + target.getName() + " artifact seed: §f" + artifact.getArtifactSeed());
+        return true;
+    }
+
+    private boolean seedReroll(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "seed reroll");
+        if (target == null) return true;
+
+        Artifact existing = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        long oldSeed = existing.getArtifactSeed();
+        long newSeed = plugin.getArtifactManager().rollSeed();
+        Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), newSeed);
+        refreshAndSave(target);
+
+        sender.sendMessage("§aRerolled " + target.getName() + "'s artifact seed: §f" + oldSeed + " §7-> §f" + artifact.getArtifactSeed());
+        sender.sendMessage("§7Seed change reset artifact identity and progression.");
+        return true;
+    }
+
+    private boolean seedSet(CommandSender sender, String label, String[] args, boolean imported) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug seed " + (imported ? "import" : "set") + " <seed> [player]");
+            return true;
+        }
+
+        Long parsedSeed = parseLong(sender, args[2]);
+        if (parsedSeed == null) return true;
+
+        Player target = resolveTarget(sender, label, args, 3, "seed " + (imported ? "import" : "set") + " " + args[2]);
+        if (target == null) return true;
+
+        Artifact existing = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        long oldSeed = existing.getArtifactSeed();
+        Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), parsedSeed);
+        refreshAndSave(target);
+
+        String verb = imported ? "Imported" : "Set";
+        sender.sendMessage("§a" + verb + " artifact seed for " + target.getName() + ": §f" + oldSeed + " §7-> §f" + artifact.getArtifactSeed());
+        sender.sendMessage("§7Seed change reset artifact identity and progression.");
+        return true;
+    }
+
+    private boolean seedExport(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "seed export");
+        if (target == null) return true;
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        sender.sendMessage("§a" + target.getName() + " seed export: §f" + artifact.getArtifactSeed());
+        sender.sendMessage("§7name=§f" + artifact.getGeneratedName() + " §7lineage=§f" + artifact.getLatentLineage() + " §7drift=§f" + artifact.getDriftAlignment());
+        return true;
+    }
+
     private void prepareKillWindow(Player target, int chainSize) {
         CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
         context.markCombat();
@@ -584,6 +661,15 @@ public class DebugCommand {
         }
         sender.sendMessage("§cConsole must provide a player: /" + label + " debug " + usageTail + " <player>");
         return null;
+    }
+
+    private Long parseLong(CommandSender sender, String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            sender.sendMessage("§cInvalid long seed: " + value);
+            return null;
+        }
     }
 
     private Integer parseInt(CommandSender sender, String value) {
@@ -678,6 +764,11 @@ public class DebugCommand {
                 "/" + label + " debug instability clear [player]",
                 "/" + label + " debug archetype set <archetype> [player]",
                 "/" + label + " debug path set <evolutionPath> [player]",
+                "/" + label + " debug seed show [player]",
+                "/" + label + " debug seed reroll [player]",
+                "/" + label + " debug seed set <seed> [player]",
+                "/" + label + " debug seed export [player]",
+                "/" + label + " debug seed import <seed> [player]",
                 "/" + label + " debug simulate help"
         );
         sender.sendMessage("§dObtuseLoot Debug Commands:");

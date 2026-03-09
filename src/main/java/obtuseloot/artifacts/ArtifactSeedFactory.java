@@ -1,38 +1,53 @@
 package obtuseloot.artifacts;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 public class ArtifactSeedFactory {
-    public void applySeed(Artifact artifact) {
-        artifact.setSeedPrecisionAffinity(randomAffinity());
-        artifact.setSeedBrutalityAffinity(randomAffinity());
-        artifact.setSeedSurvivalAffinity(randomAffinity());
-        artifact.setSeedMobilityAffinity(randomAffinity());
-        artifact.setSeedChaosAffinity(randomAffinity());
-        artifact.setSeedConsistencyAffinity(randomAffinity());
-        artifact.setLatentLineage(rollLineage());
-        artifact.setDriftAlignment(rollAlignment());
+    public void applySeedProfile(Artifact artifact) {
+        applySeedProfile(artifact, artifact.getArtifactSeed());
     }
 
-    private double randomAffinity() {
-        return ThreadLocalRandom.current().nextDouble(-1.5D, 1.5D);
+    public void applySeedProfile(Artifact artifact, long seed) {
+        artifact.setArtifactSeed(seed);
+        Random random = createSeededRandom(seed);
+
+        artifact.setSeedPrecisionAffinity(randomAffinity(random));
+        artifact.setSeedBrutalityAffinity(randomAffinity(random));
+        artifact.setSeedSurvivalAffinity(randomAffinity(random));
+        artifact.setSeedMobilityAffinity(randomAffinity(random));
+        artifact.setSeedChaosAffinity(randomAffinity(random));
+        artifact.setSeedConsistencyAffinity(randomAffinity(random));
+        artifact.setLatentLineage(rollLineage(random));
+        artifact.setDriftAlignment(rollAlignment(random));
     }
 
-    private String rollLineage() {
-        double roll = ThreadLocalRandom.current().nextDouble();
-        if (roll < 0.08) return "ashen";
-        if (roll < 0.16) return "stormbound";
-        if (roll < 0.23) return "graveborn";
-        if (roll < 0.30) return "gilded";
-        if (roll < 0.35) return "mirrored";
+    public void regenerateFromSeed(Artifact artifact, long seed) {
+        applySeedProfile(artifact, seed);
+    }
+
+    private Random createSeededRandom(long seed) {
+        return new Random(seed);
+    }
+
+    private double randomAffinity(Random random) {
+        return -1.5D + (3.0D * random.nextDouble());
+    }
+
+    private String rollLineage(Random random) {
+        double roll = random.nextDouble();
+        if (roll < 0.08D) return "ashen";
+        if (roll < 0.16D) return "stormbound";
+        if (roll < 0.23D) return "graveborn";
+        if (roll < 0.30D) return "gilded";
+        if (roll < 0.35D) return "mirrored";
         return "common";
     }
 
-    private String rollAlignment() {
-        double roll = ThreadLocalRandom.current().nextDouble();
-        if (roll < 0.25) return "volatile";
-        if (roll < 0.50) return "predatory";
-        if (roll < 0.75) return "ascetic";
+    private String rollAlignment(Random random) {
+        double roll = random.nextDouble();
+        if (roll < 0.25D) return "volatile";
+        if (roll < 0.50D) return "predatory";
+        if (roll < 0.75D) return "ascetic";
         return "paradox";
     }
 }

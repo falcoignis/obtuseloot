@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Artifact {
+    private long artifactSeed;
     private UUID ownerId;
     private String generatedName;
     private String archetypePath;
@@ -60,6 +61,28 @@ public class Artifact {
         this.awakeningTraits = new HashSet<>();
     }
 
+    public void resetMutableState() {
+        driftBiasAdjustments.clear();
+        awakeningBiasAdjustments.clear();
+        awakeningGainMultipliers.clear();
+        driftLevel = 0;
+        totalDrifts = 0;
+        driftAlignment = "stable";
+        lastDriftTimestamp = 0L;
+        archetypePath = "unformed";
+        evolutionPath = "base";
+        awakeningPath = "dormant";
+        fusionPath = "none";
+        currentInstabilityState = "none";
+        instabilityExpiryTimestamp = 0L;
+        driftHistory.clear();
+        loreHistory.clear();
+        notableEvents.clear();
+        awakeningTraits.clear();
+    }
+
+    public long getArtifactSeed() { return artifactSeed; }
+    public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
     public UUID getOwnerId() { return ownerId; }
     public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
     public String getGeneratedName() { return generatedName; }
