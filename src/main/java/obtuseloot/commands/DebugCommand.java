@@ -216,7 +216,7 @@ public class DebugCommand {
         if (target == null) return true;
         plugin.getArtifactManager().recreate(target.getUniqueId());
         plugin.getReputationManager().reset(target.getUniqueId());
-        plugin.getCombatContextManager().remove(target.getUniqueId());
+        plugin.getCombatContextManager().clearContext(target.getUniqueId());
         refreshAndSave(target);
         sender.sendMessage("§aReset artifact and reputation for " + target.getName() + ".");
         return true;
@@ -472,7 +472,8 @@ public class DebugCommand {
         Player target = resolveTarget(sender, label, args, 2, "simulate resetcontext");
         if (target == null) return true;
 
-        plugin.getCombatContextManager().remove(target.getUniqueId());
+        plugin.getCombatContextManager().resetTransient(target.getUniqueId());
+        plugin.getCombatContextManager().clearContext(target.getUniqueId());
         saveOnly(target);
         sender.sendMessage("§aCleared combat context for " + target.getName() + ".");
         return true;
@@ -642,7 +643,7 @@ public class DebugCommand {
     private Artifact applySeedChange(Player target, long newSeed) {
         Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), newSeed);
         plugin.getReputationManager().reset(target.getUniqueId());
-        plugin.getCombatContextManager().remove(target.getUniqueId());
+        plugin.getCombatContextManager().clearContext(target.getUniqueId());
         refreshAndSave(target);
         return artifact;
     }

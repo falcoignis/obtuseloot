@@ -48,6 +48,7 @@ public class EngineScheduler {
     }
 
     public void startAutosaveTask() {
+        if (autosaveTask != null && !autosaveTask.isCancelled()) return;
         long ticks = RuntimeSettings.get().autosaveIntervalSeconds() * 20L;
         autosaveTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             artifactManager.saveAll();
@@ -56,6 +57,7 @@ public class EngineScheduler {
     }
 
     public void startDecayTask() {
+        if (decayTask != null && !decayTask.isCancelled()) return;
         long ticks = RuntimeSettings.get().volatileDecayIntervalSeconds() * 20L;
         decayTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> reputationManager.getLoadedReputations().values().forEach(rep -> {
             rep.decayVolatileStats(RuntimeSettings.get().volatileDecayFactor());
@@ -64,12 +66,14 @@ public class EngineScheduler {
     }
 
     public void startCombatCleanupTask() {
+        if (combatCleanupTask != null && !combatCleanupTask.isCancelled()) return;
         long ticks = RuntimeSettings.get().contextCleanupSeconds() * 20L;
         combatCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin,
                 () -> combatContextManager.cleanupStaleContexts(RuntimeSettings.get().combatWindowMs() * 2), ticks, ticks);
     }
 
     public void startInstabilityCleanupTask() {
+        if (instabilityCleanupTask != null && !instabilityCleanupTask.isCancelled()) return;
         instabilityCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             for (Artifact artifact : artifactManager.getLoadedArtifacts().values()) {

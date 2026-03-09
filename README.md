@@ -195,7 +195,7 @@ Root command: `/obtuseloot` (alias: `/ol`)
 | `/obtuseloot debug archetype set <archetype> [player]` | Override archetype path. |
 | `/obtuseloot debug path set <evolutionPath> [player]` | Override evolution path. |
 
-> Note: the current codebase does **not** expose `/simulate` debug subcommands. QA simulation is currently done via combat events plus the debug controls above.
+> The debug surface includes `/obtuseloot debug`, `/obtuseloot debug simulate`, and `/obtuseloot debug seed` for deterministic QA and progression simulation.
 
 ## Debug / QA Workflow
 
@@ -240,3 +240,17 @@ ObtuseLoot is pre-release and under active iteration. Systems and thresholds are
 ## License
 
 This project includes a repository `LICENSE` file.
+
+
+### Simulation debug commands
+
+- `/obtuseloot debug simulate hit <damage> [player]`
+- `/obtuseloot debug simulate move <distance> [player]`
+- `/obtuseloot debug simulate lowhp [player]`
+- `/obtuseloot debug simulate kill [player]`
+- `/obtuseloot debug simulate multikill <count> [player]`
+- `/obtuseloot debug simulate bosses <count> [player]`
+- `/obtuseloot debug simulate chaos [player]`
+- `/obtuseloot debug simulate cycle [player]`
+- `/obtuseloot debug simulate resetcontext [player]`
+- `/obtuseloot debug seed show|reroll|set|export|import [args]`

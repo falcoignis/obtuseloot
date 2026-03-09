@@ -1,5 +1,5 @@
 name:        ObtuseLoot
-version:     0.9.1
+version:     0.9.2
 main:        obtuseloot.ObtuseLoot
 description: Persistent artifact progression with evolution, awakening, and drift.
 authors:     [ falcoignis ]
@@ -17,62 +17,15 @@ commands:
       /<command> reset [player]
       /<command> reload
       /<command> debug help
-      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|save|seed
+      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate
       /<command> debug seed show|reroll|set|export|import
-      /<command> debug simulate help
+      /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
     aliases:      [ ol ]
-    permission:   obtuseloot.help
+    permission:   obtuseloot.debug
 
 permissions:
-  obtuseloot.*:
-    description: Grants all ObtuseLoot permissions.
-    default:     op
-    children:
-      obtuseloot.admin:            true
-      obtuseloot.help:             true
-      obtuseloot.info:             true
-      obtuseloot.inspect:          true
-      obtuseloot.edit:             true
-      obtuseloot.debug:            true
-
-  obtuseloot.help:
-    description: Allows /ol help — list all console + in-game command usage.
-    default:     true
-
-  obtuseloot.info:
-    description: Allows /ol info — show plugin runtime status.
-    default:     true
-
-  obtuseloot.admin:
-    description: Allows /ol reload, /ol refresh, and /ol reset — server-side administrative control.
-    default:     op
-
-  obtuseloot.inspect:
-    description: Allows /ol inspect and findartifacts — view souls a player is wearing and scan their inventory.
-    default:     op
-
-  obtuseloot.edit:
-    description: Allows add/remove/list on every editable list.
-    default:     op
-    children:
-      obtuseloot.edit.prefixes:   true
-      obtuseloot.edit.suffixes:   true
-      obtuseloot.edit.generic:    true
-
-  obtuseloot.edit.prefixes:
-    description: Allows editing the prefixes list only.
-    default:     op
-
-  obtuseloot.edit.suffixes:
-    description: Allows editing the suffixes list only.
-    default:     op
-
-  obtuseloot.edit.generic:
-    description: Allows editing the generic names list only.
-    default:     op
-
   obtuseloot.debug:
-    description: Allows /ol debug and /ol debug simulate commands for progression testing.
-    default:     op
+    description: Allows /obtuseloot debug, /obtuseloot debug simulate, and /obtuseloot debug seed commands for progression testing.
+    default: op

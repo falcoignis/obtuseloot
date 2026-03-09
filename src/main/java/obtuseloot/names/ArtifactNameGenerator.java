@@ -31,8 +31,15 @@ public final class ArtifactNameGenerator {
         List<String> suffixes = NamePoolManager.suffixes();
         List<String> generic = NamePoolManager.generic();
 
+        if (prefixes.isEmpty() || suffixes.isEmpty()) {
+            if (!generic.isEmpty()) {
+                return generic.get(random.nextInt(generic.size()));
+            }
+            return "Nameless Artifact";
+        }
+
         int prefixSuffixChancePercent = Math.max(0, Math.min(100, settings.namingPrefixSuffixChancePercent()));
-        if (random.nextInt(100) < prefixSuffixChancePercent) {
+        if (random.nextInt(100) < prefixSuffixChancePercent || generic.isEmpty()) {
             return prefixes.get(random.nextInt(prefixes.size())) + " " + suffixes.get(random.nextInt(suffixes.size()));
         }
 

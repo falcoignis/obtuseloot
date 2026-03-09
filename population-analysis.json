@@ -1,0 +1,46 @@
+{
+  "population": 5000,
+  "chaos_stress": {
+    "hits": 1000,
+    "kills": 500,
+    "multikill_chains": 200,
+    "boss_fights": 100,
+    "chaos_events": 200
+  },
+  "seed_operations": {
+    "rerolls": 100,
+    "imports": 100,
+    "sets": 100
+  },
+  "lifecycle_operations": {
+    "artifact_resets": 100,
+    "reseeds": 100,
+    "recreates": 50
+  },
+  "persistence_cycles": {
+    "saves": 200,
+    "loads": 200
+  },
+  "evolution_path_frequency": {
+    "base": 5000
+  },
+  "drift_mutation_distribution": {
+    "ascetic": 1240,
+    "paradox": 1276,
+    "predatory": 1212,
+    "volatile": 1272
+  },
+  "awakening_trigger_rates": {
+    "ember": 1210,
+    "aegis": 1250,
+    "tempest": 1279,
+    "void": 1261
+  },
+  "fusion_trigger_rates": {
+    "hybrid": 1555,
+    "apex": 1658,
+    "mythic": 1776,
+    "none": 11
+  },
+  "instability_rate": 0.5012
+}

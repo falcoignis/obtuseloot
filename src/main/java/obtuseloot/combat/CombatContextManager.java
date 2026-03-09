@@ -11,6 +11,17 @@ public class CombatContextManager {
     public void remove(UUID playerId) { contexts.remove(playerId); }
     public Map<UUID, CombatContext> getLoadedContexts() { return contexts; }
 
+    public void resetTransient(UUID playerId) {
+        CombatContext context = contexts.get(playerId);
+        if (context != null) {
+            context.resetTransient();
+        }
+    }
+
+    public void clearContext(UUID playerId) {
+        contexts.remove(playerId);
+    }
+
     public void cleanupStaleContexts(long maxAgeMs) {
         long now = System.currentTimeMillis();
         contexts.entrySet().removeIf(e -> now - e.getValue().getLastCombatTimestamp() > maxAgeMs);

@@ -21,7 +21,7 @@
 
     <groupId>com.falcoignis</groupId>
     <artifactId>obtuseloot</artifactId>
-    <version>0.9.1</version>
+    <version>0.9.2</version>
     <packaging>jar</packaging>
 
     <name>ObtuseLoot</name>
@@ -61,7 +61,7 @@
 
     <build>
         <!-- The final JAR is named obtuseloot-{version}.jar -->
-        <finalName>obtuseloot-${project.version}</finalName>
+        <finalName>ObtuseLoot-${project.version}</finalName>
 
         <plugins>
             <!--
