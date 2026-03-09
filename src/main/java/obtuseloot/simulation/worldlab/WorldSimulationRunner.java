@@ -1,5 +1,7 @@
 package obtuseloot.simulation.worldlab;
 
+import obtuseloot.abilities.ScoringMode;
+
 public final class WorldSimulationRunner {
     private WorldSimulationRunner() {
     }
@@ -24,7 +26,8 @@ public final class WorldSimulationRunner {
                 boolProp("world.enableDiversityPreservation", defaults.enableDiversityPreservation()),
                 boolProp("world.enableSelfBalancing", defaults.enableSelfBalancingAdjustments()),
                 boolProp("world.enableEnvironmentalPressure", defaults.enableEnvironmentalPressure()),
-                boolProp("world.enableTraitInteractions", defaults.enableTraitInteractions())
+                boolProp("world.enableTraitInteractions", defaults.enableTraitInteractions()),
+                ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();
         System.out.println("World simulation outputs written to " + config.outputDirectory());

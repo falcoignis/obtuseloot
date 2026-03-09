@@ -61,7 +61,7 @@ public final class OpenEndednessTestRunner {
         return new WorldSimulationConfig(
                 d.seed(), players, d.artifactsPerPlayer(), sessions, seasons, d.bossFrequency(), d.encounterDensity(),
                 d.chaosEventRate(), d.lowHealthEventRate(), d.mutationPressureMultiplier(), d.memoryEventMultiplier(),
-                d.outputDirectory(), ede, ecoBias, diversity, selfBal, env, trait);
+                d.outputDirectory(), ede, ecoBias, diversity, selfBal, env, trait, d.scoringMode());
     }
 
     private static Map<String, Object> summarize(List<Map<String, Object>> seasonal) {
