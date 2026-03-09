@@ -2,14 +2,14 @@ name: Nightly Build
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
   nightly:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -22,51 +22,19 @@ jobs:
       - name: Build plugin
         run: mvn -B -ntp clean package
 
-      - name: Run artifact audit
+      - name: Run simulations
         run: |
-          jar tf target/ObtuseLoot-*.jar | grep plugin.yml
-          unzip -p target/ObtuseLoot-*.jar plugin.yml | grep 'main:        obtuseloot.ObtuseLoot'
+          ./scripts/run-chaos-tests.sh
+          ./scripts/run-population-simulation.sh
+          ./scripts/run-world-simulation.sh
 
-      - name: Run gameplay simulation harness
-        run: python3 scripts/internal_test_build.py
+      - name: Run meta-analysis and confidence scoring
+        run: ./scripts/run-meta-analysis.sh
 
-      - name: Run chaos tests
-        run: python3 scripts/internal_test_build.py
-
-      - name: Run population simulation
-        run: python3 scripts/internal_test_build.py
-
-      - name: Run meta-analysis
-        run: python3 scripts/internal_test_build.py
-
-      - name: Generate evolution visualization
-        run: python3 scripts/internal_test_build.py
-
-      - name: Package nightly artifact
-        run: |
-          cp target/ObtuseLoot-*.jar ObtuseLoot-nightly.jar
-          cp target/ObtuseLoot-*.jar ObtuseLoot-0.9.2.jar
-
-      - name: Generate build report
-        run: |
-          cat > build-report.md <<'MD'
-          # Nightly Build Report
-          - Build command: `mvn -B -ntp clean package`
-          - Artifact: `ObtuseLoot-nightly.jar`
-          - Generated reports: evolution/population/meta outputs
-          MD
-
-      - name: Upload nightly artifacts
+      - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
-          name: obtuseloot-nightly
+          name: obtuseloot-nightly-reports
           path: |
-            ObtuseLoot-nightly.jar
-            build-report.md
-            evolution-report.md
-            population-report.md
-            meta-report.md
-            balance-suggestions.md
-            evolution-data.json
-            population-analysis.json
-            meta-analysis.json
+            analytics/**
+            target/ObtuseLoot-0.9.2.jar
