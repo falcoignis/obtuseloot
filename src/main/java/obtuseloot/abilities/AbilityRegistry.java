@@ -4,40 +4,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AbilityRegistry {
-    private final List<AbilityDefinition> all;
+    private final List<AbilityTemplate> templates;
 
     public AbilityRegistry() {
-        this.all = List.of(
-                new AbilityDefinition("precision.mark", "Marked Interval", AbilityFamily.PRECISION, AbilityTrigger.ON_HIT,
-                        List.of(new AbilityEffect("Consecutive hits mark target and unleash delayed puncture", AbilityEffectType.ENEMY_INTERACTION, 0.02)),
-                        "Marks after 3 hits.", "Mark duration increases after reposition.", "Marked enemies chain to nearest foe.", "Awakening adds exposed-window timing.", "Fusion lets marks persist through target swaps."),
-                new AbilityDefinition("brutality.rush", "Ravenous Momentum", AbilityFamily.BRUTALITY, AbilityTrigger.ON_KILL,
-                        List.of(new AbilityEffect("Kills trigger temporary aggression window with cleave pulses", AbilityEffectType.TEMPORARY_STATE, 0.03)),
-                        "Kill grants momentum burst.", "Bursts stack during chain combat.", "Multi-kill detonates intimidation wave.", "Awakening extends burst on low health.", "Fusion converts burst to battlefield shockwave."),
-                new AbilityDefinition("survival.rebuke", "Lastline Rebuke", AbilityFamily.SURVIVAL, AbilityTrigger.ON_LOW_HEALTH,
-                        List.of(new AbilityEffect("Low health creates retaliatory ward and stagger pulse", AbilityEffectType.CONDITIONAL_MECHANIC, 0.01)),
-                        "Ward appears below threshold.", "Ward grants one retaliatory pulse.", "Pulse steals tempo on hit received.", "Awakening adds recovery echo.", "Fusion causes ward to project to nearby ally."),
-                new AbilityDefinition("mobility.echo", "Slipstream Echo", AbilityFamily.MOBILITY, AbilityTrigger.ON_REPOSITION,
-                        List.of(new AbilityEffect("Repositioning stores kinetic echo released on next hit", AbilityEffectType.MOVEMENT_INTERACTION, 0.02)),
-                        "Dash stores one echo.", "Echo can fork to two targets.", "Chain movement refreshes echo immediately.", "Awakening leaves wake zone.", "Fusion turns wake into pull field."),
-                new AbilityDefinition("chaos.bloom", "Unstable Bloom", AbilityFamily.CHAOS, AbilityTrigger.ON_DRIFT_MUTATION,
-                        List.of(new AbilityEffect("Drift mutation seeds random anomaly zones", AbilityEffectType.BATTLEFIELD_INFLUENCE, 0.02)),
-                        "Mutation spawns minor anomaly.", "Anomaly picks one of three hostile effects.", "Boss combat doubles anomaly interactions.", "Awakening lets player reroll anomaly once.", "Fusion links anomaly to kill-chain tempo."),
-                new AbilityDefinition("consistency.rhythm", "Measured Cadence", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_CHAIN_COMBAT,
-                        List.of(new AbilityEffect("Rhythm windows reward precise combat timing", AbilityEffectType.TIMING_MECHANIC, 0.02)),
-                        "Every 4th hit triggers cadence.", "Cadence windows broaden with sustained combat.", "Missed rhythm converts into defensive beat.", "Awakening grants cadence carryover after kill.", "Fusion causes cadence to synchronize with allies.")
+        this.templates = List.of(
+                new AbilityTemplate("precision.sigil", "Sigil of Delay", AbilityFamily.PRECISION, AbilityTrigger.ON_HIT, AbilityMechanic.MARK,
+                        "Marks on cadence then ruptures during reposition windows", "extended mark chain", "volatile puncture", "timed exposed window", "mark persistence through swaps", "echo mark from memory", List.of(new AbilityModifier("support.window", "narrow damage amp window", 0.06, false))),
+                new AbilityTemplate("brutality.howl", "Howl of Pursuit", AbilityFamily.BRUTALITY, AbilityTrigger.ON_KILL, AbilityMechanic.BURST_STATE,
+                        "Kills open frenzy state with chase pulses", "frenzy overlap", "detonation on drift", "awakening extends frenzy", "fusion converts frenzy to shockfront", "memory chain heat", List.of(new AbilityModifier("support.tempo", "small tempo gain", 0.04, false))),
+                new AbilityTemplate("survival.ward", "Ward of Last Breath", AbilityFamily.SURVIVAL, AbilityTrigger.ON_LOW_HEALTH, AbilityMechanic.DEFENSIVE_THRESHOLD,
+                        "Low health raises threshold ward and retaliatory pulse", "ward echo", "hollow rebuke", "awakening recovery latch", "fusion projects ward", "memory survival lock", List.of()),
+                new AbilityTemplate("mobility.wake", "Wake Spiral", AbilityFamily.MOBILITY, AbilityTrigger.ON_REPOSITION, AbilityMechanic.MOVEMENT_ECHO,
+                        "Movement stores wake that loops into next engagement", "wake forks", "chaotic wake jitter", "awakening leaves sustained lane", "fusion adds pull field", "memory lane recall", List.of()),
+                new AbilityTemplate("chaos.spore", "Spore of Divergence", AbilityFamily.CHAOS, AbilityTrigger.ON_DRIFT_MUTATION, AbilityMechanic.UNSTABLE_DETONATION,
+                        "Drift erupts anomaly spores that alter local combat", "anomaly split", "instability bloom", "awakening reroll", "fusion chain reaction", "memory scar resonance", List.of()),
+                new AbilityTemplate("consistency.rhythm", "Rhythm Bastion", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_CHAIN_COMBAT, AbilityMechanic.CHAIN_ESCALATION,
+                        "Sustained combat opens rhythm gates and fallback beats", "longer rhythm", "drift converts miss to pulse", "awakening carryover", "fusion team sync", "memory cadence", List.of())
         );
     }
 
-    public List<AbilityDefinition> all() {
-        return all;
-    }
+    public List<AbilityTemplate> templates() { return templates; }
 
-    public List<AbilityDefinition> byFamily(AbilityFamily family) {
-        List<AbilityDefinition> out = new ArrayList<>();
-        for (AbilityDefinition def : all) {
-            if (def.family() == family) {
-                out.add(def);
+    public List<AbilityTemplate> byFamily(AbilityFamily family) {
+        List<AbilityTemplate> out = new ArrayList<>();
+        for (AbilityTemplate template : templates) {
+            if (template.family() == family) {
+                out.add(template);
             }
         }
         return out;

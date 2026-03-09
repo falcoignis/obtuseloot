@@ -35,8 +35,10 @@ public final class ArtifactDebugger {
                 + ", instability=" + artifact.getCurrentInstabilityState());
         AbilityProfile profile = ObtuseLoot.get().getItemAbilityManager().profileFor(artifact, rep);
         lines.add("isGeneric=" + ArtifactEligibility.isGenericItem(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
-                + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
+                + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", memoryEligible=" + ArtifactEligibility.isMemoryEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
         lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList());
+        lines.add("branchPath=" + artifact.getLastAbilityBranchPath() + ", mutationHistory=" + artifact.getLastMutationHistory());
+        lines.add("memoryInfluence=" + artifact.getLastMemoryInfluence() + ", memoryEvents=" + artifact.getMemory().snapshot());
         lines.add("awakeningTraits=" + artifact.getAwakeningTraits());
         lines.add("recentLore=" + tail(artifact.getLoreHistory(), 3) + ", recentEvents=" + tail(artifact.getNotableEvents(), 3));
         return lines;

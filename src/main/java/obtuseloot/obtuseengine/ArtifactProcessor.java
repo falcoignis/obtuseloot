@@ -9,6 +9,7 @@ import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.drift.DriftMutation;
 import obtuseloot.fusion.FusionEngine;
+import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -34,6 +35,7 @@ public final class ArtifactProcessor {
         int oldDriftLevel = artifact.getDriftLevel();
 
         rep.recordKill();
+        if (rep.getKills() == 1) { plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FIRST_KILL); }
         applyContextKillBonuses(player, context, rep, artifact);
 
         plugin.getEvolutionEngine().evaluate(player, artifact, rep);
@@ -47,9 +49,11 @@ public final class ArtifactProcessor {
         }
 
         if (plugin.getAwakeningEngine().evaluate(player, artifact, rep)) {
+            plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.AWAKENING);
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
         if (FUSION_ENGINE.evaluate(player, artifact, rep)) {
+            plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FUSION);
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_FUSION, 1D, artifact.getFusionPath());
         }
 
@@ -111,6 +115,7 @@ public final class ArtifactProcessor {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_MULTI_KILL, count, "multi-kill");
+        plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.MULTIKILL_CHAIN);
         for (int i = 0; i < count; i++) {
             processKill(player);
         }
@@ -121,6 +126,7 @@ public final class ArtifactProcessor {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         rep.recordBossKill();
+        if (rep.getBossKills() == 1) { plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FIRST_BOSS_KILL); }
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_BOSS_KILL, rep.getBossKills(), "boss-kill");
         processKill(player);
     }

@@ -18,6 +18,7 @@ import obtuseloot.obtuseengine.EngineScheduler;
 import obtuseloot.obtuseengine.ObtuseEngine;
 import obtuseloot.persistence.PlayerStateStore;
 import obtuseloot.persistence.YamlPlayerStateStore;
+import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.reputation.ReputationManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,6 +36,7 @@ public class ObtuseLoot extends JavaPlugin {
     private LoreEngine loreEngine;
     private EngineScheduler engineScheduler;
     private ItemAbilityManager itemAbilityManager;
+    private ArtifactMemoryEngine artifactMemoryEngine;
 
     @Override
     public void onEnable() {
@@ -51,7 +53,8 @@ public class ObtuseLoot extends JavaPlugin {
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
-        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry()));
+        artifactMemoryEngine = new ArtifactMemoryEngine();
+        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine));
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
@@ -96,4 +99,5 @@ public class ObtuseLoot extends JavaPlugin {
     public LoreEngine getLoreEngine() { return loreEngine; }
     public EngineScheduler getEngineScheduler() { return engineScheduler; }
     public ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
+    public ArtifactMemoryEngine getArtifactMemoryEngine() { return artifactMemoryEngine; }
 }

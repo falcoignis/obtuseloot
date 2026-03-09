@@ -1,0 +1,17 @@
+package obtuseloot.abilities;
+
+public enum AbilityMechanic {
+    MARK,
+    PULSE,
+    RETALIATION,
+    BURST_STATE,
+    RECOVERY_WINDOW,
+    MOVEMENT_ECHO,
+    UNSTABLE_DETONATION,
+    DEFENSIVE_THRESHOLD,
+    BATTLEFIELD_FIELD,
+    CHAIN_ESCALATION,
+    MEMORY_ECHO,
+    REVENANT_TRIGGER,
+    GUARDIAN_PULSE
+}

@@ -1,0 +1,92 @@
+{
+  "abilityTree": {
+    "nodes": [
+      {
+        "id": "root"
+      },
+      {
+        "id": "adaptive"
+      },
+      {
+        "id": "chaotic"
+      },
+      {
+        "id": "resilient"
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "adaptive"
+      },
+      {
+        "from": "root",
+        "to": "chaotic"
+      },
+      {
+        "from": "root",
+        "to": "resilient"
+      }
+    ]
+  },
+  "mutationNetwork": {
+    "none": 1230,
+    "trigger": 1244,
+    "memory": 1251,
+    "mechanic": 1275
+  },
+  "memoryGraph": {
+    "LONG_BATTLE": 474,
+    "PRECISION_STREAK": 483,
+    "FIRST_BOSS_KILL": 480,
+    "CHAOS_RAMPAGE": 510,
+    "AWAKENING": 516,
+    "MULTIKILL_CHAIN": 520,
+    "FUSION": 476,
+    "LOW_HEALTH_SURVIVAL": 494,
+    "FIRST_KILL": 518,
+    "PLAYER_DEATH_WHILE_BOUND": 529
+  },
+  "familyDistribution": {
+    "burstState": 421,
+    "movementEcho": 378,
+    "retaliation": 366,
+    "defensiveThreshold": 420,
+    "pulse": 362,
+    "unstableDetonation": 391,
+    "revenantTrigger": 385,
+    "memoryEcho": 397,
+    "mark": 418,
+    "guardianPulse": 384,
+    "chainEscalation": 349,
+    "battlefieldField": 356,
+    "recoveryWindow": 373
+  },
+  "triggerFrequency": {
+    "onLowHealth": 472,
+    "onReposition": 492,
+    "onMemoryEvent": 486,
+    "onMovement": 483,
+    "onHit": 528,
+    "onKill": 487,
+    "onDrift": 516,
+    "onAwakening": 536,
+    "onBossKill": 497,
+    "onChainCombat": 503
+  },
+  "mechanicHeatmap": {
+    "burstState": 421,
+    "movementEcho": 378,
+    "retaliation": 366,
+    "defensiveThreshold": 420,
+    "pulse": 362,
+    "unstableDetonation": 391,
+    "revenantTrigger": 385,
+    "memoryEcho": 397,
+    "mark": 418,
+    "guardianPulse": 384,
+    "chainEscalation": 349,
+    "battlefieldField": 356,
+    "recoveryWindow": 373
+  }
+}

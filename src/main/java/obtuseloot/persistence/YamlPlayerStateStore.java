@@ -100,6 +100,19 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.getLoreHistory().addAll(yaml.getStringList("artifact.lore-history"));
         artifact.getNotableEvents().addAll(yaml.getStringList("artifact.notable-events"));
         artifact.getAwakeningTraits().addAll(yaml.getStringList("artifact.awakening-traits"));
+        artifact.setLastAbilityBranchPath(yaml.getString("artifact.last-ability-branch-path", "[]"));
+        artifact.setLastMutationHistory(yaml.getString("artifact.last-mutation-history", "[]"));
+        artifact.setLastMemoryInfluence(yaml.getString("artifact.last-memory-influence", "none"));
+        for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
+            try {
+                obtuseloot.memory.ArtifactMemoryEvent event = obtuseloot.memory.ArtifactMemoryEvent.valueOf(key.toUpperCase());
+                int count = yaml.getInt("artifact.memory-events." + key, 0);
+                for (int i = 0; i < count; i++) {
+                    artifact.getMemory().record(event);
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         return artifact;
     }
 
@@ -235,6 +248,10 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "lore-history", artifact.getLoreHistory());
         yaml.set(base + "notable-events", artifact.getNotableEvents());
         yaml.set(base + "awakening-traits", List.copyOf(artifact.getAwakeningTraits()));
+        yaml.set(base + "last-ability-branch-path", artifact.getLastAbilityBranchPath());
+        yaml.set(base + "last-mutation-history", artifact.getLastMutationHistory());
+        yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
+        artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
     }
 
     private void writeReputationSection(YamlConfiguration yaml, ArtifactReputation reputation) {

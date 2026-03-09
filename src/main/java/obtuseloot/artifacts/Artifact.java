@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import obtuseloot.memory.ArtifactMemory;
+
 public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
 
@@ -46,6 +48,11 @@ public class Artifact {
     private final List<String> loreHistory;
     private final List<String> notableEvents;
     private final Set<String> awakeningTraits;
+    private final ArtifactMemory memory;
+
+    private String lastAbilityBranchPath;
+    private String lastMutationHistory;
+    private String lastMemoryInfluence;
 
     public Artifact(UUID ownerId, String generatedName) {
         this.ownerId = ownerId;
@@ -65,6 +72,10 @@ public class Artifact {
         this.loreHistory = new ArrayList<>();
         this.notableEvents = new ArrayList<>();
         this.awakeningTraits = new HashSet<>();
+        this.memory = new ArtifactMemory();
+        this.lastAbilityBranchPath = "[]";
+        this.lastMutationHistory = "[]";
+        this.lastMemoryInfluence = "none";
     }
 
     public void resetMutableState() {
@@ -85,6 +96,9 @@ public class Artifact {
         loreHistory.clear();
         notableEvents.clear();
         awakeningTraits.clear();
+        lastAbilityBranchPath = "[]";
+        lastMutationHistory = "[]";
+        lastMemoryInfluence = "none";
     }
 
     public long getArtifactSeed() { return artifactSeed; }
@@ -136,6 +150,13 @@ public class Artifact {
     public List<String> getLoreHistory() { return loreHistory; }
     public List<String> getNotableEvents() { return notableEvents; }
     public Set<String> getAwakeningTraits() { return awakeningTraits; }
+    public ArtifactMemory getMemory() { return memory; }
+    public String getLastAbilityBranchPath() { return lastAbilityBranchPath; }
+    public void setLastAbilityBranchPath(String lastAbilityBranchPath) { this.lastAbilityBranchPath = lastAbilityBranchPath; }
+    public String getLastMutationHistory() { return lastMutationHistory; }
+    public void setLastMutationHistory(String lastMutationHistory) { this.lastMutationHistory = lastMutationHistory; }
+    public String getLastMemoryInfluence() { return lastMemoryInfluence; }
+    public void setLastMemoryInfluence(String lastMemoryInfluence) { this.lastMemoryInfluence = lastMemoryInfluence; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {
