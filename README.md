@@ -111,7 +111,7 @@ mvn -B -ntp clean package
 
 Output jar:
 ```text
-target/ObtuseLoot-0.9.2.jar
+target/ObtuseLoot-0.9.3.jar
 ```
 
 ### Build Troubleshooting
@@ -260,7 +260,7 @@ This project includes a repository `LICENSE` file.
 
 - `analytics/` generated reports (`evolution/`, `population/`, `meta/`, `review/`, `world-lab/`, `failure-reports/`).
 - `simulation/` harness scaffolds (`gameplay-simulator/`, `chaos-tests/`, `population-simulator/`, `world-simulation-lab/`).
-- `releases/` release records (`v0.9.2/`, `nightly/`).
+- `releases/` release records (`v0.9.3/`, `nightly/`).
 - `scripts/` automation entrypoints for build and analytics.
 - `codex/` local orchestration utilities used by scripts.
 
