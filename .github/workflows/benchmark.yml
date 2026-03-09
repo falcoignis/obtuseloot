@@ -1,0 +1,52 @@
+name: Benchmark ObtuseLoot
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark_mode:
+        description: "Benchmark mode to run"
+        required: false
+        default: "chaos"
+        type: choice
+        options:
+          - chaos
+          - population
+          - both
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Run benchmark workload
+        run: |
+          mode="${{ inputs.benchmark_mode }}"
+          if [ "$mode" = "chaos" ] || [ "$mode" = "both" ]; then
+            ./scripts/run-chaos-tests.sh
+          fi
+          if [ "$mode" = "population" ] || [ "$mode" = "both" ]; then
+            ./scripts/run-population-simulation.sh
+          fi
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            analytics/performance/
+            analytics/meta/
+            analytics/population/
+          if-no-files-found: ignore

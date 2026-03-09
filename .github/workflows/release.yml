@@ -1,0 +1,37 @@
+name: Release ObtuseLoot
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build release artifact
+        run: mvn -B -ntp clean package
+
+      - name: Create GitHub release and upload assets
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            target/*.jar
+            analytics/world-lab/**/*.md
+            analytics/dashboard/**/*.md
+          fail_on_unmatched_files: false

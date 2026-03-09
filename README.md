@@ -137,6 +137,51 @@ Runtime data locations:
 - Config: `plugins/ObtuseLoot/config.yml`
 - Per-player state: `plugins/ObtuseLoot/playerdata/<player-uuid>.yml`
 
+
+## CI/CD Workflows (GitHub Actions)
+
+ObtuseLoot includes a CI/CD suite for continuous validation and simulation-lab operations via **Actions** artifacts (no binary build outputs are committed to the repository).
+
+- **Build ObtuseLoot** (`build.yml`)
+  - Triggers on pushes to `main` and all pull requests.
+  - Runs `mvn -B -ntp clean package`.
+  - Uploads `target/*.jar` as `obtuseloot-build` and uploads `analytics/` when present.
+- **Benchmark ObtuseLoot** (`benchmark.yml`)
+  - Manual (`workflow_dispatch`) benchmark runner.
+  - Executes benchmark-oriented scripts and uploads `analytics/performance`, `analytics/meta`, and `analytics/population` as `benchmark-results`.
+- **World Lab Simulation** (`world-lab.yml`)
+  - Manual world simulation harness run with optional input labels.
+  - Generates and uploads `analytics/world-lab/` and `analytics/dashboard/` artifacts.
+- **Open Endedness Experiment** (`open-endedness.yml`)
+  - Manual matrix run for four comparison modes:
+    - `full-system`
+    - `no-ede`
+    - `no-bias-diversity`
+    - `no-trait-interactions`
+  - Uploads per-mode artifacts and a combined `open-endedness-results` bundle.
+- **Dashboard Regeneration** (`dashboard.yml`)
+  - Manual dashboard/visualization regeneration.
+  - Uploads `analytics/dashboard/` and `analytics/visualizations/`.
+- **Release ObtuseLoot** (`release.yml`)
+  - Triggers on tags matching `v*`.
+  - Builds with Maven, creates a GitHub Release, and attaches `target/*.jar`.
+  - Uses only the built-in `secrets.GITHUB_TOKEN`.
+
+### Analytics history
+
+Analytics history is preserved as versioned **workflow artifacts** per run. This keeps the default branch clean while still allowing download/comparison across builds from the Actions UI.
+
+### Release flow
+
+1. Bump version in `pom.xml`.
+2. Commit and push to `main`.
+3. Create and push a version tag:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+4. GitHub Actions runs `release.yml` and publishes the release automatically.
+
 ## Configuration Overview
 
 Current `config.yml` sections:

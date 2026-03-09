@@ -1,0 +1,69 @@
+name: Open Endedness Experiment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  open-endedness:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          - full-system
+          - no-ede
+          - no-bias-diversity
+          - no-trait-interactions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Run open-endedness mode
+        env:
+          OPEN_ENDEDNESS_MODE: ${{ matrix.mode }}
+        run: |
+          echo "Running open-endedness mode: ${OPEN_ENDEDNESS_MODE}"
+          ./scripts/run-open-endedness-test.sh
+
+      - name: Stash mode-specific output
+        run: |
+          mkdir -p /tmp/open-endedness/${{ matrix.mode }}
+          cp -R analytics/world-lab/open-endedness/. /tmp/open-endedness/${{ matrix.mode }}/ || true
+
+      - name: Upload open-endedness results for mode
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-endedness-results-${{ matrix.mode }}
+          path: /tmp/open-endedness/${{ matrix.mode }}/
+          if-no-files-found: ignore
+
+  aggregate-open-endedness:
+    runs-on: ubuntu-latest
+    needs: open-endedness
+
+    steps:
+      - name: Download all mode artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: open-endedness-results-*
+          merge-multiple: true
+          path: analytics/world-lab/open-endedness/
+
+      - name: Upload combined open-endedness bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-endedness-results
+          path: analytics/world-lab/open-endedness/
+          if-no-files-found: ignore
