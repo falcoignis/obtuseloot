@@ -33,6 +33,10 @@ public class ProceduralAbilityGenerator {
         this(registry, null, null, null, null);
     }
 
+    public TraitProjectionStats traitProjectionStats() {
+        return traitInterferenceResolver.statsSnapshot();
+    }
+
     public ProceduralAbilityGenerator(AbilityRegistry registry,
                                       ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
                                       LineageRegistry lineageRegistry,

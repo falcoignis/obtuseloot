@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome", "projection");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
@@ -20,6 +20,7 @@ public class DebugTabCompleter {
     private static final List<String> PERSISTENCE_ACTIONS = List.of("backend", "test", "migrate");
     private static final List<String> ECOSYSTEM_ACTIONS = List.of("bias", "balance");
     private static final List<String> GENOME_ACTIONS = List.of("interactions");
+    private static final List<String> PROJECTION_ACTIONS = List.of("cache", "stats");
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 2) {
@@ -66,6 +67,9 @@ public class DebugTabCompleter {
 
         if (args.length == 3 && "genome".equalsIgnoreCase(args[1])) {
             return filter(GENOME_ACTIONS, args[2]);
+        }
+        if (args.length == 3 && "projection".equalsIgnoreCase(args[1])) {
+            return filter(PROJECTION_ACTIONS, args[2]);
         }
 
         if (args.length == 4 && "persistence".equalsIgnoreCase(args[1]) && "migrate".equalsIgnoreCase(args[2])) {

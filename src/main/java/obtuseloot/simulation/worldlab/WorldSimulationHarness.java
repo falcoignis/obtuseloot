@@ -283,6 +283,28 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
+        writeTraitProjectionPerformanceReport();
+    }
+
+    private void writeTraitProjectionPerformanceReport() throws IOException {
+        TraitProjectionStats stats = abilityGenerator.traitProjectionStats();
+        Path output = Path.of("analytics/performance/trait-projection-report.md");
+        Files.createDirectories(output.getParent());
+        String report = "# Trait Projection Performance Report\n\n"
+                + "1. **Scoring method used:** Vectorized genome/ability dot-product projection with bounded LRU cache.\n"
+                + "2. **Cache hit rate:** " + String.format(Locale.ROOT, "%.2f%%", stats.cacheHitRate() * 100.0D) + "\n"
+                + "3. **Number of scored genomes:** " + stats.scoringCalls() + "\n"
+                + "4. **Estimated speed improvement:** " + String.format(Locale.ROOT, "%.2fx", stats.estimatedSpeedupX()) + "\n"
+                + "5. **Bottlenecks still remaining:** branch resolution and mutation phase still run per-artifact and dominate at high lineage counts.\n\n"
+                + "## Projection Metrics\n"
+                + "- Optimized scoring enabled: " + stats.optimizedEnabled() + "\n"
+                + "- Ability vectors loaded: " + stats.abilityVectorCount() + "\n"
+                + "- Trait vector dimensionality: " + stats.dimensions() + "\n"
+                + "- Cache size/capacity: " + stats.cacheSize() + "/" + stats.cacheCapacity() + "\n"
+                + "- Cache hits: " + stats.cacheHits() + "\n"
+                + "- Cache misses: " + stats.cacheMisses() + "\n"
+                + "- Average scoring time: " + String.format(Locale.ROOT, "%.3f us", stats.averageScoringMicros()) + "\n";
+        Files.writeString(output, report);
     }
 
     private long deterministicSeed(int playerIndex, int artifactIndex) {

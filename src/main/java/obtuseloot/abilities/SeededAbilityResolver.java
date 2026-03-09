@@ -65,4 +65,8 @@ public class SeededAbilityResolver implements AbilityResolver {
                 + ", templates=" + generated.abilities().stream().map(AbilityDefinition::id).toList());
         return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), mutationResult.abilities());
     }
+
+    public TraitProjectionStats traitProjectionStats() {
+        return generator.traitProjectionStats();
+    }
 }

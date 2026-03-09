@@ -40,4 +40,11 @@ public class ItemAbilityManager {
     public Map<String, Integer> triggerCounts() {
         return Map.copyOf(triggerCounts);
     }
+
+    public TraitProjectionStats traitProjectionStats() {
+        if (resolver instanceof SeededAbilityResolver seeded) {
+            return seeded.traitProjectionStats();
+        }
+        return new TraitProjectionStats(false, 0, 0, 0, 0, 0, 0, 0, 0.0D, 1.0D);
+    }
 }

@@ -9,38 +9,38 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TraitInterferenceResolver {
+    private static final int DEFAULT_CACHE_SIZE = 25_000;
+
     private final Map<String, EnumMap<GenomeTrait, Double>> abilityWeights = new HashMap<>();
     private final TraitProjectionMatrix projectionMatrix = new TraitProjectionMatrix();
+    private final InteractionProjectionMatrix interactionMatrix = new InteractionProjectionMatrix();
     private final ProjectionCache projectionCache;
+    private final AtomicLong scoringCalls = new AtomicLong();
+    private final AtomicLong totalScoringNanos = new AtomicLong();
 
     public TraitInterferenceResolver(List<AbilityTemplate> templates) {
-        this(templates, 25_000);
+        this(templates, DEFAULT_CACHE_SIZE);
     }
 
     TraitInterferenceResolver(List<AbilityTemplate> templates, int cacheSize) {
-        this.projectionCache = new ProjectionCache(Math.max(1_000, cacheSize));
+        this.projectionCache = new ProjectionCache(cacheSize);
         registerDefaults(templates);
     }
 
     public List<AbilityTemplate> selectTop(List<AbilityTemplate> templates, ArtifactGenome genome, int picks) {
-        GenomeProjection genomeProjection = GenomeProjection.fromGenome(genome);
-        long bucketKey = projectionCache.bucketKey(genomeProjection);
-        Map<String, Double> cachedScores = projectionCache.get(bucketKey);
+        GenomeVector genomeVector = GenomeVector.fromGenome(genome);
+        ProjectionCacheKey key = ProjectionCacheKey.from(genomeVector, 0L);
+        Map<String, Double> scoreByAbility = projectionCache.get(key)
+                .map(GenomeProjection::abilityScores)
+                .orElseGet(() -> computeAndCacheProjection(key, genomeVector));
 
         List<ScoredTemplate> scored = new ArrayList<>(templates.size());
         for (AbilityTemplate template : templates) {
-            double score = cachedScores.getOrDefault(template.id(), scoreFromDotProduct(template, genomeProjection));
+            double score = scoreByAbility.getOrDefault(template.id(), 0.0D);
             scored.add(new ScoredTemplate(template, score));
-        }
-
-        if (cachedScores.isEmpty()) {
-            Map<String, Double> scoresToCache = new HashMap<>();
-            for (ScoredTemplate value : scored) {
-                scoresToCache.put(value.template.id(), value.score);
-            }
-            projectionCache.put(bucketKey, scoresToCache);
         }
 
         return scored.stream()
@@ -52,11 +52,36 @@ public class TraitInterferenceResolver {
     }
 
     public double score(AbilityTemplate template, ArtifactGenome genome) {
-        return scoreFromDotProduct(template, GenomeProjection.fromGenome(genome));
+        scoringCalls.incrementAndGet();
+        GenomeVector vector = GenomeVector.fromGenome(genome);
+        long start = System.nanoTime();
+        double finalScore = scoreForTemplate(template.id(), vector);
+        totalScoringNanos.addAndGet(System.nanoTime() - start);
+        return finalScore;
     }
 
     public Map<GenomeTrait, Double> weightsFor(AbilityTemplate template) {
         return Map.copyOf(abilityWeights.getOrDefault(template.id(), inferByFamily(template.family())));
+    }
+
+    public TraitProjectionStats statsSnapshot() {
+        long calls = Math.max(1L, scoringCalls.get());
+        double averageMicros = totalScoringNanos.get() / (double) calls / 1_000.0D;
+        long hits = projectionCache.hits();
+        long misses = projectionCache.misses();
+        double hitRate = (hits + misses) == 0 ? 0.0D : (double) hits / (hits + misses);
+        double estimatedSpeedup = 1.0D + (hitRate * 2.5D);
+        return new TraitProjectionStats(
+                true,
+                scoringCalls.get(),
+                hits,
+                misses,
+                projectionCache.size(),
+                projectionCache.capacity(),
+                projectionMatrix.abilityCount(),
+                projectionMatrix.dimensions(),
+                averageMicros,
+                estimatedSpeedup);
     }
 
     long cacheHits() {
@@ -67,13 +92,28 @@ public class TraitInterferenceResolver {
         return projectionCache.misses();
     }
 
-    private double scoreFromDotProduct(AbilityTemplate template, GenomeProjection genomeProjection) {
-        AbilityTraitVector abilityVector = projectionMatrix.forAbility(template.id());
-        if (abilityVector == null) {
-            abilityVector = AbilityTraitVector.fromWeights(weightsFor(template));
-            projectionMatrix.register(template.id(), abilityVector);
+    private Map<String, Double> computeAndCacheProjection(ProjectionCacheKey key, GenomeVector genomeVector) {
+        long start = System.nanoTime();
+        Map<String, Double> baseScores = projectionMatrix.scoreAll(genomeVector);
+        Map<String, Double> withInteractions = new HashMap<>(baseScores.size());
+        for (Map.Entry<String, Double> entry : baseScores.entrySet()) {
+            withInteractions.put(entry.getKey(), entry.getValue() + interactionMatrix.interactionScore(entry.getKey(), genomeVector));
         }
-        return genomeProjection.dot(abilityVector);
+        long elapsed = System.nanoTime() - start;
+        scoringCalls.incrementAndGet();
+        totalScoringNanos.addAndGet(elapsed);
+        projectionCache.put(new GenomeProjection(key, withInteractions, elapsed));
+        return withInteractions;
+    }
+
+    private double scoreForTemplate(String abilityId, GenomeVector genomeVector) {
+        AbilityTraitVector abilityVector = projectionMatrix.forAbility(abilityId);
+        if (abilityVector == null) {
+            return 0.0D;
+        }
+        double base = genomeVector.dot(abilityVector);
+        double interaction = interactionMatrix.interactionScore(abilityId, genomeVector);
+        return base + interaction;
     }
 
     private void registerDefaults(List<AbilityTemplate> templates) {
@@ -90,12 +130,11 @@ public class TraitInterferenceResolver {
         abilityWeights.put("chaos.spore", weights(GenomeTrait.CHAOS_AFFINITY, 0.80D, GenomeTrait.VOLATILITY, 0.46D, GenomeTrait.STABILITY, -0.40D));
         abilityWeights.put("chaos.paradox", weights(GenomeTrait.CHAOS_AFFINITY, 0.88D, GenomeTrait.RESONANCE, 0.30D, GenomeTrait.STABILITY, -0.30D));
 
-        // ensure we keep only registered templates
         Map<String, EnumMap<GenomeTrait, Double>> filtered = new HashMap<>();
         for (AbilityTemplate template : templates) {
             EnumMap<GenomeTrait, Double> templateWeights = abilityWeights.getOrDefault(template.id(), inferByFamily(template.family()));
             filtered.put(template.id(), templateWeights);
-            projectionMatrix.register(template.id(), AbilityTraitVector.fromWeights(templateWeights));
+            projectionMatrix.register(template.id(), AbilityTraitVector.fromWeights(template.id(), templateWeights));
         }
         abilityWeights.clear();
         abilityWeights.putAll(filtered);

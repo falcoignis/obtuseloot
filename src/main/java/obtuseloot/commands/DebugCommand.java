@@ -78,6 +78,7 @@ public class DebugCommand {
             case "ecosystem" -> ecosystem(sender, args);
             case "lineage" -> lineage(sender, label, args);
             case "genome" -> genome(sender, label, args);
+            case "projection" -> projection(sender, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -295,6 +296,27 @@ public class DebugCommand {
         for (var entry : matrix.topPairs(10)) {
             sender.sendMessage("§7- §f" + entry.getKey() + " §8=> §b" + entry.getValue());
         }
+        return true;
+    }
+
+    private boolean projection(CommandSender sender, String[] args) {
+        var stats = plugin.getItemAbilityManager().traitProjectionStats();
+        if (args.length >= 2 && "cache".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§dProjection cache size/capacity: §f" + stats.cacheSize() + "/" + stats.cacheCapacity());
+            sender.sendMessage("§7hits=§f" + stats.cacheHits() + " §7misses=§f" + stats.cacheMisses()
+                    + " §7hitRate=§f" + String.format(Locale.ROOT, "%.2f%%", stats.cacheHitRate() * 100.0D));
+            return true;
+        }
+        if (args.length >= 2 && "stats".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§dProjection stats: optimized=§f" + stats.optimizedEnabled()
+                    + " §7vectors=§f" + stats.abilityVectorCount() + " §7dims=§f" + stats.dimensions());
+            sender.sendMessage("§7scoringCalls=§f" + stats.scoringCalls() + " §7avgMicros=§f"
+                    + String.format(Locale.ROOT, "%.3f", stats.averageScoringMicros())
+                    + " §7speedup~=§f" + String.format(Locale.ROOT, "%.2fx", stats.estimatedSpeedupX()));
+            return true;
+        }
+        sender.sendMessage("§dProjection optimization: §f" + (stats.optimizedEnabled() ? "enabled" : "disabled"));
+        sender.sendMessage("§7Use /obtuseloot debug projection cache or /obtuseloot debug projection stats for details.");
         return true;
     }
 
@@ -948,6 +970,7 @@ public class DebugCommand {
                 "/" + label + " debug seed export [player]",
                 "/" + label + " debug seed import <seed> [player]",
                 "/" + label + " debug genome interactions",
+                "/" + label + " debug projection [cache|stats]",
                 "/" + label + " debug simulate help"
         );
         sender.sendMessage("§dObtuseLoot Debug Commands:");
