@@ -5,6 +5,10 @@ import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
 import obtuseloot.abilities.tree.AbilityEvolutionTree;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
+import obtuseloot.lineage.ArtifactLineage;
+import obtuseloot.lineage.LineageInfluenceResolver;
+import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import obtuseloot.reputation.ArtifactReputation;
@@ -17,10 +21,18 @@ public class SeededAbilityResolver implements AbilityResolver {
     private final AbilityMutationEngine mutationEngine = new AbilityMutationEngine();
     private final AbilityBranchResolver branchResolver = new AbilityBranchResolver();
     private final ArtifactMemoryEngine memoryEngine;
+    private final LineageRegistry lineageRegistry;
+    private final LineageInfluenceResolver lineageResolver;
 
-    public SeededAbilityResolver(AbilityRegistry registry, ArtifactMemoryEngine memoryEngine) {
-        this.generator = new ProceduralAbilityGenerator(registry);
+    public SeededAbilityResolver(AbilityRegistry registry,
+                                 ArtifactMemoryEngine memoryEngine,
+                                 ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
+                                 LineageRegistry lineageRegistry,
+                                 LineageInfluenceResolver lineageResolver) {
+        this.generator = new ProceduralAbilityGenerator(registry, ecosystemEngine, lineageRegistry, lineageResolver);
         this.memoryEngine = memoryEngine;
+        this.lineageRegistry = lineageRegistry;
+        this.lineageResolver = lineageResolver;
     }
 
     @Override
@@ -40,12 +52,14 @@ public class SeededAbilityResolver implements AbilityResolver {
         }
         AbilityMutationResult mutationResult = mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0);
         boolean mutated = !mutationResult.mutations().isEmpty();
+        ArtifactLineage lineage = lineageRegistry.assignLineage(artifact);
 
         artifact.setLastAbilityBranchPath(branchPath.toString());
         artifact.setLastMutationHistory(mutationResult.mutations().toString());
         artifact.setLastMemoryInfluence("pressure=" + memoryProfile.pressure() + ", chaos=" + memoryProfile.chaosWeight() + ", discipline=" + memoryProfile.disciplineWeight()
                 + ", aggression=" + memoryProfile.aggressionWeight() + ", survival=" + memoryProfile.survivalWeight() + ", mobility=" + memoryProfile.mobilityWeight()
                 + ", boss=" + memoryProfile.bossWeight() + ", trauma=" + memoryProfile.traumaWeight() + ", activeMutation=" + mutated
+                + ", lineageTraits=" + lineageResolver.traitSnapshot(lineage)
                 + ", templates=" + generated.abilities().stream().map(AbilityDefinition::id).toList());
         return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), mutationResult.abilities());
     }

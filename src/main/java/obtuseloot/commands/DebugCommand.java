@@ -72,6 +72,8 @@ public class DebugCommand {
             case "ability" -> ability(sender, label, args);
             case "memory" -> memory(sender, label, args);
             case "persistence" -> persistence(sender, label, args);
+            case "ecosystem" -> ecosystem(sender, args);
+            case "lineage" -> lineage(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -229,6 +231,32 @@ public class DebugCommand {
         for (String line : plugin.getLoreEngine().buildLoreLines(artifact, rep)) {
             sender.sendMessage("§7- §f" + line);
         }
+        return true;
+    }
+
+
+    private boolean ecosystem(CommandSender sender, String[] args) {
+        var snapshot = plugin.getEcosystemEngine().snapshot();
+        if (args.length >= 2 && "bias".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§dEcosystem bias: §f" + snapshot.get("bias"));
+            return true;
+        }
+        if (args.length >= 2 && "balance".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§dEcosystem balance weights: §f" + snapshot.get("balanceWeights"));
+            return true;
+        }
+        sender.sendMessage("§dEcosystem snapshot: §f" + snapshot);
+        return true;
+    }
+
+    private boolean lineage(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 1, "lineage");
+        if (target == null) return true;
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        var lineage = plugin.getLineageRegistry().assignLineage(artifact);
+        sender.sendMessage("§dLineage id=§f" + lineage.lineageId() + " §7generation=§f" + lineage.depth());
+        sender.sendMessage("§7traits=§f" + lineage.lineageTraits());
+        sender.sendMessage("§7ancestors=§f" + lineage.ancestors().stream().limit(8).toList());
         return true;
     }
 

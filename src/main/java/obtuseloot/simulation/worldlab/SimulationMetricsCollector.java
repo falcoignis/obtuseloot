@@ -24,6 +24,9 @@ public class SimulationMetricsCollector {
     private final Map<String, Integer> sessionLengths = new HashMap<>();
     private final List<Double> diversityTimeline = new ArrayList<>();
     private final List<Double> dominantFamilyTimeline = new ArrayList<>();
+    private final Map<String, Integer> lineageCounts = new HashMap<>();
+    private final Map<String, Integer> lineageDepth = new HashMap<>();
+    private int lineageExtinctions;
 
     private int bossEncounters;
     private int lowHealthSurvivals;
@@ -40,6 +43,8 @@ public class SimulationMetricsCollector {
         bump(driftAlignments, artifact.getDriftAlignment());
         bump(branchPaths, artifact.getLastAbilityBranchPath());
         bump(mutationCounts, artifact.getLastMutationHistory());
+        bump(lineageCounts, artifact.getLatentLineage());
+        lineageDepth.merge(artifact.getLatentLineage(), 1, Integer::sum);
         for (ArtifactMemoryEvent event : ArtifactMemoryEvent.values()) {
             if (artifact.getMemory().count(event) > 0) {
                 bump(memoryProfiles, event.name().toLowerCase());
@@ -107,6 +112,12 @@ public class SimulationMetricsCollector {
                 "low_health_survival_rate", rate(lowHealthSurvivals, Math.max(1, lowHealthMoments)),
                 "kill_chain_rate", rate(chainMoments, sessions)
         ));
+        root.put("lineage", Map.of(
+                "lineage_count", lineageCounts.size(),
+                "lineage_distribution", lineageCounts,
+                "lineage_depth_distribution", lineageDepth,
+                "lineage_extinction_rate", rate(lineageExtinctions, Math.max(1, lineageCounts.size()))
+        ));
         root.put("world", Map.of(
                 "diversity_index_over_time", diversityTimeline,
                 "branch_convergence_rate", 1.0D - Math.min(1.0D, shannon(branchPaths) / 4.0D),
@@ -127,6 +138,7 @@ public class SimulationMetricsCollector {
     public Map<String, Integer> memories() { return memoryProfiles; }
     public List<Double> diversityTimeline() { return diversityTimeline; }
     public List<Double> dominantFamilyTimeline() { return dominantFamilyTimeline; }
+    public Map<String, Integer> lineageCounts() { return lineageCounts; }
 
     private int sumValue(Map<String, Integer> map) {
         return map.values().stream().mapToInt(Integer::intValue).sum();

@@ -8,6 +8,9 @@ import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.commands.ObtuseLootCommand;
 import obtuseloot.config.RuntimeSettings;
+import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
+import obtuseloot.lineage.LineageInfluenceResolver;
+import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.evolution.ArchetypeResolver;
 import obtuseloot.evolution.EvolutionEngine;
@@ -39,6 +42,9 @@ public class ObtuseLoot extends JavaPlugin {
     private EngineScheduler engineScheduler;
     private ItemAbilityManager itemAbilityManager;
     private ArtifactMemoryEngine artifactMemoryEngine;
+    private ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
+    private LineageRegistry lineageRegistry;
+    private LineageInfluenceResolver lineageInfluenceResolver;
 
     @Override
     public void onEnable() {
@@ -64,7 +70,10 @@ public class ObtuseLoot extends JavaPlugin {
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
-        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine));
+        ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+        lineageRegistry = new LineageRegistry();
+        lineageInfluenceResolver = new LineageInfluenceResolver();
+        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver));
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
@@ -111,4 +120,6 @@ public class ObtuseLoot extends JavaPlugin {
     public EngineScheduler getEngineScheduler() { return engineScheduler; }
     public ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
     public ArtifactMemoryEngine getArtifactMemoryEngine() { return artifactMemoryEngine; }
+    public ArtifactEcosystemSelfBalancingEngine getEcosystemEngine() { return ecosystemEngine; }
+    public LineageRegistry getLineageRegistry() { return lineageRegistry; }
 }

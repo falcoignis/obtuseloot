@@ -9,12 +9,17 @@ import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.artifacts.ArtifactGenerator;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.drift.DriftEngine;
+import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
+import obtuseloot.ecosystem.WorldEcosystemProfile;
 import obtuseloot.evolution.ArchetypeResolver;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.fusion.FusionEngine;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
+import obtuseloot.lineage.LineageInfluenceResolver;
+import obtuseloot.lineage.LineageMutation;
+import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
 
 import java.io.IOException;
@@ -33,7 +38,10 @@ public class WorldSimulationHarness {
     private final AwakeningEngine awakeningEngine = new AwakeningEngine();
     private final FusionEngine fusionEngine = new FusionEngine();
     private final ArtifactMemoryEngine memoryEngine = new ArtifactMemoryEngine();
-    private final ProceduralAbilityGenerator abilityGenerator = new ProceduralAbilityGenerator(new AbilityRegistry());
+    private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+    private final LineageRegistry lineageRegistry = new LineageRegistry();
+    private final LineageInfluenceResolver lineageInfluenceResolver = new LineageInfluenceResolver();
+    private final ProceduralAbilityGenerator abilityGenerator = new ProceduralAbilityGenerator(new AbilityRegistry(), ecosystemEngine, lineageRegistry, lineageInfluenceResolver);
     private final AbilityMutationEngine mutationEngine = new AbilityMutationEngine();
     private final AbilityBranchResolver branchResolver = new AbilityBranchResolver();
 
@@ -138,8 +146,14 @@ public class WorldSimulationHarness {
         }
         boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
         boolean fused = fusionEngine.evaluateSimulation(agent.artifact(), rep);
-        if (awakened) memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
-        if (fused) memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FUSION);
+        if (awakened) {
+            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
+            if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("awakening", "precision", 0.01D));
+        }
+        if (fused) {
+            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FUSION);
+            if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("fusion", "survival", 0.01D));
+        }
 
         int stage = Math.max(1, Math.min(5, rep.getTotalScore() / 20));
         AbilityProfile abilityProfile = abilityGenerator.generate(agent.artifact(), stage, memory);
@@ -160,12 +174,30 @@ public class WorldSimulationHarness {
         Map<String, Object> data = metrics.asData();
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
         EcosystemHealthReport report = ai.evaluate(metrics.families(), metrics.branches(), metrics.mutations(), metrics.triggers(), metrics.mechanics(), metrics.memories());
+        WorldEcosystemProfile profile = new WorldEcosystemProfile(
+                dataRate(data, "ability", "memory_driven_ability_frequency"),
+                dataRate(data, "player", "kill_chain_rate"),
+                dataRate(data, "player", "boss_engagement_rate"),
+                1.0D - dataRate(data, "player", "low_health_survival_rate"),
+                1.0D - dataRate(data, "world", "dominant_family_rate"),
+                dataRate(data, "player", "boss_engagement_rate"),
+                dataRate(data, "ability", "memory_driven_ability_frequency"),
+                dataRate(data, "world", "dead_branch_rate"));
+        ecosystemEngine.evaluate(profile, report, metrics);
         WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
 
         Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
+        Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
+        Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
+        Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
+    }
+
+    private double dataRate(Map<String, Object> data, String section, String key) {
+        Object v = ((Map<?, ?>) data.get(section)).get(key);
+        return v instanceof Number n ? n.doubleValue() : 0.0D;
     }
 
     @SuppressWarnings("unchecked")

@@ -54,6 +54,16 @@ public class WorldSimulationReportBuilder {
         return sb.toString();
     }
 
+
+    public String lineageEvolutionMarkdown(Map<String, Object> data) {
+        Map<?, ?> lineage = (Map<?, ?>) data.get("lineage");
+        return "# Lineage Evolution\n\n"
+                + "- Lineage count: " + lineage.get("lineage_count") + "\n"
+                + "- Extinction rate: " + lineage.get("lineage_extinction_rate") + "\n"
+                + "- Distribution: `" + lineage.get("lineage_distribution") + "`\n"
+                + "- Depth: `" + lineage.get("lineage_depth_distribution") + "`\n";
+    }
+
     private Object world(Map<String, Object> data, String key) {
         return ((Map<?, ?>) data.get("world")).get(key);
     }
