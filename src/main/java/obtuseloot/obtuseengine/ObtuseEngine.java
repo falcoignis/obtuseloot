@@ -1,5 +1,10 @@
 package obtuseloot.obtuseengine;
 
+import obtuseloot.combat.CombatCore;
+import obtuseloot.events.EventCore;
+import obtuseloot.events.PlayerJoinLoadListener;
+import obtuseloot.events.PlayerStateCleanupListener;
+import obtuseloot.events.ReputationFeedListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -12,10 +17,11 @@ public class ObtuseEngine {
     }
 
     public void initialize() {
-        Bukkit.getPluginManager().registerEvents(new EventCore(), plugin);
+        Bukkit.getPluginManager().registerEvents(new ReputationFeedListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new CombatCore(), plugin);
+        Bukkit.getPluginManager().registerEvents(new EventCore(), plugin);
+        Bukkit.getPluginManager().registerEvents(new PlayerJoinLoadListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new PlayerStateCleanupListener(), plugin);
-
         plugin.getLogger().info("ObtuseEngine online.");
     }
 
