@@ -111,7 +111,7 @@ mvn -B -ntp clean package
 
 Output jar:
 ```text
-target/obtuseloot-0.9.0.jar
+target/ObtuseLoot-0.9.2.jar
 ```
 
 ### Build Troubleshooting
@@ -254,3 +254,26 @@ This project includes a repository `LICENSE` file.
 - `/obtuseloot debug simulate cycle [player]`
 - `/obtuseloot debug simulate resetcontext [player]`
 - `/obtuseloot debug seed show|reroll|set|export|import [args]`
+
+
+## Internal Testing Repository Layout
+
+- `analytics/` generated reports (`evolution/`, `population/`, `meta/`, `review/`, `world-lab/`, `failure-reports/`).
+- `simulation/` harness scaffolds (`gameplay-simulator/`, `chaos-tests/`, `population-simulator/`, `world-simulation-lab/`).
+- `releases/` release records (`v0.9.2/`, `nightly/`).
+- `scripts/` automation entrypoints for build and analytics.
+- `codex/` local orchestration utilities used by scripts.
+
+## Analytics + Simulation Pipeline
+
+Run in order:
+
+```bash
+./scripts/build.sh clean package
+./scripts/run-chaos-tests.sh
+./scripts/run-population-simulation.sh
+./scripts/run-meta-analysis.sh
+./scripts/run-world-simulation.sh
+```
+
+The pipeline writes deterministic report artifacts under `analytics/` and keeps binary plugin JAR output in `target/` only.
