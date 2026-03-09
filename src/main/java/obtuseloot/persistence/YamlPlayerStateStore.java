@@ -1,6 +1,8 @@
 package obtuseloot.persistence;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactSeedFactory;
+import obtuseloot.names.ArtifactNameGenerator;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -13,6 +15,7 @@ import java.util.UUID;
 
 public class YamlPlayerStateStore implements PlayerStateStore {
     private final File playerDataDir;
+    private final ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
 
     public YamlPlayerStateStore(Plugin plugin) {
         this.playerDataDir = new File(plugin.getDataFolder(), "playerdata");
@@ -26,6 +29,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         YamlConfiguration yaml = load(playerId);
         String base = "artifact.";
         yaml.set(base + "owner-id", artifact.getOwnerId().toString());
+        yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
         yaml.set(base + "generated-name", artifact.getGeneratedName());
         yaml.set(base + "archetype-path", artifact.getArchetypePath());
         yaml.set(base + "evolution-path", artifact.getEvolutionPath());
@@ -60,7 +64,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         if (!yaml.isConfigurationSection("artifact")) {
             return null;
         }
-        Artifact artifact = new Artifact(playerId, yaml.getString("artifact.generated-name", "Nameless Relic"));
+        Artifact artifact = new Artifact(playerId, "");
         artifact.setOwnerId(UUID.fromString(yaml.getString("artifact.owner-id", playerId.toString())));
         artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
         artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
@@ -68,17 +72,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setFusionPath(yaml.getString("artifact.fusion-path", "none"));
         artifact.setDriftLevel(yaml.getInt("artifact.drift-level", 0));
         artifact.setTotalDrifts(yaml.getInt("artifact.total-drifts", 0));
-        artifact.setDriftAlignment(yaml.getString("artifact.drift-alignment", "stable"));
         artifact.setLastDriftTimestamp(yaml.getLong("artifact.last-drift-timestamp", 0L));
-        artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", "common"));
         artifact.setInstabilityState(yaml.getString("artifact.current-instability-state", "none"), yaml.getLong("artifact.instability-expiry", 0L));
 
-        artifact.setSeedPrecisionAffinity(yaml.getDouble("artifact.seed-affinities.precision", 0));
-        artifact.setSeedBrutalityAffinity(yaml.getDouble("artifact.seed-affinities.brutality", 0));
-        artifact.setSeedSurvivalAffinity(yaml.getDouble("artifact.seed-affinities.survival", 0));
-        artifact.setSeedMobilityAffinity(yaml.getDouble("artifact.seed-affinities.mobility", 0));
-        artifact.setSeedChaosAffinity(yaml.getDouble("artifact.seed-affinities.chaos", 0));
-        artifact.setSeedConsistencyAffinity(yaml.getDouble("artifact.seed-affinities.consistency", 0));
+        long artifactSeed = yaml.getLong("artifact.artifact-seed", 0L);
+        artifact.setArtifactSeed(artifactSeed);
+        seedFactory.applySeedProfile(artifact, artifactSeed);
+        artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(artifactSeed));
 
         readStatMap(yaml, "artifact.drift-bias", artifact.getDriftBiasAdjustments());
         readStatMap(yaml, "artifact.awakening-bias", artifact.getAwakeningBiasAdjustments());

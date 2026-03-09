@@ -9,12 +9,13 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
     private static final List<String> SIMULATE = List.of("hit", "move", "lowhp", "kill", "multikill", "bosses", "chaos", "cycle", "resetcontext", "help", "path");
     private static final List<String> SIM_PATHS = List.of("precision", "brutality", "mobility", "survival", "chaos", "boss", "hybrid", "awaken", "drift");
+    private static final List<String> SEED_ACTIONS = List.of("show", "reroll", "set", "export", "import");
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 2) {
@@ -46,6 +47,9 @@ public class DebugTabCompleter {
         if (args.length == 4 && "simulate".equalsIgnoreCase(args[1]) && "path".equalsIgnoreCase(args[2])) {
             return filter(SIM_PATHS, args[3]);
         }
+        if (args.length == 3 && "seed".equalsIgnoreCase(args[1])) {
+            return filter(SEED_ACTIONS, args[2]);
+        }
 
         if (expectsPlayer(args)) {
             return filter(onlinePlayers(), args[args.length - 1]);
@@ -59,16 +63,22 @@ public class DebugTabCompleter {
             return false;
         }
         String sub = args[1].toLowerCase(Locale.ROOT);
-        return (args.length == 3 && List.of("inspect", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save").contains(sub))
+        boolean base = (args.length == 3 && List.of("inspect", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save").contains(sub))
                 || (args.length == 4 && "rep".equals(sub) && "reset".equalsIgnoreCase(args[2]))
                 || (args.length == 5 && "rep".equals(sub) && ("set".equalsIgnoreCase(args[2]) || "add".equalsIgnoreCase(args[2])))
                 || (args.length == 4 && "instability".equals(sub) && "clear".equalsIgnoreCase(args[2]))
                 || (args.length == 5 && "archetype".equals(sub) && "set".equalsIgnoreCase(args[2]))
-                || (args.length == 5 && "path".equals(sub) && "set".equalsIgnoreCase(args[2]))
-                || ("simulate".equals(sub) && (
-                        (args.length == 4 && List.of("lowhp", "kill", "chaos", "cycle", "resetcontext").contains(args[2].toLowerCase(Locale.ROOT)))
-                                || (args.length == 5 && List.of("hit", "move", "multikill", "bosses", "path").contains(args[2].toLowerCase(Locale.ROOT)))
-                ));
+                || (args.length == 5 && "path".equals(sub) && "set".equalsIgnoreCase(args[2]));
+
+        boolean seed = "seed".equals(sub)
+                && ((args.length == 4 && List.of("show", "reroll", "export").contains(args[2].toLowerCase(Locale.ROOT)))
+                || (args.length == 5 && List.of("set", "import").contains(args[2].toLowerCase(Locale.ROOT))));
+
+        boolean simulate = "simulate".equals(sub)
+                && ((args.length == 4 && List.of("lowhp", "kill", "chaos", "cycle", "resetcontext").contains(args[2].toLowerCase(Locale.ROOT)))
+                || (args.length == 5 && List.of("hit", "move", "multikill", "bosses", "path").contains(args[2].toLowerCase(Locale.ROOT))));
+
+        return base || seed || simulate;
     }
 
     private List<String> onlinePlayers() {

@@ -19,7 +19,14 @@ public final class ArtifactNameGenerator {
         Random random = settings.namingUseDeterministicOwnerSeed()
                 ? new Random(Math.abs(ownerId.getMostSignificantBits() ^ ownerId.getLeastSignificantBits()))
                 : ThreadLocalRandom.current();
+        return generateWithRandom(random, settings);
+    }
 
+    public static String generateFromSeed(long artifactSeed) {
+        return generateWithRandom(new Random(artifactSeed ^ 0x9E3779B97F4A7C15L), RuntimeSettings.get());
+    }
+
+    private static String generateWithRandom(Random random, RuntimeSettings.Snapshot settings) {
         List<String> prefixes = NamePoolManager.prefixes();
         List<String> suffixes = NamePoolManager.suffixes();
         List<String> generic = NamePoolManager.generic();
