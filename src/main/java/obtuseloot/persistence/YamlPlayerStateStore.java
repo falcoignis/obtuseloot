@@ -79,6 +79,8 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setArtifactSeed(artifactSeed);
         seedFactory.applySeedProfile(artifact, artifactSeed);
         artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(artifactSeed));
+        artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", artifact.getLatentLineage()));
+        artifact.setDriftAlignment(yaml.getString("artifact.drift-alignment", artifact.getDriftAlignment()));
 
         readStatMap(yaml, "artifact.drift-bias", artifact.getDriftBiasAdjustments());
         readStatMap(yaml, "artifact.awakening-bias", artifact.getAwakeningBiasAdjustments());

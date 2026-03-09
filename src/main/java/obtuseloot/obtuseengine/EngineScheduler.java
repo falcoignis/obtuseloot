@@ -28,8 +28,24 @@ public class EngineScheduler {
         this.combatContextManager = combatContextManager;
     }
 
-    public void startAll() { startAutosaveTask(); startDecayTask(); startCombatCleanupTask(); startInstabilityCleanupTask(); }
-    public void stopAll() { if (autosaveTask != null) autosaveTask.cancel(); if (decayTask != null) decayTask.cancel(); if (combatCleanupTask != null) combatCleanupTask.cancel(); if (instabilityCleanupTask != null) instabilityCleanupTask.cancel(); }
+    public void startAll() {
+        stopAll();
+        startAutosaveTask();
+        startDecayTask();
+        startCombatCleanupTask();
+        startInstabilityCleanupTask();
+    }
+
+    public void stopAll() {
+        cancelTask(autosaveTask);
+        cancelTask(decayTask);
+        cancelTask(combatCleanupTask);
+        cancelTask(instabilityCleanupTask);
+        autosaveTask = null;
+        decayTask = null;
+        combatCleanupTask = null;
+        instabilityCleanupTask = null;
+    }
 
     public void startAutosaveTask() {
         long ticks = RuntimeSettings.get().autosaveIntervalSeconds() * 20L;
@@ -57,11 +73,16 @@ public class EngineScheduler {
         instabilityCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             for (Artifact artifact : artifactManager.getLoadedArtifacts().values()) {
-                if (artifact.isInstabilityExpired(now)) {
+                if (artifact != null && artifact.isInstabilityExpired(now)) {
                     artifact.clearInstability();
                     artifact.addLoreHistory("Instability faded.");
                 }
             }
         }, 100L, 100L);
+    }
+    private void cancelTask(BukkitTask task) {
+        if (task != null) {
+            task.cancel();
+        }
     }
 }

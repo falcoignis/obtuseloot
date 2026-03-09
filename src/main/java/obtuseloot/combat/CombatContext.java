@@ -35,8 +35,11 @@ public class CombatContext {
         recentMovementDistance = 0D;
         recentTargets.clear();
         recentKillTimestamps.clear();
+        lastWeaponCategory = "unknown";
         lowHealthFlag = false;
         lowHealthEnteredAt = 0L;
+        lastKnownHealth = 20.0D;
+        lastMovementTimestamp = 0L;
     }
 
     public long getLastCombatTimestamp() { return lastCombatTimestamp; }

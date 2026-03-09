@@ -1,5 +1,5 @@
 name:        ObtuseLoot
-version:     0.9.0
+version:     0.9.1
 main:        obtuseloot.ObtuseLoot
 description: Persistent artifact progression with evolution, awakening, and drift.
 authors:     [ falcoignis ]
@@ -17,7 +17,8 @@ commands:
       /<command> reset [player]
       /<command> reload
       /<command> debug help
-      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|save
+      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|save|seed
+      /<command> debug seed show|reroll|set|export|import
       /<command> debug simulate help
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
@@ -32,12 +33,7 @@ permissions:
       obtuseloot.admin:            true
       obtuseloot.help:             true
       obtuseloot.info:             true
-      obtuseloot.give:             true
-      obtuseloot.givesoul:         true
-      obtuseloot.convert:          true
       obtuseloot.inspect:          true
-      obtuseloot.clearitem:        true
-      obtuseloot.clearinventory:   true
       obtuseloot.edit:             true
       obtuseloot.debug:            true
 
@@ -53,28 +49,8 @@ permissions:
     description: Allows /ol reload, /ol refresh, and /ol reset — server-side administrative control.
     default:     op
 
-  obtuseloot.give:
-    description: Allows /ol give — generate and give a random artifact.
-    default:     op
-
-  obtuseloot.givesoul:
-    description: Allows /ol givesoul — give an artifact with a specific soul.
-    default:     op
-
-  obtuseloot.convert:
-    description: Allows /ol convert — stamp ObtuseLoot metadata onto a held item.
-    default:     op
-
   obtuseloot.inspect:
     description: Allows /ol inspect and findartifacts — view souls a player is wearing and scan their inventory.
-    default:     op
-
-  obtuseloot.clearitem:
-    description: Allows /ol clearitem — strip all ObtuseLoot data from a single held item.
-    default:     op
-
-  obtuseloot.clearinventory:
-    description: Allows /ol clearinventory — strip ObtuseLoot data from every item in a player's inventory. More destructive than clearitem; granted separately.
     default:     op
 
   obtuseloot.edit:

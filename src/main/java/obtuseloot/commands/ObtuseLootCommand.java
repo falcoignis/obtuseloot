@@ -54,7 +54,9 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " reload §8- §fReload config-driven runtime settings and name pools §8["
                     + PERMISSION_ADMIN + "]");
-            sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite §8[obtuseloot.debug]");
+            sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite (seed + simulate tooling) §8[obtuseloot.debug]");
+            sender.sendMessage("§7/" + label + " debug seed show|reroll|set|export|import §8- §fDeterministic seed controls §8[obtuseloot.debug]");
+            sender.sendMessage("§7/" + label + " debug simulate help §8- §fSimulation scenarios and path profiles §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " addname <pool> <value> §8- §fAdd a name entry to a pool (prefixes/suffixes/generic) §8["
                     + PERMISSION_EDIT + "]");
             sender.sendMessage("§7/" + label + " removename <pool> <value> §8- §fRemove a name entry from a pool §8["
