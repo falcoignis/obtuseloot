@@ -8,17 +8,52 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class InteractionHeatmapExporter {
-    public record ExportResult(Path heatmapPath, Path matrixCsvPath) {}
+    public record ExportResult(Path heatmapPath, Path matrixCsvPath, Path matrixJsonPath) {}
+
+    public ExportResult export(TraitCorrelationMatrix matrix,
+                               Path heatmapPath,
+                               Path matrixCsvPath,
+                               Path matrixJsonPath) throws IOException {
+        writeCsv(matrix, matrixCsvPath);
+        writeJson(matrix, matrixJsonPath);
+        writeHeatmap(matrix, heatmapPath);
+        return new ExportResult(heatmapPath, matrixCsvPath, matrixJsonPath);
+    }
 
     public ExportResult export(TraitCorrelationMatrix matrix,
                                Path heatmapPath,
                                Path matrixCsvPath) throws IOException {
-        writeCsv(matrix, matrixCsvPath);
-        writeHeatmap(matrix, heatmapPath);
-        return new ExportResult(heatmapPath, matrixCsvPath);
+        Path jsonPath = matrixCsvPath.resolveSibling(matrixCsvPath.getFileName().toString().replace(".csv", ".json"));
+        return export(matrix, heatmapPath, matrixCsvPath, jsonPath);
+    }
+
+    private void writeJson(TraitCorrelationMatrix matrix, Path output) throws IOException {
+        Files.createDirectories(output.getParent());
+        StringBuilder json = new StringBuilder();
+        json.append("{\n  \"sampleSize\": ").append(matrix.sampleSize()).append(",\n  \"traits\": [");
+        List<String> traits = new ArrayList<>(matrix.traits());
+        for (int i = 0; i < traits.size(); i++) {
+            if (i > 0) json.append(',');
+            json.append("\"").append(traits.get(i)).append("\"");
+        }
+        json.append("],\n  \"matrix\": {\n");
+        int rowIndex = 0;
+        for (Map.Entry<String, Map<String, Integer>> row : matrix.asMap().entrySet()) {
+            if (rowIndex++ > 0) json.append(",\n");
+            json.append("    \"").append(row.getKey()).append("\": {");
+            int colIndex = 0;
+            for (Map.Entry<String, Integer> col : row.getValue().entrySet()) {
+                if (colIndex++ > 0) json.append(',');
+                json.append("\"").append(col.getKey()).append("\": ").append(col.getValue());
+            }
+            json.append('}');
+        }
+        json.append("\n  }\n}\n");
+        Files.writeString(output, json.toString());
     }
 
     private void writeCsv(TraitCorrelationMatrix matrix, Path output) throws IOException {
@@ -44,8 +79,8 @@ public class InteractionHeatmapExporter {
         Set<String> traitSet = matrix.traits();
         List<String> traits = new ArrayList<>(traitSet);
         int n = Math.max(1, traits.size());
-        int cell = 24;
-        int left = 280;
+        int cell = 36;
+        int left = 260;
         int top = 110;
         int width = left + (n * cell) + 80;
         int height = top + (n * cell) + 80;
@@ -61,7 +96,7 @@ public class InteractionHeatmapExporter {
         g.setFont(new Font("SansSerif", Font.BOLD, 20));
         g.drawString("Trait Interaction Heatmap", 24, 36);
         g.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        g.drawString("Color intensity represents pair frequency", 24, 58);
+        g.drawString("Co-occurrence frequency across genomes, lineages, and expressions", 24, 58);
 
         for (int row = 0; row < n; row++) {
             for (int col = 0; col < n; col++) {
@@ -82,11 +117,11 @@ public class InteractionHeatmapExporter {
         g.setFont(new Font("SansSerif", Font.PLAIN, 11));
         g.setColor(new Color(65, 65, 65));
         for (int i = 0; i < n; i++) {
-            int y = top + (i * cell) + 16;
+            int y = top + (i * cell) + 20;
             g.drawString(traits.get(i), 12, y);
 
             Graphics2D gx = (Graphics2D) g.create();
-            gx.translate(left + (i * cell) + 15, top - 8);
+            gx.translate(left + (i * cell) + 20, top - 8);
             gx.rotate(-Math.PI / 3);
             gx.drawString(traits.get(i), 0, 0);
             gx.dispose();

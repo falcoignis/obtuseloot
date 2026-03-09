@@ -21,7 +21,7 @@ commands:
       /<command> debug seed show|reroll|set|export|import
       /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
       /<command> dashboard
-      /<command> ecosystem [health]
+      /<command> ecosystem [health|dashboard]
       /<command> ecosystem map [lineage|species|collapse]
       /<command> ecosystem map genome <trait>
       /<command> ecosystem map off

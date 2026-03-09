@@ -1,0 +1,10 @@
+trait,chaosaffinity,kineticbias,mobilityaffinity,mutationsensitivity,precisionaffinity,resonance,stability,survivalinstinct,volatility
+chaosaffinity,331,141,160,142,150,142,154,151,148
+kineticbias,141,315,133,145,157,126,141,137,153
+mobilityaffinity,160,133,322,135,160,139,142,148,148
+mutationsensitivity,142,145,135,320,153,149,146,143,156
+precisionaffinity,150,157,160,153,323,145,138,148,157
+resonance,142,126,139,149,145,311,133,141,134
+stability,154,141,142,146,138,133,319,144,149
+survivalinstinct,151,137,148,143,148,141,144,323,132
+volatility,148,153,148,156,157,134,149,132,326

@@ -9,6 +9,8 @@ import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.dashboard.DashboardService;
+import obtuseloot.analytics.TraitInteractionReportWriter;
 import obtuseloot.artifacts.ArtifactSeedFactory;
 import obtuseloot.names.ArtifactNameGenerator;
 import obtuseloot.awakening.AwakeningEngine;
@@ -223,8 +225,11 @@ public class WorldSimulationHarness {
         new InteractionHeatmapExporter().export(
                 matrix,
                 seasonDir.resolve("trait-interaction-heatmap.png"),
-                seasonDir.resolve("trait-interaction-matrix.csv")
+                seasonDir.resolve("trait-interaction-matrix.csv"),
+                seasonDir.resolve("trait-interaction-matrix.json")
         );
+        DashboardService dashboardService = new DashboardService(Path.of("analytics"));
+        dashboardService.generateSeasonDashboard(season);
     }
 
     private void writeReports() throws IOException {
@@ -261,12 +266,19 @@ public class WorldSimulationHarness {
             }
         }
         TraitInteractionAnalyzer interactionAnalyzer = new TraitInteractionAnalyzer();
-        var matrix = interactionAnalyzer.analyze(allArtifacts, lineageRegistry.lineages().values());
+        var matrix = interactionAnalyzer.analyze(allArtifacts, lineageRegistry.lineages().values(), seasonalSnapshots);
         new InteractionHeatmapExporter().export(
                 matrix,
                 Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
-                Path.of("analytics/visualizations/trait-interaction-matrix.csv")
+                Path.of("analytics/visualizations/trait-interaction-matrix.csv"),
+                Path.of("analytics/visualizations/trait-interaction-matrix.json")
         );
+        new TraitInteractionReportWriter().write(Path.of("analytics/trait-interaction-report.md"), matrix);
+        DashboardService dashboardService = new DashboardService(Path.of("analytics"));
+        dashboardService.regenerateDashboard();
+        dashboardService.generateSeasonDashboard(1);
+        dashboardService.generateSeasonDashboard(2);
+        dashboardService.generateSeasonDashboard(3);
 
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
