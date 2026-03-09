@@ -6,6 +6,9 @@ import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
 import obtuseloot.analytics.ArtifactEcosystemBalancingAI;
 import obtuseloot.analytics.EcosystemHealthReport;
+import obtuseloot.analytics.InteractionHeatmapExporter;
+import obtuseloot.analytics.TraitInteractionAnalyzer;
+import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactGenerator;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.drift.DriftEngine;
@@ -32,6 +35,7 @@ public class WorldSimulationHarness {
     private final Random random;
     private final SimulationClock clock = new SimulationClock();
     private final SimulationMetricsCollector metrics = new SimulationMetricsCollector();
+    private List<SimulatedPlayer> latestPlayers = List.of();
 
     private final EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
     private final DriftEngine driftEngine = new DriftEngine();
@@ -52,12 +56,14 @@ public class WorldSimulationHarness {
 
     public void runAndWriteOutputs() throws IOException {
         List<SimulatedPlayer> players = generatePlayers();
+        latestPlayers = players;
         for (int season = 1; season <= config.seasonCount(); season++) {
             for (int s = 0; s < config.sessionsPerSeason(); s++) {
                 simulateRound(players);
                 clock.advanceDay();
             }
             metrics.closeSeasonSnapshot();
+            exportSeasonInteractionHeatmap(players, season);
         }
         writeReports();
     }
@@ -168,6 +174,24 @@ public class WorldSimulationHarness {
         metrics.recordAbilityProfile(agent.abilityProfile());
     }
 
+
+    private void exportSeasonInteractionHeatmap(List<SimulatedPlayer> players, int season) throws IOException {
+        List<Artifact> artifacts = new ArrayList<>();
+        for (SimulatedPlayer player : players) {
+            for (SimulatedArtifactAgent agent : player.artifacts()) {
+                artifacts.add(agent.artifact());
+            }
+        }
+        TraitInteractionAnalyzer analyzer = new TraitInteractionAnalyzer();
+        var matrix = analyzer.analyze(artifacts, lineageRegistry.lineages().values());
+        Path seasonDir = Path.of("analytics/visualizations/seasons", "season-" + season);
+        new InteractionHeatmapExporter().export(
+                matrix,
+                seasonDir.resolve("trait-interaction-heatmap.png"),
+                seasonDir.resolve("trait-interaction-matrix.csv")
+        );
+    }
+
     private void writeReports() throws IOException {
         Path out = Path.of(config.outputDirectory());
         Files.createDirectories(out);
@@ -190,6 +214,21 @@ public class WorldSimulationHarness {
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
+
+        List<Artifact> allArtifacts = new ArrayList<>();
+        for (SimulatedPlayer player : latestPlayers) {
+            for (SimulatedArtifactAgent agent : player.artifacts()) {
+                allArtifacts.add(agent.artifact());
+            }
+        }
+        TraitInteractionAnalyzer interactionAnalyzer = new TraitInteractionAnalyzer();
+        var matrix = interactionAnalyzer.analyze(allArtifacts, lineageRegistry.lineages().values());
+        new InteractionHeatmapExporter().export(
+                matrix,
+                Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
+                Path.of("analytics/visualizations/trait-interaction-matrix.csv")
+        );
+
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
