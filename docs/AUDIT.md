@@ -151,3 +151,19 @@ Additional loose/unwired code remediation completed:
 3. Added pool-aware tab completion and per-pool permission enforcement (`obtuseloot.edit.<pool>` with umbrella `obtuseloot.edit`).
 4. Updated `plugin.yml` command usage and permission tree to include `obtuseloot.edit.generic` and remove stale children.
 5. Updated `README.md` command reference to document new subcommands.
+
+## 2026-03-09 compile failure root-cause audit
+
+### Checks run
+1. `JAVA_HOME=/root/.local/share/mise/installs/java/17.0.2 mvn -B -ntp clean package`
+2. `JAVA_HOME=/root/.local/share/mise/installs/java/21.0.2 mvn -B -ntp clean package`
+
+### Root cause
+- The project is intentionally configured for Java 21 (`<release>21</release>`), so builds fail when Maven runs on JDK 17 or older with `release version 21 not supported`.
+
+### Remediation implemented
+1. Added Maven Enforcer rule to fail fast with explicit guidance when Java < 21 is used.
+2. Added README troubleshooting section with `JAVA_HOME` fix steps.
+
+### Result
+- Build now reports a clear, actionable error under JDK 17 and succeeds under JDK 21+.

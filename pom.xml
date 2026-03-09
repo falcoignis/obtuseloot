@@ -65,6 +65,36 @@
 
         <plugins>
             <!--
+              maven-enforcer-plugin — fail fast with a clear message when the
+              local JDK is too old to compile Java 21 bytecode.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[21,)</version>
+                                    <message>
+                                        ObtuseLoot requires JDK 21+ for builds. Current runtime is too old.
+                                        Set JAVA_HOME to a JDK 21+ installation and rerun Maven.
+                                    </message>
+                                </requireJavaVersion>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
               maven-compiler-plugin — compile to Java 21 with full records,
               sealed classes, and switch expressions support (all used by this plugin).
             -->

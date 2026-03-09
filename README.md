@@ -111,7 +111,20 @@ mvn -B -ntp clean package
 
 Output jar:
 ```text
-target/obtuseloot-1.0.1.jar
+target/obtuseloot-0.9.0.jar
+```
+
+### Build Troubleshooting
+If you see this Maven error:
+```text
+Fatal error compiling: error: release version 21 not supported
+```
+Your `JAVA_HOME` points to an older JDK (commonly 17). Switch to JDK 21+ and rebuild:
+```bash
+export JAVA_HOME=/path/to/jdk-21
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+mvn -B -ntp clean package
 ```
 
 ### Install on Server
