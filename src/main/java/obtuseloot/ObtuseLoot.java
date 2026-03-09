@@ -6,7 +6,10 @@ import obtuseloot.abilities.ItemAbilityManager;
 import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
+import obtuseloot.commands.DashboardCommandExecutor;
 import obtuseloot.commands.ObtuseLootCommand;
+import obtuseloot.dashboard.DashboardService;
+import obtuseloot.dashboard.DashboardWebServer;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.lineage.LineageInfluenceResolver;
@@ -50,6 +53,8 @@ public class ObtuseLoot extends JavaPlugin {
     private LineageInfluenceResolver lineageInfluenceResolver;
     private ArtifactUsageTracker artifactUsageTracker;
     private ExperienceEvolutionEngine experienceEvolutionEngine;
+    private DashboardService dashboardService;
+    private DashboardWebServer dashboardWebServer;
 
     @Override
     public void onEnable() {
@@ -84,10 +89,22 @@ public class ObtuseLoot extends JavaPlugin {
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
+        dashboardService = new DashboardService(java.nio.file.Path.of("analytics"));
+        int dashboardPort = getConfig().getInt("dashboard.port", 8085);
+        dashboardWebServer = new DashboardWebServer(dashboardService.dashboardRoot(), dashboardPort);
+        try {
+            dashboardService.regenerateDashboard();
+            dashboardWebServer.start();
+            getLogger().info("[Dashboard] Serving ecosystem dashboard at http://localhost:" + dashboardPort + "/ecosystem-dashboard.html");
+        } catch (Exception exception) {
+            getLogger().warning("[Dashboard] Failed to start dashboard web server: " + exception.getMessage());
+        }
+
         if (getCommand("obtuseloot") != null) {
             ObtuseLootCommand command = new ObtuseLootCommand(this);
-            getCommand("obtuseloot").setExecutor(command);
-            getCommand("obtuseloot").setTabCompleter(command);
+            DashboardCommandExecutor dashboardCommandExecutor = new DashboardCommandExecutor(this, command, dashboardService, dashboardWebServer);
+            getCommand("obtuseloot").setExecutor(dashboardCommandExecutor);
+            getCommand("obtuseloot").setTabCompleter(dashboardCommandExecutor);
         }
 
         engine = new ObtuseEngine(this);
@@ -112,6 +129,9 @@ public class ObtuseLoot extends JavaPlugin {
         if (engine != null) {
             engine.shutdown();
         }
+        if (dashboardWebServer != null) {
+            dashboardWebServer.stop();
+        }
     }
 
     public static ObtuseLoot get() { return instance; }
@@ -130,4 +150,5 @@ public class ObtuseLoot extends JavaPlugin {
     public ArtifactEcosystemSelfBalancingEngine getEcosystemEngine() { return ecosystemEngine; }
     public LineageRegistry getLineageRegistry() { return lineageRegistry; }
     public ArtifactUsageTracker getArtifactUsageTracker() { return artifactUsageTracker; }
+    public DashboardService getDashboardService() { return dashboardService; }
 }

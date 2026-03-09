@@ -20,6 +20,9 @@ commands:
       /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate
       /<command> debug seed show|reroll|set|export|import
       /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
+      /<command> dashboard
+      /<command> ecosystem [health]
+      /<command> debug dashboard
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
     aliases:      [ ol ]
