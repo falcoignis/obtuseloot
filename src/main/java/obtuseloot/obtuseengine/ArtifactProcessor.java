@@ -20,8 +20,8 @@ public final class ArtifactProcessor {
 
     public static void processKill(Player player) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().getReputation(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreateArtifact(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
         String oldArchetype = artifact.getArchetypePath();
@@ -51,8 +51,8 @@ public final class ArtifactProcessor {
 
     public static void processCombat(Player player, EntityDamageByEntityEvent event) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().getReputation(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreateArtifact(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
         context.markCombat();
@@ -83,14 +83,7 @@ public final class ArtifactProcessor {
     public static void applyContextKillBonuses(Player player, CombatContext context, ArtifactReputation rep, Artifact artifact) {
         if (context.getRecentMovementDistance() >= RuntimeSettings.get().mobilityDistanceThreshold()) {
             applyReputationGainWithAwakening(artifact, rep, "mobility");
-        }
-
-        if (context.isLowHealthFlag() || player.getHealth() <= RuntimeSettings.get().lowHealthThreshold()) {
-            applyReputationGainWithAwakening(artifact, rep, "survival");
-        }
-
-        if (rep.getRecentKillChain() >= 2 || context.getRecentTargets().size() >= RuntimeSettings.get().multiTargetChaosThreshold()) {
-            applyReputationGainWithAwakening(artifact, rep, "chaos");
+            context.consumeMovement(RuntimeSettings.get().mobilityDistanceThreshold());
         }
     }
 

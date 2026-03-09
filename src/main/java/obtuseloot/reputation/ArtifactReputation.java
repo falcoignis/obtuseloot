@@ -21,7 +21,7 @@ public class ArtifactReputation {
     public void recordChaos() { chaos++; }
     public void recordConsistency() { consistency++; }
     public void recordKill() { kills++; lastKillTimestamp = System.currentTimeMillis(); }
-    public void recordBossKill() { bossKills++; recordKill(); }
+    public void recordBossKill() { bossKills++; }
     public void recordKillChain(int chainSize) { recentKillChain = Math.max(recentKillChain, chainSize); }
 
     public void decayVolatileStats(double factor) {

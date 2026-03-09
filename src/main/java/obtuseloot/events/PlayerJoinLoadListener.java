@@ -13,8 +13,8 @@ public class PlayerJoinLoadListener implements Listener {
         ObtuseLoot plugin = ObtuseLoot.get();
         var playerId = event.getPlayer().getUniqueId();
 
-        Artifact artifact = plugin.getArtifactManager().getOrCreateArtifact(playerId);
-        ArtifactReputation reputation = plugin.getReputationManager().getReputation(playerId);
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(playerId);
+        ArtifactReputation reputation = plugin.getReputationManager().get(playerId);
         plugin.getLoreEngine().refreshLore(event.getPlayer(), artifact, reputation);
     }
 }

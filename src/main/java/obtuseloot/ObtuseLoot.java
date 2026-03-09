@@ -22,6 +22,7 @@ public class ObtuseLoot extends JavaPlugin {
     private static ObtuseLoot instance;
     private ObtuseEngine engine;
 
+    private PlayerStateStore playerStateStore;
     private ArtifactManager artifactManager;
     private ReputationManager reputationManager;
     private CombatContextManager combatContextManager;
@@ -38,11 +39,9 @@ public class ObtuseLoot extends JavaPlugin {
         RuntimeSettings.load(getConfig());
         NamePoolManager.initialize(this);
 
-        PlayerStateStore stateStore = new YamlPlayerStateStore(this);
-        artifactManager = new ArtifactManager(stateStore);
-        reputationManager = new ReputationManager(stateStore);
-        ArtifactManager.initialize(artifactManager);
-        ReputationManager.initialize(reputationManager);
+        playerStateStore = new YamlPlayerStateStore(this);
+        artifactManager = new ArtifactManager(playerStateStore);
+        reputationManager = new ReputationManager(playerStateStore);
 
         combatContextManager = new CombatContextManager();
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
@@ -64,13 +63,22 @@ public class ObtuseLoot extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (engineScheduler != null) engineScheduler.stopAll();
-        if (artifactManager != null) artifactManager.saveAll();
-        if (reputationManager != null) reputationManager.saveAll();
-        if (engine != null) engine.shutdown();
+        if (engineScheduler != null) {
+            engineScheduler.stopAll();
+        }
+        if (artifactManager != null) {
+            artifactManager.saveAll();
+        }
+        if (reputationManager != null) {
+            reputationManager.saveAll();
+        }
+        if (engine != null) {
+            engine.shutdown();
+        }
     }
 
     public static ObtuseLoot get() { return instance; }
+    public PlayerStateStore getPlayerStateStore() { return playerStateStore; }
     public ArtifactManager getArtifactManager() { return artifactManager; }
     public ReputationManager getReputationManager() { return reputationManager; }
     public CombatContextManager getCombatContextManager() { return combatContextManager; }
@@ -78,4 +86,5 @@ public class ObtuseLoot extends JavaPlugin {
     public DriftEngine getDriftEngine() { return driftEngine; }
     public AwakeningEngine getAwakeningEngine() { return awakeningEngine; }
     public LoreEngine getLoreEngine() { return loreEngine; }
+    public EngineScheduler getEngineScheduler() { return engineScheduler; }
 }

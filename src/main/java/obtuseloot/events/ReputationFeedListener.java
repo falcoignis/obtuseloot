@@ -4,7 +4,6 @@ import obtuseloot.ObtuseLoot;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.reputation.ArtifactReputation;
-import obtuseloot.reputation.ReputationManager;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -29,18 +28,11 @@ public class ReputationFeedListener implements Listener {
         }
 
         CombatContext context = ObtuseLoot.get().getCombatContextManager().get(attacker.getUniqueId());
-        ArtifactReputation reputation = ReputationManager.get(attacker.getUniqueId());
-
         context.markCombat();
         if (event.getEntity() instanceof LivingEntity target) {
             context.addTarget(target.getUniqueId());
         }
         context.setLastWeaponCategory(classifyWeapon(attacker));
-
-        if (isProjectilePrecisionHit(event)) {
-            reputation.recordPrecision();
-        }
-        reputation.setLastCombatTimestamp(System.currentTimeMillis());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -69,7 +61,7 @@ public class ReputationFeedListener implements Listener {
         }
 
         CombatContext context = ObtuseLoot.get().getCombatContextManager().get(killer.getUniqueId());
-        ArtifactReputation rep = ReputationManager.get(killer.getUniqueId());
+        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(killer.getUniqueId());
 
         long now = System.currentTimeMillis();
         context.addKillTimestamp(now);
@@ -96,7 +88,7 @@ public class ReputationFeedListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        ArtifactReputation rep = ReputationManager.get(player.getUniqueId());
+        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(player.getUniqueId());
         CombatContext context = ObtuseLoot.get().getCombatContextManager().get(player.getUniqueId());
 
         rep.resetOnDeath();

@@ -11,8 +11,8 @@ public final class PlayerStateCleanupListener implements Listener {
         ObtuseLoot plugin = ObtuseLoot.get();
         var playerId = event.getPlayer().getUniqueId();
 
-        plugin.getArtifactManager().unloadArtifact(playerId);
-        plugin.getReputationManager().unloadReputation(playerId);
+        plugin.getArtifactManager().unload(playerId);
+        plugin.getReputationManager().unload(playerId);
         plugin.getCombatContextManager().remove(playerId);
         plugin.getLoreEngine().removePlayer(playerId);
     }
