@@ -20,8 +20,14 @@ public class LineageRegistry {
             artifact.setLatentLineage(lineageId);
         }
         ArtifactLineage lineage = lineages.computeIfAbsent(lineageId, ArtifactLineage::new);
-        lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.depth() + 1));
+        if (!lineage.ancestorSeeds().contains(artifact.getArtifactSeed())) {
+            lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.generationIndex() + 1));
+        }
         return lineage;
+    }
+
+    public ArtifactLineage lineageFor(String lineageId) {
+        return lineages.get(lineageId);
     }
 
     public Map<String, ArtifactLineage> lineages() {
