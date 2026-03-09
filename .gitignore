@@ -1,0 +1,19 @@
+# Maven
+target/
+
+# local artifact outputs
+dist/
+artifacts/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# temp analytics scratch
+analytics/**/temp/
+analytics/**/scratch/

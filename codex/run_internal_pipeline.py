@@ -70,10 +70,11 @@ def write():
     rec = recommendations(fam, br, mut, mem, trig, mech)
 
     (ROOT / "analytics").mkdir(exist_ok=True)
+    (ROOT / "analytics/review").mkdir(parents=True, exist_ok=True)
     (ROOT / "analytics/ability-authenticity-report.md").write_text(
         f"# Ability Authenticity Report\n\nSimulated artifacts: **5000**\nBehavioral abilities: **{behavioral_rate:.3f}**\n\nPASS: {'yes' if behavioral_rate >= 0.80 else 'no'}\n")
 
-    (ROOT / "analytics/procedural-generator-audit.md").write_text(
+    (ROOT / "analytics/review/procedural-generator-audit.md").write_text(
         "# Procedural Generator Audit\n\n"
         "- Deterministic seed composition validated.\n"
         "- Multi-template families observed across all six families.\n"
