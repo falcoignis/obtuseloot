@@ -258,9 +258,9 @@ This project includes a repository `LICENSE` file.
 
 ## Internal Testing Repository Layout
 
-- `analytics/` generated reports (`evolution/`, `population/`, `meta/`, `review/`, `world-lab/`, `failure-reports/`).
+- `analytics/` generated reports (`evolution/`, `population/`, `meta/`, `review/`, `world-lab/`).
 - `simulation/` harness scaffolds (`gameplay-simulator/`, `chaos-tests/`, `population-simulator/`, `world-simulation-lab/`).
-- `releases/` release records (`v0.9.3/`, `nightly/`).
+- `releases/` release records (`v0.9.2/`, `v0.9.3/`, `v0.9.5/`, `nightly/`).
 - `scripts/` automation entrypoints for build and analytics.
 - `codex/` local orchestration utilities used by scripts.
 
@@ -276,7 +276,7 @@ Run in order:
 ./scripts/run-world-simulation.sh
 ```
 
-The pipeline writes deterministic report artifacts under `analytics/` and keeps binary plugin JAR output in `target/` only.
+The pipeline writes deterministic report artifacts under `analytics/` and keeps binary plugin JAR output in `target/` only. Build output binaries (for example `target/ObtuseLoot-0.9.5.jar`) are runtime artifacts and are intentionally not committed.
 
 ## Commentation Audit Notes
 
