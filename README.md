@@ -286,3 +286,50 @@ The pipeline writes deterministic report artifacts under `analytics/` and keeps 
 - Internal generators (for example `codex/run_internal_pipeline.py`) should keep function docstrings focused on report intent rather than implementation detail.
 - When touching existing files, prefer clarifying or tightening comments over adding noisy line-by-line narration.
 - Keep operational docs in this README synchronized with script responsibilities whenever tooling comments are updated.
+
+## Multi-backend persistence (YAML / SQLite / MySQL)
+
+ObtuseLoot now supports three persistence backends selected by configuration:
+
+- `yaml` (default) — file-based player state in `plugins/ObtuseLoot/playerdata`
+- `sqlite` — embedded local DB file for single-server deployments
+- `mysql` — external database for shared or larger deployments
+
+Example config:
+
+```yaml
+storage:
+  backend: yaml
+  fallbackToYamlOnFailure: false
+
+sqlite:
+  file: plugins/ObtuseLoot/data/obtuseloot.db
+
+mysql:
+  host: localhost
+  port: 3306
+  database: obtuseloot
+  username: root
+  password: change-me
+  useSsl: false
+  connectionPool:
+    enabled: false
+    maxPoolSize: 10
+```
+
+### Backend behavior
+- Startup selects backend via `storage.backend`.
+- If SQL backend startup fails:
+  - with `fallbackToYamlOnFailure: true` → plugin falls back to YAML.
+  - with `fallbackToYamlOnFailure: false` → plugin disables startup with a clear error.
+
+### Migration commands
+- `/obtuseloot debug persistence migrate yaml-to-sqlite`
+- `/obtuseloot debug persistence migrate yaml-to-mysql`
+
+### Persistence debug commands
+- `/obtuseloot debug persistence`
+- `/obtuseloot debug persistence backend`
+- `/obtuseloot debug persistence test`
+
+Simulation and world-lab flows remain YAML-friendly by default unless backend is explicitly changed.
