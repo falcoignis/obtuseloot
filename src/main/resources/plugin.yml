@@ -28,6 +28,8 @@ commands:
       /<command> refresh [player]
       /<command> reset [player]
       /<command> reload
+      /<command> addname <pool> <value>
+      /<command> removename <pool> <value>
     aliases:      [ ol ]
     permission:   obtuseloot.help
 
@@ -101,8 +103,7 @@ permissions:
     children:
       obtuseloot.edit.prefixes:   true
       obtuseloot.edit.suffixes:   true
-      obtuseloot.edit.lore:       true
-      obtuseloot.edit.categories: true
+      obtuseloot.edit.generic:    true
 
   # ── List editing (granular) ─────────────────────────────────────────────────
   obtuseloot.edit.prefixes:
@@ -113,10 +114,7 @@ permissions:
     description: Allows editing the suffixes list only.
     default:     op
 
-  obtuseloot.edit.lore:
-    description: Allows editing lore.observations, lore.histories, lore.secrets, and lore.epithets.
-    default:     op
 
-  obtuseloot.edit.categories:
-    description: Allows editing all categories.* lists (swords, axes, helmets, etc.).
+  obtuseloot.edit.generic:
+    description: Allows editing the generic names list only.
     default:     op

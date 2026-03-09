@@ -73,6 +73,8 @@ All registered `/obtuseloot` (`/ol`) subcommands are available to both in-game p
 | `/ol refresh [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
 | `/ol reset [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
 | `/ol reload` | ✅ | ✅ | `obtuseloot.admin` |
+| `/ol addname <pool> <value>` | ✅ | ✅ | `obtuseloot.edit` or `obtuseloot.edit.<pool>` |
+| `/ol removename <pool> <value>` | ✅ | ✅ | `obtuseloot.edit` or `obtuseloot.edit.<pool>` |
 
 Permission notes:
 - `obtuseloot.*` grants every defined command/admin/edit permission.
