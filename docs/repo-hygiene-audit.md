@@ -1,52 +1,17 @@
-# Repository Hygiene Audit (v0.9.5 pass)
+# Repository Hygiene Audit (v0.9.5)
 
-## 1) Cleanup performed
-- Removed committed Maven build output under `target/` from version control.
-- Added a repository-level `.gitignore` with explicit Maven/build/IDE/OS/temp analytics exclusions.
-- Added `releases/v0.9.5/` release documentation set.
-- Performed a conservative organization pass on analytics helper docs.
+## Completed in this pass
+- Confirmed no tracked files remain under `target/` and retained `target/` as Maven runtime output only.
+- Confirmed `.gitignore` covers Maven output, local artifact directories, IDE/OS files, and analytics temp/scratch paths.
+- Confirmed release documentation exists under `releases/v0.9.5/` (`CHANGELOG.md`, `QA_NOTES.md`, `BUILD_INFO.md`).
+- Added `analytics/README.md` as a light organization aid describing expected subfolders and preserving historical root files.
+- Reviewed workflow output handling to ensure binaries are produced in CI runtime `target/` and uploaded as artifacts/release assets instead of committed files.
+- Applied README/build-doc consistency fixes for Maven command wording and local JAR output expectations.
 
-## 2) Removed from version control
-- `target/` generated Maven output directory (compiled classes and Maven status files).
+## Intentionally preserved
+- Existing historical analytics report filenames/content (including overlapping world-lab report names) were left unchanged to avoid breaking references in scripts or docs.
+- Existing release folders (`v0.9.2`, `v0.9.3`, `v0.9.5`) were kept as-is aside from v0.9.5 consistency edits.
 
-## 3) .gitignore rules added/confirmed
-Added:
-- `target/`
-- `dist/`
-- `artifacts/`
-- `.idea/`
-- `*.iml`
-- `.vscode/`
-- `.DS_Store`
-- `Thumbs.db`
-- `analytics/**/temp/`
-- `analytics/**/scratch/`
-
-## 4) Release docs added for v0.9.5
-- `releases/v0.9.5/CHANGELOG.md`
-- `releases/v0.9.5/QA_NOTES.md`
-- `releases/v0.9.5/BUILD_INFO.md`
-
-## 5) Workflow output hygiene fixes
-- Updated nightly artifact upload JAR path to `target/ObtuseLoot-0.9.5.jar`.
-- Updated release asset glob to `target/ObtuseLoot-*.jar` to match Maven final name.
-- Confirmed CI/nightly build into runtime `target/` and upload binaries as artifacts, not commits.
-
-## 6) Analytics/release clutter findings
-- Analytics root contained review/helper docs mixed with generated reports.
-- `analytics/world-lab/world-sim-report.md` and `large-world-sim-report.md` currently duplicate content and naming intent is ambiguous.
-- Release folders for v0.9.2 and v0.9.3 were intact and left unchanged.
-
-## 7) Reorganization performed
-- Moved helper/review docs into `analytics/review/`:
-  - `PHASE_LEDGER.md`
-  - `procedural-generator-audit.md`
-- Updated `codex/run_internal_pipeline.py` to continue writing `procedural-generator-audit.md` into `analytics/review/`.
-
-## 8) Intentionally preserved ambiguities
-- Preserved both `world-sim-report.md` and `large-world-sim-report.md` for historical continuity; potential dedupe can be decided in a focused future pass.
-- Preserved existing analytics report naming outside minimal organization changes to avoid breaking references.
-
-## 9) Follow-up suggestions
-- Consider a small world-lab naming normalization pass (`primary` vs `large` naming) with reference updates.
-- Consider moving additional long-lived root-level analytics summaries into domain folders (`meta/` or `review/`) once downstream links are inventoried.
+## Minor follow-up recommendations
+- If desired later, normalize world-lab report naming (`world-sim` vs `large-world-sim`) in a dedicated pass with link/script updates.
+- Add `releases/nightly/README.md` only when nightly release-note text files are introduced.

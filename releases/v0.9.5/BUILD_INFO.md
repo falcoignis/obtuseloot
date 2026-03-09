@@ -3,7 +3,7 @@
 ## Maven build command
 
 ```bash
-mvn -B -ntp clean package
+mvn clean package
 ```
 
 ## Expected local artifact path

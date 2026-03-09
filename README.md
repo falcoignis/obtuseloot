@@ -106,13 +106,15 @@ Bukkit Events
 
 ### Build
 ```bash
-mvn -B -ntp clean package
+mvn clean package
 ```
 
 Output jar:
 ```text
 target/ObtuseLoot-0.9.5.jar
 ```
+This JAR is a local/CI build artifact and is not committed to source control.
+
 
 ### Build Troubleshooting
 If you see this Maven error:
@@ -124,7 +126,7 @@ Your `JAVA_HOME` points to an older JDK (commonly 17). Switch to JDK 21+ and reb
 export JAVA_HOME=/path/to/jdk-21
 export PATH="$JAVA_HOME/bin:$PATH"
 java -version
-mvn -B -ntp clean package
+mvn clean package
 ```
 
 ### Install on Server
