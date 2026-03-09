@@ -572,8 +572,7 @@ public class DebugCommand {
         Artifact existing = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         long oldSeed = existing.getArtifactSeed();
         long newSeed = plugin.getArtifactManager().rollSeed();
-        Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), newSeed);
-        refreshAndSave(target);
+        Artifact artifact = applySeedChange(target, newSeed);
 
         sender.sendMessage("§aRerolled " + target.getName() + "'s artifact seed: §f" + oldSeed + " §7-> §f" + artifact.getArtifactSeed());
         sender.sendMessage("§7Seed change reset artifact identity and progression.");
@@ -594,8 +593,12 @@ public class DebugCommand {
 
         Artifact existing = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         long oldSeed = existing.getArtifactSeed();
-        Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), parsedSeed);
-        refreshAndSave(target);
+        if (oldSeed == parsedSeed) {
+            sender.sendMessage("§eSeed is already " + parsedSeed + " for " + target.getName() + ". No reset required.");
+            return true;
+        }
+
+        Artifact artifact = applySeedChange(target, parsedSeed);
 
         String verb = imported ? "Imported" : "Set";
         sender.sendMessage("§a" + verb + " artifact seed for " + target.getName() + ": §f" + oldSeed + " §7-> §f" + artifact.getArtifactSeed());
@@ -608,7 +611,7 @@ public class DebugCommand {
         if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         sender.sendMessage("§a" + target.getName() + " seed export: §f" + artifact.getArtifactSeed());
-        sender.sendMessage("§7name=§f" + artifact.getGeneratedName() + " §7lineage=§f" + artifact.getLatentLineage() + " §7drift=§f" + artifact.getDriftAlignment());
+        sender.sendMessage("§7name=§f" + artifact.getGeneratedName() + " §7lineage=§f" + artifact.getLatentLineage() + " §7currentDriftAlignment=§f" + artifact.getDriftAlignment());
         return true;
     }
 
@@ -634,6 +637,14 @@ public class DebugCommand {
             return false;
         }
         return true;
+    }
+
+    private Artifact applySeedChange(Player target, long newSeed) {
+        Artifact artifact = plugin.getArtifactManager().reseed(target.getUniqueId(), newSeed);
+        plugin.getReputationManager().reset(target.getUniqueId());
+        plugin.getCombatContextManager().remove(target.getUniqueId());
+        refreshAndSave(target);
+        return artifact;
     }
 
     private void refreshAndSave(Player target) {

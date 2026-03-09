@@ -19,6 +19,8 @@ public class Artifact {
 
     private int driftLevel;
     private int totalDrifts;
+    // Seed initialization sets the baseline drift tendency, and runtime drift mutations
+    // update the same field as the current mutable drift alignment state.
     private String driftAlignment;
     private long lastDriftTimestamp;
 
@@ -144,13 +146,26 @@ public class Artifact {
     public double getDriftBias(String statKey) { return driftBiasAdjustments.getOrDefault(statKey, 0.0D); }
     public double getAwakeningBias(String statKey) { return awakeningBiasAdjustments.getOrDefault(statKey, 0.0D); }
     public double getAwakeningGainMultiplier(String statKey) { return awakeningGainMultipliers.getOrDefault(statKey, 1.0D); }
-    public void addDriftHistory(String entry) { driftHistory.add(entry); }
-    public void addLoreHistory(String entry) { loreHistory.add(entry); }
-    public void addNotableEvent(String entry) { notableEvents.add(entry); }
+    public void addDriftHistory(String entry) { addHistoryEntry(driftHistory, entry); }
+    public void addLoreHistory(String entry) { addHistoryEntry(loreHistory, entry); }
+    public void addNotableEvent(String entry) { addHistoryEntry(notableEvents, entry); }
     public void incrementDriftLevel() { driftLevel++; }
     public void incrementTotalDrifts() { totalDrifts++; }
     public boolean hasInstability() { return !"none".equalsIgnoreCase(currentInstabilityState); }
     public void clearInstability() { currentInstabilityState = "none"; instabilityExpiryTimestamp = 0L; }
     public void setInstabilityState(String state, long expiryTimestamp) { currentInstabilityState = state; instabilityExpiryTimestamp = expiryTimestamp; }
     public boolean isInstabilityExpired(long now) { return hasInstability() && instabilityExpiryTimestamp > 0L && now >= instabilityExpiryTimestamp; }
+
+    private void addHistoryEntry(List<String> history, String entry) {
+        if (entry == null || entry.isBlank()) {
+            return;
+        }
+
+        if (!history.isEmpty() && entry.equals(history.get(history.size() - 1))) {
+            return;
+        }
+
+        history.add(entry);
+    }
 }
+
