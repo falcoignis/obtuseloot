@@ -7,6 +7,7 @@ import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.commands.DashboardCommandExecutor;
+import obtuseloot.analytics.EnvironmentalPressureReporter;
 import obtuseloot.commands.ObtuseLootCommand;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
@@ -57,6 +58,7 @@ public class ObtuseLoot extends JavaPlugin {
     private DashboardService dashboardService;
     private DashboardWebServer dashboardWebServer;
     private EcosystemMapRenderer ecosystemMapRenderer;
+    private final EnvironmentalPressureReporter environmentalPressureReporter = new EnvironmentalPressureReporter();
 
     @Override
     public void onEnable() {
@@ -80,11 +82,11 @@ public class ObtuseLoot extends JavaPlugin {
         combatContextManager = new CombatContextManager();
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         artifactUsageTracker = new ArtifactUsageTracker();
-        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator());
+        ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine());
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
-        ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
         ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
         lineageInfluenceResolver = new LineageInfluenceResolver();
@@ -109,6 +111,23 @@ public class ObtuseLoot extends JavaPlugin {
             getCommand("obtuseloot").setExecutor(dashboardCommandExecutor);
             getCommand("obtuseloot").setTabCompleter(dashboardCommandExecutor);
         }
+
+        try {
+            environmentalPressureReporter.writeReport(java.nio.file.Path.of("analytics/environment-pressure-report.md"),
+                    experienceEvolutionEngine.pressureEngine());
+        } catch (Exception exception) {
+            getLogger().warning("[Ecosystem] Failed to write environment pressure report: " + exception.getMessage());
+        }
+
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            try {
+                experienceEvolutionEngine.pressureEngine().advanceSeason();
+                environmentalPressureReporter.writeReport(java.nio.file.Path.of("analytics/environment-pressure-report.md"),
+                        experienceEvolutionEngine.pressureEngine());
+            } catch (Exception exception) {
+                getLogger().warning("[Ecosystem] Failed periodic environment pressure update: " + exception.getMessage());
+            }
+        }, 24_000L, 24_000L);
 
         engine = new ObtuseEngine(this);
         engine.initialize();
@@ -156,6 +175,7 @@ public class ObtuseLoot extends JavaPlugin {
     public ArtifactEcosystemSelfBalancingEngine getEcosystemEngine() { return ecosystemEngine; }
     public LineageRegistry getLineageRegistry() { return lineageRegistry; }
     public ArtifactUsageTracker getArtifactUsageTracker() { return artifactUsageTracker; }
+    public ExperienceEvolutionEngine getExperienceEvolutionEngine() { return experienceEvolutionEngine; }
     public DashboardService getDashboardService() { return dashboardService; }
     public EcosystemMapRenderer getEcosystemMapRenderer() { return ecosystemMapRenderer; }
 }

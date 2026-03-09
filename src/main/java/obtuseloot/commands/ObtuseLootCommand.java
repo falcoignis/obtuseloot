@@ -1,6 +1,7 @@
 package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.debug.ArtifactDebugger;
@@ -60,6 +61,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7/" + label + " ecosystem map [lineage|species|collapse] §8- §fStart live ecosystem hotspot rendering §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem map genome <trait> §8- §fRender genome trait intensity hotspots §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem map off §8- §fDisable live ecosystem map rendering §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem environment §8- §fShow active environmental selection pressure modifiers §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite (seed + simulate tooling) §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug seed show|reroll|set|export|import §8- §fDeterministic seed controls §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug simulate help §8- §fSimulation scenarios and path profiles §8[obtuseloot.debug]");
@@ -158,6 +160,16 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
         if ("ecosystem".equalsIgnoreCase(args[0])) {
             if (!hasPermission(sender, PERMISSION_INFO)) {
+                return true;
+            }
+            if (args.length >= 2 && "environment".equalsIgnoreCase(args[1])) {
+                var pressureEngine = plugin.getExperienceEvolutionEngine().pressureEngine();
+                var event = pressureEngine.currentEvent();
+                sender.sendMessage("§dEnvironmental event: §f" + event.name() + " §7(remaining seasons: " + event.remainingSeasons() + ")");
+                for (GenomeTrait trait : GenomeTrait.values()) {
+                    double multiplier = pressureEngine.multiplierFor(trait);
+                    sender.sendMessage("§7- §f" + trait.name().toLowerCase() + " §8x§d" + String.format(java.util.Locale.ROOT, "%.3f", multiplier));
+                }
                 return true;
             }
             if (args.length >= 2 && "map".equalsIgnoreCase(args[1])) {
@@ -297,7 +309,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])) {
-            return filterByPrefix(List.of("map"), args[1]);
+            return filterByPrefix(List.of("map", "environment"), args[1]);
         }
 
         if (args.length == 3 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])) {

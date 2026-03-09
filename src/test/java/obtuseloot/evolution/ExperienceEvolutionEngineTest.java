@@ -32,7 +32,7 @@ class ExperienceEvolutionEngineTest {
     }
 
     @Test
-    void genomeDistributionAdjustsSlowlyWithinTenPercent() {
+    void genomeDistributionAdjustsWithinEnvironmentBoundedRange() {
         ArtifactUsageTracker tracker = new ArtifactUsageTracker();
         ArtifactFitnessEvaluator evaluator = new ArtifactFitnessEvaluator();
         ExperienceEvolutionEngine engine = new ExperienceEvolutionEngine(tracker, evaluator);
@@ -58,7 +58,7 @@ class ExperienceEvolutionEngineTest {
             double a = adjusted.trait(trait);
             if (b > 0.0D) {
                 double relative = Math.abs(a - b) / b;
-                assertTrue(relative <= 0.100001D, "Trait adjusted beyond +/-10% for " + trait);
+                assertTrue(relative <= 0.300001D, "Trait adjusted beyond expected environment-adjusted range for " + trait);
             }
         }
     }

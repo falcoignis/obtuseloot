@@ -2,6 +2,7 @@ package obtuseloot.evolution;
 
 import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeTrait;
+import obtuseloot.ecosystem.EnvironmentPressureEngine;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -11,10 +12,18 @@ public class ExperienceEvolutionEngine {
 
     private final ArtifactUsageTracker usageTracker;
     private final ArtifactFitnessEvaluator fitnessEvaluator;
+    private final EnvironmentPressureEngine pressureEngine;
 
     public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker, ArtifactFitnessEvaluator fitnessEvaluator) {
+        this(usageTracker, fitnessEvaluator, new EnvironmentPressureEngine());
+    }
+
+    public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker,
+                                     ArtifactFitnessEvaluator fitnessEvaluator,
+                                     EnvironmentPressureEngine pressureEngine) {
         this.usageTracker = usageTracker;
         this.fitnessEvaluator = fitnessEvaluator;
+        this.pressureEngine = pressureEngine;
     }
 
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed) {
@@ -30,9 +39,14 @@ public class ExperienceEvolutionEngine {
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
             double multiplier = traitMultiplier(entry.getKey(), normalized);
-            adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier));
+            double environmental = pressureEngine.multiplierFor(entry.getKey());
+            adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier * environmental));
         }
         return new ArtifactGenome(genome.seed(), adjusted);
+    }
+
+    public EnvironmentPressureEngine pressureEngine() {
+        return pressureEngine;
     }
 
     private double traitMultiplier(GenomeTrait trait, double normalizedFitness) {
