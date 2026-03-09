@@ -54,6 +54,8 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " reload §8- §fReload config-driven runtime settings and name pools §8["
                     + PERMISSION_ADMIN + "]");
+            sender.sendMessage("§7/" + label + " dashboard §8- §fShow ecosystem health and dashboard link §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem [health] §8- §fAlias for ecosystem dashboard health summary §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite (seed + simulate tooling) §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug seed show|reroll|set|export|import §8- §fDeterministic seed controls §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug simulate help §8- §fSimulation scenarios and path profiles §8[obtuseloot.debug]");

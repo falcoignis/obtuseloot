@@ -54,3 +54,7 @@ naming:
 
 combat:
   precision-threshold-damage: 10.0
+
+
+dashboard:
+  port: 8085
