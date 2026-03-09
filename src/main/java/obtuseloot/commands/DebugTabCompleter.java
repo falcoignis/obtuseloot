@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
@@ -18,6 +18,7 @@ public class DebugTabCompleter {
     private static final List<String> SEED_ACTIONS = List.of("show", "reroll", "set", "export", "import");
     private static final List<String> ABILITY_ACTIONS = List.of("show", "refresh", "explain", "tree");
     private static final List<String> PERSISTENCE_ACTIONS = List.of("backend", "test", "migrate");
+    private static final List<String> ECOSYSTEM_ACTIONS = List.of("bias", "balance");
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 2) {
@@ -55,6 +56,9 @@ public class DebugTabCompleter {
         if (args.length == 3 && "ability".equalsIgnoreCase(args[1])) {
             return filter(ABILITY_ACTIONS, args[2]);
         }
+        if (args.length == 3 && "ecosystem".equalsIgnoreCase(args[1])) {
+            return filter(ECOSYSTEM_ACTIONS, args[2]);
+        }
         if (args.length == 3 && "persistence".equalsIgnoreCase(args[1])) {
             return filter(PERSISTENCE_ACTIONS, args[2]);
         }
@@ -81,7 +85,8 @@ public class DebugTabCompleter {
                 || (args.length == 5 && "archetype".equals(sub) && "set".equalsIgnoreCase(args[2]))
                 || (args.length == 5 && "path".equals(sub) && "set".equalsIgnoreCase(args[2]))
                 || (args.length == 4 && "ability".equals(sub) && List.of("show", "refresh", "explain", "tree").contains(args[2].toLowerCase(Locale.ROOT)))
-                || (args.length == 3 && "memory".equals(sub));
+                || (args.length == 3 && "memory".equals(sub))
+                || (args.length == 3 && "lineage".equals(sub));
 
         boolean seed = "seed".equals(sub)
                 && ((args.length == 4 && List.of("show", "reroll", "export").contains(args[2].toLowerCase(Locale.ROOT)))
