@@ -69,6 +69,36 @@ public final class ArtifactProcessor {
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
     }
 
+    public static void processSimulatedCombat(Player player, double damage) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
+
+        context.markCombat();
+        rep.setLastCombatTimestamp(System.currentTimeMillis());
+
+        if (damage >= RuntimeSettings.get().precisionThresholdDamage()) {
+            applyReputationGainWithAwakening(artifact, rep, "precision");
+        } else {
+            applyReputationGainWithAwakening(artifact, rep, "brutality");
+        }
+        applyReputationGainWithAwakening(artifact, rep, "consistency");
+
+        applyCombatContextBonuses(player, context, rep, artifact);
+        plugin.getLoreEngine().refreshLore(player, artifact, rep);
+    }
+
+    public static void processSimulatedKill(Player player) {
+        processKill(player);
+    }
+
+    public static void processSimulatedBossKill(Player player) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        plugin.getReputationManager().get(player.getUniqueId()).recordBossKill();
+        processKill(player);
+    }
+
     public static void applyCombatContextBonuses(Player player, CombatContext context, ArtifactReputation rep, Artifact artifact) {
         if (context.getRecentMovementDistance() >= RuntimeSettings.get().mobilityDistanceThreshold()) {
             applyReputationGainWithAwakening(artifact, rep, "mobility");
