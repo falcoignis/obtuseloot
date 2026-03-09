@@ -1,0 +1,64 @@
+name: World Lab Simulation
+
+on:
+  workflow_dispatch:
+    inputs:
+      player_count:
+        description: "Player count for world simulation"
+        required: false
+        default: "600"
+      season_count:
+        description: "Season count for world simulation"
+        required: false
+        default: "4"
+      simulation_mode:
+        description: "Simulation mode label"
+        required: false
+        default: "standard"
+      scoring_mode:
+        description: "Scoring mode label"
+        required: false
+        default: "full"
+
+jobs:
+  world-lab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Run world simulation harness
+        env:
+          WORLD_PLAYERS: ${{ inputs.player_count }}
+          WORLD_SEASONS: ${{ inputs.season_count }}
+          WORLD_SIMULATION_MODE: ${{ inputs.simulation_mode }}
+          WORLD_SCORING_MODE: ${{ inputs.scoring_mode }}
+        run: |
+          echo "Running world lab with players=${WORLD_PLAYERS}, seasons=${WORLD_SEASONS}, simulation_mode=${WORLD_SIMULATION_MODE}, scoring_mode=${WORLD_SCORING_MODE}"
+          ./scripts/run-world-lab-validation.sh
+          ./scripts/run-meta-analysis.sh
+
+      - name: Upload world-lab results
+        uses: actions/upload-artifact@v4
+        with:
+          name: world-lab-results
+          path: analytics/world-lab/
+          if-no-files-found: ignore
+
+      - name: Upload dashboard results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-results
+          path: analytics/dashboard/
+          if-no-files-found: ignore
