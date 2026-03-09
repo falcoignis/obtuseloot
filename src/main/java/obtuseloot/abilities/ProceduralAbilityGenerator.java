@@ -4,6 +4,7 @@ import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeMutationEngine;
 import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.lineage.LineageGenomeInheritance;
+import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.lineage.ArtifactLineage;
@@ -25,15 +26,24 @@ public class ProceduralAbilityGenerator {
     private final GenomeMutationEngine mutationEngine;
     private final LineageGenomeInheritance lineageGenomeInheritance;
     private final TraitInterferenceResolver traitInterferenceResolver;
+    private final ExperienceEvolutionEngine experienceEvolutionEngine;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
-        this(registry, null, null, null);
+        this(registry, null, null, null, null);
     }
 
     public ProceduralAbilityGenerator(AbilityRegistry registry,
                                       ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
                                       LineageRegistry lineageRegistry,
                                       LineageInfluenceResolver lineageResolver) {
+        this(registry, ecosystemEngine, lineageRegistry, lineageResolver, null);
+    }
+
+    public ProceduralAbilityGenerator(AbilityRegistry registry,
+                                      ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
+                                      LineageRegistry lineageRegistry,
+                                      LineageInfluenceResolver lineageResolver,
+                                      ExperienceEvolutionEngine experienceEvolutionEngine) {
         this.registry = registry;
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
@@ -42,6 +52,7 @@ public class ProceduralAbilityGenerator {
         this.mutationEngine = new GenomeMutationEngine();
         this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
+        this.experienceEvolutionEngine = experienceEvolutionEngine;
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -50,9 +61,12 @@ public class ProceduralAbilityGenerator {
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage)));
 
         ArtifactGenome baseGenome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
-        ArtifactGenome genome = (lineage == null)
+        ArtifactGenome lineageGenome = (lineage == null)
                 ? baseGenome
                 : lineageGenomeInheritance.inherit(lineage, baseGenome, artifact.getArtifactSeed());
+        ArtifactGenome genome = experienceEvolutionEngine == null
+                ? lineageGenome
+                : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed());
         int picks = evolutionStage >= 4 ? 3 : 2;
         List<AbilityTemplate> selected = traitInterferenceResolver.selectTop(registry.templates(), genome, picks);
 

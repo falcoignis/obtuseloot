@@ -12,6 +12,7 @@ import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import obtuseloot.reputation.ArtifactReputation;
+import obtuseloot.evolution.ExperienceEvolutionEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +29,9 @@ public class SeededAbilityResolver implements AbilityResolver {
                                  ArtifactMemoryEngine memoryEngine,
                                  ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
                                  LineageRegistry lineageRegistry,
-                                 LineageInfluenceResolver lineageResolver) {
-        this.generator = new ProceduralAbilityGenerator(registry, ecosystemEngine, lineageRegistry, lineageResolver);
+                                 LineageInfluenceResolver lineageResolver,
+                                 ExperienceEvolutionEngine experienceEvolutionEngine) {
+        this.generator = new ProceduralAbilityGenerator(registry, ecosystemEngine, lineageRegistry, lineageResolver, experienceEvolutionEngine);
         this.memoryEngine = memoryEngine;
         this.lineageRegistry = lineageRegistry;
         this.lineageResolver = lineageResolver;
