@@ -1,277 +1,229 @@
 # ObtuseLoot
 
-ObtuseLoot is a pre-release Bukkit/Spigot plugin that tracks a persistent, behavior-driven artifact progression system per player.
+`pre-release` `Bukkit/Purpur plugin` `Java 21` `persistent progression`
 
-Instead of treating progression as a short session buff, the plugin models artifact identity over time: combat behavior feeds multi-axis reputation, reputation drives evolution, drift mutates long-term bias, awakening adds trait/multiplier effects, and fusion acts as a higher-order milestone state.
+ObtuseLoot is a Java plugin for Bukkit-compatible servers (targeting Purpur 1.21 API) that tracks per-player artifact progression through combat behavior.
 
-The system is intentionally stateful and testable. Artifact and reputation data are persisted on disk per player, loaded on join/first access, and maintained with scheduler tasks (autosave, decay, cleanup). A dedicated debug suite under `/obtuseloot debug ...` is included for QA and tuning.
+Each player has a persistent artifact profile with hidden seed affinities and evolving paths. Reputation is not just a flat XP bar: combat patterns (damage style, mobility, low-health survival, kill chains, boss kills, and chaos signals) feed multiple dimensions that drive evolution outcomes.
 
-> **Status:** Active refactor/testing phase. Architecture is in place and still being iterated.
+The progression stack is behavior-driven and stateful: evolution resolves from **effective weighted stats** (raw reputation + seed affinity + drift bias + awakening bias), drift applies mutation over time, awakening introduces additional bias/multiplier effects, and fusion unlocks higher-order progression states.
 
----
+This repository is in active pre-release development. It includes practical debug tooling for rapid QA (inspection, reputation edits, forced evolution/drift/awakening/fusion, persistence controls, and reset paths).
 
-## Core Concept
+## Key Features
 
-At a high level, progression loops through:
+- Behavior-driven, multi-axis reputation (`precision`, `brutality`, `survival`, `mobility`, `chaos`, `consistency` + kill/boss/chain state)
+- Hidden seed affinities and latent lineage generated per artifact
+- Evolution pathing based on effective weighted stats, with archetype inertia and switch margins
+- Drift mutation system with profile-based bias adjustments and timed instability states
+- Awakening profiles that apply bias adjustments, gain multipliers, and traits
+- Fusion recipes as higher-order progression milestones
+- Lore/history tracking for archetype/evolution/drift/awakening/fusion transitions
+- Per-player YAML persistence with autosave, join-load, quit-save-unload, and disable-save
+- Integrated admin/debug command suite for QA and balancing
+
+## Gameplay Loop
 
 ```text
-combat events
-  -> reputation updates
-  -> archetype/evolution evaluation
-  -> drift mutation chance
-  -> awakening evaluation
-  -> fusion evaluation
-  -> lore/history output
-  -> persisted state
+combat behavior
+  -> reputation dimensions
+    -> archetype + evolution evaluation
+      -> drift mutation chance
+        -> awakening gate
+          -> fusion recipe check
+            -> lore/history updates
+              -> persisted player state
 ```
 
-Player behavior shapes artifact identity via multiple dimensions (precision, brutality, survival, mobility, chaos, consistency), plus kill and boss progression.
-
----
-
-## Major Systems
+## System Overview
 
 ### Reputation
-- `ArtifactReputation` tracks:
-  - `precision`, `brutality`, `survival`, `mobility`, `chaos`, `consistency`
-  - `kills`, `bossKills`
-  - volatile context stats like `recentKillChain`, combat timestamps, survival streak
-- Combat/kill listeners feed reputation context.
-- Volatile dimensions decay on schedule; persistent dimensions remain progression anchors.
+- Reputation is fed by combat events and context, not a single score source.
+- Signals include combat hits, movement during combat windows, low-health survival, kill chains, boss kills, and multi-target chaos.
+- Volatile stats decay on a scheduler to keep progression responsive to current behavior.
 
 ### Evolution
-- `EvolutionEngine` evaluates path updates based on reputation score and archetype resolver output.
-- `ArchetypeResolver` uses **effective weighted stats**:
-  - raw reputation
-  - hidden seed affinities
-  - drift bias adjustments
-  - awakening bias adjustments
-- Includes inertia/switch margin behavior to reduce archetype thrashing.
+- Evolution starts after threshold gates and resolves archetypes from effective stat values.
+- Effective stat formula includes raw rep + seed affinity + drift bias + awakening bias.
+- Archetype inertia and switch margin reduce noisy flapping between paths.
 
 ### Drift
-- `DriftEngine` uses drift chance tuning (`base + chaos*multiplier - consistency*reduction`, clamped).
-- Drift is a **real mutation system**, not message-only:
-  - applies drift bias changes
-  - increments drift counters
-  - updates drift alignment/state
-  - can apply instability windows
-  - records drift/lore/notable history
-- `DriftProfile` and `DriftMutation` represent drift profile behavior and mutation results.
+- Drift chance scales from base chance with chaos and consistency modifiers.
+- Drift applies profile-specific bias mutations, increments drift counters, and writes drift/lore history.
+- Drift can set temporary instability, later cleaned up by scheduled expiry.
 
 ### Awakening
-- `AwakeningEngine` evaluates and applies awakening paths.
-- Awakening effects are represented by `AwakeningEffectProfile`:
-  - bias adjustments
-  - reputation gain multipliers
-  - trait grants
-- Awakening changes future progression weighting and gain behavior.
+- Awakening resolves profile-based outcomes from archetype + reputation criteria.
+- Applied awakening adds stat bias adjustments, reputation gain multipliers, and traits.
 
 ### Fusion
-- `fusion.FusionEngine` evaluates fusion recipes and applies fusion/evolution milestone state when conditions match.
-- Fusion outcomes are recorded in artifact history/notable events.
+- Fusion evaluates recipes once awakening is active and score/boss conditions are met.
+- Successful fusion sets a fusion path and can override evolution pathing.
 
 ### Lore
-- `LoreEngine` builds compact action-bar summaries and full lore lines.
-- `LoreFragmentGenerator` + `LoreHistoryFormatter` compose lineage/drift/awakening/instability/history fragments.
-- Lore history is transition-oriented and tied to progression state changes.
+- Lore lines are generated from lineage, drift, awakening, instability, reputation snapshot, and recent history.
+- State transitions are recorded into lore/notable event history.
 
 ### Persistence
-- `PlayerStateStore` abstraction with `YamlPlayerStateStore` implementation.
-- Per-player YAML file model in `plugins/ObtuseLoot/playerdata/<uuid>.yml`.
-- Stores both artifact state and reputation state.
+- Artifact and reputation state are stored per player UUID in YAML files.
+- Save paths include autosave scheduler, explicit debug save, manager unload, and plugin disable.
 
-### Debug / QA Tooling
-- Integrated under `/obtuseloot debug ...` (permission-gated).
-- Allows direct inspection, progression forcing, resets, lore dumps, and save/reload workflows against real systems.
-- Current branch provides deterministic debug controls; dedicated `simulate` subcommands are not currently registered in this command tree.
-
----
+### Debug
+- `/obtuseloot debug ...` provides deterministic control over progression state for QA.
+- Current codebase includes forced progression operations, stat editing, path overrides, and persistence/reload controls.
 
 ## Architecture Overview
 
 Primary runtime components:
 
-- **Plugin bootstrap:** `obtuseloot.ObtuseLoot`
-- **Managers:**
-  - `ArtifactManager`
-  - `ReputationManager`
-  - `CombatContextManager`
-- **Engines:**
-  - `ArtifactProcessor`
-  - `EvolutionEngine` (`ArchetypeResolver`, `HybridEvolutionResolver`)
-  - `DriftEngine` (`DriftProfile`, `DriftMutation`)
-  - `AwakeningEngine` (`AwakeningEffectProfile`)
-  - `FusionEngine`
-  - `LoreEngine`
-- **Persistence:** `PlayerStateStore` / `YamlPlayerStateStore`
-- **Scheduler:** `EngineScheduler`
-- **Event listeners:** join/load, quit/cleanup, combat/death feed listeners
-
-Flow sketch:
+- `ArtifactManager` — in-memory artifact cache + lifecycle/save operations
+- `ReputationManager` — in-memory reputation cache + lifecycle/save operations
+- `CombatContext` / `CombatContextManager` — transient combat behavior context
+- `PlayerStateStore` / `YamlPlayerStateStore` — persistence abstraction + YAML storage backend
+- `EvolutionEngine` — archetype/evolution resolution
+- `DriftEngine` — drift profile resolution + mutation application
+- `AwakeningEngine` — awakening profile resolution/application
+- `FusionEngine` — recipe matching and fusion transitions
+- `LoreEngine` — action bar summary + lore/history formatting
+- `EngineScheduler` — autosave, rep decay, context cleanup, instability cleanup
 
 ```text
-Bukkit events
-  -> ReputationFeedListener + CombatCore/EventCore
-  -> ArtifactProcessor
-      -> EvolutionEngine
-      -> DriftEngine
-      -> AwakeningEngine
-      -> FusionEngine
-      -> LoreEngine
-  -> Managers (in-memory)
-  -> PlayerStateStore (YAML persistence)
+Bukkit Events
+  -> ReputationFeedListener / CombatCore / EventCore
+    -> ArtifactProcessor
+      -> EvolutionEngine -> DriftEngine -> AwakeningEngine -> FusionEngine
+        -> LoreEngine
+          -> ArtifactManager/ReputationManager
+            -> YamlPlayerStateStore (playerdata/<uuid>.yml)
 ```
 
----
+## Installation & Local Development
 
-## Installation / Development
+### Requirements
+- Java 21
+- Maven
+- Bukkit-compatible server (project targets Purpur API `1.21.1-R0.1-SNAPSHOT`)
 
 ### Build
-This project uses **Maven**.
-
 ```bash
-mvn clean package
+mvn -B -ntp clean package
 ```
 
-Compiled JAR output goes to:
-
+Output jar:
 ```text
-target/obtuseloot-<version>.jar
+target/obtuseloot-1.0.1.jar
 ```
 
-### Deploy
-1. Stop server.
-2. Copy the JAR into `plugins/`.
-3. Start server.
+### Install on Server
+1. Copy the built jar into your server `plugins/` directory.
+2. Start the server once to generate plugin data/config files.
 
-On first run, plugin data is created under:
-
-```text
-plugins/ObtuseLoot/
-  config.yml
-  playerdata/
-```
-
----
+Runtime data locations:
+- Config: `plugins/ObtuseLoot/config.yml`
+- Per-player state: `plugins/ObtuseLoot/playerdata/<player-uuid>.yml`
 
 ## Configuration Overview
 
-Main config sections in `config.yml`:
+Current `config.yml` sections:
 
 - `reputation`
-  - combat window sizing
-  - low-health threshold
-  - mobility threshold
-  - kill-chain window
-  - multi-target chaos threshold
-  - boss entity types
-  - volatile decay interval/factor
-  - context cleanup cadence
-- `evolution`
-  - archetype/evolution/hybrid thresholds
-  - switch margin
-  - current archetype inertia
-- `drift`
-  - base/max drift chance
-  - chaos multiplier
-  - consistency reduction
-  - instability duration
-- `persistence`
-  - autosave interval
+  - Combat windowing, low-health threshold, mobility threshold
+  - Kill-chain and chaos thresholds
+  - Boss entity list
+  - Volatile stat decay interval/factor
+  - Combat context cleanup interval
 - `combat`
-  - precision threshold damage
+  - Precision-hit damage threshold used in combat reputation logic
+- `evolution`
+  - Archetype/evolution score thresholds
+  - Archetype switch margin + inertia tuning
+- `drift`
+  - Base/max drift chance and chaos/consistency modifiers
+  - Instability duration
+- `persistence`
+  - Autosave interval
 - `naming`
-  - name generation behavior knobs
-
-Runtime settings are loaded into an in-memory snapshot (`RuntimeSettings`) and can be reloaded via command.
-
----
+  - Prefix/suffix roll chance and deterministic owner seed toggle
 
 ## Commands
 
-Root command:
+Root command: `/obtuseloot` (alias: `/ol`)
 
-- `/obtuseloot` (alias: `/ol`)
+### Core Commands
 
-### General/Admin
-- `/ol help`
-- `/ol info`
-- `/ol inspect [player]`
-- `/ol refresh [player]`
-- `/ol reset [player]`
-- `/ol reload`
-- `/ol addname <prefixes|suffixes|generic> <value>`
-- `/ol removename <prefixes|suffixes|generic> <value>`
+| Command | Description |
+|---|---|
+| `/obtuseloot help` | Show top-level command help. |
+| `/obtuseloot info` | Show plugin runtime status. |
+| `/obtuseloot inspect [player]` | Inspect tracked artifact state summary. |
+| `/obtuseloot refresh [player]` | Unload and regenerate the player's artifact profile. |
+| `/obtuseloot reset [player]` | Clear tracked artifact + reputation state. |
+| `/obtuseloot reload` | Reload config/runtime settings and name pools. |
+| `/obtuseloot addname <prefixes\|suffixes\|generic> <value>` | Add an entry to a naming pool. |
+| `/obtuseloot removename <prefixes\|suffixes\|generic> <value>` | Remove an entry from a naming pool. |
 
-### Debug Suite
-- `/ol debug help`
-- `/ol debug inspect [player]`
-- `/ol debug rep set <stat> <value> [player]`
-- `/ol debug rep add <stat> <value> [player]`
-- `/ol debug rep reset [player]`
-- `/ol debug evolve [player]`
-- `/ol debug drift [player]`
-- `/ol debug awaken [player]`
-- `/ol debug fuse [player]`
-- `/ol debug lore [player]`
-- `/ol debug reset [player]`
-- `/ol debug save [player]`
-- `/ol debug reload`
-- `/ol debug instability clear [player]`
-- `/ol debug archetype set <archetype> [player]`
-- `/ol debug path set <evolutionPath> [player]`
+### Debug Commands
 
-> `simulate` subcommands are **not currently registered** in this branch’s command implementation.
+| Command | Description |
+|---|---|
+| `/obtuseloot debug inspect [player]` | Full debug dump of artifact/reputation state. |
+| `/obtuseloot debug rep set <stat> <value> [player]` | Set one reputation stat value. |
+| `/obtuseloot debug rep add <stat> <value> [player]` | Add (or subtract) from a reputation stat. |
+| `/obtuseloot debug rep reset [player]` | Reset reputation object. |
+| `/obtuseloot debug evolve [player]` | Force evolution evaluation. |
+| `/obtuseloot debug drift [player]` | Force one drift mutation and reevaluate evolution. |
+| `/obtuseloot debug awaken [player]` | Force awakening application if dormant. |
+| `/obtuseloot debug fuse [player]` | Force fusion recipe evaluation. |
+| `/obtuseloot debug lore [player]` | Print actionbar/lore lines to chat for inspection. |
+| `/obtuseloot debug reset [player]` | Recreate artifact, reset reputation, clear combat context. |
+| `/obtuseloot debug save [player]` | Save artifact + reputation to disk. |
+| `/obtuseloot debug reload` | Reload config and runtime name pools. |
+| `/obtuseloot debug instability clear [player]` | Clear active instability state. |
+| `/obtuseloot debug archetype set <archetype> [player]` | Override archetype path. |
+| `/obtuseloot debug path set <evolutionPath> [player]` | Override evolution path. |
 
-Permissions are defined in `plugin.yml`, including `obtuseloot.debug` for the debug suite.
+> Note: the current codebase does **not** expose `/simulate` debug subcommands. QA simulation is currently done via combat events plus the debug controls above.
 
----
+## Debug / QA Workflow
 
-## Debug Workflow (Practical QA)
+Quick manual QA cycle:
 
-Typical progression test flow:
-
-```text
+```bash
 /ol debug inspect
-/ol debug rep add chaos 20
+/ol debug rep set precision 20
+/ol debug rep add chaos 8
 /ol debug evolve
 /ol debug drift
 /ol debug awaken
 /ol debug fuse
 /ol debug lore
 /ol debug save
-```
-
-For clean retests:
-
-```text
 /ol debug reset
+/ol debug reload
 ```
 
-Useful checks:
-- Verify seed affinities, drift bias, awakening bias/multipliers in `inspect`.
-- Use `rep set/add` to push controlled scenarios.
-- Force evolution/drift/awakening/fusion through real engines.
-- Use `lore` to inspect generated lore output without item inspection.
-- Use `save` before restart to verify persistence behavior.
-
----
+Suggested approach:
+1. Use `inspect` before/after each step.
+2. Shape rep with `rep set/add` to hit intended thresholds.
+3. Force `evolve`, then `drift`, then `awaken`, then `fuse`.
+4. Verify lore/history output with `debug lore`.
+5. Persist using `debug save`; validate reload behavior with `debug reload`.
 
 ## Persistence Model
 
-- Artifact + reputation are persisted per player in YAML:
-  - `plugins/ObtuseLoot/playerdata/<uuid>.yml`
-- Lifecycle behaviors:
-  - load on join/first access
-  - save on quit/unload paths
-  - periodic autosave via scheduler
-  - save-all on plugin disable
-- State includes progression paths, drift history/lore history/notable events, bias maps, multipliers, traits, and reputation dimensions.
+- Storage backend: `YamlPlayerStateStore`
+- File model: one YAML file per player UUID under `playerdata/`
+- Loaded lazily on access/join via managers
+- Save behavior:
+  - scheduled autosave (`EngineScheduler`)
+  - explicit debug save command
+  - manager `unload(...)` (used on player quit/reset flows)
+  - plugin disable (`saveAll` for artifacts + reputations)
 
----
+## Project Status
 
-## Current Project Status
+ObtuseLoot is pre-release and under active iteration. Systems and thresholds are still being tuned for behavior quality and progression balance. Expect ongoing changes to formulas, thresholds, and command ergonomics during development.
 
-ObtuseLoot is currently **pre-release** and under active iteration.
+## License
 
-The architecture is focused on internal coherence, tuning, and QA workflows rather than backward compatibility guarantees. Expect balancing changes, command expansion, and behavior refinements as testing continues.
+This project includes a repository `LICENSE` file.
