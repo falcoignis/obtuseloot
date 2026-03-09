@@ -3,6 +3,7 @@ package obtuseloot.abilities;
 import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeMutationEngine;
 import obtuseloot.abilities.genome.GenomeResolver;
+import obtuseloot.lineage.LineageGenomeInheritance;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.lineage.ArtifactLineage;
@@ -22,6 +23,7 @@ public class ProceduralAbilityGenerator {
     private final LineageInfluenceResolver lineageResolver;
     private final GenomeResolver genomeResolver;
     private final GenomeMutationEngine mutationEngine;
+    private final LineageGenomeInheritance lineageGenomeInheritance;
     private final TraitInterferenceResolver traitInterferenceResolver;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
@@ -38,6 +40,7 @@ public class ProceduralAbilityGenerator {
         this.lineageResolver = lineageResolver;
         this.genomeResolver = new GenomeResolver();
         this.mutationEngine = new GenomeMutationEngine();
+        this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
     }
 
@@ -46,7 +49,10 @@ public class ProceduralAbilityGenerator {
         List<AbilityFamily> ranked = new ArrayList<>(List.of(AbilityFamily.values()));
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage)));
 
-        ArtifactGenome genome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
+        ArtifactGenome baseGenome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
+        ArtifactGenome genome = (lineage == null)
+                ? baseGenome
+                : lineageGenomeInheritance.inherit(lineage, baseGenome, artifact.getArtifactSeed());
         int picks = evolutionStage >= 4 ? 3 : 2;
         List<AbilityTemplate> selected = traitInterferenceResolver.selectTop(registry.templates(), genome, picks);
 
