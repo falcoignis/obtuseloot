@@ -1,0 +1,33 @@
+package obtuseloot.simulation.worldlab;
+
+public record WorldSimulationConfig(
+        long seed,
+        int playerCount,
+        int artifactsPerPlayer,
+        int sessionsPerSeason,
+        int seasonCount,
+        double bossFrequency,
+        int encounterDensity,
+        double chaosEventRate,
+        double lowHealthEventRate,
+        double mutationPressureMultiplier,
+        double memoryEventMultiplier,
+        String outputDirectory
+) {
+    public static WorldSimulationConfig defaults() {
+        return new WorldSimulationConfig(
+                90210L,
+                120,
+                4,
+                18,
+                6,
+                0.18D,
+                7,
+                0.20D,
+                0.15D,
+                1.0D,
+                1.0D,
+                "analytics/world-lab"
+        );
+    }
+}

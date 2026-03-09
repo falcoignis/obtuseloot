@@ -20,35 +20,33 @@ public class AwakeningEngine {
     );
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation reputation) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact)) {
+        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
-        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
-            return false;
-        }
-
         String resolved = resolve(artifact, reputation);
-        if (resolved == null) {
+        return resolved != null && applyAwakening(artifact, resolved, player);
+    }
+
+    public boolean evaluateSimulation(Artifact artifact, ArtifactReputation reputation) {
+        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
-        return applyAwakening(player, artifact, resolved);
+        String resolved = resolve(artifact, reputation);
+        return resolved != null && applyAwakening(artifact, resolved, null);
     }
 
     public boolean forceAwakening(Player player, Artifact artifact, ArtifactReputation reputation) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact)) {
-            return false;
-        }
-        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
+        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
         String resolved = resolve(artifact, reputation);
         if (resolved == null) {
             resolved = "Crown of Equilibrium";
         }
-        return applyAwakening(player, artifact, resolved);
+        return applyAwakening(artifact, resolved, player);
     }
 
-    private boolean applyAwakening(Player player, Artifact artifact, String resolved) {
+    private boolean applyAwakening(Artifact artifact, String resolved, Player player) {
         artifact.setAwakeningPath(resolved);
         AwakeningEffectProfile profile = profiles.get(resolved);
         if (profile != null) {
@@ -58,7 +56,9 @@ public class AwakeningEngine {
         }
         artifact.addLoreHistory("Awakening: " + resolved);
         artifact.addNotableEvent("awakening." + resolved.toLowerCase().replace(' ', '-'));
-        player.sendMessage("§dYour artifact awakens: " + resolved);
+        if (player != null) {
+            player.sendMessage("§dYour artifact awakens: " + resolved);
+        }
         return true;
     }
 

@@ -23,6 +23,22 @@ public class DriftEngine {
         return applyProfile(player, artifact, profile);
     }
 
+
+    public DriftMutation applyDriftSimulation(Artifact artifact, ArtifactReputation reputation) {
+        DriftProfile profile = resolveProfile(artifact, reputation);
+        applyBiasMutation(artifact, profile);
+        artifact.incrementDriftLevel();
+        artifact.incrementTotalDrifts();
+        long now = System.currentTimeMillis();
+        artifact.setLastDriftTimestamp(now);
+        artifact.setDriftAlignment(profile.name().toLowerCase());
+        String instability = maybeApplyInstability(artifact, profile);
+        String msg = buildDriftMessage(profile);
+        artifact.addDriftHistory(msg);
+        artifact.addLoreHistory("Drift: " + msg);
+        artifact.addNotableEvent("drift." + profile.name().toLowerCase());
+        return new DriftMutation(true, profile.name().toLowerCase(), msg, true, instability);
+    }
     public DriftMutation forceDrift(Player player, Artifact artifact, ArtifactReputation reputation) {
         DriftProfile profile = resolveProfile(artifact, reputation);
         return applyProfile(player, artifact, profile);
