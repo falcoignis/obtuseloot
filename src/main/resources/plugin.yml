@@ -22,6 +22,9 @@ commands:
       /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
       /<command> dashboard
       /<command> ecosystem [health]
+      /<command> ecosystem map [lineage|species|collapse]
+      /<command> ecosystem map genome <trait>
+      /<command> ecosystem map off
       /<command> debug dashboard
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>

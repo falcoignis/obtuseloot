@@ -12,6 +12,7 @@ import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
+import obtuseloot.ecosystem.EcosystemMapRenderer;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.drift.DriftEngine;
@@ -55,6 +56,7 @@ public class ObtuseLoot extends JavaPlugin {
     private ExperienceEvolutionEngine experienceEvolutionEngine;
     private DashboardService dashboardService;
     private DashboardWebServer dashboardWebServer;
+    private EcosystemMapRenderer ecosystemMapRenderer;
 
     @Override
     public void onEnable() {
@@ -83,6 +85,7 @@ public class ObtuseLoot extends JavaPlugin {
         awakeningEngine = new AwakeningEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
         ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+        ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
         lineageInfluenceResolver = new LineageInfluenceResolver();
         itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
@@ -129,6 +132,9 @@ public class ObtuseLoot extends JavaPlugin {
         if (engine != null) {
             engine.shutdown();
         }
+        if (ecosystemMapRenderer != null) {
+            ecosystemMapRenderer.shutdown();
+        }
         if (dashboardWebServer != null) {
             dashboardWebServer.stop();
         }
@@ -151,4 +157,5 @@ public class ObtuseLoot extends JavaPlugin {
     public LineageRegistry getLineageRegistry() { return lineageRegistry; }
     public ArtifactUsageTracker getArtifactUsageTracker() { return artifactUsageTracker; }
     public DashboardService getDashboardService() { return dashboardService; }
+    public EcosystemMapRenderer getEcosystemMapRenderer() { return ecosystemMapRenderer; }
 }
