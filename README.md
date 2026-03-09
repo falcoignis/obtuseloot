@@ -111,7 +111,7 @@ mvn -B -ntp clean package
 
 Output jar:
 ```text
-target/ObtuseLoot-0.9.4.jar
+target/ObtuseLoot-0.9.5.jar
 ```
 
 ### Build Troubleshooting
