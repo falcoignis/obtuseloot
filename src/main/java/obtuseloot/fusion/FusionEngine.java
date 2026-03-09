@@ -10,10 +10,15 @@ import java.util.List;
 public class FusionEngine {
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation rep) {
-        if (!ArtifactEligibility.isEvolutionEligible(artifact)) {
-            return false;
-        }
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) {
+        return evaluateInternal(player, artifact, rep);
+    }
+
+    public boolean evaluateSimulation(Artifact artifact, ArtifactReputation rep) {
+        return evaluateInternal(null, artifact, rep);
+    }
+
+    private boolean evaluateInternal(Player player, Artifact artifact, ArtifactReputation rep) {
+        if (!ArtifactEligibility.isEvolutionEligible(artifact) || !"none".equalsIgnoreCase(artifact.getFusionPath())) {
             return false;
         }
 
@@ -28,7 +33,9 @@ public class FusionEngine {
             }
             artifact.addLoreHistory("Fusion: " + recipe.id());
             artifact.addNotableEvent("fusion." + recipe.id());
-            player.sendMessage("§6Fusion attained: " + recipe.id());
+            if (player != null) {
+                player.sendMessage("§6Fusion attained: " + recipe.id());
+            }
             return true;
         }
 
