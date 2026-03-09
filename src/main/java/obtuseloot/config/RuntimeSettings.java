@@ -1,17 +1,9 @@
 package obtuseloot.config;
 
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Centralized runtime configuration for balancing and event throttling.
- *
- * <p>Values are loaded from {@code config.yml} at startup/reload and read from hot paths
- * (combat and kill listeners), so this class keeps access lock-free by swapping immutable snapshots.
- */
 public final class RuntimeSettings {
     private static volatile Snapshot current = Snapshot.defaults();
 
@@ -20,146 +12,65 @@ public final class RuntimeSettings {
 
     public static void load(FileConfiguration config) {
         current = new Snapshot(
-                config.getDouble("combat.precision-threshold-damage", 10.0D),
-                config.getInt("evolution.archetype-score", 20),
-                config.getInt("evolution.archetype-dominance-delta", 8),
-                config.getInt("evolution.tempered-score", 40),
-                config.getInt("evolution.mythic-score", 120),
-                config.getInt("evolution.hybrid-score", 250),
-                config.getInt("fusion.min-score", 320),
-                loadFusionRecipes(config.getConfigurationSection("fusion.recipes")),
-                config.getDouble("drift.base-chance", 0.03D),
+                config.getLong("reputation.combat-window-ms", 10000L),
+                config.getDouble("reputation.low-health-threshold", 6.0D),
+                config.getDouble("reputation.mobility-distance-threshold", 12.0D),
+                config.getLong("reputation.kill-chain-window-ms", 8000L),
+                config.getInt("reputation.multi-target-chaos-threshold", 3),
+                config.getStringList("reputation.boss-types"),
+                config.getInt("reputation.volatile-decay-interval-seconds", 300),
+                config.getDouble("reputation.volatile-decay-factor", 0.96D),
+                config.getInt("reputation.context-cleanup-seconds", 120),
+
+                config.getInt("evolution.archetype-threshold", 10),
+                config.getInt("evolution.tempered-threshold", 25),
+                config.getInt("evolution.mythic-threshold", 45),
+                config.getInt("evolution.hybrid-threshold", 70),
+                config.getDouble("evolution.archetype-switch-margin", 4.0D),
+                config.getDouble("evolution.current-archetype-inertia", 2.0D),
+
+                config.getDouble("drift.base-chance", 0.05D),
+                config.getDouble("drift.max-chance", 0.40D),
                 config.getDouble("drift.chaos-multiplier", 0.01D),
                 config.getDouble("drift.consistency-reduction", 0.005D),
-                config.getDouble("drift.max-chance", 0.60D),
-                config.getLong("lore.min-update-interval-ms", 500L),
+                config.getInt("drift.instability-duration-seconds", 600),
+
+                config.getInt("persistence.autosave-interval-seconds", 300),
                 config.getInt("naming.prefix-suffix-chance-percent", 60),
-                config.getBoolean("naming.use-deterministic-owner-seed", true),
-                config.getInt("awakening.ravager.min-brutality", 140),
-                config.getInt("awakening.ravager.min-boss-kills", 1),
-                config.getInt("awakening.deadeye.min-precision", 120),
-                config.getInt("awakening.deadeye.min-mobility", 80),
-                config.getInt("awakening.vanguard.min-survival", 140),
-                config.getInt("awakening.vanguard.min-consistency", 100),
-                config.getInt("awakening.strider.min-mobility", 140),
-                config.getInt("awakening.strider.min-precision", 100),
-                config.getInt("awakening.harbinger.min-chaos", 120),
-                config.getInt("awakening.harbinger.min-boss-kills", 2),
-                config.getInt("awakening.warden.min-survival", 120),
-                config.getInt("awakening.warden.min-consistency", 100),
-                config.getInt("awakening.paragon.min-score", 500),
-                config.getInt("awakening.paragon.min-consistency", 120)
+                config.getBoolean("naming.use-deterministic-owner-seed", true)
         );
     }
 
-    private static List<FusionRecipe> loadFusionRecipes(ConfigurationSection section) {
-        if (section == null) {
-            return List.of();
-        }
-
-        List<FusionRecipe> recipes = new ArrayList<>();
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection recipeSection = section.getConfigurationSection(id);
-            if (recipeSection == null) {
-                continue;
-            }
-
-            recipes.add(new FusionRecipe(
-                    id,
-                    recipeSection.getString("archetype", "paragon"),
-                    recipeSection.getInt("min-precision", 0),
-                    recipeSection.getInt("min-brutality", 0),
-                    recipeSection.getInt("min-survival", 0),
-                    recipeSection.getInt("min-mobility", 0),
-                    recipeSection.getInt("min-chaos", 0),
-                    recipeSection.getInt("min-consistency", 0),
-                    recipeSection.getInt("min-boss-kills", 0)
-            ));
-        }
-
-        return List.copyOf(recipes);
-    }
-
-    public static Snapshot get() {
-        return current;
-    }
+    public static Snapshot get() { return current; }
 
     public record Snapshot(
-            double precisionThresholdDamage,
-            int archetypeScore,
-            int archetypeDominanceDelta,
-            int temperedScore,
-            int mythicScore,
-            int hybridScore,
-            int fusionMinScore,
-            List<FusionRecipe> fusionRecipes,
+            long combatWindowMs,
+            double lowHealthThreshold,
+            double mobilityDistanceThreshold,
+            long killChainWindowMs,
+            int multiTargetChaosThreshold,
+            List<String> bossTypes,
+            int volatileDecayIntervalSeconds,
+            double volatileDecayFactor,
+            int contextCleanupSeconds,
+            int archetypeThreshold,
+            int temperedThreshold,
+            int mythicThreshold,
+            int hybridThreshold,
+            double archetypeSwitchMargin,
+            double currentArchetypeInertia,
             double driftBaseChance,
+            double driftMaxChance,
             double driftChaosMultiplier,
             double driftConsistencyReduction,
-            double driftMaxChance,
-            long loreMinUpdateIntervalMs,
+            int driftInstabilityDurationSeconds,
+            int autosaveIntervalSeconds,
             int namingPrefixSuffixChancePercent,
-            boolean namingUseDeterministicOwnerSeed,
-            int ravagerMinBrutality,
-            int ravagerMinBossKills,
-            int deadeyeMinPrecision,
-            int deadeyeMinMobility,
-            int vanguardMinSurvival,
-            int vanguardMinConsistency,
-            int striderMinMobility,
-            int striderMinPrecision,
-            int harbingerMinChaos,
-            int harbingerMinBossKills,
-            int wardenMinSurvival,
-            int wardenMinConsistency,
-            int paragonMinScore,
-            int paragonMinConsistency
+            boolean namingUseDeterministicOwnerSeed
     ) {
         private static Snapshot defaults() {
-            return new Snapshot(
-                    10.0D,
-                    20,
-                    8,
-                    40,
-                    120,
-                    250,
-                    320,
-                    List.of(),
-                    0.03D,
-                    0.01D,
-                    0.005D,
-                    0.60D,
-                    500L,
-                    60,
-                    true,
-                    140,
-                    1,
-                    120,
-                    80,
-                    140,
-                    100,
-                    140,
-                    100,
-                    120,
-                    2,
-                    120,
-                    100,
-                    500,
-                    120
-            );
+            return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
+                    300, 0.96D, 120, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300, 60, true);
         }
-    }
-
-    public record FusionRecipe(
-            String id,
-            String archetype,
-            int minPrecision,
-            int minBrutality,
-            int minSurvival,
-            int minMobility,
-            int minChaos,
-            int minConsistency,
-            int minBossKills
-    ) {
     }
 }
