@@ -14,4 +14,7 @@ public interface PlayerStateStore {
     ArtifactReputation loadReputation(UUID playerId);
 
     void saveAll(Map<UUID, Artifact> artifacts, Map<UUID, ArtifactReputation> reputations);
+
+    default void flushPendingWrites() {
+    }
 }

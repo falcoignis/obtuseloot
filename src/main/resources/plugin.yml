@@ -23,9 +23,23 @@ commands:
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
     aliases:      [ ol ]
-    permission:   obtuseloot.debug
 
 permissions:
+  obtuseloot.help:
+    description: Allows /obtuseloot help.
+    default: true
+  obtuseloot.info:
+    description: Allows /obtuseloot info.
+    default: true
+  obtuseloot.inspect:
+    description: Allows /obtuseloot inspect.
+    default: op
+  obtuseloot.admin:
+    description: Allows /obtuseloot refresh, reset, and reload.
+    default: op
+  obtuseloot.edit:
+    description: Allows /obtuseloot addname and /obtuseloot removename.
+    default: op
   obtuseloot.debug:
     description: Allows /obtuseloot debug, /obtuseloot debug simulate, and /obtuseloot debug seed commands for progression testing.
     default: op

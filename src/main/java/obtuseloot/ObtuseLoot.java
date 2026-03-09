@@ -72,6 +72,9 @@ public class ObtuseLoot extends JavaPlugin {
         if (reputationManager != null) {
             reputationManager.saveAll();
         }
+        if (playerStateStore != null) {
+            playerStateStore.flushPendingWrites();
+        }
         if (engine != null) {
             engine.shutdown();
         }

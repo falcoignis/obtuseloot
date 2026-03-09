@@ -92,7 +92,10 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            sender.sendMessage("§7" + ArtifactDebugger.describe(target.getUniqueId()));
+            sender.sendMessage("§d=== Obtuse Inspect: " + target.getName() + " ===");
+            for (String line : ArtifactDebugger.describeLines(target.getUniqueId())) {
+                sender.sendMessage("§7" + line);
+            }
             return true;
         }
 
