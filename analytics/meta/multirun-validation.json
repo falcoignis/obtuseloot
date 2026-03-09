@@ -1,0 +1,288 @@
+{
+  "version": "0.9.2",
+  "runs_performed": 5,
+  "per_run_summaries": [
+    {
+      "run": 1,
+      "seed": 90211,
+      "archetype_distribution": {
+        "reaper": 975,
+        "vanguard": 1027,
+        "oracle": 1039,
+        "warden": 990,
+        "trickster": 969
+      },
+      "final_path_distribution": {
+        "vanguard": 967,
+        "warden": 1053,
+        "oracle": 963,
+        "reaper": 1011,
+        "trickster": 1006
+      },
+      "drift_profile_distribution": {
+        "volatile": 1248,
+        "wild": 1188,
+        "stable": 1253,
+        "adaptive": 1311
+      },
+      "awakening_rate": 0.3346,
+      "fusion_rate": 0.0732,
+      "instability_rate": 0.1656,
+      "dominant_path_ranking": [
+        [
+          "warden",
+          1053
+        ],
+        [
+          "reaper",
+          1011
+        ],
+        [
+          "trickster",
+          1006
+        ]
+      ],
+      "dead_path_candidates": [],
+      "rare_path_candidates": [],
+      "top_outlier_seeds": [
+        7449697856940413906,
+        8840368589563026951,
+        1962072866258643541,
+        8260970386722827523,
+        8451719074438268444
+      ],
+      "avg_time_to_awakening": 62.79,
+      "avg_time_to_fusion": 83.11,
+      "population_size": 5000
+    },
+    {
+      "run": 2,
+      "seed": 90222,
+      "archetype_distribution": {
+        "oracle": 972,
+        "vanguard": 1011,
+        "reaper": 1004,
+        "trickster": 1028,
+        "warden": 985
+      },
+      "final_path_distribution": {
+        "warden": 1012,
+        "trickster": 1027,
+        "vanguard": 1014,
+        "oracle": 985,
+        "reaper": 962
+      },
+      "drift_profile_distribution": {
+        "volatile": 1193,
+        "adaptive": 1251,
+        "stable": 1220,
+        "wild": 1336
+      },
+      "awakening_rate": 0.329,
+      "fusion_rate": 0.0654,
+      "instability_rate": 0.1744,
+      "dominant_path_ranking": [
+        [
+          "trickster",
+          1027
+        ],
+        [
+          "vanguard",
+          1014
+        ],
+        [
+          "warden",
+          1012
+        ]
+      ],
+      "dead_path_candidates": [],
+      "rare_path_candidates": [],
+      "top_outlier_seeds": [
+        3112428525392548521,
+        678891786003877434,
+        5875019299874285937,
+        1217311267754606207,
+        1658282198551275002
+      ],
+      "avg_time_to_awakening": 65.77,
+      "avg_time_to_fusion": 88.17,
+      "population_size": 5000
+    },
+    {
+      "run": 3,
+      "seed": 90233,
+      "archetype_distribution": {
+        "reaper": 1041,
+        "vanguard": 946,
+        "warden": 1017,
+        "trickster": 995,
+        "oracle": 1001
+      },
+      "final_path_distribution": {
+        "reaper": 1021,
+        "warden": 1005,
+        "oracle": 993,
+        "vanguard": 987,
+        "trickster": 994
+      },
+      "drift_profile_distribution": {
+        "wild": 1205,
+        "adaptive": 1257,
+        "volatile": 1302,
+        "stable": 1236
+      },
+      "awakening_rate": 0.3376,
+      "fusion_rate": 0.0762,
+      "instability_rate": 0.1806,
+      "dominant_path_ranking": [
+        [
+          "reaper",
+          1021
+        ],
+        [
+          "warden",
+          1005
+        ],
+        [
+          "trickster",
+          994
+        ]
+      ],
+      "dead_path_candidates": [],
+      "rare_path_candidates": [],
+      "top_outlier_seeds": [
+        2316828079556133482,
+        3612452491826515569,
+        8759877993693716326,
+        2613910209688081442,
+        4375195614517259453
+      ],
+      "avg_time_to_awakening": 65.43,
+      "avg_time_to_fusion": 90.98,
+      "population_size": 5000
+    },
+    {
+      "run": 4,
+      "seed": 90244,
+      "archetype_distribution": {
+        "vanguard": 1015,
+        "reaper": 1013,
+        "oracle": 963,
+        "trickster": 982,
+        "warden": 1027
+      },
+      "final_path_distribution": {
+        "warden": 1011,
+        "vanguard": 1001,
+        "oracle": 968,
+        "reaper": 1004,
+        "trickster": 1016
+      },
+      "drift_profile_distribution": {
+        "wild": 1217,
+        "adaptive": 1254,
+        "volatile": 1291,
+        "stable": 1238
+      },
+      "awakening_rate": 0.3306,
+      "fusion_rate": 0.0732,
+      "instability_rate": 0.1792,
+      "dominant_path_ranking": [
+        [
+          "trickster",
+          1016
+        ],
+        [
+          "warden",
+          1011
+        ],
+        [
+          "reaper",
+          1004
+        ]
+      ],
+      "dead_path_candidates": [],
+      "rare_path_candidates": [],
+      "top_outlier_seeds": [
+        608815580303598545,
+        7708588351708748222,
+        2747132677869531522,
+        3865716479105102474,
+        2463770416431366778
+      ],
+      "avg_time_to_awakening": 64.6,
+      "avg_time_to_fusion": 84.04,
+      "population_size": 5000
+    },
+    {
+      "run": 5,
+      "seed": 90255,
+      "archetype_distribution": {
+        "reaper": 992,
+        "oracle": 1021,
+        "vanguard": 1025,
+        "warden": 958,
+        "trickster": 1004
+      },
+      "final_path_distribution": {
+        "reaper": 1020,
+        "trickster": 995,
+        "warden": 954,
+        "vanguard": 1043,
+        "oracle": 988
+      },
+      "drift_profile_distribution": {
+        "stable": 1216,
+        "adaptive": 1241,
+        "wild": 1284,
+        "volatile": 1259
+      },
+      "awakening_rate": 0.3374,
+      "fusion_rate": 0.0732,
+      "instability_rate": 0.1748,
+      "dominant_path_ranking": [
+        [
+          "vanguard",
+          1043
+        ],
+        [
+          "reaper",
+          1020
+        ],
+        [
+          "trickster",
+          995
+        ]
+      ],
+      "dead_path_candidates": [],
+      "rare_path_candidates": [],
+      "top_outlier_seeds": [
+        546331937864923731,
+        2430560489406969477,
+        8111618155466019448,
+        6600723697220086529,
+        9161122479540512709
+      ],
+      "avg_time_to_awakening": 64.58,
+      "avg_time_to_fusion": 88.49,
+      "population_size": 5000
+    }
+  ],
+  "averaged_results": {
+    "awakening_rate": 0.33384,
+    "fusion_rate": 0.07224,
+    "instability_rate": 0.17492
+  },
+  "variance": {
+    "awakening_rate": 1.2262399999999952e-05,
+    "fusion_rate": 1.3046400000000008e-05,
+    "instability_rate": 2.754560000000003e-05
+  },
+  "stable_findings": [
+    "Dominant path trickster appeared in 2/5 runs"
+  ],
+  "changed_significantly": [
+    "Secondary path ranking swapped between runs 2 and 4"
+  ],
+  "confidence_in_repeated_findings": "medium"
+}
