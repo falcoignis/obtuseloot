@@ -2,6 +2,8 @@
 
 `pre-release` `Bukkit/Purpur plugin` `Java 21` `persistent progression`
 
+to be re-written
+
 ObtuseLoot is a Java plugin for Bukkit-compatible servers (targeting Purpur 1.21 API) that tracks per-player artifact progression through combat behavior.
 
 Each player has a persistent artifact profile with hidden seed affinities and evolving paths. Reputation is not just a flat XP bar: combat patterns (damage style, mobility, low-health survival, kill chains, boss kills, and chaos signals) feed multiple dimensions that drive evolution outcomes.
