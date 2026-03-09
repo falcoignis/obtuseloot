@@ -1,6 +1,7 @@
 package obtuseloot.abilities;
 
 import obtuseloot.abilities.mutation.AbilityMutationEngine;
+import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
 import obtuseloot.abilities.tree.AbilityEvolutionTree;
 import obtuseloot.artifacts.Artifact;
@@ -28,16 +29,24 @@ public class SeededAbilityResolver implements AbilityResolver {
         int stage = ArtifactEvolutionStage.resolveStage(artifact);
         AbilityProfile generated = generator.generate(artifact, stage, memoryProfile);
         List<AbilityDefinition> enhanced = new ArrayList<>();
+        List<String> branchPath = new ArrayList<>();
         for (AbilityDefinition d : generated.abilities()) {
             AbilityEvolutionTree tree = branchResolver.resolveTree(d.id(), artifact, memoryProfile, stage, artifact.getArchetypePath());
             String branch = tree.selectedBranch();
+            branchPath.add(d.id() + "->" + branch);
             enhanced.add(new AbilityDefinition(d.id(), d.name(), d.family(), d.trigger(), d.mechanic(),
                     d.effectPattern(), d.evolutionVariant(), d.driftVariant(), d.awakeningVariant(), d.fusionVariant(), d.memoryVariant(), d.supportModifiers(), d.effects(),
                     d.stage1(), d.stage2() + " [branch=" + branch + "]", d.stage3(), d.stage4(), d.stage5()));
         }
-        artifact.setLastAbilityBranchPath(enhanced.stream().map(AbilityDefinition::id).toList().toString());
-        artifact.setLastMutationHistory(mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0).toString());
-        artifact.setLastMemoryInfluence("pressure=" + memoryProfile.pressure() + ", chaos=" + memoryProfile.chaosWeight() + ", discipline=" + memoryProfile.disciplineWeight());
-        return new AbilityProfile(generated.profileId(), enhanced);
+        AbilityMutationResult mutationResult = mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0);
+        boolean mutated = !mutationResult.mutations().isEmpty();
+
+        artifact.setLastAbilityBranchPath(branchPath.toString());
+        artifact.setLastMutationHistory(mutationResult.mutations().toString());
+        artifact.setLastMemoryInfluence("pressure=" + memoryProfile.pressure() + ", chaos=" + memoryProfile.chaosWeight() + ", discipline=" + memoryProfile.disciplineWeight()
+                + ", aggression=" + memoryProfile.aggressionWeight() + ", survival=" + memoryProfile.survivalWeight() + ", mobility=" + memoryProfile.mobilityWeight()
+                + ", boss=" + memoryProfile.bossWeight() + ", trauma=" + memoryProfile.traumaWeight() + ", activeMutation=" + mutated
+                + ", templates=" + generated.abilities().stream().map(AbilityDefinition::id).toList());
+        return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), mutationResult.abilities());
     }
 }

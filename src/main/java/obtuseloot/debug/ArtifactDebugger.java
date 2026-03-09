@@ -1,6 +1,7 @@
 package obtuseloot.debug;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.abilities.AbilityDefinition;
 import obtuseloot.abilities.AbilityProfile;
 import obtuseloot.abilities.ArtifactEvolutionStage;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
@@ -36,7 +37,9 @@ public final class ArtifactDebugger {
         AbilityProfile profile = ObtuseLoot.get().getItemAbilityManager().profileFor(artifact, rep);
         lines.add("isGeneric=" + ArtifactEligibility.isGenericItem(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", memoryEligible=" + ArtifactEligibility.isMemoryEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
-        lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList());
+        lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList()
+                + ", templates=" + profile.abilities().stream().map(AbilityDefinition::id).toList());
+        lines.add("abilityExplain=" + profile.abilities().stream().map(a -> a.stageDescription(2)).toList());
         lines.add("branchPath=" + artifact.getLastAbilityBranchPath() + ", mutationHistory=" + artifact.getLastMutationHistory());
         lines.add("memoryInfluence=" + artifact.getLastMemoryInfluence() + ", memoryEvents=" + artifact.getMemory().snapshot());
         lines.add("awakeningTraits=" + artifact.getAwakeningTraits());

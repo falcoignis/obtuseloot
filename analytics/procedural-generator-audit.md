@@ -1,5 +1,6 @@
 # Procedural Generator Audit
 
 - Deterministic seed composition validated.
-- Generic item gates validated in code paths.
-- Branch updates occur only through staged state changes/drift/awakening/fusion/memory.
+- Multi-template families observed across all six families.
+- Branch updates vary by family, stage, drift alignment, awakening, fusion, and memory profile.
+- Mutation output evaluated from active profile variants, not metadata-only records.

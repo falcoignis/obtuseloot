@@ -8,7 +8,7 @@ public class ArtifactMemoryEngine {
 
     public ArtifactMemoryProfile recordAndProfile(Artifact artifact, ArtifactMemoryEvent event) {
         if (!ArtifactEligibility.isMemoryEligible(artifact)) {
-            return new ArtifactMemoryProfile(0, 0.0D, 0.0D);
+            return new ArtifactMemoryProfile(0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
         }
         artifact.getMemory().record(event);
         artifact.addNotableEvent("memory." + event.name().toLowerCase());
@@ -17,7 +17,7 @@ public class ArtifactMemoryEngine {
 
     public ArtifactMemoryProfile profile(Artifact artifact) {
         if (!ArtifactEligibility.isMemoryEligible(artifact)) {
-            return new ArtifactMemoryProfile(0, 0.0D, 0.0D);
+            return new ArtifactMemoryProfile(0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
         }
         return influenceResolver.profileFor(artifact.getMemory());
     }

@@ -5,35 +5,141 @@
         "id": "root"
       },
       {
-        "id": "adaptive"
+        "id": "precision.focus"
       },
       {
-        "id": "chaotic"
+        "id": "precision.clock"
       },
       {
-        "id": "resilient"
+        "id": "precision.awakened-discipline"
+      },
+      {
+        "id": "brutality.mauler"
+      },
+      {
+        "id": "brutality.quarry"
+      },
+      {
+        "id": "brutality.fusion-predator"
+      },
+      {
+        "id": "survival.guardian"
+      },
+      {
+        "id": "survival.shelter"
+      },
+      {
+        "id": "survival.awakened-remnant"
+      },
+      {
+        "id": "mobility.lane-dancer"
+      },
+      {
+        "id": "mobility.relay"
+      },
+      {
+        "id": "mobility.fusion-slipstream"
+      },
+      {
+        "id": "chaos.sprawl"
+      },
+      {
+        "id": "chaos.paradox"
+      },
+      {
+        "id": "chaos.awakened-entropy"
+      },
+      {
+        "id": "consistency.anchor"
+      },
+      {
+        "id": "consistency.discipline"
+      },
+      {
+        "id": "consistency.boss-ledger"
       }
     ],
     "edges": [
       {
         "from": "root",
-        "to": "adaptive"
+        "to": "precision.focus"
       },
       {
         "from": "root",
-        "to": "chaotic"
+        "to": "precision.clock"
       },
       {
         "from": "root",
-        "to": "resilient"
+        "to": "precision.awakened-discipline"
+      },
+      {
+        "from": "root",
+        "to": "brutality.mauler"
+      },
+      {
+        "from": "root",
+        "to": "brutality.quarry"
+      },
+      {
+        "from": "root",
+        "to": "brutality.fusion-predator"
+      },
+      {
+        "from": "root",
+        "to": "survival.guardian"
+      },
+      {
+        "from": "root",
+        "to": "survival.shelter"
+      },
+      {
+        "from": "root",
+        "to": "survival.awakened-remnant"
+      },
+      {
+        "from": "root",
+        "to": "mobility.lane-dancer"
+      },
+      {
+        "from": "root",
+        "to": "mobility.relay"
+      },
+      {
+        "from": "root",
+        "to": "mobility.fusion-slipstream"
+      },
+      {
+        "from": "root",
+        "to": "chaos.sprawl"
+      },
+      {
+        "from": "root",
+        "to": "chaos.paradox"
+      },
+      {
+        "from": "root",
+        "to": "chaos.awakened-entropy"
+      },
+      {
+        "from": "root",
+        "to": "consistency.anchor"
+      },
+      {
+        "from": "root",
+        "to": "consistency.discipline"
+      },
+      {
+        "from": "root",
+        "to": "consistency.boss-ledger"
       }
     ]
   },
   "mutationNetwork": {
-    "none": 1230,
-    "trigger": 1244,
-    "memory": 1251,
-    "mechanic": 1275
+    "trigger": 982,
+    "hybrid": 988,
+    "none": 991,
+    "pattern": 1028,
+    "mechanic": 1011
   },
   "memoryGraph": {
     "LONG_BATTLE": 474,
@@ -48,45 +154,40 @@
     "PLAYER_DEATH_WHILE_BOUND": 529
   },
   "familyDistribution": {
-    "burstState": 421,
-    "movementEcho": 378,
-    "retaliation": 366,
-    "defensiveThreshold": 420,
-    "pulse": 362,
-    "unstableDetonation": 391,
-    "revenantTrigger": 385,
-    "memoryEcho": 397,
-    "mark": 418,
-    "guardianPulse": 384,
-    "chainEscalation": 349,
-    "battlefieldField": 356,
-    "recoveryWindow": 373
+    "consistency": 868,
+    "precision": 819,
+    "mobility": 815,
+    "survival": 866,
+    "brutality": 818,
+    "chaos": 814
   },
   "triggerFrequency": {
-    "onLowHealth": 472,
-    "onReposition": 492,
-    "onMemoryEvent": 486,
-    "onMovement": 483,
-    "onHit": 528,
-    "onKill": 487,
-    "onDrift": 516,
-    "onAwakening": 536,
-    "onBossKill": 497,
-    "onChainCombat": 503
+    "onBossKill": 390,
+    "onMultiKill": 409,
+    "onHit": 397,
+    "onDrift": 426,
+    "onMemoryEvent": 423,
+    "onLowHealth": 429,
+    "onChainCombat": 400,
+    "onMovement": 439,
+    "onAwakening": 396,
+    "onKill": 426,
+    "onReposition": 438,
+    "onFusion": 427
   },
   "mechanicHeatmap": {
-    "burstState": 421,
-    "movementEcho": 378,
-    "retaliation": 366,
-    "defensiveThreshold": 420,
-    "pulse": 362,
-    "unstableDetonation": 391,
-    "revenantTrigger": 385,
-    "memoryEcho": 397,
-    "mark": 418,
-    "guardianPulse": 384,
-    "chainEscalation": 349,
-    "battlefieldField": 356,
-    "recoveryWindow": 373
+    "unstableDetonation": 380,
+    "burstState": 396,
+    "defensiveThreshold": 409,
+    "chainEscalation": 401,
+    "battlefieldField": 392,
+    "recoveryWindow": 360,
+    "revenantTrigger": 394,
+    "pulse": 400,
+    "guardianPulse": 369,
+    "retaliation": 390,
+    "memoryEcho": 354,
+    "mark": 364,
+    "movementEcho": 391
   }
 }
