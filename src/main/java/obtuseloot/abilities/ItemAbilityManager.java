@@ -45,6 +45,6 @@ public class ItemAbilityManager {
         if (resolver instanceof SeededAbilityResolver seeded) {
             return seeded.traitProjectionStats();
         }
-        return new TraitProjectionStats(false, 0, 0, 0, 0, 0, 0, 0, 0.0D, 1.0D);
+        return new TraitProjectionStats(false, ScoringMode.BASELINE, 0, 0, 0, 0, 0, 0, 0, 0, 0.0D, 1.0D);
     }
 }

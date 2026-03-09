@@ -1,5 +1,7 @@
 package obtuseloot.simulation.worldlab;
 
+import obtuseloot.abilities.ScoringMode;
+
 public record WorldSimulationConfig(
         long seed,
         int playerCount,
@@ -18,7 +20,8 @@ public record WorldSimulationConfig(
         boolean enableDiversityPreservation,
         boolean enableSelfBalancingAdjustments,
         boolean enableEnvironmentalPressure,
-        boolean enableTraitInteractions
+        boolean enableTraitInteractions,
+        ScoringMode scoringMode
 ) {
     public static WorldSimulationConfig defaults() {
         return new WorldSimulationConfig(
@@ -39,7 +42,8 @@ public record WorldSimulationConfig(
                 true,
                 true,
                 true,
-                true
+                true,
+                ScoringMode.PROJECTION_WITH_CACHE
         );
     }
 }

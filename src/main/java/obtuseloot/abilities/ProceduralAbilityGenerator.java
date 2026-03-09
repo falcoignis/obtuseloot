@@ -37,6 +37,18 @@ public class ProceduralAbilityGenerator {
         return traitInterferenceResolver.statsSnapshot();
     }
 
+    public void setScoringMode(ScoringMode scoringMode) {
+        traitInterferenceResolver.setScoringMode(scoringMode);
+    }
+
+    public ScoringMode scoringMode() {
+        return traitInterferenceResolver.scoringMode();
+    }
+
+    public void resetProjectionStats() {
+        traitInterferenceResolver.resetStats();
+    }
+
     public ProceduralAbilityGenerator(AbilityRegistry registry,
                                       ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
                                       LineageRegistry lineageRegistry,
@@ -58,6 +70,16 @@ public class ProceduralAbilityGenerator {
                                       LineageInfluenceResolver lineageResolver,
                                       ExperienceEvolutionEngine experienceEvolutionEngine,
                                       boolean traitInteractionsEnabled) {
+        this(registry, ecosystemEngine, lineageRegistry, lineageResolver, experienceEvolutionEngine, traitInteractionsEnabled, ScoringMode.PROJECTION_WITH_CACHE);
+    }
+
+    public ProceduralAbilityGenerator(AbilityRegistry registry,
+                                      ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
+                                      LineageRegistry lineageRegistry,
+                                      LineageInfluenceResolver lineageResolver,
+                                      ExperienceEvolutionEngine experienceEvolutionEngine,
+                                      boolean traitInteractionsEnabled,
+                                      ScoringMode scoringMode) {
         this.registry = registry;
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
@@ -66,6 +88,7 @@ public class ProceduralAbilityGenerator {
         this.mutationEngine = new GenomeMutationEngine();
         this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
+        this.traitInterferenceResolver.setScoringMode(scoringMode);
         this.experienceEvolutionEngine = experienceEvolutionEngine;
         this.traitInteractionsEnabled = traitInteractionsEnabled;
     }

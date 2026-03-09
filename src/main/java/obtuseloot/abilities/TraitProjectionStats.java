@@ -2,11 +2,13 @@ package obtuseloot.abilities;
 
 public record TraitProjectionStats(
         boolean optimizedEnabled,
+        ScoringMode scoringMode,
         long scoringCalls,
         long cacheHits,
         long cacheMisses,
         int cacheSize,
         int cacheCapacity,
+        long cacheEvictions,
         int abilityVectorCount,
         int dimensions,
         double averageScoringMicros,

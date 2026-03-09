@@ -302,13 +302,14 @@ public class DebugCommand {
     private boolean projection(CommandSender sender, String[] args) {
         var stats = plugin.getItemAbilityManager().traitProjectionStats();
         if (args.length >= 2 && "cache".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§dProjection mode: §f" + stats.scoringMode());
             sender.sendMessage("§dProjection cache size/capacity: §f" + stats.cacheSize() + "/" + stats.cacheCapacity());
-            sender.sendMessage("§7hits=§f" + stats.cacheHits() + " §7misses=§f" + stats.cacheMisses()
+            sender.sendMessage("§7hits=§f" + stats.cacheHits() + " §7misses=§f" + stats.cacheMisses() + " §7evictions=§f" + stats.cacheEvictions()
                     + " §7hitRate=§f" + String.format(Locale.ROOT, "%.2f%%", stats.cacheHitRate() * 100.0D));
             return true;
         }
         if (args.length >= 2 && "stats".equalsIgnoreCase(args[1])) {
-            sender.sendMessage("§dProjection stats: optimized=§f" + stats.optimizedEnabled()
+            sender.sendMessage("§dProjection stats: mode=§f" + stats.scoringMode() + " §7optimized=§f" + stats.optimizedEnabled()
                     + " §7vectors=§f" + stats.abilityVectorCount() + " §7dims=§f" + stats.dimensions());
             sender.sendMessage("§7scoringCalls=§f" + stats.scoringCalls() + " §7avgMicros=§f"
                     + String.format(Locale.ROOT, "%.3f", stats.averageScoringMicros())

@@ -72,7 +72,12 @@ public class WorldSimulationHarness {
                 lineageRegistry,
                 lineageInfluenceResolver,
                 experienceEvolutionEngine,
-                config.enableTraitInteractions());
+                config.enableTraitInteractions(),
+                config.scoringMode());
+    }
+
+    public TraitProjectionStats traitProjectionStats() {
+        return abilityGenerator.traitProjectionStats();
     }
 
     public void runAndWriteOutputs() throws IOException {

@@ -11,13 +11,18 @@ public final class ProjectionCache {
     private final Map<ProjectionCacheKey, GenomeProjection> projectionByKey;
     private final AtomicLong hits = new AtomicLong();
     private final AtomicLong misses = new AtomicLong();
+    private final AtomicLong evictions = new AtomicLong();
 
     public ProjectionCache(int capacity) {
         this.capacity = Math.max(1_000, capacity);
         this.projectionByKey = Collections.synchronizedMap(new LinkedHashMap<>(this.capacity, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<ProjectionCacheKey, GenomeProjection> eldest) {
-                return size() > ProjectionCache.this.capacity;
+                boolean shouldRemove = size() > ProjectionCache.this.capacity;
+                if (shouldRemove) {
+                    evictions.incrementAndGet();
+                }
+                return shouldRemove;
             }
         });
     }
@@ -50,5 +55,16 @@ public final class ProjectionCache {
 
     public int capacity() {
         return capacity;
+    }
+
+    public long evictions() {
+        return evictions.get();
+    }
+
+    public void clear() {
+        projectionByKey.clear();
+        hits.set(0L);
+        misses.set(0L);
+        evictions.set(0L);
     }
 }
