@@ -1,52 +1,53 @@
 package obtuseloot.obtuseengine;
 
-import obtuseloot.awakening.AwakeningEngine;
+import obtuseloot.ObtuseLoot;
+import obtuseloot.artifacts.Artifact;
+import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
-import obtuseloot.drift.DriftEngine;
-import obtuseloot.evolution.EvolutionEngine;
-import obtuseloot.evolution.FusionEngine;
-import obtuseloot.lore.LoreEngine;
+import obtuseloot.drift.DriftMutation;
 import obtuseloot.reputation.ArtifactReputation;
-import obtuseloot.reputation.ReputationManager;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
-/**
- * Hot-path orchestration for artifact progression.
- *
- * <p>This class intentionally avoids allocations and complex branching to remain server-tick friendly.
- */
 public final class ArtifactProcessor {
     private ArtifactProcessor() {
     }
 
     public static void processKill(Player player) {
-        ArtifactReputation rep = ReputationManager.get(player.getUniqueId());
+        ObtuseLoot plugin = ObtuseLoot.get();
+        ArtifactReputation rep = plugin.getReputationManager().getReputation(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreateArtifact(player.getUniqueId());
+        CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
+
+        long now = System.currentTimeMillis();
+        context.addKillTimestamp(now);
         rep.recordKill();
+        rep.recordKillChain(context.countKillsWithinWindow(now, RuntimeSettings.get().killChainWindowMs()));
 
-        EvolutionEngine.checkEvolution(player, rep);
-
-        if (DriftEngine.shouldDrift(rep)) {
-            DriftEngine.applyDrift(player);
+        plugin.getEvolutionEngine().evaluate(player, artifact, rep);
+        if (plugin.getDriftEngine().shouldDrift(rep)) {
+            DriftMutation mutation = plugin.getDriftEngine().applyDrift(player, artifact, rep);
+            if (mutation.causedEvolutionRecheck()) {
+                plugin.getEvolutionEngine().evaluate(player, artifact, rep);
+            }
         }
-
-        AwakeningEngine.checkAwakening(player, rep);
-        FusionEngine.checkFusion(player, rep);
-        LoreEngine.refreshLore(player, rep);
+        plugin.getAwakeningEngine().evaluate(player, artifact, rep);
+        plugin.getLoreEngine().refreshLore(player, artifact, rep);
     }
 
     public static void processCombat(Player player, EntityDamageByEntityEvent event) {
-        ArtifactReputation rep = ReputationManager.get(player.getUniqueId());
-        RuntimeSettings.Snapshot config = RuntimeSettings.get();
+        ObtuseLoot plugin = ObtuseLoot.get();
+        ArtifactReputation rep = plugin.getReputationManager().getReputation(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreateArtifact(player.getUniqueId());
+        CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
-        if (event.getFinalDamage() >= config.precisionThresholdDamage()) {
-            rep.recordPrecision();
-        } else {
-            rep.recordBrutality();
-        }
+        context.markCombat();
+        rep.setLastCombatTimestamp(System.currentTimeMillis());
 
+        if (event.getFinalDamage() > 8.0D) rep.recordBrutality();
+        else rep.recordPrecision();
         rep.recordConsistency();
-        LoreEngine.refreshLore(player, rep);
+
+        plugin.getLoreEngine().refreshLore(player, artifact, rep);
     }
 }

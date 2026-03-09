@@ -1,0 +1,67 @@
+package obtuseloot.obtuseengine;
+
+import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactManager;
+import obtuseloot.combat.CombatContextManager;
+import obtuseloot.config.RuntimeSettings;
+import obtuseloot.reputation.ReputationManager;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
+
+public class EngineScheduler {
+    private final Plugin plugin;
+    private final ArtifactManager artifactManager;
+    private final ReputationManager reputationManager;
+    private final CombatContextManager combatContextManager;
+
+    private BukkitTask autosaveTask;
+    private BukkitTask decayTask;
+    private BukkitTask combatCleanupTask;
+    private BukkitTask instabilityCleanupTask;
+
+    public EngineScheduler(Plugin plugin, ArtifactManager artifactManager, ReputationManager reputationManager,
+                           CombatContextManager combatContextManager) {
+        this.plugin = plugin;
+        this.artifactManager = artifactManager;
+        this.reputationManager = reputationManager;
+        this.combatContextManager = combatContextManager;
+    }
+
+    public void startAll() { startAutosaveTask(); startDecayTask(); startCombatCleanupTask(); startInstabilityCleanupTask(); }
+    public void stopAll() { if (autosaveTask != null) autosaveTask.cancel(); if (decayTask != null) decayTask.cancel(); if (combatCleanupTask != null) combatCleanupTask.cancel(); if (instabilityCleanupTask != null) instabilityCleanupTask.cancel(); }
+
+    public void startAutosaveTask() {
+        long ticks = RuntimeSettings.get().autosaveIntervalSeconds() * 20L;
+        autosaveTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            artifactManager.saveAll();
+            reputationManager.saveAll();
+        }, ticks, ticks);
+    }
+
+    public void startDecayTask() {
+        long ticks = RuntimeSettings.get().volatileDecayIntervalSeconds() * 20L;
+        decayTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> reputationManager.getLoadedReputations().values().forEach(rep -> {
+            rep.decayVolatileStats(RuntimeSettings.get().volatileDecayFactor());
+            rep.applySoftFloor();
+        }), ticks, ticks);
+    }
+
+    public void startCombatCleanupTask() {
+        long ticks = RuntimeSettings.get().contextCleanupSeconds() * 20L;
+        combatCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin,
+                () -> combatContextManager.cleanupStaleContexts(RuntimeSettings.get().combatWindowMs() * 2), ticks, ticks);
+    }
+
+    public void startInstabilityCleanupTask() {
+        instabilityCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            long now = System.currentTimeMillis();
+            for (Artifact artifact : artifactManager.getLoadedArtifacts().values()) {
+                if (artifact.isInstabilityExpired(now)) {
+                    artifact.clearInstability();
+                    artifact.addLoreHistory("Instability faded.");
+                }
+            }
+        }, 100L, 100L);
+    }
+}
