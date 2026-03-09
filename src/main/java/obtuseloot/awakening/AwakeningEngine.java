@@ -27,7 +27,21 @@ public class AwakeningEngine {
         if (resolved == null) {
             return false;
         }
+        return applyAwakening(player, artifact, resolved);
+    }
 
+    public boolean forceAwakening(Player player, Artifact artifact, ArtifactReputation reputation) {
+        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
+            return false;
+        }
+        String resolved = resolve(artifact, reputation);
+        if (resolved == null) {
+            resolved = "Crown of Equilibrium";
+        }
+        return applyAwakening(player, artifact, resolved);
+    }
+
+    private boolean applyAwakening(Player player, Artifact artifact, String resolved) {
         artifact.setAwakeningPath(resolved);
         AwakeningEffectProfile profile = profiles.get(resolved);
         if (profile != null) {

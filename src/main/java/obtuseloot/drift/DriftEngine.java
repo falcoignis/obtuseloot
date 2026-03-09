@@ -20,6 +20,15 @@ public class DriftEngine {
 
     public DriftMutation applyDrift(Player player, Artifact artifact, ArtifactReputation reputation) {
         DriftProfile profile = resolveProfile(artifact, reputation);
+        return applyProfile(player, artifact, profile);
+    }
+
+    public DriftMutation forceDrift(Player player, Artifact artifact, ArtifactReputation reputation) {
+        DriftProfile profile = resolveProfile(artifact, reputation);
+        return applyProfile(player, artifact, profile);
+    }
+
+    private DriftMutation applyProfile(Player player, Artifact artifact, DriftProfile profile) {
         applyBiasMutation(artifact, profile);
         artifact.incrementDriftLevel();
         artifact.incrementTotalDrifts();

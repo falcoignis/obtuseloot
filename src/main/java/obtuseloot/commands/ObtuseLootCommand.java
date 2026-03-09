@@ -27,9 +27,13 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION_EDIT = "obtuseloot.edit";
 
     private final ObtuseLoot plugin;
+    private final DebugCommand debugCommand;
+    private final DebugTabCompleter debugTabCompleter;
 
     public ObtuseLootCommand(ObtuseLoot plugin) {
         this.plugin = plugin;
+        this.debugCommand = new DebugCommand(plugin);
+        this.debugTabCompleter = new DebugTabCompleter();
     }
 
     @Override
@@ -50,6 +54,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " reload §8- §fReload config-driven runtime settings and name pools §8["
                     + PERMISSION_ADMIN + "]");
+            sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " addname <pool> <value> §8- §fAdd a name entry to a pool (prefixes/suffixes/generic) §8["
                     + PERMISSION_EDIT + "]");
             sender.sendMessage("§7/" + label + " removename <pool> <value> §8- §fRemove a name entry from a pool §8["
@@ -140,6 +145,12 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+
+        if ("debug".equalsIgnoreCase(args[0])) {
+            String[] debugArgs = java.util.Arrays.copyOfRange(args, 1, args.length);
+            return debugCommand.execute(sender, label, debugArgs);
+        }
+
         if ("addname".equalsIgnoreCase(args[0])) {
             if (args.length < 3) {
                 sender.sendMessage("§cUsage: /" + label + " addname <prefixes|suffixes|generic> <value>");
@@ -225,6 +236,9 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
+            if (sender.hasPermission("obtuseloot.debug") || !(sender instanceof Player) || ((Player) sender).isOp()) {
+                candidates.add("debug");
+            }
             if (hasAnyEditPermission(sender)) {
                 candidates.add("addname");
                 candidates.add("removename");
@@ -254,6 +268,10 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 }
             }
             return filterByPrefix(editablePools, args[1]);
+        }
+
+        if (args.length >= 1 && "debug".equalsIgnoreCase(args[0])) {
+            return debugTabCompleter.complete(sender, args);
         }
 
         if (args.length >= 3 && "removename".equalsIgnoreCase(args[0])) {

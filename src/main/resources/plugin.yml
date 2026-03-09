@@ -28,6 +28,7 @@ commands:
       /<command> refresh [player]
       /<command> reset [player]
       /<command> reload
+      /<command> debug help
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
     aliases:      [ ol ]
@@ -54,6 +55,7 @@ permissions:
       obtuseloot.clearitem:        true
       obtuseloot.clearinventory:   true
       obtuseloot.edit:             true
+      obtuseloot.debug:            true
 
   # ── Informational (safe for all players) ───────────────────────────────────
   obtuseloot.help:
@@ -117,4 +119,8 @@ permissions:
 
   obtuseloot.edit.generic:
     description: Allows editing the generic names list only.
+    default:     op
+
+  obtuseloot.debug:
+    description: Allows /ol debug ... commands for progression-system testing.
     default:     op

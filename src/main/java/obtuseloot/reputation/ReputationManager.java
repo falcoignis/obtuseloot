@@ -40,4 +40,11 @@ public class ReputationManager {
     public Map<UUID, ArtifactReputation> getLoadedReputations() {
         return loadedReputations;
     }
+
+    public ArtifactReputation reset(UUID playerId) {
+        unload(playerId);
+        ArtifactReputation fresh = new ArtifactReputation();
+        loadedReputations.put(playerId, fresh);
+        return fresh;
+    }
 }

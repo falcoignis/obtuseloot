@@ -40,4 +40,11 @@ public class ArtifactManager {
     public Map<UUID, Artifact> getLoadedArtifacts() {
         return loadedArtifacts;
     }
+
+    public Artifact recreate(UUID playerId) {
+        unload(playerId);
+        Artifact fresh = ArtifactGenerator.generateFor(playerId);
+        loadedArtifacts.put(playerId, fresh);
+        return fresh;
+    }
 }
