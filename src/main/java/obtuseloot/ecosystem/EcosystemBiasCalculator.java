@@ -6,19 +6,24 @@ import java.util.Map;
 public class EcosystemBiasCalculator {
     public Map<String, Double> calculate(WorldEcosystemProfile profile) {
         Map<String, Double> out = new LinkedHashMap<>();
-        double chaos = normalized(profile.chaosActivityLevel() * 0.5D + profile.driftMutationFrequency() * 0.35D + profile.memoryEventDistribution() * 0.15D);
-        double precision = normalized(profile.precisionBehavior() * 0.55D + profile.bossKillRate() * 0.25D + profile.memoryEventDistribution() * 0.20D);
-        double survival = normalized(profile.survivalPressure() * 0.65D + profile.bossKillRate() * 0.20D + (1.0D - profile.combatAggression()) * 0.15D);
-        double mobility = normalized(profile.mobilityUsage() * 0.75D + profile.combatAggression() * 0.10D + profile.memoryEventDistribution() * 0.15D);
-        double brutality = normalized(profile.combatAggression() * 0.65D + profile.chaosActivityLevel() * 0.20D + profile.bossKillRate() * 0.15D);
-        double consistency = normalized((1.0D - profile.chaosActivityLevel()) * 0.45D + profile.precisionBehavior() * 0.30D + (1.0D - profile.driftMutationFrequency()) * 0.25D);
+        // Track ecosystem pressure from world signals.
+        double precisionBias = normalized(profile.bossKillRate() * 0.40D
+                + (1.0D - profile.combatAggression()) * 0.35D
+                + profile.memoryEventDistribution() * 0.25D);
+        double chaosBias = normalized(profile.combatAggression() * 0.45D
+                + profile.memoryEventDistribution() * 0.35D
+                + profile.chaosActivityLevel() * 0.20D);
+        double mobilityBias = normalized(profile.mobilityUsage() * 0.70D
+                + profile.combatAggression() * 0.20D
+                + profile.memoryEventDistribution() * 0.10D);
+        double survivalBias = normalized(profile.survivalPressure() * 0.65D
+                + (1.0D - profile.bossKillRate()) * 0.20D
+                + (1.0D - profile.combatAggression()) * 0.15D);
 
-        out.put("chaos", scaled(chaos));
-        out.put("precision", scaled(precision));
-        out.put("survival", scaled(survival));
-        out.put("mobility", scaled(mobility));
-        out.put("brutality", scaled(brutality));
-        out.put("consistency", scaled(consistency));
+        out.put("precision", scaled(precisionBias));
+        out.put("chaos", scaled(chaosBias));
+        out.put("mobility", scaled(mobilityBias));
+        out.put("survival", scaled(survivalBias));
         return out;
     }
 

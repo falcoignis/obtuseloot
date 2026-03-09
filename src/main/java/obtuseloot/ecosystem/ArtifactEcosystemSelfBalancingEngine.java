@@ -13,12 +13,14 @@ public class ArtifactEcosystemSelfBalancingEngine {
     private final EcosystemBiasCalculator biasCalculator = new EcosystemBiasCalculator();
     private final EcosystemBiasState biasState = new EcosystemBiasState();
     private final ArtifactEcosystemBalancer balancer = new ArtifactEcosystemBalancer();
+    private final EcosystemDiversityController diversityController = new EcosystemDiversityController();
     private final GeneratorWeightController weightController = new GeneratorWeightController();
 
     public void evaluate(WorldEcosystemProfile profile, EcosystemHealthReport report, SimulationMetricsCollector metrics) {
         biasState.mergeTarget(biasCalculator.calculate(profile));
         weightController.applyEcosystemBias(biasState);
         weightController.applyBalanceAdjustments(balancer.computeAdjustments(metrics.families()));
+        weightController.applyDiversityAdjustments(diversityController.computeAdjustments(metrics.families()));
     }
 
     public double weightForFamily(String family) {
@@ -30,6 +32,7 @@ public class ArtifactEcosystemSelfBalancingEngine {
         out.put("bias", new LinkedHashMap<>(biasState.biasByFamily()));
         out.put("biasWeights", new LinkedHashMap<>(weightController.ecosystemBiasWeights()));
         out.put("balanceWeights", new LinkedHashMap<>(weightController.balanceAdjustmentWeights()));
+        out.put("diversityWeights", new LinkedHashMap<>(weightController.diversityAdjustmentWeights()));
         out.put("updates", biasState.updates());
         return out;
     }
