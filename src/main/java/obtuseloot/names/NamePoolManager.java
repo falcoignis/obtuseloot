@@ -16,15 +16,21 @@ import java.util.List;
  * naming without recompiling. Loaded lists are kept as immutable snapshots.
  */
 public final class NamePoolManager {
+    public static final String POOL_PREFIXES = "prefixes";
+    public static final String POOL_SUFFIXES = "suffixes";
+    public static final String POOL_GENERIC = "generic";
+
     private static volatile List<String> prefixes = List.of();
     private static volatile List<String> suffixes = List.of();
     private static volatile List<String> generic = List.of();
+    private static volatile Path namesDirectory;
 
     private NamePoolManager() {
     }
 
     public static void initialize(Plugin plugin) {
         Path namesDir = plugin.getDataFolder().toPath().resolve("names");
+        namesDirectory = namesDir;
 
         try {
             Files.createDirectories(namesDir);
@@ -52,6 +58,112 @@ public final class NamePoolManager {
 
     public static List<String> generic() {
         return generic;
+    }
+
+    public static List<String> allPoolNames() {
+        return List.of(POOL_PREFIXES, POOL_SUFFIXES, POOL_GENERIC);
+    }
+
+    public static List<String> getPool(String pool) {
+        return switch (normalizePool(pool)) {
+            case POOL_PREFIXES -> prefixes;
+            case POOL_SUFFIXES -> suffixes;
+            case POOL_GENERIC -> generic;
+            default -> List.of();
+        };
+    }
+
+    public static boolean contains(String pool, String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+
+        String normalized = value.trim();
+        for (String current : getPool(pool)) {
+            if (current.equalsIgnoreCase(normalized)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean addName(String pool, String value) throws IOException {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+
+        String normalizedPool = normalizePool(pool);
+        if (normalizedPool == null || contains(normalizedPool, value)) {
+            return false;
+        }
+
+        List<String> updated = new ArrayList<>(getPool(normalizedPool));
+        updated.add(value.trim());
+        persistPool(normalizedPool, updated);
+        updateInMemoryPool(normalizedPool, updated);
+        return true;
+    }
+
+    public static boolean removeName(String pool, String value) throws IOException {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+
+        String normalizedPool = normalizePool(pool);
+        if (normalizedPool == null) {
+            return false;
+        }
+
+        List<String> current = new ArrayList<>(getPool(normalizedPool));
+        String normalizedValue = value.trim();
+        String matched = null;
+        for (String candidate : current) {
+            if (candidate.equalsIgnoreCase(normalizedValue)) {
+                matched = candidate;
+                break;
+            }
+        }
+
+        if (matched == null || current.size() <= 1) {
+            return false;
+        }
+
+        current.remove(matched);
+        persistPool(normalizedPool, current);
+        updateInMemoryPool(normalizedPool, current);
+        return true;
+    }
+
+    public static String normalizePool(String pool) {
+        if (pool == null) {
+            return null;
+        }
+
+        String normalized = pool.trim().toLowerCase();
+        if (POOL_PREFIXES.equals(normalized) || POOL_SUFFIXES.equals(normalized) || POOL_GENERIC.equals(normalized)) {
+            return normalized;
+        }
+
+        return null;
+    }
+
+    private static void persistPool(String pool, List<String> values) throws IOException {
+        if (namesDirectory == null) {
+            throw new IOException("Name pool directory has not been initialized yet.");
+        }
+
+        Files.write(namesDirectory.resolve(pool + ".txt"), values, StandardCharsets.UTF_8);
+    }
+
+    private static void updateInMemoryPool(String pool, List<String> values) {
+        List<String> immutable = List.copyOf(values);
+        switch (pool) {
+            case POOL_PREFIXES -> prefixes = immutable;
+            case POOL_SUFFIXES -> suffixes = immutable;
+            case POOL_GENERIC -> generic = immutable;
+            default -> {
+            }
+        }
     }
 
     private static List<String> loadOrCreate(Path file, List<String> defaults) throws IOException {

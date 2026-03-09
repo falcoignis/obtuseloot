@@ -127,3 +127,27 @@ Additional loose/unwired code remediation completed:
    - `export GITHUB_REPOSITORY="<owner>/<repo>"` (required when no `origin` remote exists)
 2. Run:
    - `./scripts/publish.sh`
+
+## 2026-03-09 command/perms/full-file audit pass
+
+### Checks run
+1. `git ls-files | wc -l`
+2. `rg -n "TODO|FIXME|XXX" src docs README.md pom.xml src/main/resources/plugin.yml`
+3. `mvn -B -ntp clean package -DskipTests`
+
+### Findings
+1. **Name pool management command gap (Resolved)**
+   - Existing command surface did not expose in-game/console edits for persisted name pools (`prefixes`, `suffixes`, `generic`).
+
+2. **Permission metadata drift (Resolved)**
+   - `plugin.yml` list-edit permission tree included stale list domains (`lore`, `categories`) not wired in command handling.
+
+3. **Runtime reload support (Verified)**
+   - `/ol reload` already hot-reloaded config/runtime snapshots and name pools without requiring server reboot.
+
+### Remediation implemented in this pass
+1. Added `/ol addname <pool> <value>` and `/ol removename <pool> <value>` command handling.
+2. Added persisted add/remove operations in `NamePoolManager` with in-memory snapshot updates.
+3. Added pool-aware tab completion and per-pool permission enforcement (`obtuseloot.edit.<pool>` with umbrella `obtuseloot.edit`).
+4. Updated `plugin.yml` command usage and permission tree to include `obtuseloot.edit.generic` and remove stale children.
+5. Updated `README.md` command reference to document new subcommands.

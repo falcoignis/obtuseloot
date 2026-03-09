@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION_INFO = "obtuseloot.info";
     private static final String PERMISSION_INSPECT = "obtuseloot.inspect";
     private static final String PERMISSION_ADMIN = "obtuseloot.admin";
+    private static final String PERMISSION_EDIT = "obtuseloot.edit";
 
     private final ObtuseLoot plugin;
 
@@ -50,6 +52,10 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " reload §8- §fReload config-driven runtime settings and name pools §8["
                     + PERMISSION_ADMIN + "]");
+            sender.sendMessage("§7/" + label + " addname <pool> <value> §8- §fAdd a name entry to a pool (prefixes/suffixes/generic) §8["
+                    + PERMISSION_EDIT + "]");
+            sender.sendMessage("§7/" + label + " removename <pool> <value> §8- §fRemove a name entry from a pool §8["
+                    + PERMISSION_EDIT + "]");
             return true;
         }
 
@@ -136,8 +142,79 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if ("addname".equalsIgnoreCase(args[0])) {
+            if (args.length < 3) {
+                sender.sendMessage("§cUsage: /" + label + " addname <prefixes|suffixes|generic> <value>");
+                return true;
+            }
+
+            return handleNameEdit(sender, true, args[1], joinFrom(args, 2));
+        }
+
+        if ("removename".equalsIgnoreCase(args[0])) {
+            if (args.length < 3) {
+                sender.sendMessage("§cUsage: /" + label + " removename <prefixes|suffixes|generic> <value>");
+                return true;
+            }
+
+            return handleNameEdit(sender, false, args[1], joinFrom(args, 2));
+        }
+
         sender.sendMessage("§cUnknown subcommand. Try /" + label + " help");
         return true;
+    }
+
+    private boolean handleNameEdit(CommandSender sender, boolean add, String pool, String value) {
+        String normalizedPool = NamePoolManager.normalizePool(pool);
+        if (normalizedPool == null) {
+            sender.sendMessage("§cUnknown pool '" + pool + "'. Valid pools: prefixes, suffixes, generic.");
+            return true;
+        }
+
+        if (!hasEditPermission(sender, normalizedPool)) {
+            return true;
+        }
+
+        try {
+            if (add) {
+                if (!NamePoolManager.addName(normalizedPool, value)) {
+                    sender.sendMessage("§eNo change made. Entry may already exist or input was invalid.");
+                    return true;
+                }
+                sender.sendMessage("§aAdded '§f" + value.trim() + "§a' to §f" + normalizedPool + "§a.");
+            } else {
+                if (!NamePoolManager.removeName(normalizedPool, value)) {
+                    sender.sendMessage("§eNo change made. Entry may not exist, input was invalid, or removal would empty the pool.");
+                    return true;
+                }
+                sender.sendMessage("§aRemoved '§f" + value.trim() + "§a' from §f" + normalizedPool + "§a.");
+            }
+        } catch (IOException exception) {
+            sender.sendMessage("§cFailed to persist name pool update: " + exception.getMessage());
+        }
+
+        return true;
+    }
+
+    private boolean hasEditPermission(CommandSender sender, String pool) {
+        String scopedPermission = PERMISSION_EDIT + "." + pool;
+        if (sender.hasPermission(PERMISSION_EDIT) || sender.hasPermission(scopedPermission)) {
+            return true;
+        }
+
+        sender.sendMessage("§cYou do not have permission: " + scopedPermission);
+        return false;
+    }
+
+    private String joinFrom(String[] values, int start) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = start; index < values.length; index++) {
+            if (index > start) {
+                builder.append(' ');
+            }
+            builder.append(values[index]);
+        }
+        return builder.toString();
     }
 
     @Override
@@ -150,13 +227,17 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
+            if (hasAnyEditPermission(sender)) {
+                candidates.add("addname");
+                candidates.add("removename");
+            }
             return filterByPrefix(candidates, args[0]);
         }
 
         if (args.length == 2 && isPlayerTargetCommand(args[0])) {
-            if (("inspect".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_INSPECT))
+            if ((("inspect".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_INSPECT))
                     || (("refresh".equalsIgnoreCase(args[0]) || "reset".equalsIgnoreCase(args[0]))
-                    && !sender.hasPermission(PERMISSION_ADMIN))) {
+                    && !sender.hasPermission(PERMISSION_ADMIN)))) {
                 return List.of();
             }
 
@@ -167,7 +248,41 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return filterByPrefix(names, args[1]);
         }
 
+        if (args.length == 2 && ("addname".equalsIgnoreCase(args[0]) || "removename".equalsIgnoreCase(args[0]))) {
+            List<String> editablePools = new ArrayList<>();
+            for (String pool : NamePoolManager.allPoolNames()) {
+                if (sender.hasPermission(PERMISSION_EDIT + "." + pool) || sender.hasPermission(PERMISSION_EDIT)) {
+                    editablePools.add(pool);
+                }
+            }
+            return filterByPrefix(editablePools, args[1]);
+        }
+
+        if (args.length >= 3 && "removename".equalsIgnoreCase(args[0])) {
+            String pool = NamePoolManager.normalizePool(args[1]);
+            if (pool == null || !hasAnyEditPermission(sender)
+                    || (!sender.hasPermission(PERMISSION_EDIT) && !sender.hasPermission(PERMISSION_EDIT + "." + pool))) {
+                return List.of();
+            }
+
+            return filterByPrefix(NamePoolManager.getPool(pool), args[args.length - 1]);
+        }
+
         return List.of();
+    }
+
+    private boolean hasAnyEditPermission(CommandSender sender) {
+        if (sender.hasPermission(PERMISSION_EDIT)) {
+            return true;
+        }
+
+        for (String pool : NamePoolManager.allPoolNames()) {
+            if (sender.hasPermission(PERMISSION_EDIT + "." + pool)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean isPlayerTargetCommand(String subcommand) {
