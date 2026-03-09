@@ -1,5 +1,6 @@
 # Ability Authenticity Report
 
-Behavioral abilities: **0.950**
+Simulated artifacts: **5000**
+Behavioral abilities: **0.946**
 
 PASS: yes

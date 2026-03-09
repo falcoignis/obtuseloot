@@ -1,8 +1,6 @@
 package obtuseloot.abilities.mutation;
 
-import obtuseloot.abilities.AbilityDefinition;
-import obtuseloot.abilities.AbilityMechanic;
-import obtuseloot.abilities.AbilityTrigger;
+import obtuseloot.abilities.*;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.memory.ArtifactMemoryProfile;
 
@@ -11,32 +9,105 @@ import java.util.List;
 import java.util.Random;
 
 public class AbilityMutationEngine {
-    public List<AbilityMutation> mutate(Artifact artifact, List<AbilityDefinition> definitions, ArtifactMemoryProfile memoryProfile, boolean driftMutation) {
+    public AbilityMutationResult mutate(Artifact artifact, List<AbilityDefinition> definitions, ArtifactMemoryProfile memoryProfile, boolean driftMutation) {
         List<AbilityMutation> out = new ArrayList<>();
         boolean instabilityExceeded = artifact.hasInstability() && artifact.getDriftLevel() > 2;
         boolean chaosGrowth = "volatile".equalsIgnoreCase(artifact.getDriftAlignment()) || "paradox".equalsIgnoreCase(artifact.getDriftAlignment());
         boolean awakeningDriftInteraction = !"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && chaosGrowth;
         boolean memoryPressure = memoryProfile.pressure() >= 4;
         if (!(driftMutation || instabilityExceeded || chaosGrowth || awakeningDriftInteraction || memoryPressure)) {
-            return out;
+            return new AbilityMutationResult(definitions, out);
         }
 
-        Random r = new Random(artifact.getArtifactSeed() ^ artifact.getDriftLevel() ^ artifact.getAwakeningPath().hashCode() ^ memoryProfile.pressure());
+        Random r = new Random(artifact.getArtifactSeed() ^ artifact.getDriftLevel() ^ artifact.getDriftAlignment().hashCode() ^ artifact.getAwakeningPath().hashCode()
+                ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure() ^ definitions.size());
+
+        List<AbilityDefinition> mutated = new ArrayList<>();
+        int mutationCount = 0;
         for (AbilityDefinition definition : definitions) {
             AbilityTrigger beforeTrigger = definition.trigger();
-            AbilityTrigger afterTrigger = r.nextBoolean() ? beforeTrigger : AbilityTrigger.ON_CHAIN_COMBAT;
-            if (beforeTrigger != afterTrigger) {
-                out.add(new AbilityMutation("trigger mutation", beforeTrigger.name(), afterTrigger.name(), "drift mutation happens"));
-            }
             AbilityMechanic beforeMechanic = definition.mechanic();
-            AbilityMechanic afterMechanic = chaosGrowth ? AbilityMechanic.UNSTABLE_DETONATION : beforeMechanic;
-            if (beforeMechanic != afterMechanic) {
-                out.add(new AbilityMutation("mechanic mutation", beforeMechanic.name(), afterMechanic.name(), "chaos alignment grows"));
+            String beforePattern = definition.effectPattern();
+
+            AbilityTrigger trigger = mutateTrigger(beforeTrigger, definition.mechanic(), chaosGrowth, memoryProfile, r);
+            if (trigger != beforeTrigger) {
+                out.add(new AbilityMutation("trigger mutation", beforeTrigger.name(), trigger.name(), "drift/memory alignment shifted trigger cadence"));
+                mutationCount++;
             }
-            if (memoryPressure) {
-                out.add(new AbilityMutation("memory-driven mutation", definition.memoryVariant(), definition.memoryVariant() + " + echo", "memory pressure threshold reached"));
+
+            AbilityMechanic mechanic = mutateMechanic(beforeMechanic, definition.family(), chaosGrowth, memoryProfile, r);
+            if (mechanic != beforeMechanic) {
+                out.add(new AbilityMutation("mechanic mutation", beforeMechanic.name(), mechanic.name(), "mechanic remapped to keep mutation behavior active"));
+                mutationCount++;
             }
+
+            String effectPattern = beforePattern;
+            if (memoryPressure || chaosGrowth || awakeningDriftInteraction) {
+                effectPattern = beforePattern + " [mutated:" + (chaosGrowth ? "entropy" : "memory") + "]";
+                out.add(new AbilityMutation("pattern mutation", beforePattern, effectPattern, "mutation rewrote active pattern text"));
+                mutationCount++;
+            }
+
+            List<AbilityModifier> support = new ArrayList<>(definition.supportModifiers());
+            if (memoryProfile.bossWeight() > 0.5D) {
+                support.add(new AbilityModifier("support.boss-memory", "boss memory pressure tuning", 0.03D, false));
+            }
+
+            mutated.add(new AbilityDefinition(
+                    definition.id(),
+                    definition.name(),
+                    definition.family(),
+                    trigger,
+                    mechanic,
+                    effectPattern,
+                    definition.evolutionVariant(),
+                    definition.driftVariant(),
+                    definition.awakeningVariant(),
+                    definition.fusionVariant(),
+                    definition.memoryVariant() + (memoryPressure ? " + memory echo" : ""),
+                    support,
+                    List.of(new AbilityEffect(effectPattern, AbilityEffectType.TRIGGERED_BEHAVIOR, 0.02D + (mutationCount * 0.001D))),
+                    definition.stage1(),
+                    definition.stage2() + " [mutation=" + mutationCount + "]",
+                    definition.stage3() + " [flavor=" + (chaosGrowth ? "volatile" : "disciplined") + "]",
+                    definition.stage4(),
+                    definition.stage5()));
         }
-        return out;
+        return new AbilityMutationResult(mutated, out);
+    }
+
+    private AbilityTrigger mutateTrigger(AbilityTrigger current, AbilityMechanic mechanic, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {
+        if (chaosGrowth && mechanic == AbilityMechanic.UNSTABLE_DETONATION) {
+            return AbilityTrigger.ON_DRIFT_MUTATION;
+        }
+        if (memoryProfile.disciplineWeight() > memoryProfile.chaosWeight() && mechanic == AbilityMechanic.MARK) {
+            return AbilityTrigger.ON_HIT;
+        }
+        if (memoryProfile.survivalWeight() > 1.2D && (mechanic == AbilityMechanic.DEFENSIVE_THRESHOLD || mechanic == AbilityMechanic.RECOVERY_WINDOW)) {
+            return AbilityTrigger.ON_LOW_HEALTH;
+        }
+        if (memoryProfile.mobilityWeight() > 0.8D && mechanic == AbilityMechanic.MOVEMENT_ECHO) {
+            return AbilityTrigger.ON_REPOSITION;
+        }
+        return random.nextDouble() < 0.2D ? AbilityTrigger.ON_CHAIN_COMBAT : current;
+    }
+
+    private AbilityMechanic mutateMechanic(AbilityMechanic current, AbilityFamily family, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {
+        if (chaosGrowth && family == AbilityFamily.CHAOS) {
+            return AbilityMechanic.UNSTABLE_DETONATION;
+        }
+        if (memoryProfile.traumaWeight() > 1.0D && family == AbilityFamily.SURVIVAL) {
+            return AbilityMechanic.GUARDIAN_PULSE;
+        }
+        if (memoryProfile.aggressionWeight() > 1.0D && family == AbilityFamily.BRUTALITY) {
+            return AbilityMechanic.BURST_STATE;
+        }
+        if (memoryProfile.disciplineWeight() > 1.2D && family == AbilityFamily.CONSISTENCY) {
+            return AbilityMechanic.CHAIN_ESCALATION;
+        }
+        if (random.nextDouble() < 0.1D && family == AbilityFamily.PRECISION) {
+            return AbilityMechanic.MARK;
+        }
+        return current;
     }
 }
