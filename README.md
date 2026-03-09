@@ -111,7 +111,7 @@ mvn clean package
 
 Output jar:
 ```text
-target/ObtuseLoot-0.9.5.jar
+target/ObtuseLoot-0.9.6.jar
 ```
 This JAR is a local/CI build artifact and is not committed to source control.
 
