@@ -1,6 +1,9 @@
 package obtuseloot;
 
 import obtuseloot.artifacts.ArtifactManager;
+import obtuseloot.abilities.AbilityRegistry;
+import obtuseloot.abilities.ItemAbilityManager;
+import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.commands.ObtuseLootCommand;
@@ -31,6 +34,7 @@ public class ObtuseLoot extends JavaPlugin {
     private AwakeningEngine awakeningEngine;
     private LoreEngine loreEngine;
     private EngineScheduler engineScheduler;
+    private ItemAbilityManager itemAbilityManager;
 
     @Override
     public void onEnable() {
@@ -47,6 +51,7 @@ public class ObtuseLoot extends JavaPlugin {
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
+        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry()));
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
@@ -90,4 +95,5 @@ public class ObtuseLoot extends JavaPlugin {
     public AwakeningEngine getAwakeningEngine() { return awakeningEngine; }
     public LoreEngine getLoreEngine() { return loreEngine; }
     public EngineScheduler getEngineScheduler() { return engineScheduler; }
+    public ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
 }

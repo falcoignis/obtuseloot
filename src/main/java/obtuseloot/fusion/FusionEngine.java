@@ -1,6 +1,7 @@
 package obtuseloot.fusion;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 
@@ -9,6 +10,9 @@ import java.util.List;
 public class FusionEngine {
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation rep) {
+        if (!ArtifactEligibility.isEvolutionEligible(artifact)) {
+            return false;
+        }
         if (!"none".equalsIgnoreCase(artifact.getFusionPath())) {
             return false;
         }

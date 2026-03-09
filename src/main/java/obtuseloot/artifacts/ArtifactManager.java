@@ -65,6 +65,7 @@ public class ArtifactManager {
     public void regenerateBaselineIdentity(Artifact artifact, long seed) {
         seedFactory.regenerateFromSeed(artifact, seed);
         artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(seed));
+        artifact.setItemCategory(ArtifactGenerator.resolveCategory(seed));
     }
 
     public long rollSeed() {

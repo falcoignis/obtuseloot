@@ -2,6 +2,7 @@ package obtuseloot.artifacts;
 
 import obtuseloot.names.ArtifactNameGenerator;
 
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,6 +23,12 @@ public final class ArtifactGenerator {
         artifact.resetMutableState();
         seedFactory.applySeedProfile(artifact, artifactSeed);
         artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(artifactSeed));
+        artifact.setItemCategory(resolveCategory(artifactSeed));
         return artifact;
+    }
+
+    public static String resolveCategory(long artifactSeed) {
+        Random random = new Random(artifactSeed ^ 0xC6BC279692B5C323L);
+        return random.nextDouble() < 0.25D ? "generic" : "artifact";
     }
 }

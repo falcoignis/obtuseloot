@@ -14,6 +14,7 @@ public class Artifact {
     private long artifactSeed;
     private UUID ownerId;
     private String generatedName;
+    private String itemCategory;
     private String archetypePath;
     private String evolutionPath;
     private String awakeningPath;
@@ -49,6 +50,7 @@ public class Artifact {
     public Artifact(UUID ownerId, String generatedName) {
         this.ownerId = ownerId;
         this.generatedName = generatedName;
+        this.itemCategory = "artifact";
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
         this.awakeningPath = "dormant";
@@ -90,8 +92,10 @@ public class Artifact {
     public UUID getOwnerId() { return ownerId; }
     public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
     public String getGeneratedName() { return generatedName; }
+    public String getItemCategory() { return itemCategory; }
     public String getName() { return generatedName; }
     public void setGeneratedName(String generatedName) { this.generatedName = generatedName; }
+    public void setItemCategory(String itemCategory) { this.itemCategory = itemCategory; }
     public String getArchetypePath() { return archetypePath; }
     public void setArchetypePath(String archetypePath) { this.archetypePath = archetypePath; }
     public String getEvolutionPath() { return evolutionPath; }
@@ -173,4 +177,3 @@ public class Artifact {
         }
     }
 }
-
