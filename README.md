@@ -1,181 +1,277 @@
 # ObtuseLoot
-Vibe-coded Minecraft paper plugin to add custom look generation to naturally spawned chests/vaults with extreme configurability and extensibility 
 
-## Build & publish (Maven workflow)
+ObtuseLoot is a pre-release Bukkit/Spigot plugin that tracks a persistent, behavior-driven artifact progression system per player.
 
-### Local build (no publish)
-```bash
-./scripts/build.sh
+Instead of treating progression as a short session buff, the plugin models artifact identity over time: combat behavior feeds multi-axis reputation, reputation drives evolution, drift mutates long-term bias, awakening adds trait/multiplier effects, and fusion acts as a higher-order milestone state.
+
+The system is intentionally stateful and testable. Artifact and reputation data are persisted on disk per player, loaded on join/first access, and maintained with scheduler tasks (autosave, decay, cleanup). A dedicated debug suite under `/obtuseloot debug ...` is included for QA and tuning.
+
+> **Status:** Active refactor/testing phase. Architecture is in place and still being iterated.
+
+---
+
+## Core Concept
+
+At a high level, progression loops through:
+
+```text
+combat events
+  -> reputation updates
+  -> archetype/evolution evaluation
+  -> drift mutation chance
+  -> awakening evaluation
+  -> fusion evaluation
+  -> lore/history output
+  -> persisted state
 ```
 
-### One-command build + publish to GitHub Packages
-```bash
-export GITHUB_TOKEN="<token-with-packages-write>"
-# optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
-./scripts/build-and-publish.sh
+Player behavior shapes artifact identity via multiple dimensions (precision, brutality, survival, mobility, chaos, consistency), plus kill and boss progression.
+
+---
+
+## Major Systems
+
+### Reputation
+- `ArtifactReputation` tracks:
+  - `precision`, `brutality`, `survival`, `mobility`, `chaos`, `consistency`
+  - `kills`, `bossKills`
+  - volatile context stats like `recentKillChain`, combat timestamps, survival streak
+- Combat/kill listeners feed reputation context.
+- Volatile dimensions decay on schedule; persistent dimensions remain progression anchors.
+
+### Evolution
+- `EvolutionEngine` evaluates path updates based on reputation score and archetype resolver output.
+- `ArchetypeResolver` uses **effective weighted stats**:
+  - raw reputation
+  - hidden seed affinities
+  - drift bias adjustments
+  - awakening bias adjustments
+- Includes inertia/switch margin behavior to reduce archetype thrashing.
+
+### Drift
+- `DriftEngine` uses drift chance tuning (`base + chaos*multiplier - consistency*reduction`, clamped).
+- Drift is a **real mutation system**, not message-only:
+  - applies drift bias changes
+  - increments drift counters
+  - updates drift alignment/state
+  - can apply instability windows
+  - records drift/lore/notable history
+- `DriftProfile` and `DriftMutation` represent drift profile behavior and mutation results.
+
+### Awakening
+- `AwakeningEngine` evaluates and applies awakening paths.
+- Awakening effects are represented by `AwakeningEffectProfile`:
+  - bias adjustments
+  - reputation gain multipliers
+  - trait grants
+- Awakening changes future progression weighting and gain behavior.
+
+### Fusion
+- `fusion.FusionEngine` evaluates fusion recipes and applies fusion/evolution milestone state when conditions match.
+- Fusion outcomes are recorded in artifact history/notable events.
+
+### Lore
+- `LoreEngine` builds compact action-bar summaries and full lore lines.
+- `LoreFragmentGenerator` + `LoreHistoryFormatter` compose lineage/drift/awakening/instability/history fragments.
+- Lore history is transition-oriented and tied to progression state changes.
+
+### Persistence
+- `PlayerStateStore` abstraction with `YamlPlayerStateStore` implementation.
+- Per-player YAML file model in `plugins/ObtuseLoot/playerdata/<uuid>.yml`.
+- Stores both artifact state and reputation state.
+
+### Debug / QA Tooling
+- Integrated under `/obtuseloot debug ...` (permission-gated).
+- Allows direct inspection, progression forcing, resets, lore dumps, and save/reload workflows against real systems.
+- Current branch provides deterministic debug controls; dedicated `simulate` subcommands are not currently registered in this command tree.
+
+---
+
+## Architecture Overview
+
+Primary runtime components:
+
+- **Plugin bootstrap:** `obtuseloot.ObtuseLoot`
+- **Managers:**
+  - `ArtifactManager`
+  - `ReputationManager`
+  - `CombatContextManager`
+- **Engines:**
+  - `ArtifactProcessor`
+  - `EvolutionEngine` (`ArchetypeResolver`, `HybridEvolutionResolver`)
+  - `DriftEngine` (`DriftProfile`, `DriftMutation`)
+  - `AwakeningEngine` (`AwakeningEffectProfile`)
+  - `FusionEngine`
+  - `LoreEngine`
+- **Persistence:** `PlayerStateStore` / `YamlPlayerStateStore`
+- **Scheduler:** `EngineScheduler`
+- **Event listeners:** join/load, quit/cleanup, combat/death feed listeners
+
+Flow sketch:
+
+```text
+Bukkit events
+  -> ReputationFeedListener + CombatCore/EventCore
+  -> ArtifactProcessor
+      -> EvolutionEngine
+      -> DriftEngine
+      -> AwakeningEngine
+      -> FusionEngine
+      -> LoreEngine
+  -> Managers (in-memory)
+  -> PlayerStateStore (YAML persistence)
 ```
 
-You can pass build arguments before `--` and publish arguments after `--`:
-```bash
-./scripts/build-and-publish.sh clean package -- -DskipTests
-```
+---
 
-The build helper auto-detects Maven Central reachability and falls back to `scripts/mvn-via-mirror.sh`
-when `MAVEN_MIRROR_URL` is set.
+## Installation / Development
 
-You can pass Maven goals/phases explicitly, for example:
-```bash
-./scripts/build.sh test
-./scripts/build.sh deploy
-```
-
-If you prefer to invoke Maven directly:
-```bash
-mvn -B -ntp clean package
-```
-
-### Publish build (maven-publish workflow)
-The repo includes GitHub workflows at `.github/workflows/ci.yml` and `.github/workflows/maven-publish.yml` for verification and first-jar publishing.
-
-`maven-publish.yml` now publishes the package to GitHub Packages using `GITHUB_TOKEN` and the repository URL:
-
-`https://maven.pkg.github.com/<owner>/<repo>`
-
-It also uploads `target/obtuseloot-*.jar` as a release asset when triggered from a published GitHub Release.
-
-For local/manual publishing, use the helper:
-```bash
-export GITHUB_TOKEN="<token-with-packages-write>"
-# optional when no git remote is configured:
-# export GITHUB_REPOSITORY="<owner>/<repo>"   # also accepts <owner>:<repo>
-./scripts/publish.sh
-```
-
-It resolves the repository slug from `GITHUB_REPOSITORY` (or `remote.origin.url`), writes a temporary Maven `settings.xml` with server id `github`, and deploys to:
-
-`https://maven.pkg.github.com/<owner>/<repo>`
-
-If you are behind a restricted network, use the mirror helper and append publish goals:
-```bash
-export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-all/"
-./scripts/mvn-via-mirror.sh deploy
-```
-
-## Command reference (console + in-game)
-All registered `/obtuseloot` (`/ol`) subcommands are available to both in-game players and console, with permissions enforced per subcommand.
-
-| Command | In-game | Console | Required permission |
-| --- | --- | --- | --- |
-| `/ol help` | ✅ | ✅ | `obtuseloot.help` |
-| `/ol info` | ✅ | ✅ | `obtuseloot.info` |
-| `/ol inspect [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.inspect` |
-| `/ol refresh [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
-| `/ol reset [player]` | ✅ (`player` optional) | ✅ (`player` required) | `obtuseloot.admin` |
-| `/ol reload` | ✅ | ✅ | `obtuseloot.admin` |
-| `/ol addname <pool> <value>` | ✅ | ✅ | `obtuseloot.edit` or `obtuseloot.edit.<pool>` |
-| `/ol removename <pool> <value>` | ✅ | ✅ | `obtuseloot.edit` or `obtuseloot.edit.<pool>` |
-
-Permission notes:
-- `obtuseloot.*` grants every defined command/admin/edit permission.
-- `obtuseloot.help` and `obtuseloot.info` default to `true` for general visibility.
-- `obtuseloot.inspect` remains operator-level (`default: op`).
-
-## Runtime tuning
-ObtuseLoot now loads balancing and performance knobs from `src/main/resources/config.yml` (copied to the plugin data folder on first run). Key controls include:
-
-- combat precision threshold damage
-- evolution archetype/threshold tuning and fusion recipes
-- awakening thresholds
-- drift probability coefficients
-- lore action bar throttle interval (`lore.min-update-interval-ms`) to reduce combat spam/lag
-
-After editing config, restart or reload the plugin to apply changes.
-
-See `docs/EVOLUTION_FUSION_TABLE.md` for the archetype matrix and fusion balancing table.
-
-## Build troubleshooting
-If Maven fails before compilation with an error similar to:
-
-- `Could not transfer artifact ... from/to central ... status code: 403`
-
-then the issue is not Java source compilation — Maven cannot download required build plugins/dependencies from remote repositories.
-
-### What to check
-1. Verify your network can reach Maven Central:
-   ```bash
-   curl -I https://repo.maven.apache.org/maven2/
-   ```
-2. If your environment blocks Maven Central, configure a reachable mirror in Maven `settings.xml` (user or CI level).
-3. In restricted CI environments, pre-populate a local Maven repository cache and run with `-o` (offline) when possible.
-
-### Sample `settings.xml` for CI / self-hosted artifact proxies
-Use this as a starting point when your build runners can only access an internal Maven proxy (Nexus/Artifactory/Archiva).
-
-```xml
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
-                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
-
-  <!-- Mirror all repositories (including plugin repositories) through your internal proxy -->
-  <mirrors>
-    <mirror>
-      <id>internal-proxy</id>
-      <name>Company Maven Proxy</name>
-      <url>https://maven-proxy.example.internal/repository/maven-all/</url>
-      <mirrorOf>*</mirrorOf>
-    </mirror>
-  </mirrors>
-
-  <!-- Optional credentials if your proxy requires authentication -->
-  <servers>
-    <server>
-      <id>internal-proxy</id>
-      <username>${env.MAVEN_PROXY_USER}</username>
-      <password>${env.MAVEN_PROXY_PASS}</password>
-    </server>
-  </servers>
-
-  <!-- Keep an explicit profile for deterministic CI behavior -->
-  <profiles>
-    <profile>
-      <id>ci-default</id>
-      <properties>
-        <!-- Example: speed up transfer retries/noise in CI -->
-        <maven.wagon.http.retryHandler.count>3</maven.wagon.http.retryHandler.count>
-      </properties>
-    </profile>
-  </profiles>
-
-  <activeProfiles>
-    <activeProfile>ci-default</activeProfile>
-  </activeProfiles>
-</settings>
-```
-
-CI tip: mount this file into `${MAVEN_CONFIG}/settings.xml` (or `~/.m2/settings.xml`) before running `mvn`.
-
-
-### Implemented workaround in this repo
-This repository now includes helper scripts so restricted CI can build through an internal mirror/proxy:
-
-- `scripts/diagnose-maven-access.sh` — quickly checks direct vs proxy Maven Central reachability.
-- `scripts/mvn-via-mirror.sh` — generates a temporary Maven `settings.xml` with `mirrorOf=*` and builds through your internal artifact proxy.
-
-Usage:
+### Build
+This project uses **Maven**.
 
 ```bash
-# 1) Diagnose current network constraints
-./scripts/diagnose-maven-access.sh
-
-# 2) Build through your internal proxy/mirror
-export MAVEN_MIRROR_URL="https://maven-proxy.example.internal/repository/maven-all/"
-# optional if auth is required:
-export MAVEN_PROXY_USER="ci-user"
-export MAVEN_PROXY_PASS="ci-pass"
-
-./scripts/mvn-via-mirror.sh -DskipTests
+mvn clean package
 ```
 
-This avoids hardcoding credentials and makes CI pipelines reproducible in environments where Maven Central is blocked.
+Compiled JAR output goes to:
+
+```text
+target/obtuseloot-<version>.jar
+```
+
+### Deploy
+1. Stop server.
+2. Copy the JAR into `plugins/`.
+3. Start server.
+
+On first run, plugin data is created under:
+
+```text
+plugins/ObtuseLoot/
+  config.yml
+  playerdata/
+```
+
+---
+
+## Configuration Overview
+
+Main config sections in `config.yml`:
+
+- `reputation`
+  - combat window sizing
+  - low-health threshold
+  - mobility threshold
+  - kill-chain window
+  - multi-target chaos threshold
+  - boss entity types
+  - volatile decay interval/factor
+  - context cleanup cadence
+- `evolution`
+  - archetype/evolution/hybrid thresholds
+  - switch margin
+  - current archetype inertia
+- `drift`
+  - base/max drift chance
+  - chaos multiplier
+  - consistency reduction
+  - instability duration
+- `persistence`
+  - autosave interval
+- `combat`
+  - precision threshold damage
+- `naming`
+  - name generation behavior knobs
+
+Runtime settings are loaded into an in-memory snapshot (`RuntimeSettings`) and can be reloaded via command.
+
+---
+
+## Commands
+
+Root command:
+
+- `/obtuseloot` (alias: `/ol`)
+
+### General/Admin
+- `/ol help`
+- `/ol info`
+- `/ol inspect [player]`
+- `/ol refresh [player]`
+- `/ol reset [player]`
+- `/ol reload`
+- `/ol addname <prefixes|suffixes|generic> <value>`
+- `/ol removename <prefixes|suffixes|generic> <value>`
+
+### Debug Suite
+- `/ol debug help`
+- `/ol debug inspect [player]`
+- `/ol debug rep set <stat> <value> [player]`
+- `/ol debug rep add <stat> <value> [player]`
+- `/ol debug rep reset [player]`
+- `/ol debug evolve [player]`
+- `/ol debug drift [player]`
+- `/ol debug awaken [player]`
+- `/ol debug fuse [player]`
+- `/ol debug lore [player]`
+- `/ol debug reset [player]`
+- `/ol debug save [player]`
+- `/ol debug reload`
+- `/ol debug instability clear [player]`
+- `/ol debug archetype set <archetype> [player]`
+- `/ol debug path set <evolutionPath> [player]`
+
+> `simulate` subcommands are **not currently registered** in this branch’s command implementation.
+
+Permissions are defined in `plugin.yml`, including `obtuseloot.debug` for the debug suite.
+
+---
+
+## Debug Workflow (Practical QA)
+
+Typical progression test flow:
+
+```text
+/ol debug inspect
+/ol debug rep add chaos 20
+/ol debug evolve
+/ol debug drift
+/ol debug awaken
+/ol debug fuse
+/ol debug lore
+/ol debug save
+```
+
+For clean retests:
+
+```text
+/ol debug reset
+```
+
+Useful checks:
+- Verify seed affinities, drift bias, awakening bias/multipliers in `inspect`.
+- Use `rep set/add` to push controlled scenarios.
+- Force evolution/drift/awakening/fusion through real engines.
+- Use `lore` to inspect generated lore output without item inspection.
+- Use `save` before restart to verify persistence behavior.
+
+---
+
+## Persistence Model
+
+- Artifact + reputation are persisted per player in YAML:
+  - `plugins/ObtuseLoot/playerdata/<uuid>.yml`
+- Lifecycle behaviors:
+  - load on join/first access
+  - save on quit/unload paths
+  - periodic autosave via scheduler
+  - save-all on plugin disable
+- State includes progression paths, drift history/lore history/notable events, bias maps, multipliers, traits, and reputation dimensions.
+
+---
+
+## Current Project Status
+
+ObtuseLoot is currently **pre-release** and under active iteration.
+
+The architecture is focused on internal coherence, tuning, and QA workflows rather than backward compatibility guarantees. Expect balancing changes, command expansion, and behavior refinements as testing continues.
