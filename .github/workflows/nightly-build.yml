@@ -1,0 +1,72 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build plugin
+        run: mvn -B -ntp clean package
+
+      - name: Run artifact audit
+        run: |
+          jar tf target/ObtuseLoot-*.jar | grep plugin.yml
+          unzip -p target/ObtuseLoot-*.jar plugin.yml | grep 'main:        obtuseloot.ObtuseLoot'
+
+      - name: Run gameplay simulation harness
+        run: python3 scripts/internal_test_build.py
+
+      - name: Run chaos tests
+        run: python3 scripts/internal_test_build.py
+
+      - name: Run population simulation
+        run: python3 scripts/internal_test_build.py
+
+      - name: Run meta-analysis
+        run: python3 scripts/internal_test_build.py
+
+      - name: Generate evolution visualization
+        run: python3 scripts/internal_test_build.py
+
+      - name: Package nightly artifact
+        run: |
+          cp target/ObtuseLoot-*.jar ObtuseLoot-nightly.jar
+          cp target/ObtuseLoot-*.jar ObtuseLoot-0.9.2.jar
+
+      - name: Generate build report
+        run: |
+          cat > build-report.md <<'MD'
+          # Nightly Build Report
+          - Build command: `mvn -B -ntp clean package`
+          - Artifact: `ObtuseLoot-nightly.jar`
+          - Generated reports: evolution/population/meta outputs
+          MD
+
+      - name: Upload nightly artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: obtuseloot-nightly
+          path: |
+            ObtuseLoot-nightly.jar
+            build-report.md
+            evolution-report.md
+            population-report.md
+            meta-report.md
+            balance-suggestions.md
+            evolution-data.json
+            population-analysis.json
+            meta-analysis.json

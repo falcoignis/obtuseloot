@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Artifact {
+    private static final int MAX_HISTORY_ENTRIES = 120;
+
     private long artifactSeed;
     private UUID ownerId;
     private String generatedName;
@@ -166,6 +168,9 @@ public class Artifact {
         }
 
         history.add(entry);
+        if (history.size() > MAX_HISTORY_ENTRIES) {
+            history.remove(0);
+        }
     }
 }
 
