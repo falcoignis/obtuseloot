@@ -19,6 +19,7 @@ public class CombatContext {
 
     public void markCombat() { lastCombatTimestamp = System.currentTimeMillis(); }
     public void addMovement(double distance) { recentMovementDistance += distance; lastMovementTimestamp = System.currentTimeMillis(); }
+    public void consumeMovement(double distance) { recentMovementDistance = Math.max(0D, recentMovementDistance - distance); }
     public void addTarget(UUID entityId) { recentTargets.add(entityId); }
     public void addKillTimestamp(long now) { recentKillTimestamps.addLast(now); }
     public int countKillsWithinWindow(long now, long windowMs) { pruneOldEntries(now, windowMs); return recentKillTimestamps.size(); }

@@ -21,6 +21,7 @@ public final class RuntimeSettings {
                 config.getInt("reputation.volatile-decay-interval-seconds", 300),
                 config.getDouble("reputation.volatile-decay-factor", 0.96D),
                 config.getInt("reputation.context-cleanup-seconds", 120),
+                config.getDouble("combat.precision-threshold-damage", 10.0D),
 
                 config.getInt("evolution.archetype-threshold", 10),
                 config.getInt("evolution.tempered-threshold", 25),
@@ -53,6 +54,7 @@ public final class RuntimeSettings {
             int volatileDecayIntervalSeconds,
             double volatileDecayFactor,
             int contextCleanupSeconds,
+            double precisionThresholdDamage,
             int archetypeThreshold,
             int temperedThreshold,
             int mythicThreshold,
@@ -70,7 +72,8 @@ public final class RuntimeSettings {
     ) {
         private static Snapshot defaults() {
             return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
-                    300, 0.96D, 120, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300, 60, true);
+                    300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
+                    60, true);
         }
     }
 }

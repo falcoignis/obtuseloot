@@ -33,3 +33,6 @@ persistence:
 naming:
   prefix-suffix-chance-percent: 60
   use-deterministic-owner-seed: true
+
+combat:
+  precision-threshold-damage: 10.0
