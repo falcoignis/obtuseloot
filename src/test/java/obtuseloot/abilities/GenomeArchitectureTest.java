@@ -52,6 +52,48 @@ class GenomeArchitectureTest {
         assertTrue(distinctProfiles.size() >= 3, "Expected diversity across seeds");
     }
 
+    @Test
+    void traitScoringUsesDotProductProjection() {
+        AbilityRegistry registry = new AbilityRegistry();
+        TraitInterferenceResolver resolver = new TraitInterferenceResolver(registry.templates());
+        AbilityTemplate precisionSigil = registry.templates().stream().filter(t -> t.id().equals("precision.sigil")).findFirst().orElseThrow();
+
+        ArtifactGenome genome = new GenomeResolver().resolve(42L);
+        GenomeProjection genomeProjection = GenomeProjection.fromGenome(genome);
+        AbilityTraitVector abilityVector = AbilityTraitVector.fromWeights(resolver.weightsFor(precisionSigil));
+
+        assertEquals(genomeProjection.dot(abilityVector), resolver.score(precisionSigil, genome), 1.0E-9D);
+    }
+
+    @Test
+    void projectionCacheReusesScoringAcrossSimilarGenomes() {
+        AbilityRegistry registry = new AbilityRegistry();
+        TraitInterferenceResolver resolver = new TraitInterferenceResolver(registry.templates(), 50_000);
+        for (int i = 0; i < 10_000; i++) {
+            resolver.selectTop(registry.templates(), new GenomeResolver().resolve(1234L + (i % 5)), 3);
+        }
+
+        assertTrue(resolver.cacheHits() > resolver.cacheMisses(), "Expected projection cache to produce repeated hits");
+    }
+
+
+    @Test
+    void projectionCacheScalesToMillionGenerationsAndTenThousandLineages() {
+        AbilityRegistry registry = new AbilityRegistry();
+        TraitInterferenceResolver resolver = new TraitInterferenceResolver(registry.templates(), 100_000);
+        GenomeResolver genomeResolver = new GenomeResolver();
+
+        int lineages = 10_000;
+        int generations = 1_000_000;
+        for (int i = 0; i < generations; i++) {
+            long lineageSeed = i % lineages;
+            resolver.selectTop(registry.templates(), genomeResolver.resolve(10_000L + lineageSeed), 3);
+        }
+
+        assertTrue(resolver.cacheHits() >= (generations - lineages), "Expected cache reuse across repeated lineage genomes");
+    }
+
+
     private Artifact artifactFor(long seed) {
         Artifact artifact = new Artifact(UUID.randomUUID(), "Test");
         artifact.setArtifactSeed(seed);
