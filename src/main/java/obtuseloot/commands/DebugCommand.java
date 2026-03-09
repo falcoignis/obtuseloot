@@ -1,6 +1,9 @@
 package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.abilities.AbilityProfile;
+import obtuseloot.abilities.ArtifactEvolutionStage;
+import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
@@ -63,6 +66,7 @@ public class DebugCommand {
             case "path" -> path(sender, label, args);
             case "simulate" -> simulate(sender, label, args);
             case "seed" -> seed(sender, label, args);
+            case "ability" -> ability(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -88,6 +92,15 @@ public class DebugCommand {
         sender.sendMessage("§7awakening bias: §f" + artifact.getAwakeningBiasAdjustments());
         sender.sendMessage("§7awakening multipliers: §f" + artifact.getAwakeningGainMultipliers());
         sender.sendMessage("§7awakening traits: §f" + artifact.getAwakeningTraits());
+        AbilityProfile abilityProfile = plugin.getItemAbilityManager().profileFor(artifact, rep);
+        sender.sendMessage("§7isGeneric=§f" + ArtifactEligibility.isGenericItem(artifact)
+                + " §7evolutionEligible=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
+                + " §7abilityEligible=§f" + ArtifactEligibility.isAbilityEligible(artifact));
+        sender.sendMessage("§7evolutionStage=§f" + ArtifactEvolutionStage.resolveStage(artifact)
+                + " §7abilityProfile=§f" + abilityProfile.profileId());
+        sender.sendMessage("§7abilityTriggers=§f" + abilityProfile.abilities().stream().map(a -> a.trigger().name()).toList());
+        sender.sendMessage("§7abilityEffects=§f" + abilityProfile.abilities().stream().map(a -> a.name() + ":" + a.effects().stream().map(e -> e.type().name()).toList()).toList());
+        sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7fusion influence=§f" + artifact.getFusionPath());
         sender.sendMessage("§7rep: P=" + rep.getPrecision() + " B=" + rep.getBrutality() + " S=" + rep.getSurvival()
                 + " M=" + rep.getMobility() + " X=" + rep.getChaos() + " C=" + rep.getConsistency()
                 + " K=" + rep.getKills() + " BK=" + rep.getBossKills()
@@ -292,6 +305,22 @@ public class DebugCommand {
         return true;
     }
 
+    private boolean ability(CommandSender sender, String label, String[] args) {
+        String action = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "show";
+        Player target = resolveTarget(sender, label, args, 2, "ability " + action);
+        if (target == null) return true;
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+        AbilityProfile profile = plugin.getItemAbilityManager().profileFor(artifact, rep);
+        if ("refresh".equals(action)) {
+            sender.sendMessage("§aAbility profile refreshed for " + target.getName() + ": " + profile.profileId());
+            return true;
+        }
+        sender.sendMessage("§dAbility profile for " + target.getName() + ": §f" + profile.profileId());
+        sender.sendMessage("§7Abilities: §f" + profile.abilities().stream().map(a -> a.name() + "(" + a.trigger() + ")").toList());
+        return true;
+    }
+
     private boolean simulate(CommandSender sender, String label, String[] args) {
         if (args.length < 2 || "help".equalsIgnoreCase(args[1])) {
             sendSimulateHelp(sender, label);
@@ -389,10 +418,8 @@ public class DebugCommand {
         Player target = resolveTarget(sender, label, args, 3, "simulate multikill " + args[2]);
         if (target == null) return true;
 
-        for (int i = 0; i < count; i++) {
-            prepareKillWindow(target, Math.max(2, count));
-            ArtifactProcessor.processSimulatedKill(target);
-        }
+        prepareKillWindow(target, Math.max(2, count));
+        ArtifactProcessor.processSimulatedMultiKill(target, count);
         saveOnly(target);
         sender.sendMessage("§aSimulated " + count + " rapid kills for " + target.getName() + ".");
         return true;

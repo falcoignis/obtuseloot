@@ -1,6 +1,7 @@
 package obtuseloot.awakening;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 
@@ -19,6 +20,9 @@ public class AwakeningEngine {
     );
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation reputation) {
+        if (!ArtifactEligibility.isAbilityEligible(artifact)) {
+            return false;
+        }
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
@@ -31,6 +35,9 @@ public class AwakeningEngine {
     }
 
     public boolean forceAwakening(Player player, Artifact artifact, ArtifactReputation reputation) {
+        if (!ArtifactEligibility.isAbilityEligible(artifact)) {
+            return false;
+        }
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }

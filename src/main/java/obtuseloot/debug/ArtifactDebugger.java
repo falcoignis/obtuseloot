@@ -1,6 +1,9 @@
 package obtuseloot.debug;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.abilities.AbilityProfile;
+import obtuseloot.abilities.ArtifactEvolutionStage;
+import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.reputation.ArtifactReputation;
@@ -30,6 +33,10 @@ public final class ArtifactDebugger {
                 + ", mobility=" + rep.mobility() + ", chaos=" + rep.chaos() + ", consistency=" + rep.consistency() + "}");
         lines.add("driftNow=" + new DriftEngine().shouldDrift(rep) + ", lineage=" + artifact.getLatentLineage()
                 + ", instability=" + artifact.getCurrentInstabilityState());
+        AbilityProfile profile = ObtuseLoot.get().getItemAbilityManager().profileFor(artifact, rep);
+        lines.add("isGeneric=" + ArtifactEligibility.isGenericItem(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
+                + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
+        lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList());
         lines.add("awakeningTraits=" + artifact.getAwakeningTraits());
         lines.add("recentLore=" + tail(artifact.getLoreHistory(), 3) + ", recentEvents=" + tail(artifact.getNotableEvents(), 3));
         return lines;

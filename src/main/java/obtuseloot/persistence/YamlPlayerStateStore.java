@@ -77,6 +77,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
         artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
         artifact.setAwakeningPath(yaml.getString("artifact.awakening-path", "dormant"));
+        artifact.setItemCategory(yaml.getString("artifact.item-category", "artifact"));
         artifact.setFusionPath(yaml.getString("artifact.fusion-path", "none"));
         artifact.setDriftLevel(yaml.getInt("artifact.drift-level", 0));
         artifact.setTotalDrifts(yaml.getInt("artifact.total-drifts", 0));
@@ -209,6 +210,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "owner-id", artifact.getOwnerId().toString());
         yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
         yaml.set(base + "generated-name", artifact.getGeneratedName());
+        yaml.set(base + "item-category", artifact.getItemCategory());
         yaml.set(base + "archetype-path", artifact.getArchetypePath());
         yaml.set(base + "evolution-path", artifact.getEvolutionPath());
         yaml.set(base + "awakening-path", artifact.getAwakeningPath());
