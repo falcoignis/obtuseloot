@@ -16,4 +16,8 @@ public final class ArtifactEligibility {
     public static boolean isAbilityEligible(Artifact artifact) {
         return !isGenericItem(artifact);
     }
+
+    public static boolean isMemoryEligible(Artifact artifact) {
+        return !isGenericItem(artifact);
+    }
 }

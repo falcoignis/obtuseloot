@@ -67,6 +67,7 @@ public class DebugCommand {
             case "simulate" -> simulate(sender, label, args);
             case "seed" -> seed(sender, label, args);
             case "ability" -> ability(sender, label, args);
+            case "memory" -> memory(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -95,12 +96,15 @@ public class DebugCommand {
         AbilityProfile abilityProfile = plugin.getItemAbilityManager().profileFor(artifact, rep);
         sender.sendMessage("§7isGeneric=§f" + ArtifactEligibility.isGenericItem(artifact)
                 + " §7evolutionEligible=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
-                + " §7abilityEligible=§f" + ArtifactEligibility.isAbilityEligible(artifact));
+                + " §7abilityEligible=§f" + ArtifactEligibility.isAbilityEligible(artifact)
+                + " §7memoryEligible=§f" + ArtifactEligibility.isMemoryEligible(artifact));
         sender.sendMessage("§7evolutionStage=§f" + ArtifactEvolutionStage.resolveStage(artifact)
                 + " §7abilityProfile=§f" + abilityProfile.profileId());
         sender.sendMessage("§7abilityTriggers=§f" + abilityProfile.abilities().stream().map(a -> a.trigger().name()).toList());
         sender.sendMessage("§7abilityEffects=§f" + abilityProfile.abilities().stream().map(a -> a.name() + ":" + a.effects().stream().map(e -> e.type().name()).toList()).toList());
         sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7fusion influence=§f" + artifact.getFusionPath());
+        sender.sendMessage("§7branchPath=§f" + artifact.getLastAbilityBranchPath() + " §7mutationHistory=§f" + artifact.getLastMutationHistory());
+        sender.sendMessage("§7memoryInfluence=§f" + artifact.getLastMemoryInfluence());
         sender.sendMessage("§7rep: P=" + rep.getPrecision() + " B=" + rep.getBrutality() + " S=" + rep.getSurvival()
                 + " M=" + rep.getMobility() + " X=" + rep.getChaos() + " C=" + rep.getConsistency()
                 + " K=" + rep.getKills() + " BK=" + rep.getBossKills()
@@ -307,7 +311,8 @@ public class DebugCommand {
 
     private boolean ability(CommandSender sender, String label, String[] args) {
         String action = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "show";
-        Player target = resolveTarget(sender, label, args, 2, "ability " + action);
+        int targetIndex = ("explain".equals(action) || "tree".equals(action)) ? 3 : 2;
+        Player target = resolveTarget(sender, label, args, targetIndex, "ability " + action);
         if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
@@ -316,8 +321,29 @@ public class DebugCommand {
             sender.sendMessage("§aAbility profile refreshed for " + target.getName() + ": " + profile.profileId());
             return true;
         }
+        if ("explain".equals(action)) {
+            sender.sendMessage("§dAbility explain -> id=" + profile.profileId());
+            sender.sendMessage("§7branchPath=§f" + artifact.getLastAbilityBranchPath());
+            sender.sendMessage("§7mutationHistory=§f" + artifact.getLastMutationHistory());
+            sender.sendMessage("§7memoryInfluence=§f" + artifact.getLastMemoryInfluence());
+            return true;
+        }
+        if ("tree".equals(action)) {
+            sender.sendMessage("§dAbility tree for " + target.getName() + ": " + artifact.getLastAbilityBranchPath());
+            return true;
+        }
         sender.sendMessage("§dAbility profile for " + target.getName() + ": §f" + profile.profileId());
-        sender.sendMessage("§7Abilities: §f" + profile.abilities().stream().map(a -> a.name() + "(" + a.trigger() + ")").toList());
+        sender.sendMessage("§7Abilities: §f" + profile.abilities().stream().map(a -> a.name() + "(" + a.trigger() + "/" + a.mechanic() + ")").toList());
+        return true;
+    }
+
+
+    private boolean memory(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "memory");
+        if (target == null) return true;
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        sender.sendMessage("§dMemory for " + target.getName() + ": §f" + artifact.getMemory().snapshot());
+        sender.sendMessage("§7memoryInfluence=§f" + artifact.getLastMemoryInfluence());
         return true;
     }
 
