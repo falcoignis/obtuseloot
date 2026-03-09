@@ -130,7 +130,9 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])) {
-            return prefix(List.of("health"), args[1]);
+            List<String> merged = new ArrayList<>(delegate.onTabComplete(sender, command, alias, args));
+            addIfMissing(merged, "health", args[1]);
+            return merged;
         }
 
         if (args.length == 2 && "debug".equalsIgnoreCase(args[0])) {

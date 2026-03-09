@@ -5,6 +5,7 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.debug.ArtifactDebugger;
 import obtuseloot.names.NamePoolManager;
+import obtuseloot.ecosystem.EcosystemMapRenderer;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -56,6 +57,9 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " dashboard §8- §fShow ecosystem health and dashboard link §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem [health] §8- §fAlias for ecosystem dashboard health summary §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem map [lineage|species|collapse] §8- §fStart live ecosystem hotspot rendering §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem map genome <trait> §8- §fRender genome trait intensity hotspots §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem map off §8- §fDisable live ecosystem map rendering §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite (seed + simulate tooling) §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug seed show|reroll|set|export|import §8- §fDeterministic seed controls §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug simulate help §8- §fSimulation scenarios and path profiles §8[obtuseloot.debug]");
@@ -152,6 +156,20 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if ("ecosystem".equalsIgnoreCase(args[0])) {
+            if (!hasPermission(sender, PERMISSION_INFO)) {
+                return true;
+            }
+            if (args.length >= 2 && "map".equalsIgnoreCase(args[1])) {
+                if (args.length >= 3 && "off".equalsIgnoreCase(args[2]) && sender instanceof Player player) {
+                    plugin.getEcosystemMapRenderer().stop(player);
+                    sender.sendMessage("§aEcosystem map visualization disabled.");
+                    return true;
+                }
+                return plugin.getEcosystemMapRenderer().handleCommand(sender, args);
+            }
+        }
+
 
         if ("debug".equalsIgnoreCase(args[0])) {
             String[] debugArgs = java.util.Arrays.copyOfRange(args, 1, args.length);
@@ -243,6 +261,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
+            addIfPermitted(sender, candidates, "ecosystem", PERMISSION_INFO);
             if (sender.hasPermission("obtuseloot.debug") || !(sender instanceof Player) || ((Player) sender).isOp()) {
                 candidates.add("debug");
             }
@@ -275,6 +294,23 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 }
             }
             return filterByPrefix(editablePools, args[1]);
+        }
+
+        if (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])) {
+            return filterByPrefix(List.of("map"), args[1]);
+        }
+
+        if (args.length == 3 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])) {
+            return filterByPrefix(List.of("lineage", "genome", "collapse", "species", "off"), args[2]);
+        }
+
+        if (args.length == 4 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])
+                && "genome".equalsIgnoreCase(args[2])) {
+            List<String> traits = new ArrayList<>();
+            for (var trait : obtuseloot.abilities.genome.GenomeTrait.values()) {
+                traits.add(trait.name().toLowerCase());
+            }
+            return filterByPrefix(traits, args[3]);
         }
 
         if (args.length >= 1 && "debug".equalsIgnoreCase(args[0])) {
