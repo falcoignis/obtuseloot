@@ -1,288 +1,38 @@
-# ObtuseLoot runtime tuning
-# -----------------------------------------------------------------------------
-# This file controls runtime balancing for progression systems and also serves as
-# an operator-facing command reference.
-#
-# Notes:
-# - Keys under gameplay sections are loaded by RuntimeSettings.
-# - Keys under `commands` are documentation-only and are not read by runtime.
-# -----------------------------------------------------------------------------
-
-combat:
-  # Damage at/above this value records precision; below this value records brutality.
-  precision-threshold-damage: 10.0
+reputation:
+  combat-window-ms: 10000
+  low-health-threshold: 6.0
+  mobility-distance-threshold: 12.0
+  kill-chain-window-ms: 8000
+  multi-target-chaos-threshold: 3
+  boss-types:
+    - ENDER_DRAGON
+    - WITHER
+    - WARDEN
+  volatile-decay-interval-seconds: 300
+  volatile-decay-factor: 0.96
+  context-cleanup-seconds: 120
 
 evolution:
-  # Minimum total score before an archetype can be assigned from behavior vectors.
-  archetype-score: 20
-
-  # Required lead over second-place archetype score before a definitive archetype is locked.
-  # Lower values allow faster archetype switching; higher values create more stable identities.
-  archetype-dominance-delta: 8
-
-  # Reputation score threshold to enter the TEMPERED progression stage.
-  tempered-score: 40
-
-  # Reputation score threshold to enter the MYTHIC progression stage.
-  mythic-score: 120
-
-  # Reputation score threshold to enter the HYBRID progression stage.
-  hybrid-score: 250
-
-fusion:
-  # Fusion can only occur after this total reputation score is reached.
-  min-score: 320
-
-  # Archetype-driven fusion recipe table.
-  #
-  # For each recipe:
-  # - `archetype` is the required dominant archetype.
-  # - `min-*` keys are minimum behavior vector requirements.
-  # - `min-boss-kills` is a minimum boss kill requirement.
-  recipes:
-    # Deadeye-focused fusion profile.
-    stormglass-reaver:
-      # Required dominant archetype.
-      archetype: deadeye
-      # Minimum precision score required.
-      min-precision: 150
-      # Minimum brutality score required.
-      min-brutality: 40
-      # Minimum survival score required.
-      min-survival: 60
-      # Minimum mobility score required.
-      min-mobility: 120
-      # Minimum chaos score required.
-      min-chaos: 20
-      # Minimum consistency score required.
-      min-consistency: 110
-      # Minimum boss kills required.
-      min-boss-kills: 2
-
-    # Vanguard-focused fusion profile.
-    aegis-paragon:
-      # Required dominant archetype.
-      archetype: vanguard
-      # Minimum precision score required.
-      min-precision: 60
-      # Minimum brutality score required.
-      min-brutality: 50
-      # Minimum survival score required.
-      min-survival: 160
-      # Minimum mobility score required.
-      min-mobility: 40
-      # Minimum chaos score required.
-      min-chaos: 10
-      # Minimum consistency score required.
-      min-consistency: 140
-      # Minimum boss kills required.
-      min-boss-kills: 2
-
-    # Ravager-focused fusion profile.
-    cataclyst-tyrant:
-      # Required dominant archetype.
-      archetype: ravager
-      # Minimum precision score required.
-      min-precision: 20
-      # Minimum brutality score required.
-      min-brutality: 160
-      # Minimum survival score required.
-      min-survival: 70
-      # Minimum mobility score required.
-      min-mobility: 80
-      # Minimum chaos score required.
-      min-chaos: 150
-      # Minimum consistency score required.
-      min-consistency: 50
-      # Minimum boss kills required.
-      min-boss-kills: 3
-
-    # Warden-focused fusion profile.
-    horizon-keeper:
-      # Required dominant archetype.
-      archetype: warden
-      # Minimum precision score required.
-      min-precision: 120
-      # Minimum brutality score required.
-      min-brutality: 30
-      # Minimum survival score required.
-      min-survival: 140
-      # Minimum mobility score required.
-      min-mobility: 70
-      # Minimum chaos score required.
-      min-chaos: 20
-      # Minimum consistency score required.
-      min-consistency: 120
-      # Minimum boss kills required.
-      min-boss-kills: 2
-
-    # Strider-focused fusion profile.
-    windscar-phantom:
-      # Required dominant archetype.
-      archetype: strider
-      # Minimum precision score required.
-      min-precision: 140
-      # Minimum brutality score required.
-      min-brutality: 60
-      # Minimum survival score required.
-      min-survival: 70
-      # Minimum mobility score required.
-      min-mobility: 160
-      # Minimum chaos score required.
-      min-chaos: 40
-      # Minimum consistency score required.
-      min-consistency: 90
-      # Minimum boss kills required.
-      min-boss-kills: 2
-
-    # Harbinger-focused fusion profile.
-    voidhymn-oracle:
-      # Required dominant archetype.
-      archetype: harbinger
-      # Minimum precision score required.
-      min-precision: 80
-      # Minimum brutality score required.
-      min-brutality: 70
-      # Minimum survival score required.
-      min-survival: 130
-      # Minimum mobility score required.
-      min-mobility: 90
-      # Minimum chaos score required.
-      min-chaos: 150
-      # Minimum consistency score required.
-      min-consistency: 100
-      # Minimum boss kills required.
-      min-boss-kills: 3
-
-    # Paragon-focused fusion profile.
-    crown-of-twins:
-      # Required dominant archetype.
-      archetype: paragon
-      # Minimum precision score required.
-      min-precision: 120
-      # Minimum brutality score required.
-      min-brutality: 120
-      # Minimum survival score required.
-      min-survival: 120
-      # Minimum mobility score required.
-      min-mobility: 120
-      # Minimum chaos score required.
-      min-chaos: 80
-      # Minimum consistency score required.
-      min-consistency: 120
-      # Minimum boss kills required.
-      min-boss-kills: 4
+  archetype-threshold: 10
+  tempered-threshold: 25
+  mythic-threshold: 45
+  hybrid-threshold: 70
+  archetype-switch-margin: 4.0
+  current-archetype-inertia: 2.0
 
 drift:
-  # Base probability contribution for drift events.
-  base-chance: 0.03
-
-  # Added contribution per chaos point.
+  base-chance: 0.05
+  max-chance: 0.40
   chaos-multiplier: 0.01
-
-  # Removed contribution per consistency point.
   consistency-reduction: 0.005
+  instability-duration-seconds: 600
 
-  # Absolute upper bound after applying base + multipliers and clamping.
-  max-chance: 0.60
-
-lore:
-  # Minimum milliseconds between lore/action-bar updates per player.
-  # Increasing this reduces update spam and event-driven overhead.
-  min-update-interval-ms: 500
+persistence:
+  autosave-interval-seconds: 300
 
 naming:
-  # Chance (0-100) to generate "<prefix> <suffix>" instead of a generic full-name entry.
   prefix-suffix-chance-percent: 60
-
-  # If true, a player UUID always maps to the same generated name roll pattern.
-  # Set false to allow fully random naming each generation event.
   use-deterministic-owner-seed: true
 
-awakening:
-  # Ravager awakening route (formerly executioner-style ability soul behavior).
-  ravager:
-    # Minimum brutality score required.
-    min-brutality: 140
-    # Minimum boss kills required.
-    min-boss-kills: 1
-
-  # Deadeye awakening route (formerly stormblade-style ability soul behavior).
-  deadeye:
-    # Minimum precision score required.
-    min-precision: 120
-    # Minimum mobility score required.
-    min-mobility: 80
-
-  # Vanguard awakening route.
-  vanguard:
-    # Minimum survival score required.
-    min-survival: 140
-    # Minimum consistency score required.
-    min-consistency: 100
-
-  # Strider awakening route.
-  strider:
-    # Minimum mobility score required.
-    min-mobility: 140
-    # Minimum precision score required.
-    min-precision: 100
-
-  # Harbinger awakening route.
-  harbinger:
-    # Minimum chaos score required.
-    min-chaos: 120
-    # Minimum boss kills required.
-    min-boss-kills: 2
-
-  # Warden awakening route (formerly last-survivor style ability soul behavior).
-  warden:
-    # Minimum survival score required.
-    min-survival: 120
-    # Minimum consistency score required.
-    min-consistency: 100
-
-  # Paragon fallback awakening route.
-  paragon:
-    # Minimum total reputation score required.
-    min-score: 500
-    # Minimum consistency score required.
-    min-consistency: 120
-
-# Command reference (documentation-only; these entries do not alter command behavior)
-commands:
-  obtuseloot:
-    # Registered shorthand alias for the root command.
-    alias: ol
-
-    # Command syntaxes accepted at runtime.
-    usage:
-      # Show command list and permission hints.
-      - "/ol help"
-      # Show plugin runtime status summary.
-      - "/ol info"
-      # Inspect tracked artifact state. Console callers must provide a target player.
-      - "/ol inspect [player]"
-
-    permissions:
-      help:
-        # Permission node required for `/ol help`.
-        node: obtuseloot.help
-        # Default Bukkit permission assignment for this node.
-        default: true
-        # Human-readable behavior note.
-        notes: "Lists command usage for both console and in-game senders."
-      info:
-        # Permission node required for `/ol info`.
-        node: obtuseloot.info
-        # Default Bukkit permission assignment for this node.
-        default: true
-        # Human-readable behavior note.
-        notes: "Shows plugin runtime status for both console and in-game senders."
-      inspect:
-        # Permission node required for `/ol inspect [player]`.
-        node: obtuseloot.inspect
-        # Default Bukkit permission assignment for this node.
-        default: op
-        # Human-readable behavior note.
-        notes: "Inspects tracked artifact state; console must provide a player argument."
+combat:
+  precision-threshold-damage: 10.0

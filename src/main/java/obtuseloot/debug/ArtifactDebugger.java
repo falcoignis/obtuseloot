@@ -1,10 +1,9 @@
 package obtuseloot.debug;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.reputation.ArtifactReputation;
-import obtuseloot.reputation.ReputationManager;
 
 import java.util.UUID;
 
@@ -13,14 +12,14 @@ public final class ArtifactDebugger {
     }
 
     public static String describe(UUID playerId) {
-        Artifact artifact = ArtifactManager.getOrCreate(playerId);
-        ArtifactReputation rep = ReputationManager.get(playerId);
+        Artifact artifact = ObtuseLoot.get().getArtifactManager().getOrCreate(playerId);
+        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(playerId);
         return "artifactName=\"" + artifact.getName() + "\""
-                + ", artifactId=" + artifact.getSeed()
+                + ", artifactId=" + Math.abs(playerId.getMostSignificantBits() ^ playerId.getLeastSignificantBits())
                 + ", archetype=" + artifact.getArchetypePath()
                 + ", evolution=" + artifact.getEvolutionPath()
                 + ", fusion=" + artifact.getFusionPath()
-                + ", driftNow=" + DriftEngine.shouldDrift(rep)
+                + ", driftNow=" + new DriftEngine().shouldDrift(rep)
                 + ", reputation={precision=" + rep.precision()
                 + ", brutality=" + rep.brutality()
                 + ", survival=" + rep.survival()

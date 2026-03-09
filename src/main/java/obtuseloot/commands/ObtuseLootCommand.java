@@ -2,11 +2,9 @@ package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.debug.ArtifactDebugger;
 import obtuseloot.names.NamePoolManager;
-import obtuseloot.reputation.ReputationManager;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -101,8 +99,8 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            ArtifactManager.remove(target.getUniqueId());
-            Artifact refreshed = ArtifactManager.getOrCreate(target.getUniqueId());
+            plugin.getArtifactManager().unload(target.getUniqueId());
+            Artifact refreshed = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
 
             sender.sendMessage("§aRefreshed artifact profile for §f" + target.getName() + "§a: §d" + refreshed.getName());
             if (!sender.equals(target)) {
@@ -121,8 +119,8 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            ArtifactManager.remove(target.getUniqueId());
-            ReputationManager.remove(target.getUniqueId());
+            plugin.getArtifactManager().unload(target.getUniqueId());
+            plugin.getReputationManager().unload(target.getUniqueId());
             sender.sendMessage("§aCleared tracked ObtuseLoot state for §f" + target.getName() + "§a.");
             if (!sender.equals(target)) {
                 target.sendMessage("§dYour ObtuseLoot progression state was reset by an administrator.");

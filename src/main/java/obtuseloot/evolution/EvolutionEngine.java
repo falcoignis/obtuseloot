@@ -1,36 +1,36 @@
 package obtuseloot.evolution;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.reputation.ArtifactReputation;
-
 import org.bukkit.entity.Player;
 
-public final class EvolutionEngine {
-    private EvolutionEngine() {
+public class EvolutionEngine {
+    private final ArchetypeResolver archetypeResolver;
+    private final HybridEvolutionResolver hybridResolver;
+
+    public EvolutionEngine(ArchetypeResolver archetypeResolver, HybridEvolutionResolver hybridResolver) {
+        this.archetypeResolver = archetypeResolver;
+        this.hybridResolver = hybridResolver;
     }
 
-    public static void checkEvolution(Player player, ArtifactReputation rep) {
-        Artifact artifact = ArtifactManager.getOrCreate(player.getUniqueId());
-        RuntimeSettings.Snapshot settings = RuntimeSettings.get();
-        int score = rep.score();
-
-        if (score < settings.archetypeScore()) {
+    public void evaluate(Player player, Artifact artifact, ArtifactReputation reputation) {
+        RuntimeSettings.Snapshot s = RuntimeSettings.get();
+        if (reputation.getTotalScore() < s.archetypeThreshold()) {
             return;
         }
-
-        String archetype = ArchetypeResolver.resolve(rep, settings.archetypeDominanceDelta());
+        String archetype = archetypeResolver.resolve(artifact, reputation);
         artifact.setArchetypePath(archetype);
 
-        if (score >= settings.hybridScore()) {
-            artifact.setEvolutionPath(HybridEvolutionResolver.resolve(archetype, rep));
-        } else if (score >= settings.mythicScore()) {
-            artifact.setEvolutionPath(archetype + "-ascendant");
-        } else if (score >= settings.temperedScore()) {
-            artifact.setEvolutionPath(archetype + "-adept");
+        int total = reputation.getTotalScore();
+        if (total >= s.hybridThreshold()) {
+            artifact.setEvolutionPath(hybridResolver.resolve(artifact, reputation));
+        } else if (total >= s.mythicThreshold()) {
+            artifact.setEvolutionPath(archetype + "-mythic");
+        } else if (total >= s.temperedThreshold()) {
+            artifact.setEvolutionPath(archetype + "-tempered");
         } else {
-            artifact.setEvolutionPath(archetype + "-initiate");
+            artifact.setEvolutionPath(archetype + "-formed");
         }
     }
 }
