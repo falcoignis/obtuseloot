@@ -39,6 +39,10 @@ public class DashboardWebServer {
         return port;
     }
 
+    public boolean isRunning() {
+        return server != null;
+    }
+
     private void handleRequest(HttpExchange exchange) throws IOException {
         String requestPath = exchange.getRequestURI().getPath();
         String sanitized = requestPath.startsWith("/") ? requestPath.substring(1) : requestPath;
@@ -77,6 +81,9 @@ public class DashboardWebServer {
         }
         if (name.endsWith(".json")) {
             return "application/json; charset=utf-8";
+        }
+        if (name.endsWith(".png")) {
+            return "image/png";
         }
         return "application/octet-stream";
     }

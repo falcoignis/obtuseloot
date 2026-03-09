@@ -309,7 +309,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])) {
-            return filterByPrefix(List.of("map", "environment"), args[1]);
+            return filterByPrefix(List.of("health", "dashboard", "map", "environment"), args[1]);
         }
 
         if (args.length == 3 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])) {

@@ -1,6 +1,10 @@
 package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.analytics.InteractionHeatmapExporter;
+import obtuseloot.analytics.TraitInteractionAnalyzer;
+import obtuseloot.analytics.TraitInteractionReportWriter;
+import obtuseloot.artifacts.Artifact;
 import obtuseloot.dashboard.DashboardMetrics;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
@@ -14,12 +18,14 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
+    private final ObtuseLoot plugin;
     private final ObtuseLootCommand delegate;
     private final DashboardService dashboardService;
     private final DashboardWebServer dashboardWebServer;
@@ -28,6 +34,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                                     ObtuseLootCommand delegate,
                                     DashboardService dashboardService,
                                     DashboardWebServer dashboardWebServer) {
+        this.plugin = plugin;
         this.delegate = delegate;
         this.dashboardService = dashboardService;
         this.dashboardWebServer = dashboardWebServer;
@@ -35,13 +42,16 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (isDashboardCommand(args) || isEcosystemCommand(args)) {
+        if (isDebugDashboardCommand(args)) {
+            return handleDebugDashboard(sender);
+        }
+        if (isEcosystemDashboardCommand(args) || isDashboardCommand(args)) {
             handleDashboardSummary(sender);
             return true;
         }
-
-        if (isDebugDashboardCommand(args)) {
-            return handleDebugDashboard(sender);
+        if (isEcosystemMapSummary(args)) {
+            sender.sendMessage("§dTrait interaction map: §fanalytics/visualizations/trait-interaction-heatmap.png");
+            return true;
         }
 
         return delegate.onCommand(sender, command, label, args);
@@ -54,45 +64,79 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         }
 
         try {
+            regenerateHeatmapAndReport();
             Path output = dashboardService.regenerateDashboard();
             sender.sendMessage("§aDashboard regenerated at: §f" + output);
+            sender.sendMessage("§aHeatmap regenerated at: §fanalytics/visualizations/trait-interaction-heatmap.png");
         } catch (IOException exception) {
             sender.sendMessage("§cFailed to regenerate dashboard: " + exception.getMessage());
         }
         return true;
     }
 
+    private void regenerateHeatmapAndReport() throws IOException {
+        List<Artifact> artifacts = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            artifacts.add(plugin.getArtifactManager().getOrCreate(player.getUniqueId()));
+        }
+        var matrix = new TraitInteractionAnalyzer().analyze(artifacts, plugin.getLineageRegistry().lineages().values());
+        new InteractionHeatmapExporter().export(
+                matrix,
+                Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
+                Path.of("analytics/visualizations/trait-interaction-matrix.csv"),
+                Path.of("analytics/visualizations/trait-interaction-matrix.json")
+        );
+        new TraitInteractionReportWriter().write(Path.of("analytics/trait-interaction-report.md"), matrix);
+    }
+
     private void handleDashboardSummary(CommandSender sender) {
         try {
             DashboardMetrics metrics = dashboardService.calculateMetrics();
-            String dashboardUrl = dashboardUrl();
+            Path dashboardPath = dashboardService.dashboardFile();
+            String dashboardUrl = dashboardWebServer.isRunning() ? dashboardUrl() : "N/A (web server disabled)";
+            String latestSeason = latestSeasonSnapshot();
 
             if (sender instanceof Player player) {
                 player.sendMessage("§d=== ObtuseLoot Ecosystem Health ===");
                 player.sendMessage("§7Dominance Index: §f" + format(metrics.dominanceIndex()));
                 player.sendMessage("§7Branch Entropy: §f" + format(metrics.branchEntropy()));
-                player.sendMessage("§7Lineage Concentration: §f" + format(metrics.lineageConcentration()));
                 player.sendMessage("§7Trait Variance: §f" + format(metrics.traitVariance()));
+                player.sendMessage("§7Lineage Concentration: §f" + format(metrics.lineageConcentration()));
                 player.sendMessage("§7Collapse Risk: §f" + metrics.collapseRisk().name());
-
-                TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
-                link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, dashboardUrl));
-                player.spigot().sendMessage(link);
+                player.sendMessage("§7Summary: §f" + "Dominance " + format(metrics.dominanceIndex()) + ", Risk " + metrics.collapseRisk().name());
+                if (dashboardWebServer.isRunning()) {
+                    TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
+                    link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, dashboardUrl));
+                    player.spigot().sendMessage(link);
+                } else {
+                    player.sendMessage("§7Dashboard generated at: §f" + dashboardPath);
+                }
                 return;
             }
 
             sender.sendMessage("=== ObtuseLoot Ecosystem Health ===");
             sender.sendMessage("Dominance Index: " + format(metrics.dominanceIndex()));
             sender.sendMessage("Branch Entropy: " + format(metrics.branchEntropy()));
-            sender.sendMessage("Lineage Concentration: " + format(metrics.lineageConcentration()));
             sender.sendMessage("Trait Variance: " + format(metrics.traitVariance()));
+            sender.sendMessage("Lineage Concentration: " + format(metrics.lineageConcentration()));
             sender.sendMessage("Collapse Risk: " + metrics.collapseRisk().name());
-            sender.sendMessage("Dashboard file:");
-            sender.sendMessage("analytics/dashboard/ecosystem-dashboard.html");
-            sender.sendMessage("Dashboard URL: " + dashboardUrl);
+            sender.sendMessage("Dashboard file path: " + dashboardPath);
+            sender.sendMessage("Dashboard generation succeeded: " + Files.exists(dashboardPath));
+            sender.sendMessage("Web endpoint: " + dashboardUrl);
+            sender.sendMessage("Latest season snapshot: " + latestSeason);
         } catch (IOException exception) {
             sender.sendMessage("§cUnable to read ecosystem analytics: " + exception.getMessage());
         }
+    }
+
+    private String latestSeasonSnapshot() {
+        for (int season = 3; season >= 1; season--) {
+            Path snapshot = Path.of("analytics/world-lab/season" + season + "-ecosystem-dashboard.html");
+            if (Files.exists(snapshot)) {
+                return snapshot.toString();
+            }
+        }
+        return "not available";
     }
 
     private String dashboardUrl() {
@@ -111,9 +155,14 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         return args.length == 1 && "dashboard".equalsIgnoreCase(args[0]);
     }
 
-    private boolean isEcosystemCommand(String[] args) {
+    private boolean isEcosystemDashboardCommand(String[] args) {
         return (args.length == 1 && "ecosystem".equalsIgnoreCase(args[0]))
-                || (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0]) && "health".equalsIgnoreCase(args[1]));
+                || (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])
+                && ("health".equalsIgnoreCase(args[1]) || "dashboard".equalsIgnoreCase(args[1])));
+    }
+
+    private boolean isEcosystemMapSummary(String[] args) {
+        return args.length == 2 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1]);
     }
 
     private boolean isDebugDashboardCommand(String[] args) {
@@ -132,6 +181,8 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         if (args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])) {
             List<String> merged = new ArrayList<>(delegate.onTabComplete(sender, command, alias, args));
             addIfMissing(merged, "health", args[1]);
+            addIfMissing(merged, "dashboard", args[1]);
+            addIfMissing(merged, "map", args[1]);
             return merged;
         }
 
@@ -149,11 +200,5 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 && values.stream().noneMatch(entry -> entry.equalsIgnoreCase(candidate))) {
             values.add(candidate);
         }
-    }
-
-    private List<String> prefix(List<String> values, String prefix) {
-        return values.stream()
-                .filter(value -> value.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
-                .toList();
     }
 }

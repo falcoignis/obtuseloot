@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,6 +16,7 @@ public class DashboardService {
     private static final Pattern ENTRY_PATTERN = Pattern.compile("\"([^\"]+)\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
 
     private final RankAbundanceAnalyzer analyzer = new RankAbundanceAnalyzer();
+    private final EcosystemDashboard ecosystemDashboard = new EcosystemDashboard();
     private final Path analyticsRoot;
 
     public DashboardService(Path analyticsRoot) {
@@ -61,44 +61,12 @@ public class DashboardService {
     }
 
     public Path regenerateDashboard() throws IOException {
-        DashboardMetrics metrics = calculateMetrics();
-        Files.createDirectories(dashboardRoot());
-        String html = """
-                <!DOCTYPE html>
-                <html lang=\"en\">
-                <head>
-                  <meta charset=\"UTF-8\" />
-                  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-                  <title>ObtuseLoot Ecosystem Dashboard</title>
-                  <style>
-                    body { font-family: Arial, sans-serif; background: #101522; color: #e8ecf4; margin: 2rem; }
-                    .metric { background: #1b2335; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
-                    .label { color: #9ca9c6; font-size: 0.9rem; }
-                    .value { font-size: 1.4rem; font-weight: 700; }
-                  </style>
-                </head>
-                <body>
-                  <h1>ObtuseLoot Ecosystem Dashboard</h1>
-                  <p>Generated from analytics/ecosystem-balance-data.json</p>
-                  <div class=\"metric\"><div class=\"label\">Dominance Index</div><div class=\"value\">%s</div></div>
-                  <div class=\"metric\"><div class=\"label\">Branch Entropy</div><div class=\"value\">%s</div></div>
-                  <div class=\"metric\"><div class=\"label\">Lineage Concentration</div><div class=\"value\">%s</div></div>
-                  <div class=\"metric\"><div class=\"label\">Trait Variance</div><div class=\"value\">%s</div></div>
-                  <div class=\"metric\"><div class=\"label\">Collapse Risk</div><div class=\"value\">%s</div></div>
-                </body>
-                </html>
-                """.formatted(
-                fmt(metrics.dominanceIndex()),
-                fmt(metrics.branchEntropy()),
-                fmt(metrics.lineageConcentration()),
-                fmt(metrics.traitVariance()),
-                metrics.collapseRisk().name());
-        Files.writeString(dashboardFile(), html);
-        return dashboardFile();
+        return ecosystemDashboard.generate(analyticsRoot, calculateMetrics(), dashboardFile());
     }
 
-    private String fmt(double value) {
-        return String.format(Locale.ROOT, "%.4f", value);
+    public Path generateSeasonDashboard(int season) throws IOException {
+        Path output = analyticsRoot.resolve("world-lab").resolve("season" + season + "-ecosystem-dashboard.html");
+        return ecosystemDashboard.generate(analyticsRoot, calculateMetrics(), output);
     }
 
     private DashboardMetrics.CollapseRisk determineRisk(double dominance, double entropy, double concentration) {

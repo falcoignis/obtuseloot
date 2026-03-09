@@ -1,0 +1,15 @@
+{
+  "sampleSize": 683,
+  "traits": ["chaosaffinity","kineticbias","mobilityaffinity","mutationsensitivity","precisionaffinity","resonance","stability","survivalinstinct","volatility"],
+  "matrix": {
+    "chaosaffinity": {"chaosaffinity": 331,"kineticbias": 141,"mobilityaffinity": 160,"mutationsensitivity": 142,"precisionaffinity": 150,"resonance": 142,"stability": 154,"survivalinstinct": 151,"volatility": 148},
+    "kineticbias": {"chaosaffinity": 141,"kineticbias": 315,"mobilityaffinity": 133,"mutationsensitivity": 145,"precisionaffinity": 157,"resonance": 126,"stability": 141,"survivalinstinct": 137,"volatility": 153},
+    "mobilityaffinity": {"chaosaffinity": 160,"kineticbias": 133,"mobilityaffinity": 322,"mutationsensitivity": 135,"precisionaffinity": 160,"resonance": 139,"stability": 142,"survivalinstinct": 148,"volatility": 148},
+    "mutationsensitivity": {"chaosaffinity": 142,"kineticbias": 145,"mobilityaffinity": 135,"mutationsensitivity": 320,"precisionaffinity": 153,"resonance": 149,"stability": 146,"survivalinstinct": 143,"volatility": 156},
+    "precisionaffinity": {"chaosaffinity": 150,"kineticbias": 157,"mobilityaffinity": 160,"mutationsensitivity": 153,"precisionaffinity": 323,"resonance": 145,"stability": 138,"survivalinstinct": 148,"volatility": 157},
+    "resonance": {"chaosaffinity": 142,"kineticbias": 126,"mobilityaffinity": 139,"mutationsensitivity": 149,"precisionaffinity": 145,"resonance": 311,"stability": 133,"survivalinstinct": 141,"volatility": 134},
+    "stability": {"chaosaffinity": 154,"kineticbias": 141,"mobilityaffinity": 142,"mutationsensitivity": 146,"precisionaffinity": 138,"resonance": 133,"stability": 319,"survivalinstinct": 144,"volatility": 149},
+    "survivalinstinct": {"chaosaffinity": 151,"kineticbias": 137,"mobilityaffinity": 148,"mutationsensitivity": 143,"precisionaffinity": 148,"resonance": 141,"stability": 144,"survivalinstinct": 323,"volatility": 132},
+    "volatility": {"chaosaffinity": 148,"kineticbias": 153,"mobilityaffinity": 148,"mutationsensitivity": 156,"precisionaffinity": 157,"resonance": 134,"stability": 149,"survivalinstinct": 132,"volatility": 326}
+  }
+}

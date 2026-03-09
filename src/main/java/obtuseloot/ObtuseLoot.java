@@ -96,13 +96,18 @@ public class ObtuseLoot extends JavaPlugin {
 
         dashboardService = new DashboardService(java.nio.file.Path.of("analytics"));
         int dashboardPort = getConfig().getInt("dashboard.port", 8085);
+        boolean dashboardWebEnabled = getConfig().getBoolean("dashboard.webServerEnabled", false);
         dashboardWebServer = new DashboardWebServer(dashboardService.dashboardRoot(), dashboardPort);
         try {
             dashboardService.regenerateDashboard();
-            dashboardWebServer.start();
-            getLogger().info("[Dashboard] Serving ecosystem dashboard at http://localhost:" + dashboardPort + "/ecosystem-dashboard.html");
+            if (dashboardWebEnabled) {
+                dashboardWebServer.start();
+                getLogger().info("[Dashboard] Serving ecosystem dashboard at http://localhost:" + dashboardPort + "/ecosystem-dashboard.html");
+            } else {
+                getLogger().info("[Dashboard] Web server disabled; dashboard generated to local analytics/dashboard.");
+            }
         } catch (Exception exception) {
-            getLogger().warning("[Dashboard] Failed to start dashboard web server: " + exception.getMessage());
+            getLogger().warning("[Dashboard] Failed to initialize dashboard: " + exception.getMessage());
         }
 
         if (getCommand("obtuseloot") != null) {
