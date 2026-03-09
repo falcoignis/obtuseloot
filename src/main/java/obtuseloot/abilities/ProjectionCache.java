@@ -1,50 +1,39 @@
 package obtuseloot.abilities;
 
-import obtuseloot.abilities.genome.GenomeTrait;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ProjectionCache {
-    private static final int QUANTIZATION_STEPS = 128;
-
-    private final Map<Long, Map<String, Double>> scoresByGenomeBucket;
+    private final int capacity;
+    private final Map<ProjectionCacheKey, GenomeProjection> projectionByKey;
     private final AtomicLong hits = new AtomicLong();
     private final AtomicLong misses = new AtomicLong();
 
     public ProjectionCache(int capacity) {
-        this.scoresByGenomeBucket = Collections.synchronizedMap(new LinkedHashMap<>(capacity, 0.75f, true) {
+        this.capacity = Math.max(1_000, capacity);
+        this.projectionByKey = Collections.synchronizedMap(new LinkedHashMap<>(this.capacity, 0.75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, Map<String, Double>> eldest) {
-                return size() > capacity;
+            protected boolean removeEldestEntry(Map.Entry<ProjectionCacheKey, GenomeProjection> eldest) {
+                return size() > ProjectionCache.this.capacity;
             }
         });
     }
 
-    public long bucketKey(GenomeProjection projection) {
-        long hash = 1469598103934665603L;
-        for (GenomeTrait trait : GenomeTrait.values()) {
-            int quantized = (int) Math.round(projection.component(trait.ordinal()) * QUANTIZATION_STEPS);
-            hash ^= (long) quantized + (trait.ordinal() * 37L);
-            hash *= 1099511628211L;
-        }
-        return hash;
-    }
-
-    public Map<String, Double> get(long bucketKey) {
-        Map<String, Double> cached = scoresByGenomeBucket.get(bucketKey);
-        if (cached == null) {
+    public Optional<GenomeProjection> get(ProjectionCacheKey key) {
+        GenomeProjection projection = projectionByKey.get(key);
+        if (projection == null) {
             misses.incrementAndGet();
-            return Map.of();
+            return Optional.empty();
         }
         hits.incrementAndGet();
-        return cached;
+        return Optional.of(projection);
     }
 
-    public void put(long bucketKey, Map<String, Double> scores) {
-        scoresByGenomeBucket.put(bucketKey, Map.copyOf(scores));
+    public void put(GenomeProjection projection) {
+        projectionByKey.put(projection.key(), projection);
     }
 
     public long hits() {
@@ -53,5 +42,13 @@ public final class ProjectionCache {
 
     public long misses() {
         return misses.get();
+    }
+
+    public int size() {
+        return projectionByKey.size();
+    }
+
+    public int capacity() {
+        return capacity;
     }
 }

@@ -1,32 +1,46 @@
 package obtuseloot.abilities;
 
 import obtuseloot.abilities.genome.ArtifactGenome;
-import obtuseloot.abilities.genome.GenomeTrait;
+
+import java.util.Map;
 
 public final class GenomeProjection {
-    private final double[] components;
+    private final ProjectionCacheKey key;
+    private final Map<String, Double> abilityScores;
+    private final long computeNanos;
+    private final GenomeVector genomeVector;
 
-    private GenomeProjection(double[] components) {
-        this.components = components;
+    public GenomeProjection(ProjectionCacheKey key, Map<String, Double> abilityScores, long computeNanos) {
+        this.key = key;
+        this.abilityScores = Map.copyOf(abilityScores);
+        this.computeNanos = computeNanos;
+        this.genomeVector = null;
+    }
+
+    private GenomeProjection(GenomeVector genomeVector) {
+        this.key = null;
+        this.abilityScores = Map.of();
+        this.computeNanos = 0L;
+        this.genomeVector = genomeVector;
     }
 
     public static GenomeProjection fromGenome(ArtifactGenome genome) {
-        double[] vector = new double[GenomeTrait.values().length];
-        for (GenomeTrait trait : GenomeTrait.values()) {
-            vector[trait.ordinal()] = genome.trait(trait);
-        }
-        return new GenomeProjection(vector);
+        return new GenomeProjection(GenomeVector.fromGenome(genome));
     }
 
     public double dot(AbilityTraitVector abilityVector) {
-        double score = 0.0D;
-        for (int i = 0; i < components.length; i++) {
-            score += components[i] * abilityVector.component(i);
-        }
-        return score;
+        return genomeVector == null ? 0.0D : genomeVector.dot(abilityVector);
     }
 
-    double component(int index) {
-        return components[index];
+    public ProjectionCacheKey key() {
+        return key;
+    }
+
+    public Map<String, Double> abilityScores() {
+        return abilityScores;
+    }
+
+    public long computeNanos() {
+        return computeNanos;
     }
 }
