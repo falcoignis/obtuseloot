@@ -16,11 +16,11 @@ public final class ArtifactDebugger {
         Artifact artifact = ArtifactManager.getOrCreate(playerId);
         ArtifactReputation rep = ReputationManager.get(playerId);
         return "artifactName=\"" + artifact.getName() + "\""
-                + ", artifactId=" + artifact.getSeed()
+                + ", artifactId=" + Math.abs(playerId.getMostSignificantBits() ^ playerId.getLeastSignificantBits())
                 + ", archetype=" + artifact.getArchetypePath()
                 + ", evolution=" + artifact.getEvolutionPath()
                 + ", fusion=" + artifact.getFusionPath()
-                + ", driftNow=" + DriftEngine.shouldDrift(rep)
+                + ", driftNow=" + new DriftEngine().shouldDrift(rep)
                 + ", reputation={precision=" + rep.precision()
                 + ", brutality=" + rep.brutality()
                 + ", survival=" + rep.survival()
