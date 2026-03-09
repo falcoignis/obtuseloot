@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
@@ -17,6 +17,7 @@ public class DebugTabCompleter {
     private static final List<String> SIM_PATHS = List.of("precision", "brutality", "mobility", "survival", "chaos", "boss", "hybrid", "awaken", "drift");
     private static final List<String> SEED_ACTIONS = List.of("show", "reroll", "set", "export", "import");
     private static final List<String> ABILITY_ACTIONS = List.of("show", "refresh", "explain", "tree");
+    private static final List<String> PERSISTENCE_ACTIONS = List.of("backend", "test", "migrate");
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 2) {
@@ -53,6 +54,12 @@ public class DebugTabCompleter {
         }
         if (args.length == 3 && "ability".equalsIgnoreCase(args[1])) {
             return filter(ABILITY_ACTIONS, args[2]);
+        }
+        if (args.length == 3 && "persistence".equalsIgnoreCase(args[1])) {
+            return filter(PERSISTENCE_ACTIONS, args[2]);
+        }
+        if (args.length == 4 && "persistence".equalsIgnoreCase(args[1]) && "migrate".equalsIgnoreCase(args[2])) {
+            return filter(List.of("yaml-to-sqlite", "yaml-to-mysql"), args[3]);
         }
 
         if (expectsPlayer(args)) {

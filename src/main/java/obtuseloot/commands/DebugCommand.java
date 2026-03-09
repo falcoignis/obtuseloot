@@ -9,6 +9,9 @@ import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.fusion.FusionEngine;
 import obtuseloot.obtuseengine.ArtifactProcessor;
+import obtuseloot.persistence.MySqlPersistenceProvider;
+import obtuseloot.persistence.PersistenceMigrator;
+import obtuseloot.persistence.SqlitePersistenceProvider;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -68,6 +71,7 @@ public class DebugCommand {
             case "seed" -> seed(sender, label, args);
             case "ability" -> ability(sender, label, args);
             case "memory" -> memory(sender, label, args);
+            case "persistence" -> persistence(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -685,6 +689,49 @@ public class DebugCommand {
         }
     }
 
+
+    private boolean persistence(CommandSender sender, String label, String[] args) {
+        String action = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "status";
+        if ("status".equals(action) || "backend".equals(action)) {
+            sender.sendMessage("§dPersistence backend: §f" + plugin.getPersistenceManager().backendName());
+            sender.sendMessage("§7status=§f" + plugin.getPersistenceManager().statusMessage());
+            sender.sendMessage("§7fallbackUsed=§f" + plugin.getPersistenceManager().fallbackUsed());
+            return true;
+        }
+        if ("test".equals(action)) {
+            sender.sendMessage("§aPersistence test: backend='" + plugin.getPersistenceManager().backendName() + "' status='" + plugin.getPersistenceManager().statusMessage() + "'");
+            return true;
+        }
+        if ("migrate".equals(action)) {
+            if (args.length < 3) {
+                sender.sendMessage("§cUsage: /" + label + " debug persistence migrate yaml-to-sqlite|yaml-to-mysql");
+                return true;
+            }
+            String mode = args[2].toLowerCase(Locale.ROOT);
+            PersistenceMigrator migrator = new PersistenceMigrator(plugin);
+            try {
+                int count;
+                if ("yaml-to-sqlite".equals(mode)) {
+                    SqlitePersistenceProvider provider = new SqlitePersistenceProvider(plugin, obtuseloot.persistence.PersistenceConfig.from(plugin.getConfig(), plugin.getDataFolder()).sqliteFile());
+                    count = migrator.migrateYamlTo(provider.playerStateStore());
+                    provider.close();
+                } else if ("yaml-to-mysql".equals(mode)) {
+                    MySqlPersistenceProvider provider = new MySqlPersistenceProvider(plugin, obtuseloot.persistence.PersistenceConfig.from(plugin.getConfig(), plugin.getDataFolder()).mySql());
+                    count = migrator.migrateYamlTo(provider.playerStateStore());
+                    provider.close();
+                } else {
+                    sender.sendMessage("§cUnknown migration mode: " + mode);
+                    return true;
+                }
+                sender.sendMessage("§aMigration completed. Player records processed: §f" + count);
+            } catch (RuntimeException ex) {
+                sender.sendMessage("§cMigration failed: " + ex.getMessage());
+            }
+            return true;
+        }
+        sender.sendMessage("§cUsage: /" + label + " debug persistence [backend|test|migrate]");
+        return true;
+    }
     private boolean hasDebugPermission(CommandSender sender) {
         if (sender instanceof Player player && !player.isOp() && !sender.hasPermission(PERMISSION_DEBUG)) {
             sender.sendMessage("§cYou do not have permission: " + PERMISSION_DEBUG);

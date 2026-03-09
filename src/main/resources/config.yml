@@ -1,3 +1,21 @@
+storage:
+  backend: yaml
+  fallbackToYamlOnFailure: false
+
+sqlite:
+  file: plugins/ObtuseLoot/data/obtuseloot.db
+
+mysql:
+  host: localhost
+  port: 3306
+  database: obtuseloot
+  username: root
+  password: change-me
+  useSsl: false
+  connectionPool:
+    enabled: false
+    maxPoolSize: 10
+
 reputation:
   combat-window-ms: 10000
   low-health-threshold: 6.0
