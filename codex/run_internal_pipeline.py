@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
+"""Generate deterministic simulation reports for internal QA documentation."""
+
 import json, random, statistics, os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Canonical stat/path labels used by simulated report payloads.
 stats = ["precision","brutality","survival","mobility","chaos","consistency"]
 paths = ["vanguard","reaper","warden","trickster","oracle"]
 drift_profiles=["stable","volatile","wild","adaptive"]
 
 def simulate_population(seed, n=5000):
+    """Build a seeded synthetic population sample."""
     rng = random.Random(seed)
     res=[]
     for i in range(n):
@@ -25,11 +29,13 @@ def simulate_population(seed, n=5000):
     return res
 
 def counts(items,key):
+    """Count dictionary values for a given key across an iterable."""
     d={}
     for it in items: d[it[key]]=d.get(it[key],0)+1
     return d
 
 def run_once(run_id,seed):
+    """Aggregate one full run summary from a synthetic population."""
     pop = simulate_population(seed)
     c_path = counts(pop,'path')
     c_arch = counts(pop,'archetype')
@@ -52,21 +58,22 @@ def run_once(run_id,seed):
     }
 
 def write_all():
+    """Emit markdown/json analytics artifacts consumed by repository docs."""
     runs=[run_once(i,90200+i*11) for i in range(1,6)]
-    # evolution
+    # Evolution report artifacts.
     evo_md = ROOT/'analytics/evolution/evolution-report.md'
     evo_js = ROOT/'analytics/evolution/evolution-data.json'
     evo_js.write_text(json.dumps({'version':'0.9.2','runs':runs[:1]},indent=2))
     first = runs[0]
     evo_md.write_text("# Evolution Report\n\n"+f"- Awakening rate: {first['awakening_rate']:.3f}\n- Fusion rate: {first['fusion_rate']:.3f}\n- Dominant paths: {first['dominant_path_ranking']}\n")
 
-    # population
+    # Population report artifacts.
     pop_md = ROOT/'analytics/population/population-report.md'
     pop_js = ROOT/'analytics/population/population-analysis.json'
     pop_js.write_text(json.dumps({'version':'0.9.2','population':first},indent=2))
     pop_md.write_text("# Population Report\n\nSimulated 5000 artifact seeds.\n")
 
-    # meta + multirun
+    # Meta-analysis and multi-run validation artifacts.
     dominant=[r['dominant_path_ranking'][0][0] for r in runs]
     stable = max(set(dominant), key=dominant.count)
     var_aw = statistics.pvariance([r['awakening_rate'] for r in runs])
@@ -101,11 +108,12 @@ def write_all():
 
     conf_md.write_text(f"# Analysis Confidence\n\n- Confidence score: **{confidence}/100**\n- Data reliability: High sample size (5000 seeds/run, 5 runs).\n- Known weaknesses: No live server latency effects; scripted behavior bias.\n- Recommendations: Add integration run on staging server replay logs.\n\n## Final Trustworthiness Summary\n- Single-run confidence: medium-high.\n- Multi-run stability: {'high' if dominant.count(stable)>=4 else 'moderate'}.\n- Overall trustworthiness: {'high' if confidence>=80 else 'moderate'}, recommendations {'actionable' if confidence>=80 else 'provisional'}.\n")
 
-    # world lab
+    # World simulation lab artifacts.
     ws_md = ROOT/'analytics/world-lab/world-sim-report.md'
     ws_js = ROOT/'analytics/world-lab/world-sim-data.json'
     ws_js.write_text(json.dumps({'version':'0.9.2','seasons':3,'summary':'Seasonal progression scaffold output'},indent=2))
     ws_md.write_text('# World Simulation Lab Report\n\nSeasonal scaffold simulation complete for 3 seasons.\n')
 
 if __name__ == '__main__':
+    # Single CLI entrypoint used by all simulation wrapper scripts.
     write_all()
