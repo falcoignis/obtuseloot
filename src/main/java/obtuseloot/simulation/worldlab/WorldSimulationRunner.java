@@ -18,7 +18,13 @@ public final class WorldSimulationRunner {
                 doubleProp("world.lowHealthEventRate", defaults.lowHealthEventRate()),
                 doubleProp("world.mutationPressureMultiplier", defaults.mutationPressureMultiplier()),
                 doubleProp("world.memoryEventMultiplier", defaults.memoryEventMultiplier()),
-                System.getProperty("world.outputDirectory", defaults.outputDirectory())
+                System.getProperty("world.outputDirectory", defaults.outputDirectory()),
+                boolProp("world.enableEde", defaults.enableExperienceDrivenEvolution()),
+                boolProp("world.enableEcosystemBias", defaults.enableEcosystemBias()),
+                boolProp("world.enableDiversityPreservation", defaults.enableDiversityPreservation()),
+                boolProp("world.enableSelfBalancing", defaults.enableSelfBalancingAdjustments()),
+                boolProp("world.enableEnvironmentalPressure", defaults.enableEnvironmentalPressure()),
+                boolProp("world.enableTraitInteractions", defaults.enableTraitInteractions())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();
         System.out.println("World simulation outputs written to " + config.outputDirectory());
@@ -34,5 +40,9 @@ public final class WorldSimulationRunner {
 
     private static double doubleProp(String key, double defaultValue) {
         return Double.parseDouble(System.getProperty(key, String.valueOf(defaultValue)));
+    }
+
+    private static boolean boolProp(String key, boolean defaultValue) {
+        return Boolean.parseBoolean(System.getProperty(key, String.valueOf(defaultValue)));
     }
 }

@@ -12,7 +12,13 @@ public record WorldSimulationConfig(
         double lowHealthEventRate,
         double mutationPressureMultiplier,
         double memoryEventMultiplier,
-        String outputDirectory
+        String outputDirectory,
+        boolean enableExperienceDrivenEvolution,
+        boolean enableEcosystemBias,
+        boolean enableDiversityPreservation,
+        boolean enableSelfBalancingAdjustments,
+        boolean enableEnvironmentalPressure,
+        boolean enableTraitInteractions
 ) {
     public static WorldSimulationConfig defaults() {
         return new WorldSimulationConfig(
@@ -27,7 +33,13 @@ public record WorldSimulationConfig(
                 0.15D,
                 1.0D,
                 1.0D,
-                "analytics/world-lab"
+                "analytics/world-lab",
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
         );
     }
 }
