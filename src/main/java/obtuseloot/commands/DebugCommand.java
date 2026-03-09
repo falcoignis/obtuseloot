@@ -1,6 +1,8 @@
 package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.analytics.InteractionHeatmapExporter;
+import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.abilities.AbilityProfile;
 import obtuseloot.abilities.ArtifactEvolutionStage;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
@@ -20,6 +22,7 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 public class DebugCommand {
@@ -74,6 +77,7 @@ public class DebugCommand {
             case "persistence" -> persistence(sender, label, args);
             case "ecosystem" -> ecosystem(sender, args);
             case "lineage" -> lineage(sender, label, args);
+            case "genome" -> genome(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -257,6 +261,40 @@ public class DebugCommand {
         sender.sendMessage("§dLineage id=§f" + lineage.lineageId() + " §7generation=§f" + lineage.depth());
         sender.sendMessage("§7traits=§f" + lineage.lineageTraits());
         sender.sendMessage("§7ancestors=§f" + lineage.ancestors().stream().limit(8).toList());
+        return true;
+    }
+
+    private boolean genome(CommandSender sender, String label, String[] args) {
+        if (args.length < 2 || !"interactions".equalsIgnoreCase(args[1])) {
+            sender.sendMessage("§cUsage: /" + label + " debug genome interactions");
+            return true;
+        }
+        Map<UUID, Artifact> loadedArtifacts = plugin.getArtifactManager().getLoadedArtifacts();
+        if (loadedArtifacts.isEmpty()) {
+            sender.sendMessage("§eNo loaded artifacts found. Trigger activity first, then retry.");
+            return true;
+        }
+
+        TraitInteractionAnalyzer analyzer = new TraitInteractionAnalyzer();
+        var matrix = analyzer.analyze(loadedArtifacts.values(), plugin.getLineageRegistry().lineages().values());
+        InteractionHeatmapExporter exporter = new InteractionHeatmapExporter();
+        try {
+            var result = exporter.export(
+                    matrix,
+                    java.nio.file.Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
+                    java.nio.file.Path.of("analytics/visualizations/trait-interaction-matrix.csv")
+            );
+            sender.sendMessage("§aGenerated trait interaction heatmap: " + result.heatmapPath());
+            sender.sendMessage("§aGenerated trait interaction matrix: " + result.matrixCsvPath());
+        } catch (Exception exception) {
+            sender.sendMessage("§cFailed to export interaction heatmap: " + exception.getMessage());
+            return true;
+        }
+
+        sender.sendMessage("§dTop interaction pairs:");
+        for (var entry : matrix.topPairs(10)) {
+            sender.sendMessage("§7- §f" + entry.getKey() + " §8=> §b" + entry.getValue());
+        }
         return true;
     }
 
@@ -909,6 +947,7 @@ public class DebugCommand {
                 "/" + label + " debug seed set <seed> [player]",
                 "/" + label + " debug seed export [player]",
                 "/" + label + " debug seed import <seed> [player]",
+                "/" + label + " debug genome interactions",
                 "/" + label + " debug simulate help"
         );
         sender.sendMessage("§dObtuseLoot Debug Commands:");
