@@ -1,5 +1,8 @@
 package obtuseloot.abilities;
 
+import obtuseloot.abilities.genome.ArtifactGenome;
+import obtuseloot.abilities.genome.GenomeMutationEngine;
+import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.lineage.ArtifactLineage;
@@ -17,6 +20,9 @@ public class ProceduralAbilityGenerator {
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private final LineageRegistry lineageRegistry;
     private final LineageInfluenceResolver lineageResolver;
+    private final GenomeResolver genomeResolver;
+    private final GenomeMutationEngine mutationEngine;
+    private final TraitInterferenceResolver traitInterferenceResolver;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null);
@@ -30,30 +36,48 @@ public class ProceduralAbilityGenerator {
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
         this.lineageResolver = lineageResolver;
+        this.genomeResolver = new GenomeResolver();
+        this.mutationEngine = new GenomeMutationEngine();
+        this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
         ArtifactLineage lineage = lineageRegistry == null ? null : lineageRegistry.assignLineage(artifact);
         List<AbilityFamily> ranked = new ArrayList<>(List.of(AbilityFamily.values()));
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage)));
+
+        ArtifactGenome genome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
+        int picks = evolutionStage >= 4 ? 3 : 2;
+        List<AbilityTemplate> selected = traitInterferenceResolver.selectTop(registry.templates(), genome, picks);
+
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
         Random random = new Random(seed);
-
         List<AbilityDefinition> picked = new ArrayList<>();
-        int picks = evolutionStage >= 4 ? 3 : 2;
-        for (int i = 0; i < Math.min(picks, ranked.size()); i++) {
-            List<AbilityTemplate> pool = registry.byFamily(ranked.get(i));
-            if (pool.isEmpty()) {
-                continue;
+        for (AbilityTemplate template : selected) {
+            picked.add(fromTemplate(template, template.family(), evolutionStage));
+        }
+
+        if (picked.size() < picks) {
+            List<AbilityFamily> fallbackRanked = new ArrayList<>(ranked);
+            for (AbilityFamily family : fallbackRanked) {
+                List<AbilityTemplate> pool = registry.byFamily(family).stream()
+                        .filter(t -> picked.stream().noneMatch(p -> p.id().equals(t.id())))
+                        .toList();
+                if (pool.isEmpty()) {
+                    continue;
+                }
+                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random);
+                picked.add(fromTemplate(t, family, evolutionStage));
+                if (picked.size() >= picks) {
+                    break;
+                }
             }
-            AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random);
-            picked.add(fromTemplate(t, ranked.get(i), evolutionStage));
         }
 
         if (evolutionStage >= 5 && ("paradox".equalsIgnoreCase(artifact.getDriftAlignment()) || memoryProfile.chaosWeight() > 2.5D)) {
             AbilityTemplate paradox = registry.templates().stream().filter(t -> t.id().contains("chaos.paradox")).findFirst().orElse(null);
-            if (paradox != null) {
+            if (paradox != null && picked.stream().noneMatch(a -> a.id().equals(paradox.id()))) {
                 picked.add(fromTemplate(paradox, AbilityFamily.CHAOS, evolutionStage));
             }
         }
