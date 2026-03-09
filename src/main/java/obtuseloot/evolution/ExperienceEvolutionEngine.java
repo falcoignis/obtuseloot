@@ -18,9 +18,14 @@ public class ExperienceEvolutionEngine {
     }
 
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed) {
+        return applyExperienceFeedback(genome, artifactSeed, 1);
+    }
+
+    public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed, int nichePopulation) {
         ArtifactUsageProfile usage = usageTracker.profileForSeed(artifactSeed);
         double fitness = fitnessEvaluator.evaluate(usage);
-        double normalized = normalizeFitness(fitness);
+        double effectiveFitness = fitnessEvaluator.effectiveFitness(fitness, nichePopulation);
+        double normalized = normalizeFitness(effectiveFitness);
 
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
