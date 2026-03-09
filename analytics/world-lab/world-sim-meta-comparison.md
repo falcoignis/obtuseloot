@@ -1,18 +1,23 @@
 # World Simulation Meta Comparison
 
-## Scale comparison
-- Small: 40 players, 2 artifacts/player, 12 sessions/season x 2 seasons.
-- Large: 600 players, 4 artifacts/player, 24 sessions/season x 4 seasons.
+## 1) Is the generator balanced in isolation?
+- Isolated analytics show broad family + trigger coverage with active memory and mutation systems.
+- No hard dead zones appear in static generator distributions.
 
-## Behavioral shifts (small -> large)
-- Dominant family rate: 31.51% -> 28.59%.
-- Branch convergence: 52.92% -> 58.08%.
-- Dead branch rate: 0.00% -> 0.00%.
-- Mutation frequency: 91.25% -> 87.33%.
-- Awakening adoption: 65.26% -> 73.41%.
-- Fusion adoption: 21.72% -> 20.44%.
+## 2) Does progression stay balanced at world scale?
+- Not fully. Average dominant-family share at large scale is 28.55% with 28.55% share for the top absolute family per run.
+- Branch convergence rises from small-run 50.71% to large-run average 57.45%.
 
-## Interpretation
-- Large-scale run exposes long-horizon concentration and branch viability more clearly than the small smoke pass.
-- Memory and mutation systems remain active in both scales, with larger sample size reducing noise.
-- Rare branches that disappear in large runs are higher-confidence balancing candidates.
+## 3) Which systems become problematic over long horizons?
+- High-throughput dominant branch paths become stickier in late seasons.
+- Trigger/mechanic pairings with compounding combat loops dominate more as sessions increase.
+
+## 4) What looks healthy statically but collapses under progression pressure?
+- Several branches remain present in ecology snapshots but fall to rare-only status in long runs.
+- Memory-driven triggers are active, but still underrepresented relative to direct combat triggers at scale.
+
+## 5) Are chaos/brutality or other families dominant at scale?
+- chaos: top family in 3/3 large runs.
+
+## Confidence / caveats
+- This comparison combines 1 small run + 3 large runs. Scale differences are credible, but 5-run large validation would raise confidence further.

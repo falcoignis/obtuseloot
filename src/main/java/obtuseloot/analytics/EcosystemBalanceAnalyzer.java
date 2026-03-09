@@ -19,7 +19,16 @@ public class EcosystemBalanceAnalyzer {
         recommendUnderrepresented("mechanic", mechanics, recommendations);
         recommendDeadWeightMemory(memories, recommendations);
         if (mutations.getOrDefault("none", 0) > mutations.values().stream().mapToInt(Integer::intValue).sum() * 0.5D) {
-            recommendations.add(new BalanceRecommendation("mutation-impact", "More than half of artifacts remain unmutated", "Slightly increase mutation chance under memory pressure and drift >= 2.", "medium"));
+            recommendations.add(new BalanceRecommendation(
+                    "mutation-impact",
+                    "Large no-mutation share",
+                    "More than half of artifacts remain unmutated",
+                    "moderate",
+                    "mid/late season medium",
+                    "Slightly increase mutation chance under memory pressure and drift >= 2.",
+                    "candidate for threshold adjustment",
+                    "medium"
+            ));
         }
         return new EcosystemHealthReport(families, branches, mutations, triggers, mechanics, memories, recommendations);
     }
@@ -30,15 +39,32 @@ public class EcosystemBalanceAnalyzer {
         var low = distribution.entrySet().stream().min(Comparator.comparingInt(Map.Entry::getValue)).orElse(null);
         var high = distribution.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).orElse(null);
         if (low != null && high != null && low.getValue() < Math.max(1, high.getValue() / 4)) {
-            out.add(new BalanceRecommendation(category + "-diversity", "Low representation: " + low.getKey() + "=" + low.getValue() + " vs " + high.getKey() + "=" + high.getValue(),
-                    "Increase selection weight for " + low.getKey() + " templates/branches by 5-10% until parity improves.", "low"));
+            out.add(new BalanceRecommendation(
+                    category + "-diversity",
+                    "Underrepresented " + category + " candidate",
+                    "Low representation: " + low.getKey() + "=" + low.getValue() + " vs " + high.getKey() + "=" + high.getValue(),
+                    "moderate",
+                    "early/mid season low-medium",
+                    "Increase selection weight for " + low.getKey() + " templates/branches by 5-10% until parity improves.",
+                    "candidate for small weight adjustment",
+                    "low"
+            ));
         }
     }
 
     private void recommendDeadWeightMemory(Map<String, Integer> memories, List<BalanceRecommendation> out) {
         memories.forEach((k, v) -> {
             if (v == 0) {
-                out.add(new BalanceRecommendation("memory-influence", "Event " + k + " never influenced generated profiles", "Route this memory event into family and branch scoring for at least one family.", "low"));
+                out.add(new BalanceRecommendation(
+                        "memory-influence",
+                        "Dead memory event",
+                        "Event " + k + " never influenced generated profiles",
+                        "high",
+                        "late season medium",
+                        "Route this memory event into family and branch scoring for at least one family.",
+                        "needs another simulation pass",
+                        "low"
+                ));
             }
         });
     }
