@@ -9,13 +9,17 @@ import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.ArtifactGenerator;
+import obtuseloot.artifacts.ArtifactSeedFactory;
+import obtuseloot.names.ArtifactNameGenerator;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.ecosystem.WorldEcosystemProfile;
 import obtuseloot.evolution.ArchetypeResolver;
+import obtuseloot.evolution.ArtifactFitnessEvaluator;
+import obtuseloot.evolution.ArtifactUsageTracker;
 import obtuseloot.evolution.EvolutionEngine;
+import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.fusion.FusionEngine;
 import obtuseloot.memory.ArtifactMemoryEngine;
@@ -35,6 +39,8 @@ public class WorldSimulationHarness {
     private final Random random;
     private final SimulationClock clock = new SimulationClock();
     private final SimulationMetricsCollector metrics = new SimulationMetricsCollector();
+    private final List<Map<String, Object>> seasonalSnapshots = new ArrayList<>();
+    private final List<Long> initialSeedPool = new ArrayList<>();
     private List<SimulatedPlayer> latestPlayers = List.of();
 
     private final EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
@@ -43,15 +49,28 @@ public class WorldSimulationHarness {
     private final FusionEngine fusionEngine = new FusionEngine();
     private final ArtifactMemoryEngine memoryEngine = new ArtifactMemoryEngine();
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+    private final ArtifactUsageTracker usageTracker = new ArtifactUsageTracker();
+    private final ExperienceEvolutionEngine experienceEvolutionEngine;
     private final LineageRegistry lineageRegistry = new LineageRegistry();
     private final LineageInfluenceResolver lineageInfluenceResolver = new LineageInfluenceResolver();
-    private final ProceduralAbilityGenerator abilityGenerator = new ProceduralAbilityGenerator(new AbilityRegistry(), ecosystemEngine, lineageRegistry, lineageInfluenceResolver);
+    private final ProceduralAbilityGenerator abilityGenerator;
     private final AbilityMutationEngine mutationEngine = new AbilityMutationEngine();
     private final AbilityBranchResolver branchResolver = new AbilityBranchResolver();
+    private final ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
 
     public WorldSimulationHarness(WorldSimulationConfig config) {
         this.config = config;
         this.random = new Random(config.seed());
+        this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
+                ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
+                : null;
+        this.abilityGenerator = new ProceduralAbilityGenerator(
+                new AbilityRegistry(),
+                config.enableEcosystemBias() ? ecosystemEngine : null,
+                lineageRegistry,
+                lineageInfluenceResolver,
+                experienceEvolutionEngine,
+                config.enableTraitInteractions());
     }
 
     public void runAndWriteOutputs() throws IOException {
@@ -63,6 +82,7 @@ public class WorldSimulationHarness {
                 clock.advanceDay();
             }
             metrics.closeSeasonSnapshot();
+            seasonalSnapshots.add(captureSeasonSnapshot(players, season));
             exportSeasonInteractionHeatmap(players, season);
         }
         writeReports();
@@ -76,7 +96,12 @@ public class WorldSimulationHarness {
                     random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble());
             List<SimulatedArtifactAgent> artifacts = new ArrayList<>();
             for (int j = 0; j < config.artifactsPerPlayer(); j++) {
-                artifacts.add(new SimulatedArtifactAgent(ArtifactGenerator.generateFor(UUID.randomUUID())));
+                long artifactSeed = deterministicSeed(i, j);
+                initialSeedPool.add(artifactSeed);
+                Artifact artifact = new Artifact(UUID.randomUUID(), ArtifactNameGenerator.generateFromSeed(artifactSeed));
+                artifact.resetMutableState();
+                seedFactory.applySeedProfile(artifact, artifactSeed);
+                artifacts.add(new SimulatedArtifactAgent(artifact));
             }
             metrics.recordPlayerProfile(profile);
             players.add(new SimulatedPlayer(UUID.randomUUID(), profile, artifacts));
@@ -123,18 +148,26 @@ public class WorldSimulationHarness {
 
     private void applyEncounter(SimulatedArtifactAgent agent, SimulatedPlayer.BehaviorProfile profile, SimulatedEncounter encounter) {
         var rep = agent.reputation();
+        usageTracker.trackUse(agent.artifact());
         if (encounter.type() == SimulatedEncounter.Type.BOSS) {
             rep.recordBossKill();
-            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FIRST_BOSS_KILL);
+            usageTracker.trackKillParticipation(agent.artifact());
+            if (random.nextDouble() < config.memoryEventMultiplier()) {
+                memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FIRST_BOSS_KILL);
+            }
         }
         rep.recordKill();
         if (encounter.chainCombat()) {
             rep.recordKillChain(2 + random.nextInt(5));
-            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.MULTIKILL_CHAIN);
+            if (random.nextDouble() < config.memoryEventMultiplier()) {
+                memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.MULTIKILL_CHAIN);
+            }
         }
         if (encounter.lowHealthMoment()) {
             rep.recordSurvival();
-            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.LOW_HEALTH_SURVIVAL);
+            if (random.nextDouble() < config.memoryEventMultiplier()) {
+                memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.LOW_HEALTH_SURVIVAL);
+            }
         }
         if (random.nextDouble() < profile.precision()) rep.recordPrecision();
         if (random.nextDouble() < profile.aggression()) rep.recordBrutality();
@@ -153,10 +186,12 @@ public class WorldSimulationHarness {
         boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
         boolean fused = fusionEngine.evaluateSimulation(agent.artifact(), rep);
         if (awakened) {
+            usageTracker.trackAwakening(agent.artifact());
             memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
             if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("awakening", "precision", 0.01D));
         }
         if (fused) {
+            usageTracker.trackFusionParticipation(agent.artifact());
             memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FUSION);
             if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("fusion", "survival", 0.01D));
         }
@@ -196,6 +231,8 @@ public class WorldSimulationHarness {
         Path out = Path.of(config.outputDirectory());
         Files.createDirectories(out);
         Map<String, Object> data = metrics.asData();
+        data.put("seasonal_snapshots", seasonalSnapshots);
+        data.put("initial_seed_pool", initialSeedPool);
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
         EcosystemHealthReport report = ai.evaluate(metrics.families(), metrics.branches(), metrics.mutations(), metrics.triggers(), metrics.mechanics(), metrics.memories());
         WorldEcosystemProfile profile = new WorldEcosystemProfile(
@@ -207,7 +244,9 @@ public class WorldSimulationHarness {
                 dataRate(data, "player", "boss_engagement_rate"),
                 dataRate(data, "ability", "memory_driven_ability_frequency"),
                 dataRate(data, "world", "dead_branch_rate"));
-        ecosystemEngine.evaluate(profile, report, metrics);
+        if (config.enableSelfBalancingAdjustments() || config.enableDiversityPreservation() || config.enableEnvironmentalPressure()) {
+            ecosystemEngine.evaluate(profile, report, metrics);
+        }
         WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
 
         Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
@@ -232,6 +271,47 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
+    }
+
+    private long deterministicSeed(int playerIndex, int artifactIndex) {
+        long mixed = config.seed() ^ (((long) playerIndex) << 32) ^ (artifactIndex * 0x9E3779B97F4A7C15L);
+        return mixed * 6364136223846793005L + 1442695040888963407L;
+    }
+
+    private Map<String, Object> captureSeasonSnapshot(List<SimulatedPlayer> players, int season) {
+        Map<String, Integer> family = new HashMap<>();
+        Map<String, Integer> branch = new HashMap<>();
+        Map<String, Integer> lineage = new HashMap<>();
+        Map<String, Integer> mutations = new HashMap<>();
+        for (SimulatedPlayer player : players) {
+            for (SimulatedArtifactAgent agent : player.artifacts()) {
+                Artifact artifact = agent.artifact();
+                branch.merge(artifact.getLastAbilityBranchPath(), 1, Integer::sum);
+                lineage.merge(artifact.getLatentLineage(), 1, Integer::sum);
+                mutations.merge(artifact.getLastMutationHistory(), 1, Integer::sum);
+                AbilityProfile profile = agent.abilityProfile();
+                if (profile != null) {
+                    for (AbilityDefinition definition : profile.abilities()) {
+                        family.merge(definition.family().name().toLowerCase(Locale.ROOT), 1, Integer::sum);
+                    }
+                }
+            }
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("season", season);
+        out.put("families", family);
+        out.put("branches", branch);
+        out.put("lineages", lineage);
+        out.put("mutations", mutations);
+        return out;
+    }
+
+    public List<Map<String, Object>> seasonalSnapshots() {
+        return List.copyOf(seasonalSnapshots);
+    }
+
+    public List<Long> initialSeedPool() {
+        return List.copyOf(initialSeedPool);
     }
 
     private double dataRate(Map<String, Object> data, String section, String key) {

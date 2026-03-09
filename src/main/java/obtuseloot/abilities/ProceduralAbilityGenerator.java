@@ -27,6 +27,7 @@ public class ProceduralAbilityGenerator {
     private final LineageGenomeInheritance lineageGenomeInheritance;
     private final TraitInterferenceResolver traitInterferenceResolver;
     private final ExperienceEvolutionEngine experienceEvolutionEngine;
+    private final boolean traitInteractionsEnabled;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -44,6 +45,15 @@ public class ProceduralAbilityGenerator {
                                       LineageRegistry lineageRegistry,
                                       LineageInfluenceResolver lineageResolver,
                                       ExperienceEvolutionEngine experienceEvolutionEngine) {
+        this(registry, ecosystemEngine, lineageRegistry, lineageResolver, experienceEvolutionEngine, true);
+    }
+
+    public ProceduralAbilityGenerator(AbilityRegistry registry,
+                                      ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
+                                      LineageRegistry lineageRegistry,
+                                      LineageInfluenceResolver lineageResolver,
+                                      ExperienceEvolutionEngine experienceEvolutionEngine,
+                                      boolean traitInteractionsEnabled) {
         this.registry = registry;
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
@@ -53,6 +63,7 @@ public class ProceduralAbilityGenerator {
         this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
         this.experienceEvolutionEngine = experienceEvolutionEngine;
+        this.traitInteractionsEnabled = traitInteractionsEnabled;
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -68,7 +79,12 @@ public class ProceduralAbilityGenerator {
                 ? lineageGenome
                 : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed());
         int picks = evolutionStage >= 4 ? 3 : 2;
-        List<AbilityTemplate> selected = traitInterferenceResolver.selectTop(registry.templates(), genome, picks);
+        List<AbilityTemplate> selected = traitInteractionsEnabled
+                ? traitInterferenceResolver.selectTop(registry.templates(), genome, picks)
+                : registry.templates().stream()
+                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage)))
+                .limit(picks)
+                .toList();
 
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
