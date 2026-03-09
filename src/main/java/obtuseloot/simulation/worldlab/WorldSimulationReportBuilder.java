@@ -1,5 +1,6 @@
 package obtuseloot.simulation.worldlab;
 
+import obtuseloot.analytics.BalanceRecommendation;
 import obtuseloot.analytics.EcosystemHealthReport;
 
 import java.util.List;
@@ -40,9 +41,16 @@ public class WorldSimulationReportBuilder {
 
     public String balanceFindings(EcosystemHealthReport report) {
         StringBuilder sb = new StringBuilder("# World Simulation Balance Findings\n\n");
-        sb.append("Conservative balancing recommendations from world-scale simulation data:\n\n");
-        report.recommendations().forEach(r -> sb.append("- [").append(r.severity()).append("] ").append(r.category())
-                .append(": ").append(r.evidence()).append(" -> ").append(r.suggestion()).append("\n"));
+        sb.append("## Ranked recommendations from world-scale simulation data\n\n");
+        for (BalanceRecommendation r : report.recommendations()) {
+            sb.append("### ").append(r.issueSummary()).append(" [").append(r.severity()).append("]\n")
+                    .append("1. Issue summary: ").append(r.issueSummary()).append("\n")
+                    .append("2. Evidence: ").append(r.evidence()).append("\n")
+                    .append("3. Confidence level: ").append(r.confidence()).append("\n")
+                    .append("4. Estimated impact: ").append(r.estimatedImpact()).append("\n")
+                    .append("5. Suggested response: ").append(r.suggestion()).append("\n")
+                    .append("6. Act now or gather more simulation first: ").append(r.action()).append("\n\n");
+        }
         return sb.toString();
     }
 

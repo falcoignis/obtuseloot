@@ -6,8 +6,8 @@
 - Sessions/season: 24
 
 ## World outcomes
-- Dominant family rate: 0.2858979343696776
-- Branch convergence rate: 0.5807661699489963
+- Dominant family rate: 0.2903628926624424
+- Branch convergence rate: 0.5756472572175011
 - Dead branch rate: 0.0
-- Fusion adoption: 0.2043706597222222
-- Awakening adoption: 0.7340668402777778
+- Fusion adoption: 0.21381944444444445
+- Awakening adoption: 0.7315625

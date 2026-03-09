@@ -1,48 +1,46 @@
 # Large World Simulation Summary
 
-## Simulated scale
+## 1) Scope / sample size
 - Players: 600
 - Artifacts per player: 4
 - Sessions per season: 24
 - Seasons: 4
+- Ability profile rows: 6828989
 
-## Harness execution status
-- Run completed successfully and produced report + JSON outputs.
-- Diversity timeline points captured: 4
+## 2) Method summary
+- Simulated progression loop with encounters, memory events, evolution, mutation, awakening, and fusion.
+- Metrics summarize final artifact state + cumulative ability generation outcomes.
 
-## Ecosystem shape
-- Dominant family rate: 28.59%
-- Branch convergence rate: 58.08%
+## 3) Key findings
+- Dominant family share: 29.04%
+- Branch convergence rate: 57.56%
+- Mutation frequency: 86.52%
+- Awakening/Fusion rates: 73.16% / 21.38%
+
+## 4) Dominant families / branches / mechanics
+- Family chaos: 1982885
+- Family brutality: 1683324
+- Family survival: 1420040
+- Branch brutality.quarry: 133959
+- Branch survival.guardian: 15108
+- Branch survival.shelter: 14237
+- Mechanic guardian_pulse: 1969414
+- Mechanic burst_state: 1438035
+- Mechanic revenant_trigger: 1387683
+
+## 5) Rare but viable systems
+- chaos.sprawl: 236 (0.10%)
+- chaos.paradox: 257 (0.11%)
+- survival.awakened-variant: 415 (0.18%)
+- survival.awakened-remnant: 596 (0.26%)
+
+## 6) Dead or suspicious systems
 - Dead branch rate: 0.00%
-- Mutation frequency (non-zero mutation histories): 87.33%
-- Awakening adoption: 73.41%
-- Fusion adoption: 20.44%
-- Memory event coverage (total event-presence counts): 905163
+- Low-memory trigger frequency (on_memory_event): 891879
 
-## Top distributions
-### Archetypes
-- strider: 71518
-- deadeye: 56835
-- unformed: 56544
-- ravager: 23078
-- vanguard: 15446
+## 7) Confidence / caveats
+- Single-run summary; trust improves when checked against multi-run large-world validation.
 
-### Ability families
-- chaos: 1953741
-- brutality: 1666120
-- survival: 1437340
-- precision: 1138651
-- mobility: 460345
-
-### Branch paths
-- brutality.quarry: 135685
-- survival.shelter: 14730
-- survival.guardian: 14649
-- precision.clock: 8928
-- precision.awakened-discipline: 8297
-
-## Validation read
-- Memories present: yes.
-- Mutations present: yes.
-- Branching present: yes.
-- Broadly trustworthy for meta analysis: yes.
+## 8) Suggested next review steps
+- Compare this summary against `multirun-world-sim-report.md` for stability checks.
+- Use `world-sim-confidence-report.md` before applying any balancing changes.

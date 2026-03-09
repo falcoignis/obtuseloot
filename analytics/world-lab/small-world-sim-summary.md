@@ -1,48 +1,52 @@
 # Small World Simulation Summary
 
-## Simulated scale
+## 1) Scope / sample size
 - Players: 40
 - Artifacts per player: 2
 - Sessions per season: 12
 - Seasons: 2
+- Ability profile rows: 40894
 
-## Harness execution status
-- Run completed successfully and produced report + JSON outputs.
-- Diversity timeline points captured: 2
+## 2) Method summary
+- Simulated progression loop with encounters, memory events, evolution, mutation, awakening, and fusion.
+- Metrics summarize final artifact state + cumulative ability generation outcomes.
 
-## Ecosystem shape
-- Dominant family rate: 31.51%
-- Branch convergence rate: 52.92%
+## 3) Key findings
+- Dominant family share: 30.42%
+- Branch convergence rate: 50.71%
+- Mutation frequency: 86.88%
+- Awakening/Fusion rates: 63.02% / 22.66%
+
+## 4) Dominant families / branches / mechanics
+- Family chaos: 12440
+- Family brutality: 9894
+- Family survival: 8448
+- Branch brutality.quarry: 936
+- Branch survival.shelter: 172
+- Branch survival.guardian: 150
+- Mechanic guardian_pulse: 10486
+- Mechanic burst_state: 9337
+- Mechanic revenant_trigger: 8039
+
+## 5) Rare but viable systems
+- chaos.awakened-variant: 3 (0.16%)
+- consistency.discipline: 3 (0.16%)
+- consistency.anchor: 3 (0.16%)
+- chaos.sprawl: 4 (0.21%)
+- precision.awakened-variant: 5 (0.26%)
+- chaos.paradox: 6 (0.31%)
+- consistency.boss-ledger: 7 (0.36%)
+- chaos.awakened-entropy: 10 (0.52%)
+- survival.awakened-remnant: 10 (0.52%)
+- survival.awakened-variant: 14 (0.73%)
+
+## 6) Dead or suspicious systems
 - Dead branch rate: 0.00%
-- Mutation frequency (non-zero mutation histories): 91.25%
-- Awakening adoption: 65.26%
-- Fusion adoption: 21.72%
-- Memory event coverage (total event-presence counts): 7674
+- Low-memory trigger frequency (on_memory_event): 4914
 
-## Top distributions
-### Archetypes
-- strider: 663
-- unformed: 384
-- ravager: 324
-- deadeye: 309
-- warden: 173
+## 7) Confidence / caveats
+- Single-run summary; trust improves when checked against multi-run large-world validation.
 
-### Ability families
-- chaos: 12983
-- brutality: 9899
-- survival: 8824
-- precision: 5270
-- mobility: 2673
-
-### Branch paths
-- brutality.quarry: 954
-- survival.shelter: 214
-- survival.guardian: 163
-- brutality.mauler: 113
-- brutality.awakened-variant: 90
-
-## Validation read
-- Memories present: yes.
-- Mutations present: yes.
-- Branching present: yes.
-- Broadly trustworthy for meta analysis: yes.
+## 8) Suggested next review steps
+- Compare this summary against `multirun-world-sim-report.md` for stability checks.
+- Use `world-sim-confidence-report.md` before applying any balancing changes.

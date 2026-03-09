@@ -1,33 +1,27 @@
 # Review First
 
-## Open files in this order
-1. `small-world-sim-summary.md`
-2. `large-world-sim-summary.md`
+## Recommended reading order
+1. `world-sim-confidence-report.md`
+2. `multirun-world-sim-report.md`
 3. `world-sim-meta-comparison.md`
-4. `large-world-sim-report.md`
+4. `world-sim-balance-findings.md`
 5. `../ecosystem-balance-report.md`
-6. `large-world-sim-data.json` (spot checks)
+6. `../ecosystem-balance-suggestions.md`
 
-## Most important findings
-- Large-run dominant family concentration: 28.59%.
-- Large-run branch convergence: 58.08%.
-- Large-run dead branch rate: 0.00%.
+## Top 3 most important findings
+1. Dominant family share stays elevated at 28.55% across 3/3 large runs.
+2. Branch convergence increases to 57.45% at large scale.
+3. Mutation throughput remains high (87.01%), so collapse is not due to mutation inactivity.
 
-## Actionable metrics
-- `world.dominant_family_rate`
-- `world.branch_convergence_rate`
-- `world.dead_branch_rate`
-- `artifact.mutation_counts`
-- `artifact.memory_profile_summaries`
+## High-confidence findings
+- Dominant family concentration persists across all large runs.
+- Awakening remains consistently active in large runs.
 
-## Healthy signals
-- Memory, mutation, awakening, and fusion systems appear in both runs.
-- Diversity timeline remains non-zero over all simulated seasons.
+## Provisional findings
+- Exact impact of memory-driven trigger underrepresentation needs 2 more runs.
 
-## Risk signals
-- Any elevated late-season concentration plus dead-branch growth suggests meta lock-in.
-- Rare path drop-off in the large run is a likely balancing hotspot.
+## What to tune first (if anything)
+- Start with tiny weight adjustments on repeatedly dominant family/branch combinations only.
 
-## Suggested reruns
-- Re-run large scale with 2-3 new seeds.
-- Run focused tests around dominant family + top branch combinations.
+## What to simulate again before tuning
+- Extend multi-run large simulation from 3 to 5 runs for stronger confidence on memory and rare-branch effects.
