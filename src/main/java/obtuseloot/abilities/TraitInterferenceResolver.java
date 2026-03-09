@@ -3,6 +3,7 @@ package obtuseloot.abilities;
 import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeTrait;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -11,31 +12,68 @@ import java.util.Map;
 
 public class TraitInterferenceResolver {
     private final Map<String, EnumMap<GenomeTrait, Double>> abilityWeights = new HashMap<>();
+    private final TraitProjectionMatrix projectionMatrix = new TraitProjectionMatrix();
+    private final ProjectionCache projectionCache;
 
     public TraitInterferenceResolver(List<AbilityTemplate> templates) {
+        this(templates, 25_000);
+    }
+
+    TraitInterferenceResolver(List<AbilityTemplate> templates, int cacheSize) {
+        this.projectionCache = new ProjectionCache(Math.max(1_000, cacheSize));
         registerDefaults(templates);
     }
 
     public List<AbilityTemplate> selectTop(List<AbilityTemplate> templates, ArtifactGenome genome, int picks) {
-        return templates.stream()
-                .sorted(Comparator
-                        .comparingDouble((AbilityTemplate t) -> -score(t, genome))
-                        .thenComparing(AbilityTemplate::id))
+        GenomeProjection genomeProjection = GenomeProjection.fromGenome(genome);
+        long bucketKey = projectionCache.bucketKey(genomeProjection);
+        Map<String, Double> cachedScores = projectionCache.get(bucketKey);
+
+        List<ScoredTemplate> scored = new ArrayList<>(templates.size());
+        for (AbilityTemplate template : templates) {
+            double score = cachedScores.getOrDefault(template.id(), scoreFromDotProduct(template, genomeProjection));
+            scored.add(new ScoredTemplate(template, score));
+        }
+
+        if (cachedScores.isEmpty()) {
+            Map<String, Double> scoresToCache = new HashMap<>();
+            for (ScoredTemplate value : scored) {
+                scoresToCache.put(value.template.id(), value.score);
+            }
+            projectionCache.put(bucketKey, scoresToCache);
+        }
+
+        return scored.stream()
+                .sorted(Comparator.comparingDouble((ScoredTemplate v) -> -v.score)
+                        .thenComparing(v -> v.template.id()))
                 .limit(Math.max(0, picks))
+                .map(v -> v.template)
                 .toList();
     }
 
     public double score(AbilityTemplate template, ArtifactGenome genome) {
-        Map<GenomeTrait, Double> weights = weightsFor(template);
-        double score = 0.0D;
-        for (Map.Entry<GenomeTrait, Double> entry : weights.entrySet()) {
-            score += genome.trait(entry.getKey()) * entry.getValue();
-        }
-        return score;
+        return scoreFromDotProduct(template, GenomeProjection.fromGenome(genome));
     }
 
     public Map<GenomeTrait, Double> weightsFor(AbilityTemplate template) {
         return Map.copyOf(abilityWeights.getOrDefault(template.id(), inferByFamily(template.family())));
+    }
+
+    long cacheHits() {
+        return projectionCache.hits();
+    }
+
+    long cacheMisses() {
+        return projectionCache.misses();
+    }
+
+    private double scoreFromDotProduct(AbilityTemplate template, GenomeProjection genomeProjection) {
+        AbilityTraitVector abilityVector = projectionMatrix.forAbility(template.id());
+        if (abilityVector == null) {
+            abilityVector = AbilityTraitVector.fromWeights(weightsFor(template));
+            projectionMatrix.register(template.id(), abilityVector);
+        }
+        return genomeProjection.dot(abilityVector);
     }
 
     private void registerDefaults(List<AbilityTemplate> templates) {
@@ -55,7 +93,9 @@ public class TraitInterferenceResolver {
         // ensure we keep only registered templates
         Map<String, EnumMap<GenomeTrait, Double>> filtered = new HashMap<>();
         for (AbilityTemplate template : templates) {
-            filtered.put(template.id(), abilityWeights.getOrDefault(template.id(), inferByFamily(template.family())));
+            EnumMap<GenomeTrait, Double> templateWeights = abilityWeights.getOrDefault(template.id(), inferByFamily(template.family()));
+            filtered.put(template.id(), templateWeights);
+            projectionMatrix.register(template.id(), AbilityTraitVector.fromWeights(templateWeights));
         }
         abilityWeights.clear();
         abilityWeights.putAll(filtered);
@@ -80,5 +120,8 @@ public class TraitInterferenceResolver {
             out.put(trait, weight);
         }
         return out;
+    }
+
+    private record ScoredTemplate(AbilityTemplate template, double score) {
     }
 }
