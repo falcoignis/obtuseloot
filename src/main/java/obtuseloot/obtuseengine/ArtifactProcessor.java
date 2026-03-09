@@ -26,6 +26,7 @@ public final class ArtifactProcessor {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
         String oldArchetype = artifact.getArchetypePath();
@@ -35,6 +36,7 @@ public final class ArtifactProcessor {
         int oldDriftLevel = artifact.getDriftLevel();
 
         rep.recordKill();
+        plugin.getArtifactUsageTracker().trackKillParticipation(artifact);
         if (rep.getKills() == 1) { plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FIRST_KILL); }
         applyContextKillBonuses(player, context, rep, artifact);
 
@@ -49,10 +51,12 @@ public final class ArtifactProcessor {
         }
 
         if (plugin.getAwakeningEngine().evaluate(player, artifact, rep)) {
+            plugin.getArtifactUsageTracker().trackAwakening(artifact);
             plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.AWAKENING);
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
         if (FUSION_ENGINE.evaluate(player, artifact, rep)) {
+            plugin.getArtifactUsageTracker().trackFusionParticipation(artifact);
             plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FUSION);
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_FUSION, 1D, artifact.getFusionPath());
         }
@@ -66,6 +70,7 @@ public final class ArtifactProcessor {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
         context.markCombat();
@@ -88,6 +93,7 @@ public final class ArtifactProcessor {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
         context.markCombat();

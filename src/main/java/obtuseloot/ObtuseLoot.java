@@ -13,6 +13,9 @@ import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.evolution.ArchetypeResolver;
+import obtuseloot.evolution.ArtifactFitnessEvaluator;
+import obtuseloot.evolution.ArtifactUsageTracker;
+import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.lore.LoreEngine;
@@ -45,6 +48,8 @@ public class ObtuseLoot extends JavaPlugin {
     private ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private LineageRegistry lineageRegistry;
     private LineageInfluenceResolver lineageInfluenceResolver;
+    private ArtifactUsageTracker artifactUsageTracker;
+    private ExperienceEvolutionEngine experienceEvolutionEngine;
 
     @Override
     public void onEnable() {
@@ -67,13 +72,15 @@ public class ObtuseLoot extends JavaPlugin {
 
         combatContextManager = new CombatContextManager();
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
+        artifactUsageTracker = new ArtifactUsageTracker();
+        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator());
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
         ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
         lineageRegistry = new LineageRegistry();
         lineageInfluenceResolver = new LineageInfluenceResolver();
-        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver));
+        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
@@ -122,4 +129,5 @@ public class ObtuseLoot extends JavaPlugin {
     public ArtifactMemoryEngine getArtifactMemoryEngine() { return artifactMemoryEngine; }
     public ArtifactEcosystemSelfBalancingEngine getEcosystemEngine() { return ecosystemEngine; }
     public LineageRegistry getLineageRegistry() { return lineageRegistry; }
+    public ArtifactUsageTracker getArtifactUsageTracker() { return artifactUsageTracker; }
 }

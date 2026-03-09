@@ -1,5 +1,6 @@
 package obtuseloot.artifacts;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.names.ArtifactNameGenerator;
 import obtuseloot.persistence.PlayerStateStore;
 
@@ -21,7 +22,11 @@ public class ArtifactManager {
     public Artifact getOrCreate(UUID playerId) {
         return loadedArtifacts.computeIfAbsent(playerId, id -> {
             Artifact loaded = stateStore.loadArtifact(id);
-            return loaded != null ? loaded : ArtifactGenerator.generateFor(id);
+            Artifact artifact = loaded != null ? loaded : ArtifactGenerator.generateFor(id);
+            if (ObtuseLoot.get() != null) {
+                ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+            }
+            return artifact;
         });
     }
 
@@ -46,15 +51,28 @@ public class ArtifactManager {
     }
 
     public Artifact recreate(UUID playerId) {
+        Artifact existing = loadedArtifacts.get(playerId);
+        if (existing != null && ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
+        }
         Artifact fresh = ArtifactGenerator.generateFor(playerId);
+        if (ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
+        }
         loadedArtifacts.put(playerId, fresh);
         return fresh;
     }
 
     public Artifact reseed(UUID playerId, long newSeed) {
         Artifact artifact = getOrCreate(playerId);
+        if (ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(artifact);
+        }
         artifact.resetMutableState();
         regenerateBaselineIdentity(artifact, newSeed);
+        if (ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+        }
         return artifact;
     }
 
