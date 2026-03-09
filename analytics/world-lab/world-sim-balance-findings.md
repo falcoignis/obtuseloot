@@ -1,8 +1,16 @@
 # World Simulation Balance Findings
 
-Conservative balancing recommendations from world-scale simulation data:
+## High-confidence (appears at large scale)
+- Dominant family concentration at scale: 28.59%.
+- Branch convergence at scale: 58.08%.
+- Dead branch rate at scale: 0.00%.
 
-- [low] family-diversity: Low representation: consistency=30917 vs chaos=383651 -> Increase selection weight for consistency templates/branches by 5-10% until parity improves.
-- [low] branch-diversity: Low representation: consistency.boss-ledger=7 vs brutality.quarry=29527 -> Increase selection weight for consistency.boss-ledger templates/branches by 5-10% until parity improves.
-- [low] trigger-diversity: Low representation: on_awakening=13241 vs on_boss_kill=307253 -> Increase selection weight for on_awakening templates/branches by 5-10% until parity improves.
-- [low] mechanic-diversity: Low representation: memory_echo=10919 vs guardian_pulse=392826 -> Increase selection weight for memory_echo templates/branches by 5-10% until parity improves.
+## Systems that remain active
+- Mutation events remain present (non-zero mutation histories): 87.33%.
+- Awakening/fusion pacing remains material: 73.41% / 20.44%.
+- Memory event footprint remains broad with 905163 event-presence counts.
+
+## Tentative recommendations
+- Re-check top 2 dominant family/branch pairs with targeted parameter sweeps.
+- Repeat large run with alternate seeds to confirm concentration stability.
+- Watch rarely selected branches and low-frequency archetypes for reward or trigger tuning.
