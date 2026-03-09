@@ -277,3 +277,10 @@ Run in order:
 ```
 
 The pipeline writes deterministic report artifacts under `analytics/` and keeps binary plugin JAR output in `target/` only.
+
+## Commentation Audit Notes
+
+- Script wrappers in `scripts/` are expected to include a short header comment explaining purpose and output intent.
+- Internal generators (for example `codex/run_internal_pipeline.py`) should keep function docstrings focused on report intent rather than implementation detail.
+- When touching existing files, prefer clarifying or tightening comments over adding noisy line-by-line narration.
+- Keep operational docs in this README synchronized with script responsibilities whenever tooling comments are updated.
