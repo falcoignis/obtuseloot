@@ -5,7 +5,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 name:        ObtuseLoot
-version:     1.0.0
+version:     0.9.1
 main:        obtuseloot.ObtuseLoot
 description: Procedural loot generation with soul-bound particle effects.
 authors:     [ falcoignis ]
