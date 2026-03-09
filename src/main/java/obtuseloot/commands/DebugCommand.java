@@ -2,16 +2,19 @@ package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.combat.CombatContext;
+import obtuseloot.config.RuntimeSettings;
 import obtuseloot.fusion.FusionEngine;
+import obtuseloot.obtuseengine.ArtifactProcessor;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 public class DebugCommand {
     private static final String PERMISSION_DEBUG = "obtuseloot.debug";
@@ -21,6 +24,9 @@ public class DebugCommand {
     );
     private static final List<String> ARCHETYPES = List.of(
             "unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon"
+    );
+    private static final List<String> SIM_PATHS = List.of(
+            "precision", "brutality", "mobility", "survival", "chaos", "boss", "hybrid", "awaken", "drift"
     );
 
     private final ObtuseLoot plugin;
@@ -55,6 +61,7 @@ public class DebugCommand {
             case "instability" -> instability(sender, label, args);
             case "archetype" -> archetype(sender, label, args);
             case "path" -> path(sender, label, args);
+            case "simulate" -> simulate(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -64,9 +71,7 @@ public class DebugCommand {
 
     private boolean inspect(CommandSender sender, String label, String[] args) {
         Player target = resolveTarget(sender, label, args, 1, "inspect");
-        if (target == null) {
-            return true;
-        }
+        if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
 
@@ -77,7 +82,7 @@ public class DebugCommand {
         sender.sendMessage("§7driftLevel=§f" + artifact.getDriftLevel() + " §7totalDrifts=§f" + artifact.getTotalDrifts()
                 + " §7driftAlignment=§f" + artifact.getDriftAlignment());
         sender.sendMessage("§7lineage=§f" + artifact.getLatentLineage() + " §7instability=§f" + artifact.getCurrentInstabilityState());
-        sender.sendMessage("§7seed affinities: §f" + formatStatMap(artifact, "seed"));
+        sender.sendMessage("§7seed affinities: §f" + formatStatMap(artifact));
         sender.sendMessage("§7drift bias: §f" + artifact.getDriftBiasAdjustments());
         sender.sendMessage("§7awakening bias: §f" + artifact.getAwakeningBiasAdjustments());
         sender.sendMessage("§7awakening multipliers: §f" + artifact.getAwakeningGainMultipliers());
@@ -286,6 +291,266 @@ public class DebugCommand {
         return true;
     }
 
+    private boolean simulate(CommandSender sender, String label, String[] args) {
+        if (args.length < 2 || "help".equalsIgnoreCase(args[1])) {
+            sendSimulateHelp(sender, label);
+            return true;
+        }
+
+        String scenario = args[1].toLowerCase(Locale.ROOT);
+        return switch (scenario) {
+            case "hit" -> simulateHit(sender, label, args);
+            case "move" -> simulateMove(sender, label, args);
+            case "lowhp" -> simulateLowHp(sender, label, args);
+            case "kill" -> simulateKill(sender, label, args);
+            case "multikill" -> simulateMultiKill(sender, label, args);
+            case "bosses" -> simulateBosses(sender, label, args);
+            case "chaos" -> simulateChaos(sender, label, args);
+            case "cycle" -> simulateCycle(sender, label, args);
+            case "resetcontext" -> simulateResetContext(sender, label, args);
+            case "path" -> simulatePath(sender, label, args);
+            default -> {
+                sender.sendMessage("§cUnknown simulate command. Try /" + label + " debug simulate help");
+                yield true;
+            }
+        };
+    }
+
+    private boolean simulateHit(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug simulate hit <damage> [player]");
+            return true;
+        }
+        Double damage = parseDouble(sender, args[2]);
+        if (damage == null) return true;
+        Player target = resolveTarget(sender, label, args, 3, "simulate hit " + args[2]);
+        if (target == null) return true;
+
+        ArtifactProcessor.processSimulatedCombat(target, Math.max(0.0D, damage));
+        saveOnly(target);
+        sender.sendMessage("§aSimulated hit for " + target.getName() + " with damage " + damage + ".");
+        return true;
+    }
+
+    private boolean simulateMove(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug simulate move <distance> [player]");
+            return true;
+        }
+        Double distance = parseDouble(sender, args[2]);
+        if (distance == null) return true;
+        Player target = resolveTarget(sender, label, args, 3, "simulate move " + args[2]);
+        if (target == null) return true;
+
+        CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+        context.markCombat();
+        context.addMovement(Math.max(0.0D, distance));
+        saveOnly(target);
+        sender.sendMessage("§aInjected " + distance + " movement into " + target.getName() + "'s combat context.");
+        return true;
+    }
+
+    private boolean simulateLowHp(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "simulate lowhp");
+        if (target == null) return true;
+
+        CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+        context.markCombat();
+        context.setLowHealthFlag(true);
+        context.setLowHealthEnteredAt(System.currentTimeMillis());
+        context.setLastKnownHealth(Math.min(RuntimeSettings.get().lowHealthThreshold(), target.getHealth()));
+        saveOnly(target);
+        sender.sendMessage("§aMarked " + target.getName() + " as low-health for survival testing.");
+        return true;
+    }
+
+    private boolean simulateKill(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "simulate kill");
+        if (target == null) return true;
+
+        prepareKillWindow(target, 1);
+        ArtifactProcessor.processSimulatedKill(target);
+        saveOnly(target);
+        sender.sendMessage("§aSimulated kill progression for " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean simulateMultiKill(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug simulate multikill <count> [player]");
+            return true;
+        }
+        Integer count = parseInt(sender, args[2]);
+        if (count == null || count <= 0) {
+            sender.sendMessage("§cCount must be a positive integer.");
+            return true;
+        }
+        Player target = resolveTarget(sender, label, args, 3, "simulate multikill " + args[2]);
+        if (target == null) return true;
+
+        for (int i = 0; i < count; i++) {
+            prepareKillWindow(target, Math.max(2, count));
+            ArtifactProcessor.processSimulatedKill(target);
+        }
+        saveOnly(target);
+        sender.sendMessage("§aSimulated " + count + " rapid kills for " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean simulateBosses(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug simulate bosses <count> [player]");
+            return true;
+        }
+        Integer count = parseInt(sender, args[2]);
+        if (count == null || count <= 0) {
+            sender.sendMessage("§cCount must be a positive integer.");
+            return true;
+        }
+        Player target = resolveTarget(sender, label, args, 3, "simulate bosses " + args[2]);
+        if (target == null) return true;
+
+        for (int i = 0; i < count; i++) {
+            prepareKillWindow(target, 1);
+            ArtifactProcessor.processSimulatedBossKill(target);
+        }
+        saveOnly(target);
+        sender.sendMessage("§aSimulated " + count + " boss kills for " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean simulateChaos(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "simulate chaos");
+        if (target == null) return true;
+
+        CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+        context.markCombat();
+        context.addMovement(RuntimeSettings.get().mobilityDistanceThreshold() + 2.0D);
+
+        long now = System.currentTimeMillis();
+        long window = RuntimeSettings.get().killChainWindowMs();
+        for (int i = 0; i < Math.max(4, RuntimeSettings.get().multiTargetChaosThreshold()); i++) {
+            context.addTarget(UUID.randomUUID());
+            context.addKillTimestamp(now - Math.min(window / 2L, i * 300L));
+        }
+
+        ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+        rep.recordChaos();
+        saveOnly(target);
+        sender.sendMessage("§aPrepared chaotic context for " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean simulateCycle(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "simulate cycle");
+        if (target == null) return true;
+
+        CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+        context.markCombat();
+        context.addMovement(RuntimeSettings.get().mobilityDistanceThreshold() + 8.0D);
+        context.setLowHealthFlag(true);
+        context.setLowHealthEnteredAt(System.currentTimeMillis());
+        context.setLastKnownHealth(RuntimeSettings.get().lowHealthThreshold() - 1.0D);
+
+        ArtifactProcessor.processSimulatedCombat(target, RuntimeSettings.get().precisionThresholdDamage() + 2.0D);
+        for (int i = 0; i < 4; i++) {
+            prepareKillWindow(target, 4);
+            ArtifactProcessor.processSimulatedKill(target);
+        }
+        ArtifactProcessor.processSimulatedBossKill(target);
+        ArtifactProcessor.processSimulatedBossKill(target);
+
+        saveOnly(target);
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+        sender.sendMessage("§aCompleted simulation cycle for " + target.getName() + ": archetype="
+                + artifact.getArchetypePath() + ", evolution=" + artifact.getEvolutionPath() + ", drift=" + artifact.getDriftAlignment() + ".");
+        return true;
+    }
+
+    private boolean simulateResetContext(CommandSender sender, String label, String[] args) {
+        Player target = resolveTarget(sender, label, args, 2, "simulate resetcontext");
+        if (target == null) return true;
+
+        plugin.getCombatContextManager().remove(target.getUniqueId());
+        saveOnly(target);
+        sender.sendMessage("§aCleared combat context for " + target.getName() + ".");
+        return true;
+    }
+
+    private boolean simulatePath(CommandSender sender, String label, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " debug simulate path <" + String.join("|", SIM_PATHS) + "> [player]");
+            return true;
+        }
+        String profile = args[2].toLowerCase(Locale.ROOT);
+        if (!SIM_PATHS.contains(profile)) {
+            sender.sendMessage("§cUnknown profile. Allowed: " + SIM_PATHS);
+            return true;
+        }
+        Player target = resolveTarget(sender, label, args, 3, "simulate path " + profile);
+        if (target == null) return true;
+
+        switch (profile) {
+            case "precision" -> ArtifactProcessor.processSimulatedCombat(target, RuntimeSettings.get().precisionThresholdDamage() + 3.0D);
+            case "brutality" -> ArtifactProcessor.processSimulatedCombat(target, 2.0D);
+            case "mobility" -> {
+                plugin.getCombatContextManager().get(target.getUniqueId()).addMovement(RuntimeSettings.get().mobilityDistanceThreshold() + 3.0D);
+                ArtifactProcessor.processSimulatedCombat(target, 7.0D);
+            }
+            case "survival" -> {
+                CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+                context.markCombat();
+                context.setLowHealthFlag(true);
+                context.setLowHealthEnteredAt(System.currentTimeMillis());
+                context.setLastKnownHealth(RuntimeSettings.get().lowHealthThreshold() - 1.0D);
+                ArtifactProcessor.processSimulatedCombat(target, 8.0D);
+            }
+            case "chaos" -> simulateChaos(sender, label, new String[]{"simulate", "chaos", target.getName()});
+            case "boss" -> ArtifactProcessor.processSimulatedBossKill(target);
+            case "hybrid" -> {
+                ArtifactProcessor.processSimulatedCombat(target, RuntimeSettings.get().precisionThresholdDamage() + 2.0D);
+                ArtifactProcessor.processSimulatedCombat(target, 4.0D);
+                ArtifactProcessor.processSimulatedKill(target);
+            }
+            case "awaken" -> {
+                for (int i = 0; i < 5; i++) ArtifactProcessor.processSimulatedKill(target);
+                Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+                ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+                plugin.getAwakeningEngine().forceAwakening(target, artifact, rep);
+                plugin.getLoreEngine().refreshLore(target, artifact, rep);
+            }
+            case "drift" -> {
+                for (int i = 0; i < 5; i++) ArtifactProcessor.processSimulatedKill(target);
+                Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+                ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+                plugin.getDriftEngine().forceDrift(target, artifact, rep);
+                plugin.getLoreEngine().refreshLore(target, artifact, rep);
+            }
+            default -> {
+            }
+        }
+
+        saveOnly(target);
+        sender.sendMessage("§aApplied simulate path '" + profile + "' for " + target.getName() + ".");
+        return true;
+    }
+
+    private void prepareKillWindow(Player target, int chainSize) {
+        CombatContext context = plugin.getCombatContextManager().get(target.getUniqueId());
+        context.markCombat();
+        long now = System.currentTimeMillis();
+        long window = RuntimeSettings.get().killChainWindowMs();
+        for (int i = 0; i < chainSize; i++) {
+            context.addKillTimestamp(now - Math.min(window / 2L, i * 250L));
+            context.addTarget(UUID.randomUUID());
+        }
+        ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+        rep.recordKillChain(chainSize);
+        if (chainSize >= 2) {
+            rep.recordChaos();
+        }
+    }
+
     private boolean hasDebugPermission(CommandSender sender) {
         if (sender instanceof Player player && !player.isOp() && !sender.hasPermission(PERMISSION_DEBUG)) {
             sender.sendMessage("§cYou do not have permission: " + PERMISSION_DEBUG);
@@ -298,6 +563,10 @@ public class DebugCommand {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
         plugin.getLoreEngine().refreshLore(target, artifact, rep);
+        saveOnly(target);
+    }
+
+    private void saveOnly(Player target) {
         plugin.getArtifactManager().save(target.getUniqueId());
         plugin.getReputationManager().save(target.getUniqueId());
     }
@@ -322,6 +591,15 @@ public class DebugCommand {
             return Integer.parseInt(value);
         } catch (NumberFormatException ex) {
             sender.sendMessage("§cInvalid integer: " + value);
+            return null;
+        }
+    }
+
+    private Double parseDouble(CommandSender sender, String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException ex) {
+            sender.sendMessage("§cInvalid number: " + value);
             return null;
         }
     }
@@ -359,7 +637,8 @@ public class DebugCommand {
             case "bosskills" -> rep.setBossKills(safe);
             case "recentkillchain" -> rep.setRecentKillChain(safe);
             case "survivalstreak" -> rep.setSurvivalStreak(safe);
-            default -> { }
+            default -> {
+            }
         }
         rep.applySoftFloor();
     }
@@ -372,7 +651,7 @@ public class DebugCommand {
         return lines.subList(from, lines.size()).toString();
     }
 
-    private String formatStatMap(Artifact artifact, String ignored) {
+    private String formatStatMap(Artifact artifact) {
         return "{precision=" + artifact.getSeedPrecisionAffinity()
                 + ", brutality=" + artifact.getSeedBrutalityAffinity()
                 + ", survival=" + artifact.getSeedSurvivalAffinity()
@@ -398,11 +677,26 @@ public class DebugCommand {
                 "/" + label + " debug reload",
                 "/" + label + " debug instability clear [player]",
                 "/" + label + " debug archetype set <archetype> [player]",
-                "/" + label + " debug path set <evolutionPath> [player]"
+                "/" + label + " debug path set <evolutionPath> [player]",
+                "/" + label + " debug simulate help"
         );
         sender.sendMessage("§dObtuseLoot Debug Commands:");
         for (String line : lines) {
             sender.sendMessage("§7- §f" + line);
         }
+    }
+
+    private void sendSimulateHelp(CommandSender sender, String label) {
+        sender.sendMessage("§dSimulation Commands:");
+        sender.sendMessage("§7- §f/" + label + " debug simulate hit <damage> [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate move <distance> [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate lowhp [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate kill [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate multikill <count> [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate bosses <count> [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate chaos [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate cycle [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate resetcontext [player]");
+        sender.sendMessage("§7- §f/" + label + " debug simulate path <profile> [player]");
     }
 }
