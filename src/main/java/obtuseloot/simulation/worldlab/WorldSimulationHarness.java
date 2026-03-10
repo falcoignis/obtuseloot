@@ -592,6 +592,32 @@ public class WorldSimulationHarness {
                 + "- Co-evolution remains intentionally soft and should not be interpreted as hard counters.\n";
         Files.writeString(analytics.resolve("co-evolution-report.md"), coEvolutionReport);
 
+        String coEvolutionValidityReview = "# Co-Evolution Validity Review\n\n"
+                + "## Strongest competitive species pairs\n"
+                + "- " + coEvolutionRelationships.get("competitiveRelationships") + "\n\n"
+                + "## Strongest supportive relationships\n"
+                + "- " + coEvolutionRelationships.get("supportiveRelationships") + "\n\n"
+                + "## Niche-based interaction examples\n"
+                + "- Suppression from overlap: " + coEvolutionRelationships.get("suppressionRelationships") + "\n"
+                + "- Migration pressure from crowding: " + coEvolutionRelationships.get("migrationPressureRelationships") + "\n\n"
+                + "## Ecological structure evidence\n"
+                + "- Niche occupancy map: " + speciesNicheMap.get("nicheOccupancy") + "\n"
+                + "- Species per niche: " + speciesNicheMap.get("competingSpeciesPerNiche") + "\n"
+                + "- Pressure means (competition/support/migration): "
+                + coEvolutionRelationships.get("averageCompetitionPressure") + " / "
+                + coEvolutionRelationships.get("averageSupportPressure") + " / "
+                + coEvolutionRelationships.get("nicheMigrationPressure") + "\n";
+        Files.writeString(analytics.resolve("co-evolution-validity-review.md"), coEvolutionValidityReview);
+
+        String nicheCrowdingValidation = "# Niche Crowding Validation\n\n"
+                + "- are multiple niches being monitored? " + speciesNicheEngine.nicheCount() + " niches observed.\n"
+                + "- is crowding dampening acting on real ecological partitions? occupancyByNiche="
+                + crowdingDistribution.get("occupancyByNiche") + " with target=" + crowdingDistribution.get("targetOccupancy") + ".\n"
+                + "- does dampening help niche coexistence? activation=" + crowdingDistribution.get("penaltyActivationFrequency")
+                + ", overcrowdedNicheCount=" + crowdingDistribution.get("overcrowdedNicheCount")
+                + ", speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n";
+        Files.writeString(analytics.resolve("niche-crowding-validation.md"), nicheCrowdingValidation);
+
         String impactReview = "# Speciation Impact Review\n\n"
                 + "- Did speciation increase durable niches? yes, species occupancy now persists across dynamic niche clusters.\n"
                 + "- Do multiple species occupy different niches? yes, species-per-niche competition is tracked and non-zero.\n"
@@ -629,6 +655,19 @@ public class WorldSimulationHarness {
                 + "3. Did the dominant attractor weaken? dominant concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration") + ".\n"
                 + "4. Did divergence improve without instability? modifier timeline=" + speciationSummary.get("coEvolutionModifierTimeline") + " (bounded), migration timeline=" + speciationSummary.get("coEvolutionMigrationPressureTimeline") + ".\n";
         Files.writeString(worldLab.resolve("co-evolution-impact-review.md"), coEvolutionImpact);
+
+        String ecologyRepairImpact = "# Ecology Repair Impact Review\n\n"
+                + "1. did species divergence become meaningful? divergence levels=" + speciationSummary.get("speciesDivergenceLevels")
+                + ", speciesPerLineage=" + speciationSummary.get("speciesPerLineage") + ".\n"
+                + "2. did co-evolution relationships become more discriminative? competitive=" + coEvolutionRelationships.get("competitiveRelationships")
+                + ", supportive=" + coEvolutionRelationships.get("supportiveRelationships")
+                + ", suppression=" + coEvolutionRelationships.get("suppressionRelationships") + ".\n"
+                + "3. did niche coexistence improve? niche count timeline=" + speciationSummary.get("nicheCountTimeline")
+                + ", species-per-niche=" + speciesNicheMap.get("competingSpeciesPerNiche")
+                + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
+                + "4. did dominant attractor strength weaken? concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration")
+                + ", concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
+        Files.writeString(worldLab.resolve("ecology-repair-impact-review.md"), ecologyRepairImpact);
 
         String coEvolutionOpenEndedness = "# Co-Evolution Open-Endedness Review\n\n"
                 + "- Species diversity over time: " + speciationSummary.get("speciesCountTimeline") + "\n"
