@@ -4,6 +4,9 @@ import obtuseloot.ObtuseLoot;
 import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.abilities.AbilityProfile;
+import obtuseloot.abilities.ArtifactTriggerBinding;
+import obtuseloot.abilities.AbilityTrigger;
+import obtuseloot.abilities.PlayerArtifactTriggerMap;
 import obtuseloot.abilities.ArtifactEvolutionStage;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
@@ -79,6 +82,7 @@ public class DebugCommand {
             case "lineage" -> lineage(sender, label, args);
             case "genome" -> genome(sender, label, args);
             case "projection" -> projection(sender, args);
+            case "subscriptions" -> subscriptions(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
@@ -345,6 +349,10 @@ public class DebugCommand {
         plugin.reloadConfig();
         obtuseloot.config.RuntimeSettings.load(plugin.getConfig());
         obtuseloot.names.NamePoolManager.initialize(plugin);
+        plugin.getItemAbilityManager().setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
+        if (!RuntimeSettings.get().triggerSubscriptionIndexing()) {
+            plugin.getItemAbilityManager().clearAllSubscriptions();
+        }
         sender.sendMessage("§aObtuseLoot config reloaded.");
         return true;
     }
@@ -821,6 +829,50 @@ public class DebugCommand {
         sender.sendMessage("§cUsage: /" + label + " debug persistence [backend|test|migrate]");
         return true;
     }
+    private boolean subscriptions(CommandSender sender, String label, String[] args) {
+        if (args.length >= 2 && "stats".equalsIgnoreCase(args[1])) {
+            var stats = plugin.getItemAbilityManager().indexStats();
+            sender.sendMessage("§dTrigger subscription index: §f" + (stats.enabled() ? "enabled" : "disabled"));
+            sender.sendMessage("§7indexedPlayers=§f" + stats.indexedPlayers()
+                    + " §7rebuilds=§f" + stats.rebuildCount()
+                    + " §7avgRebuildMicros=§f" + String.format(Locale.ROOT, "%.3f", stats.averageRebuildMicros()));
+            sender.sendMessage("§7dispatch=§f" + stats.dispatchCalls()
+                    + " §7indexed=§f" + stats.indexedDispatchCalls()
+                    + " §7fallbackScans=§f" + stats.fallbackFullScanCalls()
+                    + " §7avgSubscribers=§f" + String.format(Locale.ROOT, "%.3f", stats.averageIndexedSubscribers()));
+            return true;
+        }
+
+        Player target = resolveTarget(sender, label, args, 1, "subscriptions");
+        if (target == null) return true;
+
+        PlayerArtifactTriggerMap map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId());
+        if (map == null) {
+            Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+            ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, rep, "debug-subscriptions-view");
+            map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId());
+        }
+
+        sender.sendMessage("§dSubscriptions for §f" + target.getName()
+                + " §7(totalBindings=§f" + (map == null ? 0 : map.totalBindings())
+                + "§7, lastReason=§f" + (map == null ? "none" : map.lastRebuildReason()) + "§7)");
+        if (map == null) {
+            sender.sendMessage("§7No trigger map is available.");
+            return true;
+        }
+
+        for (AbilityTrigger trigger : AbilityTrigger.values()) {
+            var bindings = map.bindingsFor(trigger);
+            if (!bindings.isEmpty()) {
+                sender.sendMessage("§7- §f" + trigger + " §7=> §f" + bindings.size()
+                        + " §7" + bindings.stream().limit(4).map(ArtifactTriggerBinding::abilityId).toList()
+                        + (bindings.size() > 4 ? " ..." : ""));
+            }
+        }
+        return true;
+    }
+
     private boolean hasDebugPermission(CommandSender sender) {
         if (sender instanceof Player player && !player.isOp() && !sender.hasPermission(PERMISSION_DEBUG)) {
             sender.sendMessage("§cYou do not have permission: " + PERMISSION_DEBUG);
@@ -840,6 +892,7 @@ public class DebugCommand {
     private void refreshAndSave(Player target) {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
+        plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, rep, "debug-refresh");
         plugin.getLoreEngine().refreshLore(target, artifact, rep);
         saveOnly(target);
     }
@@ -977,6 +1030,7 @@ public class DebugCommand {
                 "/" + label + " debug lineage [player]",
                 "/" + label + " debug genome interactions",
                 "/" + label + " debug projection [cache|stats]",
+                "/" + label + " debug subscriptions [stats|player]",
                 "/" + label + " debug simulate help"
         );
         sender.sendMessage("§dObtuseLoot Debug Commands:");

@@ -38,7 +38,8 @@ public final class RuntimeSettings {
 
                 config.getInt("persistence.autosave-interval-seconds", 300),
                 config.getInt("naming.prefix-suffix-chance-percent", 60),
-                config.getBoolean("naming.use-deterministic-owner-seed", true)
+                config.getBoolean("naming.use-deterministic-owner-seed", true),
+                config.getBoolean("runtime.triggerSubscriptionIndexing", true)
         );
     }
 
@@ -68,12 +69,13 @@ public final class RuntimeSettings {
             int driftInstabilityDurationSeconds,
             int autosaveIntervalSeconds,
             int namingPrefixSuffixChancePercent,
-            boolean namingUseDeterministicOwnerSeed
+            boolean namingUseDeterministicOwnerSeed,
+            boolean triggerSubscriptionIndexing
     ) {
         private static Snapshot defaults() {
             return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
-                    60, true);
+                    60, true, true);
         }
     }
 }

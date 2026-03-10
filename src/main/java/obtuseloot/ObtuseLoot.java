@@ -8,6 +8,7 @@ import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.commands.DashboardCommandExecutor;
 import obtuseloot.analytics.EnvironmentalPressureReporter;
+import obtuseloot.analytics.TriggerSubscriptionIndexReporter;
 import obtuseloot.commands.ObtuseLootCommand;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
@@ -59,6 +60,7 @@ public class ObtuseLoot extends JavaPlugin {
     private DashboardWebServer dashboardWebServer;
     private EcosystemMapRenderer ecosystemMapRenderer;
     private final EnvironmentalPressureReporter environmentalPressureReporter = new EnvironmentalPressureReporter();
+    private final TriggerSubscriptionIndexReporter triggerSubscriptionIndexReporter = new TriggerSubscriptionIndexReporter();
 
     @Override
     public void onEnable() {
@@ -91,6 +93,7 @@ public class ObtuseLoot extends JavaPlugin {
         lineageRegistry = new LineageRegistry();
         lineageInfluenceResolver = new LineageInfluenceResolver();
         itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
+        itemAbilityManager.setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
         loreEngine = new LoreEngine();
         engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
 
@@ -123,6 +126,12 @@ public class ObtuseLoot extends JavaPlugin {
         } catch (Exception exception) {
             getLogger().warning("[Ecosystem] Failed to write environment pressure report: " + exception.getMessage());
         }
+        try {
+            triggerSubscriptionIndexReporter.writeReport(java.nio.file.Path.of("analytics/performance/trigger-subscription-index-report.md"), itemAbilityManager);
+        } catch (Exception exception) {
+            getLogger().warning("[Runtime] Failed to write trigger subscription report: " + exception.getMessage());
+        }
+
 
         getServer().getScheduler().runTaskTimer(this, () -> {
             try {
@@ -161,6 +170,11 @@ public class ObtuseLoot extends JavaPlugin {
         }
         if (dashboardWebServer != null) {
             dashboardWebServer.stop();
+        }
+        try {
+            triggerSubscriptionIndexReporter.writeReport(java.nio.file.Path.of("analytics/performance/trigger-subscription-index-report.md"), itemAbilityManager);
+        } catch (Exception exception) {
+            getLogger().warning("[Runtime] Failed to write trigger subscription report on disable: " + exception.getMessage());
         }
     }
 

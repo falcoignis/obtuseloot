@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome", "projection");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome", "projection", "subscriptions");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
@@ -21,6 +21,7 @@ public class DebugTabCompleter {
     private static final List<String> ECOSYSTEM_ACTIONS = List.of("bias", "balance");
     private static final List<String> GENOME_ACTIONS = List.of("interactions");
     private static final List<String> PROJECTION_ACTIONS = List.of("cache", "stats");
+    private static final List<String> SUBSCRIPTION_ACTIONS = List.of("stats");
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 2) {
@@ -71,6 +72,10 @@ public class DebugTabCompleter {
         if (args.length == 3 && "projection".equalsIgnoreCase(args[1])) {
             return filter(PROJECTION_ACTIONS, args[2]);
         }
+        if (args.length == 3 && "subscriptions".equalsIgnoreCase(args[1])) {
+            return filter(SUBSCRIPTION_ACTIONS, args[2]);
+        }
+
 
         if (args.length == 4 && "persistence".equalsIgnoreCase(args[1]) && "migrate".equalsIgnoreCase(args[2])) {
             return filter(List.of("yaml-to-sqlite", "yaml-to-mysql"), args[3]);
@@ -96,7 +101,8 @@ public class DebugTabCompleter {
                 || (args.length == 5 && "path".equals(sub) && "set".equalsIgnoreCase(args[2]))
                 || (args.length == 4 && "ability".equals(sub) && List.of("show", "refresh", "explain", "tree").contains(args[2].toLowerCase(Locale.ROOT)))
                 || (args.length == 3 && "memory".equals(sub))
-                || (args.length == 3 && "lineage".equals(sub));
+                || (args.length == 3 && "lineage".equals(sub))
+                || (args.length == 3 && "subscriptions".equals(sub));
 
         boolean seed = "seed".equals(sub)
                 && ((args.length == 4 && List.of("show", "reroll", "export").contains(args[2].toLowerCase(Locale.ROOT)))

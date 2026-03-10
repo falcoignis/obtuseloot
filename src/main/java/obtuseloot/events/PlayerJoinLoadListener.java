@@ -15,6 +15,7 @@ public class PlayerJoinLoadListener implements Listener {
 
         Artifact artifact = plugin.getArtifactManager().getOrCreate(playerId);
         ArtifactReputation reputation = plugin.getReputationManager().get(playerId);
+        plugin.getItemAbilityManager().rebuildSubscriptions(playerId, artifact, reputation, "player-join-load");
         plugin.getLoreEngine().refreshLore(event.getPlayer(), artifact, reputation);
     }
 }
