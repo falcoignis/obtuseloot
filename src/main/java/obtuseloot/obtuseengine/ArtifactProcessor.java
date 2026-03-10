@@ -63,6 +63,7 @@ public final class ArtifactProcessor {
         }
 
         recordStateTransitions(artifact, oldArchetype, oldEvolution, oldAwakening, oldFusion, oldDriftLevel);
+        plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), artifact, rep, "kill-cycle-state-change");
         context.resetTransient();
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
     }
