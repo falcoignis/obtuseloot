@@ -269,6 +269,7 @@ public class WorldSimulationHarness {
         Map<String, Object> coEvolutionRelationships = speciesNicheEngine.buildCoEvolutionRelationships(allArtifacts());
         Map<String, Object> nicheQualityDiagnostics = speciesNicheEngine.buildNicheQualityDiagnostics(allArtifacts());
         Map<String, Object> nicheStabilityMetrics = speciesNicheEngine.buildNicheStabilityMetrics();
+        Map<String, Object> nichePrototypeDistribution = speciesNicheEngine.buildNichePrototypeDistribution();
         data.put("speciation", speciationSummary);
         data.put("niches", speciesNicheMap);
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
@@ -311,7 +312,7 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
-        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics);
+        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution);
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
         writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
         writeTraitProjectionPerformanceReport();
@@ -710,7 +711,8 @@ public class WorldSimulationHarness {
                                              Map<String, Object> crowdingDistribution,
                                              Map<String, Object> coEvolutionRelationships,
                                              Map<String, Object> nicheQualityDiagnostics,
-                                             Map<String, Object> nicheStabilityMetrics) throws IOException {
+                                             Map<String, Object> nicheStabilityMetrics,
+                                             Map<String, Object> nichePrototypeDistribution) throws IOException {
         Path analytics = Path.of("analytics");
         Path worldLab = analytics.resolve("world-lab");
         Path openEnded = worldLab.resolve("open-endedness");
@@ -723,6 +725,7 @@ public class WorldSimulationHarness {
         Files.writeString(analytics.resolve("co-evolution-relationships.json"), toJson(coEvolutionRelationships, 0));
         Files.writeString(analytics.resolve("niche-quality-diagnostics.json"), toJson(nicheQualityDiagnostics, 0));
         Files.writeString(analytics.resolve("niche-stability-metrics.json"), toJson(nicheStabilityMetrics, 0));
+        Files.writeString(analytics.resolve("niche-prototype-distribution.json"), toJson(nichePrototypeDistribution, 0));
 
         String speciationReport = "# Speciation Report\n\n"
                 + "- Active species: " + speciationSummary.get("activeSpecies") + "\n"
@@ -758,6 +761,7 @@ public class WorldSimulationHarness {
                 + "- Niche occupancy distribution: " + nicheQualityDiagnostics.get("nicheOccupancy") + "\n"
                 + "- Niche separation score: " + nicheQualityDiagnostics.get("nicheSeparationScore") + "\n"
                 + "- Niche collapse warnings: " + nicheQualityDiagnostics.get("nicheCollapseWarning") + "\n"
+                + "- Niche fragmentation warning: " + nicheQualityDiagnostics.get("fragmentationWarning") + "\n"
                 + "- Niche interpretability summary: " + nicheQualityDiagnostics.get("nicheInterpretability") + "\n"
                 + "- Mirrors branches/families: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
                 + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n";
@@ -766,6 +770,8 @@ public class WorldSimulationHarness {
         String nicheStabilityReport = "# Niche Stability Report\n\n"
                 + "- Niche birth events: " + nicheStabilityMetrics.get("nicheBirthEvents") + "\n"
                 + "- Niche extinction events: " + nicheStabilityMetrics.get("nicheExtinctionEvents") + "\n"
+                + "- Niche merge events: " + nicheStabilityMetrics.get("nicheMergeEvents") + "\n"
+                + "- Niche retire events: " + nicheStabilityMetrics.get("nicheRetireEvents") + "\n"
                 + "- Niche stability over time: " + nicheStabilityMetrics.get("nicheStabilityTimeline") + "\n"
                 + "- Niche lifetimes: " + nicheStabilityMetrics.get("nicheLifetimes") + "\n"
                 + "- Species migration across niches: " + nicheStabilityMetrics.get("nicheMigrationBySpecies") + "\n";
@@ -843,15 +849,18 @@ public class WorldSimulationHarness {
         Files.writeString(worldLab.resolve("niche-crowding-impact.md"), crowdingImpact);
 
         String nicheRepairImpact = "# Niche Repair Impact Review\n\n"
-                + "1. did niche detection produce multiple meaningful niches? "
+                + "1. Did niche detection stop collapsing into one bucket? "
                 + "nicheCount=" + nicheQualityDiagnostics.get("nicheCount") + ", occupancy=" + nicheQualityDiagnostics.get("nicheOccupancy")
-                + ", separation=" + nicheQualityDiagnostics.get("nicheSeparationScore") + ".\n"
-                + "2. did niches remain stable over time? "
+                + ", separation=" + nicheQualityDiagnostics.get("nicheSeparationScore") + ", collapseWarning=" + nicheQualityDiagnostics.get("nicheCollapseWarning") + ".\n"
+                + "2. Did multiple stable niches appear? "
                 + "stabilityTimeline=" + nicheStabilityMetrics.get("nicheStabilityTimeline") + ", births=" + nicheStabilityMetrics.get("nicheBirthEvents")
-                + ", extinctions=" + nicheStabilityMetrics.get("nicheExtinctionEvents") + ".\n"
-                + "3. did niches represent real behavioral differences? "
+                + ", extinctions=" + nicheStabilityMetrics.get("nicheExtinctionEvents") + ", merges=" + nicheStabilityMetrics.get("nicheMergeEvents") + ".\n"
+                + "3. Did niche migration become meaningful but not chaotic? "
+                + "migrationBySpecies=" + nicheStabilityMetrics.get("nicheMigrationBySpecies") + ", coevolutionMigration=" + speciesNicheMap.get("coEvolutionMigrationCounts") + ".\n"
+                + "4. Did downstream ecology layers now operate on more realistic partitions? "
                 + "interpretability=" + nicheQualityDiagnostics.get("nicheInterpretability") + ", mirrors branches/families="
-                + nicheQualityDiagnostics.get("mirrorsBranches") + "/" + nicheQualityDiagnostics.get("mirrorsFamilies") + ".\n";
+                + nicheQualityDiagnostics.get("mirrorsBranches") + "/" + nicheQualityDiagnostics.get("mirrorsFamilies")
+                + ", crowdingDistribution=" + crowdingDistribution.get("occupancyByNiche") + ".\n";
         Files.writeString(worldLab.resolve("niche-repair-impact-review.md"), nicheRepairImpact);
 
         String coEvolutionImpact = "# Co-Evolution Impact Review\n\n"
