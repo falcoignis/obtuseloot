@@ -80,3 +80,22 @@ dashboard:
 
 runtime:
   triggerSubscriptionIndexing: true
+
+text:
+  channels:
+    name:
+      max-words: 4
+    lore:
+      max-words: 14
+    identify:
+      max-words: 16
+    awakening:
+      max-words: 14
+    lineage:
+      max-words: 16
+    memory:
+      max-words: 16
+    drift:
+      max-words: 10
+    fusion:
+      max-words: 14

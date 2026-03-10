@@ -14,6 +14,7 @@ public class Artifact {
     private String artifactStorageKey;
     private UUID ownerId;
     private ArtifactNaming naming;
+    private String generatedName;
     private String itemCategory;
     private String archetypePath;
     private String evolutionPath;
@@ -56,8 +57,8 @@ public class Artifact {
     public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
         this.naming = new ArtifactNaming();
+        this.generatedName = this.naming.getDisplayName();
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
-        this.generatedName = generatedName;
         this.itemCategory = "artifact";
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
@@ -112,19 +113,31 @@ public class Artifact {
     public long getArtifactSeed() { return artifactSeed; }
     public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
     public UUID getOwnerId() { return ownerId; }
-    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
-    public String getDisplayName() { return naming.getDisplayName(); }
-    public void setDisplayName(String displayName) { naming.setDisplayName(displayName); }
-    public String getTrueName() { return naming.getTrueName(); }
-    public ArtifactNaming getNaming() { return naming; }
-    public void setNaming(ArtifactNaming naming) { this.naming = naming == null ? new ArtifactNaming() : naming; }
+
     public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
         if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
             artifactStorageKey = buildDefaultStorageKey(ownerId);
         }
     }
+
+    public String getDisplayName() { return naming.getDisplayName(); }
+
+    public void setDisplayName(String displayName) {
+        naming.setDisplayName(displayName);
+        generatedName = naming.getDisplayName();
+    }
+
+    public String getTrueName() { return naming.getTrueName(); }
+    public ArtifactNaming getNaming() { return naming; }
+
+    public void setNaming(ArtifactNaming naming) {
+        this.naming = naming == null ? new ArtifactNaming() : naming;
+        this.generatedName = this.naming.getDisplayName();
+    }
+
     public String getArtifactStorageKey() { return artifactStorageKey; }
+
     public void setArtifactStorageKey(String artifactStorageKey) {
         if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
             this.artifactStorageKey = buildDefaultStorageKey(ownerId);
@@ -132,6 +145,7 @@ public class Artifact {
         }
         this.artifactStorageKey = artifactStorageKey;
     }
+
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return naming.getDisplayName(); }

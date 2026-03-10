@@ -4,11 +4,14 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
+import obtuseloot.text.ArtifactTextChannel;
+import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.Map;
 import java.util.Set;
 
 public class AwakeningEngine {
+    private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
     private final Map<String, AwakeningEffectProfile> profiles = Map.of(
             "Executioner's Oath", new AwakeningEffectProfile("Executioner's Oath", Map.of("brutality", 1.5, "chaos", 0.5), Map.of("brutality", 1.2), Set.of("execution")),
             "Stormblade", new AwakeningEffectProfile("Stormblade", Map.of("precision", 1.2, "mobility", 1.0), Map.of("precision", 1.15), Set.of("stormstep")),
@@ -54,10 +57,10 @@ public class AwakeningEngine {
             profile.reputationGainMultipliers().forEach((k, v) -> artifact.getAwakeningGainMultipliers().put(k, v));
             artifact.getAwakeningTraits().addAll(profile.traits());
         }
-        artifact.addLoreHistory("Awakening: " + resolved);
+        artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.AWAKENING, resolved));
         artifact.addNotableEvent("awakening." + resolved.toLowerCase().replace(' ', '-'));
         if (player != null) {
-            player.sendMessage("§dYour artifact awakens: " + resolved);
+            player.sendMessage("§d" + textResolver.compose(artifact, ArtifactTextChannel.AWAKENING, resolved));
         }
         return true;
     }

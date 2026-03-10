@@ -4,10 +4,13 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
+import obtuseloot.text.ArtifactTextChannel;
+import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.List;
 
 public class FusionEngine {
+    private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation rep) {
         return evaluateInternal(player, artifact, rep);
@@ -31,10 +34,10 @@ public class FusionEngine {
             if (recipe.overridesEvolution()) {
                 artifact.setEvolutionPath("fused-" + recipe.id());
             }
-            artifact.addLoreHistory("Fusion: " + recipe.id());
+            artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.FUSION, recipe.id()));
             artifact.addNotableEvent("fusion." + recipe.id());
             if (player != null) {
-                player.sendMessage("§6Fusion attained: " + recipe.id());
+                player.sendMessage("§6" + textResolver.compose(artifact, ArtifactTextChannel.FUSION, recipe.id()));
             }
             return true;
         }
