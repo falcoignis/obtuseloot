@@ -27,6 +27,7 @@ public final class WorldSimulationRunner {
                 boolProp("world.enableSelfBalancing", defaults.enableSelfBalancingAdjustments()),
                 boolProp("world.enableEnvironmentalPressure", defaults.enableEnvironmentalPressure()),
                 boolProp("world.enableTraitInteractions", defaults.enableTraitInteractions()),
+                boolProp("world.enableCoEvolution", defaults.enableCoEvolution()),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();

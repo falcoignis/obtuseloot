@@ -34,6 +34,7 @@ public class DashboardDataAssembler {
         data.put("heatmapJson", "../visualizations/trait-interaction-matrix.json");
         data.put("collapseMetrics", parseCollapse(analyticsRoot.resolve("ecosystem-health-report.md")));
         data.put("speciesNicheMetrics", parseSpeciesNicheMetrics(analyticsRoot));
+        data.put("coEvolutionMetrics", parseCoEvolutionMetrics(analyticsRoot));
         return data;
     }
 
@@ -93,6 +94,38 @@ public class DashboardDataAssembler {
         return out;
     }
 
+    private Map<String, Object> parseCoEvolutionMetrics(Path analyticsRoot) throws IOException {
+        Map<String, Object> out = new LinkedHashMap<>();
+        Path coEvolution = analyticsRoot.resolve("co-evolution-relationships.json");
+        if (!Files.exists(coEvolution)) {
+            return out;
+        }
+        String content = Files.readString(coEvolution);
+        out.put("averageCompetitionPressure", extractNumber(content, "averageCompetitionPressure"));
+        out.put("averageSupportPressure", extractNumber(content, "averageSupportPressure"));
+        out.put("nicheMigrationPressure", extractNumber(content, "nicheMigrationPressure"));
+        out.put("dominantAttractorConcentration", extractNumber(content, "dominantAttractorConcentration"));
+        out.put("speciesDiversity", extractNumber(content, "speciesDiversity"));
+        out.put("coOccurrenceNetworkSize", extractNumber(content, "coOccurrenceNetworkSize"));
+        out.put("competitivePairings", parsePairLabels(content, "competitiveRelationships"));
+        out.put("supportivePairings", parsePairLabels(content, "supportiveRelationships"));
+        return out;
+    }
+
+    private java.util.List<String> parsePairLabels(String content, String section) {
+        Pattern sectionPattern = Pattern.compile("\"" + Pattern.quote(section) + "\"\\s*:\\s*\\[(.*?)]", Pattern.DOTALL);
+        Matcher sectionMatcher = sectionPattern.matcher(content);
+        if (!sectionMatcher.find()) {
+            return java.util.List.of();
+        }
+        Matcher pairMatcher = Pattern.compile("\"pair\"\\s*:\\s*\"([^\"]+)\"").matcher(sectionMatcher.group(1));
+        java.util.List<String> pairs = new java.util.ArrayList<>();
+        while (pairMatcher.find() && pairs.size() < 5) {
+            pairs.add(pairMatcher.group(1));
+        }
+        return pairs;
+    }
+
     private double extractNumber(String content, String key) {
         Pattern pattern = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
         Matcher matcher = pattern.matcher(content);
@@ -123,5 +156,4 @@ public class DashboardDataAssembler {
         }
         return result;
     }
-
 }

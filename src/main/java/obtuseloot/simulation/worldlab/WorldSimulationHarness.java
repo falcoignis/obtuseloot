@@ -211,7 +211,12 @@ public class WorldSimulationHarness {
         }
 
         SpeciesNicheAnalyticsEngine.PenaltyResult penaltyResult = speciesNicheEngine.applyCrowdingPenalty(agent.artifact(), rep.getTotalScore());
-        int stage = Math.max(1, Math.min(5, (int) Math.round(penaltyResult.effectiveScore() / 20.0D)));
+        double evolvedScore = penaltyResult.effectiveScore();
+        if (config.enableCoEvolution()) {
+            SpeciesNicheAnalyticsEngine.CoEvolutionPressureResult coEvolutionResult = speciesNicheEngine.applyCoEvolutionPressure(agent.artifact(), evolvedScore);
+            evolvedScore = coEvolutionResult.effectiveScore();
+        }
+        int stage = Math.max(1, Math.min(5, (int) Math.round(evolvedScore / 20.0D)));
         AbilityProfile abilityProfile = abilityGenerator.generate(agent.artifact(), stage, memory);
         AbilityMutationResult mutationResult = mutationEngine.mutate(agent.artifact(), abilityProfile.abilities(), memory, agent.artifact().getDriftLevel() > 0);
         List<AbilityDefinition> finalDefinitions = mutationResult.abilities();
@@ -259,6 +264,7 @@ public class WorldSimulationHarness {
         Map<String, Object> speciationSummary = speciesNicheEngine.buildSpeciationSummary(lineageRegistry.speciesRegistry().allSpecies(), metrics.lineageCounts(), config.seasonCount());
         Map<String, Object> speciesNicheMap = speciesNicheEngine.buildSpeciesNicheMap(allArtifacts());
         Map<String, Object> crowdingDistribution = speciesNicheEngine.buildCrowdingDistribution(allArtifacts());
+        Map<String, Object> coEvolutionRelationships = speciesNicheEngine.buildCoEvolutionRelationships(allArtifacts());
         data.put("speciation", speciationSummary);
         data.put("niches", speciesNicheMap);
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
@@ -301,7 +307,7 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
-        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution);
+        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships);
         writeTraitProjectionPerformanceReport();
     }
 
@@ -494,7 +500,8 @@ public class WorldSimulationHarness {
 
     private void writeSpeciesAndNicheReports(Map<String, Object> speciationSummary,
                                              Map<String, Object> speciesNicheMap,
-                                             Map<String, Object> crowdingDistribution) throws IOException {
+                                             Map<String, Object> crowdingDistribution,
+                                             Map<String, Object> coEvolutionRelationships) throws IOException {
         Path analytics = Path.of("analytics");
         Path worldLab = analytics.resolve("world-lab");
         Path openEnded = worldLab.resolve("open-endedness");
@@ -504,6 +511,7 @@ public class WorldSimulationHarness {
         Files.writeString(analytics.resolve("speciation-distribution.json"), toJson(speciationSummary, 0));
         Files.writeString(analytics.resolve("species-niche-map.json"), toJson(speciesNicheMap, 0));
         Files.writeString(analytics.resolve("niche-crowding-distribution.json"), toJson(crowdingDistribution, 0));
+        Files.writeString(analytics.resolve("co-evolution-relationships.json"), toJson(coEvolutionRelationships, 0));
 
         String speciationReport = "# Speciation Report\n\n"
                 + "- Active species: " + speciationSummary.get("activeSpecies") + "\n"
@@ -534,6 +542,33 @@ public class WorldSimulationHarness {
                 + "- Risk analysis: bounded penalties (<=1.15x) reduce monoculture risk while preserving local adaptation pressure.\n";
         Files.writeString(analytics.resolve("niche-crowding-report.md"), crowdingReport);
 
+
+        String coEvolutionReport = "# Co-Evolution Report\n\n"
+                + "## 1. Scope / sample size\n"
+                + "- Sample size: " + coEvolutionRelationships.get("sampleSize") + " artifacts\n"
+                + "- Co-occurrence network size: " + coEvolutionRelationships.get("coOccurrenceNetworkSize") + " species pairs\n\n"
+                + "## 2. Relationship model summary\n"
+                + "- Inputs: species co-occurrence, trigger/mechanic overlap, branch overlap, environmental overlap, mixed survival lift.\n"
+                + "- Bounds: co-evolution modifier is clamped at +/-8%, niche-bias is clamped at +/-5%.\n"
+                + "- Pressure means: competition=" + coEvolutionRelationships.get("averageCompetitionPressure")
+                + ", support=" + coEvolutionRelationships.get("averageSupportPressure")
+                + ", migration=" + coEvolutionRelationships.get("nicheMigrationPressure")
+                + ", modifier=" + coEvolutionRelationships.get("averageModifier") + "\n\n"
+                + "## 3. Strongest competitive relationships\n"
+                + "- " + coEvolutionRelationships.get("competitiveRelationships") + "\n\n"
+                + "## 4. Strongest supportive relationships\n"
+                + "- " + coEvolutionRelationships.get("supportiveRelationships") + "\n\n"
+                + "## 5. Suspected co-evolutionary shifts\n"
+                + "- Niche migration pressure: " + coEvolutionRelationships.get("nicheMigrationPressure") + "\n"
+                + "- Co-evolution migration counts: " + speciesNicheMap.get("coEvolutionMigrationCounts") + "\n"
+                + "- Species persistence delta signal: " + coEvolutionRelationships.get("speciesPersistenceDelta") + "\n"
+                + "- Dominant attractor concentration: " + coEvolutionRelationships.get("dominantAttractorConcentration")
+                + ", species diversity: " + coEvolutionRelationships.get("speciesDiversity") + "\n\n"
+                + "## 6. Risks / caveats\n"
+                + "- Relationship quality depends on mixed-population sample coverage.\n"
+                + "- Co-evolution remains intentionally soft and should not be interpreted as hard counters.\n";
+        Files.writeString(analytics.resolve("co-evolution-report.md"), coEvolutionReport);
+
         String impactReview = "# Speciation Impact Review\n\n"
                 + "- Did speciation increase durable niches? yes, species occupancy now persists across dynamic niche clusters.\n"
                 + "- Do multiple species occupy different niches? yes, species-per-niche competition is tracked and non-zero.\n"
@@ -552,6 +587,21 @@ public class WorldSimulationHarness {
                 + "- Did underrepresented niches survive longer? occupancy and species-fraction distributions now explicitly tracked per niche.\n"
                 + "- Crowding events are observed whenever occupancy exceeds target=" + crowdingDistribution.get("targetOccupancy") + ".\n";
         Files.writeString(worldLab.resolve("niche-crowding-impact.md"), crowdingImpact);
+
+        String coEvolutionImpact = "# Co-Evolution Impact Review\n\n"
+                + "1. Did co-evolution increase durable niche count? adaptive niche timeline=" + speciationSummary.get("nicheCountTimeline") + " with migration pressure=" + coEvolutionRelationships.get("nicheMigrationPressure") + ".\n"
+                + "2. Did species specialize in response to other species? competition/support timelines=" + speciationSummary.get("coEvolutionCompetitionTimeline") + " / " + speciationSummary.get("coEvolutionSupportTimeline") + ".\n"
+                + "3. Did the dominant attractor weaken? dominant concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration") + ".\n"
+                + "4. Did divergence improve without instability? modifier timeline=" + speciationSummary.get("coEvolutionModifierTimeline") + " (bounded), migration timeline=" + speciationSummary.get("coEvolutionMigrationPressureTimeline") + ".\n";
+        Files.writeString(worldLab.resolve("co-evolution-impact-review.md"), coEvolutionImpact);
+
+        String coEvolutionOpenEndedness = "# Co-Evolution Open-Endedness Review\n\n"
+                + "- Species diversity over time: " + speciationSummary.get("speciesCountTimeline") + "\n"
+                + "- Niche diversity over time: " + speciationSummary.get("nicheCountTimeline") + "\n"
+                + "- Co-occurrence network changes: relationships=" + coEvolutionRelationships.get("coOccurrenceNetworkSize") + ", competitive=" + coEvolutionRelationships.get("competitiveRelationships") + ", supportive=" + coEvolutionRelationships.get("supportiveRelationships") + "\n"
+                + "- Long-run divergence improvement signal: co-evolution modifier timeline=" + speciationSummary.get("coEvolutionModifierTimeline") + "\n"
+                + "- Multiple competing attractors signal: dominant species concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + "\n";
+        Files.writeString(openEnded.resolve("co-evolution-open-endedness-review.md"), coEvolutionOpenEndedness);
 
         String openEndedReview = "# Speciation Open-Endedness Review\n\n"
                 + "- Species count vs time: " + speciationSummary.get("speciesCountTimeline") + "\n"

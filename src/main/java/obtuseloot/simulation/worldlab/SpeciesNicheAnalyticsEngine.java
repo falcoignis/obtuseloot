@@ -9,11 +9,21 @@ import java.util.*;
 
 public class SpeciesNicheAnalyticsEngine {
     public record PenaltyResult(double effectiveScore, double crowdingPenalty, String nicheId, boolean applied) {}
+    public record CoEvolutionPressureResult(double effectiveScore,
+                                            double modifier,
+                                            double competitionPressure,
+                                            double supportPressure,
+                                            double migrationPressure,
+                                            String dominantCompetitor,
+                                            String dominantSupport,
+                                            boolean applied) {}
 
     private static final double TARGET_OCCUPANCY = 0.18D;
     private static final double BETA = 0.4D;
     private static final double MIN_PENALTY = 1.0D;
     private static final double MAX_PENALTY = 1.15D;
+    private static final double MAX_COEVOLUTION_MODIFIER = 0.08D;
+    private static final double MAX_NICHE_BIAS = 0.05D;
 
     private final Random random;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
@@ -22,7 +32,15 @@ public class SpeciesNicheAnalyticsEngine {
     private final Map<String, Integer> speciesBirthSeason = new LinkedHashMap<>();
     private final Map<String, Integer> speciesDeathSeason = new LinkedHashMap<>();
     private final Map<String, Integer> speciesDominantNicheShifts = new LinkedHashMap<>();
+    private final Map<String, Integer> speciesCoEvolutionMigrationShifts = new LinkedHashMap<>();
     private final Map<String, String> lastSpeciesDominantNiche = new LinkedHashMap<>();
+    private final Map<String, SpeciesSignal> speciesSignals = new LinkedHashMap<>();
+    private final Map<String, PairSignal> pairSignals = new LinkedHashMap<>();
+    private final List<Double> coEvolutionCompetitionTimeline = new ArrayList<>();
+    private final List<Double> coEvolutionSupportTimeline = new ArrayList<>();
+    private final List<Double> coEvolutionModifierTimeline = new ArrayList<>();
+    private final List<Double> nicheMigrationPressureTimeline = new ArrayList<>();
+    private final List<Double> dominantSpeciesConcentrationTimeline = new ArrayList<>();
     private final Map<Integer, Integer> nicheEmergenceEvents = new LinkedHashMap<>();
     private final List<Double> dominantNicheShareTimeline = new ArrayList<>();
     private final List<Double> penaltyActivationTimeline = new ArrayList<>();
@@ -30,6 +48,11 @@ public class SpeciesNicheAnalyticsEngine {
     private final List<Integer> nicheCountTimeline = new ArrayList<>();
     private int activePenaltyCount;
     private int penaltyEvaluationCount;
+    private int coEvolutionEvaluationCount;
+    private double coEvolutionCompetitionTotal;
+    private double coEvolutionSupportTotal;
+    private double coEvolutionModifierTotal;
+    private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
@@ -58,12 +81,44 @@ public class SpeciesNicheAnalyticsEngine {
                                 boolean successful,
                                 int season,
                                 double crowdingPenalty) {
+        String speciesId = species.speciesId();
         double[] vector = featureVector(artifact, profile, successful, crowdingPenalty);
-        String nicheId = assignNiche(vector, season);
+        String nicheId = assignNiche(vector, season, speciesId);
+        updatePairSignals(speciesId, nicheId, successful);
         artifactMembership.put(artifact.getArtifactSeed(), new ArtifactNicheMembership(nicheId, vector, successful));
         NicheProfile niche = niches.get(nicheId);
-        niche.observe(vector, successful, species.speciesId());
-        speciesBirthSeason.putIfAbsent(species.speciesId(), season);
+        niche.observe(vector, successful, speciesId);
+        observeSpeciesSignal(speciesId, artifact, successful);
+        speciesBirthSeason.putIfAbsent(speciesId, season);
+    }
+
+    public CoEvolutionPressureResult applyCoEvolutionPressure(Artifact artifact, double score) {
+        coEvolutionEvaluationCount++;
+        String speciesId = artifact.getSpeciesId() == null ? "unknown" : artifact.getSpeciesId();
+        ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
+        if (membership == null || !speciesSignals.containsKey(speciesId)) {
+            return new CoEvolutionPressureResult(score, 0.0D, 0.0D, 0.0D, 0.0D, "none", "none", false);
+        }
+
+        RelationshipScore relationship = dominantRelationship(speciesId);
+        double migrationPressure = migrationPressure(speciesId, membership.nicheId());
+        double modifier = clamp((relationship.support() * 0.06D) - (relationship.competition() * 0.07D) - (migrationPressure * 0.03D),
+                -MAX_COEVOLUTION_MODIFIER,
+                MAX_COEVOLUTION_MODIFIER);
+        coEvolutionCompetitionTotal += relationship.competition();
+        coEvolutionSupportTotal += relationship.support();
+        coEvolutionModifierTotal += modifier;
+        coEvolutionMigrationPressureTotal += migrationPressure;
+
+        return new CoEvolutionPressureResult(
+                score * (1.0D + modifier),
+                modifier,
+                relationship.competition(),
+                relationship.support(),
+                migrationPressure,
+                relationship.competitor(),
+                relationship.supporter(),
+                Math.abs(modifier) > 0.0001D);
     }
 
     public Map<String, Object> closeSeason(int season, List<Artifact> artifacts) {
@@ -103,6 +158,11 @@ public class SpeciesNicheAnalyticsEngine {
         nicheCountTimeline.add(niches.size());
         dominantNicheShareTimeline.add(dominantShare(occupancy));
         penaltyActivationTimeline.add(activePenaltyRate());
+        coEvolutionCompetitionTimeline.add(avg(coEvolutionCompetitionTotal, coEvolutionEvaluationCount));
+        coEvolutionSupportTimeline.add(avg(coEvolutionSupportTotal, coEvolutionEvaluationCount));
+        coEvolutionModifierTimeline.add(avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
+        nicheMigrationPressureTimeline.add(avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
+        dominantSpeciesConcentrationTimeline.add(dominantShare(speciesPopulation(artifacts)));
 
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("nicheOccupancy", occupancy);
@@ -111,6 +171,10 @@ public class SpeciesNicheAnalyticsEngine {
         snapshot.put("activeSpecies", activeSpecies.size());
         snapshot.put("dominantNicheShare", dominantShare(occupancy));
         snapshot.put("crowdingPenaltyActivationRate", activePenaltyRate());
+        snapshot.put("coEvolutionCompetitionPressure", avg(coEvolutionCompetitionTotal, coEvolutionEvaluationCount));
+        snapshot.put("coEvolutionSupportPressure", avg(coEvolutionSupportTotal, coEvolutionEvaluationCount));
+        snapshot.put("coEvolutionModifier", avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
+        snapshot.put("coEvolutionMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
         return snapshot;
     }
 
@@ -137,6 +201,11 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("speciesNicheOccupancy", new LinkedHashMap<>(seasonSpeciesByNiche));
         out.put("nicheCountTimeline", nicheCountTimeline);
         out.put("speciesCountTimeline", speciesCountTimeline);
+        out.put("coEvolutionCompetitionTimeline", coEvolutionCompetitionTimeline);
+        out.put("coEvolutionSupportTimeline", coEvolutionSupportTimeline);
+        out.put("coEvolutionModifierTimeline", coEvolutionModifierTimeline);
+        out.put("coEvolutionMigrationPressureTimeline", nicheMigrationPressureTimeline);
+        out.put("dominantSpeciesConcentrationTimeline", dominantSpeciesConcentrationTimeline);
         return out;
     }
 
@@ -173,6 +242,25 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("competingSpeciesPerNiche", competingSpeciesPerNiche);
         out.put("nicheEmergenceEvents", nicheEmergenceEvents);
         out.put("speciesMigrationCounts", new LinkedHashMap<>(speciesDominantNicheShifts));
+        out.put("coEvolutionMigrationCounts", new LinkedHashMap<>(speciesCoEvolutionMigrationShifts));
+        return out;
+    }
+
+    public Map<String, Object> buildCoEvolutionRelationships(List<Artifact> artifacts) {
+        List<Map<String, Object>> competition = strongestPairs(true);
+        List<Map<String, Object>> support = strongestPairs(false);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("sampleSize", artifacts.size());
+        out.put("competitiveRelationships", competition);
+        out.put("supportiveRelationships", support);
+        out.put("nicheMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
+        out.put("averageCompetitionPressure", avg(coEvolutionCompetitionTotal, coEvolutionEvaluationCount));
+        out.put("averageSupportPressure", avg(coEvolutionSupportTotal, coEvolutionEvaluationCount));
+        out.put("averageModifier", avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
+        out.put("speciesPersistenceDelta", persistenceDelta());
+        out.put("dominantAttractorConcentration", dominantShare(speciesPopulation(artifacts)));
+        out.put("speciesDiversity", shannon(speciesPopulation(artifacts)));
+        out.put("coOccurrenceNetworkSize", pairSignals.size());
         return out;
     }
 
@@ -233,7 +321,7 @@ public class SpeciesNicheAnalyticsEngine {
         return activePenaltyCount / (double) penaltyEvaluationCount;
     }
 
-    private String assignNiche(double[] vector, int season) {
+    private String assignNiche(double[] vector, int season, String speciesId) {
         if (niches.isEmpty()) {
             return createNiche(vector, season);
         }
@@ -242,7 +330,7 @@ public class SpeciesNicheAnalyticsEngine {
         String bestNiche = null;
         double best = -1.0D;
         for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
-            double score = cosine(vector, entry.getValue().centroid());
+            double score = cosine(vector, entry.getValue().centroid()) + nicheCoEvolutionBias(speciesId, entry.getValue());
             scores.put(entry.getKey(), score);
             if (score > best) {
                 best = score;
@@ -291,6 +379,225 @@ public class SpeciesNicheAnalyticsEngine {
         }
         long occupied = artifactMembership.values().stream().filter(m -> nicheId.equals(m.nicheId())).count();
         return occupied / (double) artifactMembership.size();
+    }
+
+    private double nicheCoEvolutionBias(String speciesId, NicheProfile nicheProfile) {
+        if (speciesId == null || speciesId.isBlank()) {
+            return 0.0D;
+        }
+        int nicheTotal = Math.max(1, nicheProfile.speciesUse.values().stream().mapToInt(Integer::intValue).sum());
+        double bias = 0.0D;
+        for (Map.Entry<String, Integer> entry : nicheProfile.speciesUse.entrySet()) {
+            if (entry.getKey().equals(speciesId)) {
+                continue;
+            }
+            double presence = entry.getValue() / (double) nicheTotal;
+            double support = supportScore(speciesId, entry.getKey());
+            double competition = competitionScore(speciesId, entry.getKey());
+            bias += presence * ((support * 0.04D) - (competition * 0.05D));
+        }
+        return clamp(bias, -MAX_NICHE_BIAS, MAX_NICHE_BIAS);
+    }
+
+    private void observeSpeciesSignal(String speciesId, Artifact artifact, boolean successful) {
+        SpeciesSignal signal = speciesSignals.computeIfAbsent(speciesId, ignored -> new SpeciesSignal());
+        signal.observations++;
+        if (successful) {
+            signal.successes++;
+        }
+        addToken(signal.triggers, artifact.getLastTriggerProfile());
+        addToken(signal.mechanics, artifact.getLastMechanicProfile());
+        addToken(signal.branches, artifact.getLastAbilityBranchPath());
+        addToken(signal.environments, artifact.getDriftAlignment() + ":" + artifact.getEvolutionPath());
+    }
+
+    private void updatePairSignals(String speciesId, String nicheId, boolean successful) {
+        NicheProfile niche = niches.get(nicheId);
+        if (niche == null || niche.speciesUse.isEmpty()) {
+            return;
+        }
+        for (String other : niche.speciesUse.keySet()) {
+            if (other.equals(speciesId)) {
+                continue;
+            }
+            PairSignal pair = pairSignals.computeIfAbsent(pairKey(speciesId, other), ignored -> new PairSignal(speciesId, other));
+            pair.coOccurrences++;
+            if (successful) {
+                pair.successesWhenTogether++;
+            }
+        }
+    }
+
+    private RelationshipScore dominantRelationship(String speciesId) {
+        double bestCompetition = 0.0D;
+        String competitor = "none";
+        double bestSupport = 0.0D;
+        String supporter = "none";
+        for (String other : speciesSignals.keySet()) {
+            if (other.equals(speciesId)) {
+                continue;
+            }
+            double competition = competitionScore(speciesId, other);
+            double support = supportScore(speciesId, other);
+            if (competition > bestCompetition) {
+                bestCompetition = competition;
+                competitor = other;
+            }
+            if (support > bestSupport) {
+                bestSupport = support;
+                supporter = other;
+            }
+        }
+        return new RelationshipScore(bestCompetition, bestSupport, competitor, supporter);
+    }
+
+    private double competitionScore(String speciesA, String speciesB) {
+        SpeciesSignal a = speciesSignals.get(speciesA);
+        SpeciesSignal b = speciesSignals.get(speciesB);
+        if (a == null || b == null) {
+            return 0.0D;
+        }
+        PairSignal pair = pairSignals.get(pairKey(speciesA, speciesB));
+        double overlap = (jaccard(a.triggers, b.triggers) + jaccard(a.mechanics, b.mechanics) + jaccard(a.branches, b.branches)) / 3.0D;
+        double coOccurrence = pair == null ? 0.0D : pair.coOccurrences / (double) Math.max(1, Math.min(a.observations, b.observations));
+        double mixedSuccessLift = pair == null ? 0.0D : (pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences))
+                - ((a.successRate() + b.successRate()) / 2.0D);
+        return clamp((overlap * 0.6D) + (coOccurrence * 0.4D) - (Math.max(0.0D, mixedSuccessLift) * 0.3D), 0.0D, 1.0D);
+    }
+
+    private double supportScore(String speciesA, String speciesB) {
+        SpeciesSignal a = speciesSignals.get(speciesA);
+        SpeciesSignal b = speciesSignals.get(speciesB);
+        if (a == null || b == null) {
+            return 0.0D;
+        }
+        PairSignal pair = pairSignals.get(pairKey(speciesA, speciesB));
+        double envOverlap = jaccard(a.environments, b.environments);
+        double branchDistance = 1.0D - jaccard(a.branches, b.branches);
+        double mixedSuccessLift = pair == null ? 0.0D : (pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences))
+                - ((a.successRate() + b.successRate()) / 2.0D);
+        double coOccurrence = pair == null ? 0.0D : pair.coOccurrences / (double) Math.max(1, Math.min(a.observations, b.observations));
+        return clamp((Math.max(0.0D, mixedSuccessLift) * 0.7D) + (envOverlap * 0.15D) + (branchDistance * 0.1D) + (coOccurrence * 0.05D), 0.0D, 1.0D);
+    }
+
+    private double migrationPressure(String speciesId, String nicheId) {
+        NicheProfile niche = niches.get(nicheId);
+        if (niche == null) {
+            return 0.0D;
+        }
+        int total = Math.max(1, niche.speciesUse.values().stream().mapToInt(Integer::intValue).sum());
+        double occupancy = occupancyFor(nicheId);
+        double pressure = 0.0D;
+        for (Map.Entry<String, Integer> entry : niche.speciesUse.entrySet()) {
+            if (entry.getKey().equals(speciesId)) {
+                continue;
+            }
+            pressure += (entry.getValue() / (double) total) * competitionScore(speciesId, entry.getKey());
+        }
+        if (pressure > 0.35D && occupancy > TARGET_OCCUPANCY) {
+            speciesCoEvolutionMigrationShifts.merge(speciesId, 1, Integer::sum);
+        }
+        return clamp(pressure * occupancy, 0.0D, 1.0D);
+    }
+
+    private List<Map<String, Object>> strongestPairs(boolean competition) {
+        List<Map<String, Object>> relationships = new ArrayList<>();
+        for (PairSignal pair : pairSignals.values()) {
+            double score = competition ? competitionScore(pair.speciesA, pair.speciesB) : supportScore(pair.speciesA, pair.speciesB);
+            if (score < 0.05D) {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("pair", pair.speciesA + "<->" + pair.speciesB);
+            item.put("score", score);
+            item.put("coOccurrences", pair.coOccurrences);
+            item.put("survivalTogether", pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences));
+            relationships.add(item);
+        }
+        relationships.sort((left, right) -> Double.compare(((Number) right.get("score")).doubleValue(), ((Number) left.get("score")).doubleValue()));
+        return relationships.size() > 8 ? relationships.subList(0, 8) : relationships;
+    }
+
+    private Map<String, Integer> speciesPopulation(List<Artifact> artifacts) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (Artifact artifact : artifacts) {
+            counts.merge(artifact.getSpeciesId() == null ? "unknown" : artifact.getSpeciesId(), 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    private Map<String, Double> persistenceDelta() {
+        Map<String, Double> deltas = new LinkedHashMap<>();
+        for (String speciesId : speciesSignals.keySet()) {
+            SpeciesSignal signal = speciesSignals.get(speciesId);
+            double withSupport = 0.0D;
+            double isolated = signal.successRate();
+            int count = 0;
+            for (String other : speciesSignals.keySet()) {
+                if (speciesId.equals(other)) {
+                    continue;
+                }
+                withSupport += supportScore(speciesId, other);
+                count++;
+            }
+            deltas.put(speciesId, (count == 0 ? 0.0D : withSupport / count) - isolated);
+        }
+        return deltas;
+    }
+
+    private double jaccard(Map<String, Integer> left, Map<String, Integer> right) {
+        Set<String> keys = new LinkedHashSet<>(left.keySet());
+        keys.addAll(right.keySet());
+        if (keys.isEmpty()) {
+            return 0.0D;
+        }
+        int intersect = 0;
+        for (String key : keys) {
+            if (left.containsKey(key) && right.containsKey(key)) {
+                intersect++;
+            }
+        }
+        return intersect / (double) keys.size();
+    }
+
+    private void addToken(Map<String, Integer> target, String csv) {
+        if (csv == null || csv.isBlank()) {
+            return;
+        }
+        for (String raw : csv.split("[,]")) {
+            String token = raw.trim();
+            if (!token.isBlank()) {
+                target.merge(token, 1, Integer::sum);
+            }
+        }
+    }
+
+    private String pairKey(String speciesA, String speciesB) {
+        return speciesA.compareTo(speciesB) < 0 ? speciesA + "|" + speciesB : speciesB + "|" + speciesA;
+    }
+
+    private double shannon(Map<String, Integer> distribution) {
+        int total = distribution.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) {
+            return 0.0D;
+        }
+        double value = 0.0D;
+        for (int count : distribution.values()) {
+            if (count <= 0) {
+                continue;
+            }
+            double p = count / (double) total;
+            value -= p * Math.log(p);
+        }
+        return value;
+    }
+
+    private double avg(double total, int count) {
+        return count == 0 ? 0.0D : total / count;
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private Map<String, String> dominantNicheBySpecies(List<Artifact> artifacts) {
@@ -372,6 +679,32 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private record ArtifactNicheMembership(String nicheId, double[] vector, boolean successful) {}
+    private static final class PairSignal {
+        private final String speciesA;
+        private final String speciesB;
+        private int coOccurrences;
+        private int successesWhenTogether;
+
+        private PairSignal(String speciesA, String speciesB) {
+            this.speciesA = speciesA;
+            this.speciesB = speciesB;
+        }
+    }
+
+    private static final class SpeciesSignal {
+        private int observations;
+        private int successes;
+        private final Map<String, Integer> triggers = new LinkedHashMap<>();
+        private final Map<String, Integer> mechanics = new LinkedHashMap<>();
+        private final Map<String, Integer> branches = new LinkedHashMap<>();
+        private final Map<String, Integer> environments = new LinkedHashMap<>();
+
+        private double successRate() {
+            return successes / (double) Math.max(1, observations);
+        }
+    }
+
+    private record RelationshipScore(double competition, double support, String competitor, String supporter) {}
 
     private static final class NicheProfile {
         private final String nicheId;
