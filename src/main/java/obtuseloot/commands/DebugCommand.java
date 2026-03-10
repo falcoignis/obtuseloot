@@ -111,7 +111,27 @@ public class DebugCommand {
                     : "§aResolved artifact: §f" + resolved.getGeneratedName() + " §7key=§f" + resolved.getArtifactStorageKey());
             return true;
         }
-        sender.sendMessage("§cUsage: /" + label + " debug artifact [storage|resolve] [player]");
+        if ("cache".equalsIgnoreCase(args[1]) || "stats".equalsIgnoreCase(args[1])) {
+            var stats = plugin.getArtifactManager().cacheStats();
+            sender.sendMessage("§dActive Artifact Cache");
+            sender.sendMessage("§7enabled=§f" + stats.enabled() + " §7entries=§f" + stats.entries() + "§7/§f" + stats.maxEntries());
+            sender.sendMessage("§7dirty=§f" + stats.dirtyEntries() + " §7onlinePinned=§f" + stats.onlinePinnedEntries() + " §7subPinned=§f" + stats.subscriptionPinnedEntries());
+            sender.sendMessage("§7hits=§f" + stats.hits() + " §7misses=§f" + stats.misses() + " §7hitRate=§f" + String.format(java.util.Locale.ROOT, "%.2f%%", stats.hitRate() * 100.0D));
+            sender.sendMessage("§7backendLoads=§f" + stats.backendLoads() + " §7backendSaves=§f" + stats.backendSaves() + " §7idleMs=§f" + stats.idleExpiryMs());
+            if (args.length >= 3) {
+                Player target = Bukkit.getPlayerExact(args[2]);
+                if (target != null) {
+                    Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+                    var entry = plugin.getArtifactManager().cacheSnapshotByStorageKey().get(artifact.getArtifactStorageKey());
+                    if (entry != null) {
+                        sender.sendMessage("§7player=§f" + target.getName() + " §7key=§f" + artifact.getArtifactStorageKey()
+                                + " §7dirty=§f" + entry.dirty() + " §7gen=§f" + entry.generation());
+                    }
+                }
+            }
+            return true;
+        }
+        sender.sendMessage("§cUsage: /" + label + " debug artifact [storage|resolve|cache|stats] [player]");
         return true;
     }
 
@@ -375,6 +395,7 @@ public class DebugCommand {
         obtuseloot.config.RuntimeSettings.load(plugin.getConfig());
         obtuseloot.names.NamePoolManager.initialize(plugin);
         plugin.getItemAbilityManager().setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
+        plugin.getArtifactManager().invalidateAll("debug reload");
         if (!RuntimeSettings.get().triggerSubscriptionIndexing()) {
             plugin.getItemAbilityManager().clearAllSubscriptions();
         }
@@ -934,6 +955,7 @@ public class DebugCommand {
     }
 
     private void saveOnly(Player target) {
+        plugin.getArtifactManager().markDirty(target.getUniqueId());
         plugin.getArtifactManager().save(target.getUniqueId());
         plugin.getReputationManager().save(target.getUniqueId());
     }
@@ -1062,7 +1084,7 @@ public class DebugCommand {
                 "/" + label + " debug ability [player]",
                 "/" + label + " debug memory [show|reset] [player]",
                 "/" + label + " debug persistence [status|migrate <sqlite|mysql>]",
-                "/" + label + " debug artifact [storage|resolve] [player]",
+                "/" + label + " debug artifact [storage|resolve|cache|stats] [player]",
                 "/" + label + " debug ecosystem [bias|balance]",
                 "/" + label + " debug lineage [player]",
                 "/" + label + " debug genome interactions",

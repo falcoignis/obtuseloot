@@ -80,6 +80,7 @@ public class EngineScheduler {
                 if (artifact != null && artifact.isInstabilityExpired(now)) {
                     artifact.clearInstability();
                     artifact.addLoreHistory("Instability faded.");
+                    artifactManager.markDirty(artifact);
                 }
             }
         }, 100L, 100L);

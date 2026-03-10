@@ -66,6 +66,7 @@ public final class ArtifactProcessor {
         plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), artifact, rep, "kill-cycle-state-change");
         context.resetTransient();
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
     }
 
     public static void processCombat(Player player, EntityDamageByEntityEvent event) {
@@ -89,6 +90,7 @@ public final class ArtifactProcessor {
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_CHAIN_COMBAT, 1D, "combat-chain");
         applyCombatContextBonuses(player, context, rep, artifact);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
     }
 
     public static void processSimulatedCombat(Player player, double damage) {
@@ -112,6 +114,7 @@ public final class ArtifactProcessor {
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_CHAIN_COMBAT, 1D, "combat-chain");
         applyCombatContextBonuses(player, context, rep, artifact);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
     }
 
     public static void processSimulatedKill(Player player) {
