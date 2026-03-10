@@ -11,6 +11,7 @@ public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
 
     private long artifactSeed;
+    private String artifactStorageKey;
     private UUID ownerId;
     private ArtifactNaming naming;
     private String itemCategory;
@@ -55,6 +56,8 @@ public class Artifact {
     public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
         this.naming = new ArtifactNaming();
+        this.artifactStorageKey = buildDefaultStorageKey(ownerId);
+        this.generatedName = generatedName;
         this.itemCategory = "artifact";
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
@@ -115,6 +118,21 @@ public class Artifact {
     public String getTrueName() { return naming.getTrueName(); }
     public ArtifactNaming getNaming() { return naming; }
     public void setNaming(ArtifactNaming naming) { this.naming = naming == null ? new ArtifactNaming() : naming; }
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
+        if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
+            artifactStorageKey = buildDefaultStorageKey(ownerId);
+        }
+    }
+    public String getArtifactStorageKey() { return artifactStorageKey; }
+    public void setArtifactStorageKey(String artifactStorageKey) {
+        if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
+            this.artifactStorageKey = buildDefaultStorageKey(ownerId);
+            return;
+        }
+        this.artifactStorageKey = artifactStorageKey;
+    }
+    public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return naming.getDisplayName(); }
     public void setItemCategory(String itemCategory) { this.itemCategory = itemCategory; }
@@ -208,5 +226,9 @@ public class Artifact {
         if (history.size() > MAX_HISTORY_ENTRIES) {
             history.remove(0);
         }
+    }
+
+    public static String buildDefaultStorageKey(UUID ownerId) {
+        return "player:" + ownerId;
     }
 }

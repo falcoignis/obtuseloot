@@ -83,11 +83,36 @@ public class DebugCommand {
             case "genome" -> genome(sender, label, args);
             case "projection" -> projection(sender, args);
             case "subscriptions" -> subscriptions(sender, label, args);
+            case "artifact" -> artifactStorage(sender, label, args);
             default -> {
                 sender.sendMessage("§cUnknown debug subcommand. Try /" + label + " debug help");
                 yield true;
             }
         };
+    }
+
+    private boolean artifactStorage(CommandSender sender, String label, String[] args) {
+        if (args.length < 2 || "storage".equalsIgnoreCase(args[1])) {
+            Player target = resolveTarget(sender, label, args, 2, "artifact storage");
+            if (target == null) return true;
+            Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+            String handDescription = plugin.getArtifactItemStorage().describeItemStorage(target.getInventory().getItemInMainHand());
+            sender.sendMessage("§dArtifact storage for " + target.getName());
+            sender.sendMessage("§7backend=§f" + plugin.getPersistenceManager().backendName() + " §7storageKey=§f" + artifact.getArtifactStorageKey());
+            sender.sendMessage("§7owner=§f" + artifact.getOwnerId() + " §7mainHand=§f" + handDescription);
+            return true;
+        }
+        if ("resolve".equalsIgnoreCase(args[1])) {
+            Player target = resolveTarget(sender, label, args, 2, "artifact resolve");
+            if (target == null) return true;
+            Artifact resolved = plugin.getArtifactItemStorage().resolve(target.getInventory().getItemInMainHand(), target.getUniqueId());
+            sender.sendMessage(resolved == null
+                    ? "§cCould not resolve artifact from main-hand item."
+                    : "§aResolved artifact: §f" + resolved.getGeneratedName() + " §7key=§f" + resolved.getArtifactStorageKey());
+            return true;
+        }
+        sender.sendMessage("§cUsage: /" + label + " debug artifact [storage|resolve] [player]");
+        return true;
     }
 
     private boolean inspect(CommandSender sender, String label, String[] args) {
@@ -801,10 +826,20 @@ public class DebugCommand {
         }
         if ("migrate".equals(action)) {
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /" + label + " debug persistence migrate yaml-to-sqlite|yaml-to-mysql");
+                sender.sendMessage("§cUsage: /" + label + " debug persistence migrate yaml-to-sqlite|yaml-to-mysql|nbt-artifacts");
                 return true;
             }
             String mode = args[2].toLowerCase(Locale.ROOT);
+            if ("nbt-artifacts".equals(mode) || "migrate-nbt-artifacts".equals(mode)) {
+                int players = 0;
+                int migrated = 0;
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    players++;
+                    migrated += plugin.getArtifactItemStorage().migrateInventory(online);
+                }
+                sender.sendMessage("§aNBT artifact migration scan complete. onlinePlayers=§f" + players + "§a migratedItems=§f" + migrated);
+                return true;
+            }
             PersistenceMigrator migrator = new PersistenceMigrator(plugin);
             try {
                 int count;
@@ -829,6 +864,7 @@ public class DebugCommand {
         sender.sendMessage("§cUsage: /" + label + " debug persistence [backend|test|migrate]");
         return true;
     }
+
     private boolean subscriptions(CommandSender sender, String label, String[] args) {
         if (args.length >= 2 && "stats".equalsIgnoreCase(args[1])) {
             var stats = plugin.getItemAbilityManager().indexStats();
@@ -1026,6 +1062,7 @@ public class DebugCommand {
                 "/" + label + " debug ability [player]",
                 "/" + label + " debug memory [show|reset] [player]",
                 "/" + label + " debug persistence [status|migrate <sqlite|mysql>]",
+                "/" + label + " debug artifact [storage|resolve] [player]",
                 "/" + label + " debug ecosystem [bias|balance]",
                 "/" + label + " debug lineage [player]",
                 "/" + label + " debug genome interactions",
