@@ -21,6 +21,7 @@ public record WorldSimulationConfig(
         boolean enableSelfBalancingAdjustments,
         boolean enableEnvironmentalPressure,
         boolean enableTraitInteractions,
+        boolean enableCoEvolution,
         ScoringMode scoringMode
 ) {
     public static WorldSimulationConfig defaults() {
@@ -37,6 +38,7 @@ public record WorldSimulationConfig(
                 1.0D,
                 1.0D,
                 "analytics/world-lab",
+                true,
                 true,
                 true,
                 true,

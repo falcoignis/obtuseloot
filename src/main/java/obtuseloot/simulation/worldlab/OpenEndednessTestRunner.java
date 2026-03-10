@@ -31,13 +31,13 @@ public final class OpenEndednessTestRunner {
 
         List<WorldSpec> worlds = List.of(
                 new WorldSpec("A", "world-a-full-system", "World A — Full System",
-                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, true)),
+                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, true, true)),
                 new WorldSpec("B", "world-b-no-ede", "World B — No Experience-Driven Evolution",
-                        cfg(defaults, players, seasons, sessions, false, true, true, true, true, true)),
+                        cfg(defaults, players, seasons, sessions, false, true, true, true, true, true, true)),
                 new WorldSpec("C", "world-c-no-bias-diversity", "World C — No Ecosystem Bias / Diversity Preservation",
-                        cfg(defaults, players, seasons, sessions, true, false, false, false, false, true)),
+                        cfg(defaults, players, seasons, sessions, true, false, false, false, false, true, true)),
                 new WorldSpec("D", "world-d-no-trait-interactions", "World D — No Trait Interaction Layer",
-                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, false))
+                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, false, true))
         );
 
         Path outputDir = Path.of("analytics/world-lab/open-endedness");
@@ -66,6 +66,7 @@ public final class OpenEndednessTestRunner {
         Files.writeString(outputDir.resolve("meta-divergence-test-report.md"), reportMarkdown(results));
         Files.writeString(outputDir.resolve("review-first.md"), reviewFirstMarkdown(classification));
         Files.writeString(outputDir.resolve("speciation-open-endedness-review.md"), speciationOpenEndednessReview(results));
+        Files.writeString(outputDir.resolve("co-evolution-open-endedness-review.md"), coEvolutionOpenEndednessReview(results));
 
         renderCharts(outputDir, results);
     }
@@ -79,14 +80,15 @@ public final class OpenEndednessTestRunner {
                                              boolean diversity,
                                              boolean selfBalancing,
                                              boolean environmentPressure,
-                                             boolean traitInteractions) {
+                                             boolean traitInteractions,
+                                             boolean coEvolution) {
         return new WorldSimulationConfig(
                 defaults.seed(), players, defaults.artifactsPerPlayer(), sessions, seasons,
                 defaults.bossFrequency(), defaults.encounterDensity(),
                 defaults.chaosEventRate(), defaults.lowHealthEventRate(),
                 defaults.mutationPressureMultiplier(), defaults.memoryEventMultiplier(),
                 defaults.outputDirectory(), ede, ecosystemBias, diversity, selfBalancing,
-                environmentPressure, traitInteractions, defaults.scoringMode());
+                environmentPressure, traitInteractions, coEvolution, defaults.scoringMode());
     }
 
     private static Map<String, Object> summarize(List<Map<String, Object>> seasonal) {
@@ -130,6 +132,10 @@ public final class OpenEndednessTestRunner {
         summary.put("adaptiveNicheCountTrend", simpleSeries(seasonal, "nicheCount"));
         summary.put("crowdingPenaltyActivationTrend", simpleSeries(seasonal, "crowdingPenaltyActivationRate"));
         summary.put("dominantNicheShareTrend", simpleSeries(seasonal, "dominantNicheShare"));
+        summary.put("coEvolutionCompetitionTrend", simpleSeries(seasonal, "coEvolutionCompetitionPressure"));
+        summary.put("coEvolutionSupportTrend", simpleSeries(seasonal, "coEvolutionSupportPressure"));
+        summary.put("coEvolutionModifierTrend", simpleSeries(seasonal, "coEvolutionModifier"));
+        summary.put("coEvolutionMigrationTrend", simpleSeries(seasonal, "coEvolutionMigrationPressure"));
         return summary;
     }
 
@@ -244,6 +250,19 @@ public final class OpenEndednessTestRunner {
                 + "- Dominant niche share over time: " + summary.getOrDefault("dominantNicheShareTrend", List.of()) + "\n"
                 + "- Crowding penalty activation over time: " + summary.getOrDefault("crowdingPenaltyActivationTrend", List.of()) + "\n\n"
                 + "Adaptive niches with crowding dampening maintain divergence pressure while reducing niche monoculture lock-in risk.\n";
+    }
+
+    private static String coEvolutionOpenEndednessReview(Map<String, Map<String, Object>> results) {
+        Map<String, Object> summary = castMap(results.get("A").get("summary"));
+        return "# Co-Evolution Open-Endedness Review\n\n"
+                + "- Species diversity over time: " + summary.getOrDefault("speciesCountTrend", List.of()) + "\n"
+                + "- Niche diversity over time: " + summary.getOrDefault("adaptiveNicheCountTrend", List.of()) + "\n"
+                + "- Co-occurrence network changes (proxy): competition/support pressure trends = "
+                + summary.getOrDefault("coEvolutionCompetitionTrend", List.of()) + " / "
+                + summary.getOrDefault("coEvolutionSupportTrend", List.of()) + "\n"
+                + "- Long-run divergence signal from co-evolution modifier: " + summary.getOrDefault("coEvolutionModifierTrend", List.of()) + "\n"
+                + "- Multiple competing attractors signal: dominant niche share trend=" + summary.getOrDefault("dominantNicheShareTrend", List.of())
+                + ", migration trend=" + summary.getOrDefault("coEvolutionMigrationTrend", List.of()) + "\n";
     }
 
     private static String comparisonMarkdown(Map<String, Map<String, Object>> results) {
