@@ -1,7 +1,7 @@
 package obtuseloot.artifacts;
 
 import obtuseloot.ObtuseLoot;
-import obtuseloot.names.ArtifactNameGenerator;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.persistence.PlayerStateStore;
 
 import java.util.Map;
@@ -23,6 +23,9 @@ public class ArtifactManager {
         return loadedArtifacts.computeIfAbsent(playerId, id -> {
             Artifact loaded = stateStore.loadArtifact(id);
             Artifact artifact = loaded != null ? loaded : ArtifactGenerator.generateFor(id);
+            if (loaded != null && loaded.getNaming() == null) {
+                loaded.setNaming(ArtifactNameResolver.initialize(loaded));
+            }
             if (ObtuseLoot.get() != null) {
                 ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
             }
@@ -37,18 +40,9 @@ public class ArtifactManager {
         }
     }
 
-    public void saveAll() {
-        loadedArtifacts.forEach(stateStore::saveArtifact);
-    }
-
-    public void unload(UUID playerId) {
-        save(playerId);
-        loadedArtifacts.remove(playerId);
-    }
-
-    public Map<UUID, Artifact> getLoadedArtifacts() {
-        return loadedArtifacts;
-    }
+    public void saveAll() { loadedArtifacts.forEach(stateStore::saveArtifact); }
+    public void unload(UUID playerId) { save(playerId); loadedArtifacts.remove(playerId); }
+    public Map<UUID, Artifact> getLoadedArtifacts() { return loadedArtifacts; }
 
     public Artifact recreate(UUID playerId) {
         Artifact existing = loadedArtifacts.get(playerId);
@@ -76,17 +70,13 @@ public class ArtifactManager {
         return artifact;
     }
 
-    public void regenerateBaselineIdentity(Artifact artifact) {
-        regenerateBaselineIdentity(artifact, artifact.getArtifactSeed());
-    }
+    public void regenerateBaselineIdentity(Artifact artifact) { regenerateBaselineIdentity(artifact, artifact.getArtifactSeed()); }
 
     public void regenerateBaselineIdentity(Artifact artifact, long seed) {
         seedFactory.regenerateFromSeed(artifact, seed);
-        artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(seed));
         artifact.setItemCategory(ArtifactGenerator.resolveCategory(seed));
+        artifact.setNaming(ArtifactNameResolver.initialize(artifact));
     }
 
-    public long rollSeed() {
-        return ThreadLocalRandom.current().nextLong();
-    }
+    public long rollSeed() { return ThreadLocalRandom.current().nextLong(); }
 }

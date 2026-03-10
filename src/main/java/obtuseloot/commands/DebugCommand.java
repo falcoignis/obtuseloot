@@ -93,7 +93,7 @@ public class DebugCommand {
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
 
         sender.sendMessage("§d=== Obtuse Debug Inspect: " + target.getName() + " ===");
-        sender.sendMessage("§7name=§f" + artifact.getGeneratedName() + " §7archetype=§f" + artifact.getArchetypePath()
+        sender.sendMessage("§7name=§f" + artifact.getDisplayName() + " §7archetype=§f" + artifact.getArchetypePath()
                 + " §7evolution=§f" + artifact.getEvolutionPath());
         sender.sendMessage("§7awakening=§f" + artifact.getAwakeningPath() + " §7fusion=§f" + artifact.getFusionPath());
         sender.sendMessage("§7driftLevel=§f" + artifact.getDriftLevel() + " §7totalDrifts=§f" + artifact.getTotalDrifts()
@@ -758,7 +758,7 @@ public class DebugCommand {
         if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         sender.sendMessage("§a" + target.getName() + " seed export: §f" + artifact.getArtifactSeed());
-        sender.sendMessage("§7name=§f" + artifact.getGeneratedName() + " §7lineage=§f" + artifact.getLatentLineage() + " §7currentDriftAlignment=§f" + artifact.getDriftAlignment());
+        sender.sendMessage("§7name=§f" + artifact.getDisplayName() + " §7lineage=§f" + artifact.getLatentLineage() + " §7currentDriftAlignment=§f" + artifact.getDriftAlignment());
         return true;
     }
 

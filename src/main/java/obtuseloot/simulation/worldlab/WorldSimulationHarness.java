@@ -12,7 +12,7 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.analytics.TraitInteractionReportWriter;
 import obtuseloot.artifacts.ArtifactSeedFactory;
-import obtuseloot.names.ArtifactNameGenerator;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
@@ -106,9 +106,11 @@ public class WorldSimulationHarness {
             for (int j = 0; j < config.artifactsPerPlayer(); j++) {
                 long artifactSeed = deterministicSeed(i, j);
                 initialSeedPool.add(artifactSeed);
-                Artifact artifact = new Artifact(UUID.randomUUID(), ArtifactNameGenerator.generateFromSeed(artifactSeed));
+                Artifact artifact = new Artifact(UUID.randomUUID());
+                artifact.setArtifactSeed(artifactSeed);
                 artifact.resetMutableState();
                 seedFactory.applySeedProfile(artifact, artifactSeed);
+                artifact.setNaming(ArtifactNameResolver.initialize(artifact));
                 artifacts.add(new SimulatedArtifactAgent(artifact));
             }
             metrics.recordPlayerProfile(profile);

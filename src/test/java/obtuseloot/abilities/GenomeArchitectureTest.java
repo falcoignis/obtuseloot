@@ -131,7 +131,7 @@ class GenomeArchitectureTest {
     }
 
     private Artifact artifactFor(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "Test");
+        Artifact artifact = new Artifact(UUID.randomUUID());
         artifact.setArtifactSeed(seed);
         artifact.setSeedPrecisionAffinity(0.3D);
         artifact.setSeedBrutalityAffinity(0.3D);

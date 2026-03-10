@@ -3,7 +3,7 @@ package obtuseloot.persistence;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactSeedFactory;
 import obtuseloot.memory.ArtifactMemoryEvent;
-import obtuseloot.names.ArtifactNameGenerator;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.plugin.Plugin;
 
@@ -73,11 +73,12 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
             ps.setString(1, playerId.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return null;
-                Artifact artifact = new Artifact(playerId, rs.getString("generated_name"));
+                Artifact artifact = new Artifact(playerId);
                 artifact.setOwnerId(UUID.fromString(rs.getString("owner_uuid")));
                 artifact.setArtifactSeed(rs.getLong("artifact_seed"));
                 seedFactory.applySeedProfile(artifact, artifact.getArtifactSeed());
-                artifact.setGeneratedName(nullToDefault(rs.getString("generated_name"), ArtifactNameGenerator.generateFromSeed(artifact.getArtifactSeed())));
+                artifact.setNaming(ArtifactNameResolver.initialize(artifact));
+                artifact.setDisplayName(nullToDefault(rs.getString("generated_name"), artifact.getDisplayName()));
                 artifact.setItemCategory(nullToDefault(rs.getString("item_category"), "artifact"));
                 artifact.setArchetypePath(nullToDefault(rs.getString("archetype"), "unformed"));
                 artifact.setEvolutionPath(nullToDefault(rs.getString("evolution_path"), "base"));
@@ -175,7 +176,7 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
 
     private void bindArtifact(PreparedStatement ps, UUID playerId, Artifact artifact) throws SQLException { /* same */
         ps.setString(1, playerId.toString()); ps.setLong(2, artifact.getArtifactSeed()); ps.setString(3, artifact.getOwnerId().toString());
-        ps.setString(4, artifact.getGeneratedName()); ps.setString(5, artifact.getItemCategory()); ps.setString(6, artifact.getArchetypePath());
+        ps.setString(4, artifact.getDisplayName()); ps.setString(5, artifact.getItemCategory()); ps.setString(6, artifact.getArchetypePath());
         ps.setString(7, artifact.getEvolutionPath()); ps.setString(8, artifact.getDriftAlignment()); ps.setString(9, artifact.getAwakeningPath());
         ps.setString(10, artifact.getFusionPath()); ps.setString(11, artifact.getLastAbilityBranchPath()); ps.setString(12, artifact.getLastMutationHistory());
         ps.setString(13, artifact.getLastMemoryInfluence()); ps.setInt(14, artifact.getDriftLevel()); ps.setInt(15, artifact.getTotalDrifts());

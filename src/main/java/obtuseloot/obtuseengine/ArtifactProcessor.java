@@ -10,6 +10,7 @@ import obtuseloot.config.RuntimeSettings;
 import obtuseloot.drift.DriftMutation;
 import obtuseloot.fusion.FusionEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -214,5 +215,6 @@ public final class ArtifactProcessor {
         if (oldDriftLevel != artifact.getDriftLevel()) {
             artifact.addLoreHistory("Drift level increased to " + artifact.getDriftLevel());
         }
+        ArtifactNameResolver.refresh(artifact, artifact.getNaming());
     }
 }

@@ -83,7 +83,7 @@ public final class PlayerDataMigrator {
         @Override
         public void migrate(YamlConfiguration yaml) {
             moveIfAbsent(yaml, "artifact.seed", "artifact.artifact-seed");
-            moveIfAbsent(yaml, "artifact.name", "artifact.generated-name");
+            moveIfAbsent(yaml, "artifact.name", "artifact.naming.display-name");
             moveIfAbsent(yaml, "artifact.archetype", "artifact.archetype-path");
             moveIfAbsent(yaml, "artifact.evolution", "artifact.evolution-path");
             moveIfAbsent(yaml, "artifact.awakening", "artifact.awakening-path");
@@ -108,8 +108,8 @@ public final class PlayerDataMigrator {
         @Override
         public void migrate(YamlConfiguration yaml) {
             if (yaml.isConfigurationSection("artifact")) {
-                if (!yaml.contains("artifact.generated-name") && yaml.contains("artifact.name")) {
-                    yaml.set("artifact.generated-name", yaml.getString("artifact.name"));
+                if (!yaml.contains("artifact.naming.display-name") && yaml.contains("artifact.name")) {
+                    yaml.set("artifact.naming.display-name", yaml.getString("artifact.name"));
                 }
                 if (!yaml.contains("artifact.current-instability-state")) {
                     yaml.set("artifact.current-instability-state", "none");
