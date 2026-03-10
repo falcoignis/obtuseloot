@@ -1,6 +1,6 @@
 # Niche Evolution Report
 
 - Niche formation and emergence events: {1=1}
-- Species migration between niches: {species-root-wild-36790=1, species-root-wild-3085=1, species-root-lineage-4c8d5de8-9bab-3b89-9b29-bba8e6b6a172=1, species-root-stormbound=1, species-root-lineage-b5d704bb-ecac-3d18-a914-40b55f2ebd82=1, species-root-lineage-cad9ffb8-fe46-3641-a19b-3f4d570d3e92=1, species-root-lineage-d92d041b-5cf6-3ec1-ab49-01a59cd531b1=1, species-root-lineage-799c6c87-9b2c-3c6b-8bdd-e42aeafd4506=1, species-root-lineage-98c7a63a-7d2f-31e9-aca2-af9512cd8a3d=1, species-root-lineage-ebd1bbc2-4788-3758-b450-4fe1068849a6=1, species-root-lineage-d82b13ba-3aed-3916-94b9-267418e69152=1, species-root-lineage-041c3ced-7faa-3611-a463-b9a3a6192b6a=1, species-root-lineage-eedde689-5736-3cef-9d96-7fd042905a66=1, species-root-lineage-4dd28acf-cae4-3f0f-9dc9-a8bc31834bc7=1, species-root-lineage-c0292b16-5f48-3f5e-bdc8-87b92d11e266=1, species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e=1, species-root-lineage-ffaad374-a8c1-32ff-b9c8-0b91266fa2cc=1, species-root-lineage-c59325ac-a1f9-3a42-acc1-83d85544f913=1, species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402=1, species-root-lineage-742b4804-b35f-3d7f-b1f0-af932378a07d=1, species-root-lineage-7a85fe80-877c-3af5-883d-abbe6f8729e7=1}
+- Species migration between niches: {}
 - Niche expansion/collapse indicators: dominant share + occupancy distribution in crowding analytics.
-- Niche diversity increase over time: [1, 1]
+- Niche diversity increase over time: [2, 2]

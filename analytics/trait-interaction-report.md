@@ -1,23 +1,23 @@
 # Trait Interaction Report
 
-1. **Sample size:** 118
+1. **Sample size:** 218
 2. **Most common trait pairings:**
-   - resonance × resonance -> 60
-   - volatility × volatility -> 60
-   - kineticbias × kineticbias -> 57
-   - chaosaffinity × chaosaffinity -> 56
-   - mutationsensitivity × mutationsensitivity -> 56
+   - stability × stability -> 107
+   - chaosaffinity × chaosaffinity -> 105
+   - mobilityaffinity × mobilityaffinity -> 103
+   - kineticbias × kineticbias -> 102
+   - volatility × volatility -> 102
 3. **Rare or absent trait pairings:**
-   - mutationsensitivity × stability -> 20
-   - kineticbias × precisionaffinity -> 21
-   - mutationsensitivity × precisionaffinity -> 21
-   - kineticbias × mutationsensitivity -> 22
-   - stability × survivalinstinct -> 23
+   - kineticbias × mutationsensitivity -> 37
+   - resonance × survivalinstinct -> 37
+   - mutationsensitivity × precisionaffinity -> 38
+   - mutationsensitivity × survivalinstinct -> 38
+   - precisionaffinity × volatility -> 38
 
 ## Interpretation
-- Suspiciously dominant pairing: **resonance × resonance** at 60 counts. This may indicate hidden weighting in ability branch resolution or genome trait interpolation.
-- Suppressed pairing: **mutationsensitivity × stability** at 20 counts. This may indicate missing interaction support in mutation, awakening, or lineage inheritance paths.
-- Likely hidden generator bias appears when one pair exceeds ~70% of observed max intensity (max 60).
+- Suspiciously dominant pairing: **stability × stability** at 107 counts. This may indicate hidden weighting in ability branch resolution or genome trait interpolation.
+- Suppressed pairing: **kineticbias × mutationsensitivity** at 37 counts. This may indicate missing interaction support in mutation, awakening, or lineage inheritance paths.
+- Likely hidden generator bias appears when one pair exceeds ~70% of observed max intensity (max 107).
 - Lineage lock-in risk rises when top pairings repeatedly include stability/precision/resonance without offsetting chaos/mobility variation.
 
 ## Recommended review actions
