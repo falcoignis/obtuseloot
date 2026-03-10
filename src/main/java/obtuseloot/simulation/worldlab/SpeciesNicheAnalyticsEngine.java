@@ -99,7 +99,7 @@ public class SpeciesNicheAnalyticsEngine {
         artifactMembership.put(artifact.getArtifactSeed(), new ArtifactNicheMembership(nicheId, vector, successful));
         NicheProfile niche = niches.get(nicheId);
         niche.observe(vector, successful, speciesId, profile, artifact);
-        observeSpeciesSignal(speciesId, artifact, successful);
+        observeSpeciesSignal(speciesId, artifact, successful, nicheId);
         speciesBirthSeason.putIfAbsent(speciesId, season);
     }
 
@@ -337,10 +337,14 @@ public class SpeciesNicheAnalyticsEngine {
     public Map<String, Object> buildCoEvolutionRelationships(List<Artifact> artifacts) {
         List<Map<String, Object>> competition = strongestPairs(true);
         List<Map<String, Object>> support = strongestPairs(false);
+        List<Map<String, Object>> suppression = strongestSuppressionPairs();
+        List<Map<String, Object>> migrationPressure = strongestMigrationPressures();
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("sampleSize", artifacts.size());
         out.put("competitiveRelationships", competition);
         out.put("supportiveRelationships", support);
+        out.put("suppressionRelationships", suppression);
+        out.put("migrationPressureRelationships", migrationPressure);
         out.put("nicheMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
         out.put("averageCompetitionPressure", avg(coEvolutionCompetitionTotal, coEvolutionEvaluationCount));
         out.put("averageSupportPressure", avg(coEvolutionSupportTotal, coEvolutionEvaluationCount));
@@ -498,7 +502,7 @@ public class SpeciesNicheAnalyticsEngine {
         return clamp(bias, -MAX_NICHE_BIAS, MAX_NICHE_BIAS);
     }
 
-    private void observeSpeciesSignal(String speciesId, Artifact artifact, boolean successful) {
+    private void observeSpeciesSignal(String speciesId, Artifact artifact, boolean successful, String nicheId) {
         SpeciesSignal signal = speciesSignals.computeIfAbsent(speciesId, ignored -> new SpeciesSignal());
         signal.observations++;
         if (successful) {
@@ -508,6 +512,7 @@ public class SpeciesNicheAnalyticsEngine {
         addToken(signal.mechanics, artifact.getLastMechanicProfile());
         addToken(signal.branches, artifact.getLastAbilityBranchPath());
         addToken(signal.environments, artifact.getDriftAlignment() + ":" + artifact.getEvolutionPath());
+        signal.niches.merge(nicheId, 1, Integer::sum);
     }
 
     private void updatePairSignals(String speciesId, String nicheId, boolean successful) {
@@ -521,6 +526,7 @@ public class SpeciesNicheAnalyticsEngine {
             }
             PairSignal pair = pairSignals.computeIfAbsent(pairKey(speciesId, other), ignored -> new PairSignal(speciesId, other));
             pair.coOccurrences++;
+            pair.sharedNicheOccurrences++;
             if (successful) {
                 pair.successesWhenTogether++;
             }
@@ -559,9 +565,12 @@ public class SpeciesNicheAnalyticsEngine {
         PairSignal pair = pairSignals.get(pairKey(speciesA, speciesB));
         double overlap = (jaccard(a.triggers, b.triggers) + jaccard(a.mechanics, b.mechanics) + jaccard(a.branches, b.branches)) / 3.0D;
         double coOccurrence = pair == null ? 0.0D : pair.coOccurrences / (double) Math.max(1, Math.min(a.observations, b.observations));
+        double sameNiche = nicheOverlap(a, b);
+        double directionalDisadvantage = clamp(b.successRate() - a.successRate(), 0.0D, 1.0D);
         double mixedSuccessLift = pair == null ? 0.0D : (pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences))
                 - ((a.successRate() + b.successRate()) / 2.0D);
-        return clamp((overlap * 0.6D) + (coOccurrence * 0.4D) - (Math.max(0.0D, mixedSuccessLift) * 0.3D), 0.0D, 1.0D);
+        return clamp((overlap * 0.38D) + (coOccurrence * 0.18D) + (sameNiche * 0.32D)
+                + (directionalDisadvantage * 0.22D) - (Math.max(0.0D, mixedSuccessLift) * 0.24D), 0.0D, 1.0D);
     }
 
     private double supportScore(String speciesA, String speciesB) {
@@ -573,10 +582,12 @@ public class SpeciesNicheAnalyticsEngine {
         PairSignal pair = pairSignals.get(pairKey(speciesA, speciesB));
         double envOverlap = jaccard(a.environments, b.environments);
         double branchDistance = 1.0D - jaccard(a.branches, b.branches);
+        double nicheComplementarity = 1.0D - nicheOverlap(a, b);
         double mixedSuccessLift = pair == null ? 0.0D : (pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences))
                 - ((a.successRate() + b.successRate()) / 2.0D);
         double coOccurrence = pair == null ? 0.0D : pair.coOccurrences / (double) Math.max(1, Math.min(a.observations, b.observations));
-        return clamp((Math.max(0.0D, mixedSuccessLift) * 0.7D) + (envOverlap * 0.15D) + (branchDistance * 0.1D) + (coOccurrence * 0.05D), 0.0D, 1.0D);
+        return clamp((Math.max(0.0D, mixedSuccessLift) * 0.55D) + (envOverlap * 0.17D)
+                + (branchDistance * 0.12D) + (nicheComplementarity * 0.12D) + (coOccurrence * 0.04D), 0.0D, 1.0D);
     }
 
     private double migrationPressure(String speciesId, String nicheId) {
@@ -591,12 +602,25 @@ public class SpeciesNicheAnalyticsEngine {
             if (entry.getKey().equals(speciesId)) {
                 continue;
             }
-            pressure += (entry.getValue() / (double) total) * competitionScore(speciesId, entry.getKey());
+            double nicheCompetition = competitionScore(speciesId, entry.getKey()) * sameNicheFraction(speciesId, entry.getKey());
+            pressure += (entry.getValue() / (double) total) * nicheCompetition;
         }
         if (pressure > 0.35D && occupancy > TARGET_OCCUPANCY) {
             speciesCoEvolutionMigrationShifts.merge(speciesId, 1, Integer::sum);
         }
         return clamp(pressure * occupancy, 0.0D, 1.0D);
+    }
+
+    private double nicheOverlap(SpeciesSignal a, SpeciesSignal b) {
+        return jaccard(a.niches, b.niches);
+    }
+
+    private double sameNicheFraction(String speciesA, String speciesB) {
+        PairSignal pair = pairSignals.get(pairKey(speciesA, speciesB));
+        if (pair == null || pair.coOccurrences == 0) {
+            return 0.0D;
+        }
+        return clamp(pair.sharedNicheOccurrences / (double) pair.coOccurrences, 0.0D, 1.0D);
     }
 
     private List<Map<String, Object>> strongestPairs(boolean competition) {
@@ -610,11 +634,54 @@ public class SpeciesNicheAnalyticsEngine {
             item.put("pair", pair.speciesA + "<->" + pair.speciesB);
             item.put("score", score);
             item.put("coOccurrences", pair.coOccurrences);
+            item.put("sharedNicheFraction", sameNicheFraction(pair.speciesA, pair.speciesB));
             item.put("survivalTogether", pair.successesWhenTogether / (double) Math.max(1, pair.coOccurrences));
             relationships.add(item);
         }
         relationships.sort((left, right) -> Double.compare(((Number) right.get("score")).doubleValue(), ((Number) left.get("score")).doubleValue()));
         return relationships.size() > 8 ? relationships.subList(0, 8) : relationships;
+    }
+
+    private List<Map<String, Object>> strongestSuppressionPairs() {
+        List<Map<String, Object>> relationships = new ArrayList<>();
+        for (PairSignal pair : pairSignals.values()) {
+            double suppression = clamp(competitionScore(pair.speciesA, pair.speciesB)
+                    * sameNicheFraction(pair.speciesA, pair.speciesB)
+                    * (1.0D - supportScore(pair.speciesA, pair.speciesB)), 0.0D, 1.0D);
+            if (suppression < 0.08D) {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("pair", pair.speciesA + "<->" + pair.speciesB);
+            item.put("score", suppression);
+            item.put("sharedNicheFraction", sameNicheFraction(pair.speciesA, pair.speciesB));
+            relationships.add(item);
+        }
+        relationships.sort((left, right) -> Double.compare(((Number) right.get("score")).doubleValue(), ((Number) left.get("score")).doubleValue()));
+        return relationships.size() > 8 ? relationships.subList(0, 8) : relationships;
+    }
+
+    private List<Map<String, Object>> strongestMigrationPressures() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (String speciesId : speciesSignals.keySet()) {
+            SpeciesSignal signal = speciesSignals.get(speciesId);
+            String dominantNiche = dominantNiche(signal.niches);
+            double pressure = migrationPressure(speciesId, dominantNiche);
+            if (pressure < 0.05D) {
+                continue;
+            }
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("species", speciesId);
+            item.put("dominantNiche", dominantNiche);
+            item.put("pressure", pressure);
+            out.add(item);
+        }
+        out.sort((left, right) -> Double.compare(((Number) right.get("pressure")).doubleValue(), ((Number) left.get("pressure")).doubleValue()));
+        return out.size() > 8 ? out.subList(0, 8) : out;
+    }
+
+    private String dominantNiche(Map<String, Integer> nicheUsage) {
+        return nicheUsage.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("unassigned");
     }
 
     private Map<String, Integer> speciesPopulation(List<Artifact> artifacts) {
@@ -888,6 +955,7 @@ public class SpeciesNicheAnalyticsEngine {
         private final String speciesA;
         private final String speciesB;
         private int coOccurrences;
+        private int sharedNicheOccurrences;
         private int successesWhenTogether;
 
         private PairSignal(String speciesA, String speciesB) {
@@ -903,6 +971,7 @@ public class SpeciesNicheAnalyticsEngine {
         private final Map<String, Integer> mechanics = new LinkedHashMap<>();
         private final Map<String, Integer> branches = new LinkedHashMap<>();
         private final Map<String, Integer> environments = new LinkedHashMap<>();
+        private final Map<String, Integer> niches = new LinkedHashMap<>();
 
         private double successRate() {
             return successes / (double) Math.max(1, observations);

@@ -67,6 +67,7 @@ public final class OpenEndednessTestRunner {
         Files.writeString(outputDir.resolve("review-first.md"), reviewFirstMarkdown(classification));
         Files.writeString(outputDir.resolve("speciation-open-endedness-review.md"), speciationOpenEndednessReview(results));
         Files.writeString(outputDir.resolve("co-evolution-open-endedness-review.md"), coEvolutionOpenEndednessReview(results));
+        Files.writeString(outputDir.resolve("ecology-repair-open-endedness-review.md"), ecologyRepairOpenEndednessReview(results));
 
         renderCharts(outputDir, results);
     }
@@ -311,9 +312,16 @@ public final class OpenEndednessTestRunner {
         double turnoverDelta = ((Number) a.get("branchTurnover")).doubleValue()
                 - ((Number) c.get("branchTurnover")).doubleValue();
 
-        String status = concentrationDelta > 0.05 && turnoverDelta > 0.05
-                ? "Mostly designer-controlled with measurable emergent divergence"
-                : "Borderline: designer-controlled with weak divergence";
+        String status;
+        if (concentrationDelta < 0.01D && turnoverDelta < 0.02D) {
+            status = "designer-controlled";
+        } else if (concentrationDelta < 0.04D) {
+            status = "adaptive but bounded";
+        } else if (turnoverDelta < 0.04D) {
+            status = "weakly ecological";
+        } else {
+            status = "multi-attractor ecosystem";
+        }
 
         return "# Open-Endedness Classification\n\n"
                 + "## 1) Scope / sample size\n"
@@ -333,6 +341,67 @@ public final class OpenEndednessTestRunner {
                 + "- Confidence: moderate; conclusions are robust across ablations but not yet across many reruns.\n\n"
                 + "## 8) Actionable next review steps\n"
                 + "- Keep classification provisional until 3-seed reruns are added for full-system and no-controls worlds.\n";
+    }
+
+    private static String ecologyRepairOpenEndednessReview(Map<String, Map<String, Object>> results) {
+        Map<String, Object> summary = castMap(results.getOrDefault("A", Map.of()).get("summary"));
+        return "# Ecology Repair Open-Endedness Review\n\n"
+                + "- Species count trend: " + summary.getOrDefault("speciesCountTrend", List.of()) + "\n"
+                + "- Adaptive niche count trend: " + summary.getOrDefault("adaptiveNicheCountTrend", List.of()) + "\n"
+                + "- Dominant attractor trend: " + summary.getOrDefault("lineageConcentrationTrend", List.of()) + "\n"
+                + "- Co-evolution modifier trend: " + summary.getOrDefault("coEvolutionModifierTrend", List.of()) + "\n"
+                + "- Classification: **" + classificationLabel(summary) + "**\n";
+    }
+
+    private static String classificationLabel(Map<String, Object> summary) {
+        double concentration = average(asDoubles(summary.get("lineageConcentrationTrend")));
+        double niches = average(asDoubles(summary.get("adaptiveNicheCountTrend")));
+        double modifiers = averageAbs(asDoubles(summary.get("coEvolutionModifierTrend")));
+        if (concentration > 0.55D && niches < 2.0D) {
+            return "designer-controlled";
+        }
+        if (concentration > 0.45D && modifiers < 0.02D) {
+            return "adaptive but bounded";
+        }
+        if (niches < 3.0D) {
+            return "weakly ecological";
+        }
+        return "multi-attractor ecosystem";
+    }
+
+    private static List<Double> asDoubles(Object value) {
+        if (!(value instanceof Collection<?> collection)) {
+            return List.of();
+        }
+        List<Double> out = new ArrayList<>();
+        for (Object item : collection) {
+            if (item instanceof Number number) {
+                out.add(number.doubleValue());
+            }
+        }
+        return out;
+    }
+
+    private static double average(List<Double> values) {
+        if (values.isEmpty()) {
+            return 0.0D;
+        }
+        double total = 0.0D;
+        for (double value : values) {
+            total += value;
+        }
+        return total / values.size();
+    }
+
+    private static double averageAbs(List<Double> values) {
+        if (values.isEmpty()) {
+            return 0.0D;
+        }
+        double total = 0.0D;
+        for (double value : values) {
+            total += Math.abs(value);
+        }
+        return total / values.size();
     }
 
     private static String reviewFirstMarkdown(String classification) {
