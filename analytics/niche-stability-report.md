@@ -1,0 +1,7 @@
+# Niche Stability Report
+
+- Niche birth events: {1=3}
+- Niche extinction events: {}
+- Niche stability over time: [0.275, 0.050000000000000044]
+- Niche lifetimes: {niche-1=3, niche-2=3, niche-3=3}
+- Species migration across niches: {species-root-lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd=1, species-root-lineage-ef617665-a0c8-30fb-9555-ebda433aa009=1, species-root-lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126=1, species-root-stormbound=1, species-root-lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033=1, species-root-lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4=1}
