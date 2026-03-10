@@ -31,7 +31,7 @@ run_harness "$TMP_SMALL" \
   -Dworld.seasonCount=2 \
   -Dworld.encounterDensity=6
 
-LARGE_SEEDS=(90212 90213 90214)
+LARGE_SEEDS=(90212 90213 90214 90215 90216)
 for i in "${!LARGE_SEEDS[@]}"; do
   run_id=$((i + 1))
   out_dir="${TMP_LARGE_BASE}-${run_id}"
@@ -54,7 +54,7 @@ from statistics import mean, pstdev
 
 out = Path("analytics/world-lab")
 small = json.loads((out / ".tmp-small" / "world-sim-data.json").read_text())
-large_seeds = [90212, 90213, 90214]
+large_seeds = [90212, 90213, 90214, 90215, 90216]
 large_runs = []
 for idx, seed in enumerate(large_seeds, start=1):
     run_dir = out / f".tmp-large-{idx}"
@@ -268,12 +268,12 @@ lines += [
     f"- Mechanic concentration check: top mechanic varied across runs? {'yes' if len({top_name(m['mechanic_distribution']) for m in metrics}) > 1 else 'no'}.",
     "",
     "## 7) Confidence / caveats",
-    "- 3-run minimum achieved; confidence is stronger than single-run but still below preferred 5-run validation.",
+    "- 5-run large-world validation achieved for stronger attractor-confidence assessment.",
     "- Memory event frequency is count-based and scale-sensitive, so comparisons use relative stability and not absolute thresholds.",
     "",
     "## 8) Suggested next review steps",
-    "- If a family remains top in >=3/3 runs with low variance, treat as high-confidence dominance.",
-    "- Expand to 5 runs before applying any medium/high-impact mechanics changes.",
+    "- If a family remains top in >=4/5 runs with low variance, treat as high-confidence dominance.",
+    "- Maintain 5-run validation as a precondition before medium/high-impact mechanics changes.",
 ]
 (out / "multirun-world-sim-report.md").write_text("\n".join(lines) + "\n")
 
@@ -314,7 +314,7 @@ conf_lines += [
     "",
     "## Conclusion",
     "- Use high/moderate findings for targeted low-risk tuning candidates.",
-    "- Keep provisional findings in observation status until 5-run validation is complete.",
+    "- Keep provisional findings in observation status until additional targeted diagnostics are complete.",
 ]
 (out / "world-sim-confidence-report.md").write_text("\n".join(conf_lines) + "\n")
 
@@ -349,7 +349,7 @@ for fam in sorted(set(family_tops)):
 meta += [
     "",
     "## Confidence / caveats",
-    "- This comparison combines 1 small run + 3 large runs. Scale differences are credible, but 5-run large validation would raise confidence further.",
+    "- This comparison combines 1 small run + 5 large runs for improved scale-confidence.",
 ]
 (out / "world-sim-meta-comparison.md").write_text("\n".join(meta) + "\n")
 
@@ -422,7 +422,7 @@ review = [
     "6. `../ecosystem-balance-suggestions.md`",
     "",
     "## Top 3 most important findings",
-    f"1. Dominant family share stays elevated at {pct(averages['dominant_family_share']['average'])} across 3/3 large runs.",
+    f"1. Dominant family share stays elevated at {pct(averages['dominant_family_share']['average'])} across all {len(metrics)} large runs.",
     f"2. Branch convergence increases to {pct(averages['branch_convergence_rate']['average'])} at large scale.",
     f"3. Mutation throughput remains high ({pct(averages['mutation_frequency']['average'])}), so collapse is not due to mutation inactivity.",
     "",
@@ -431,13 +431,13 @@ review = [
     "- Awakening remains consistently active in large runs.",
     "",
     "## Provisional findings",
-    "- Exact impact of memory-driven trigger underrepresentation needs 2 more runs.",
+    "- Memory-driven trigger underrepresentation still needs deeper cross-seed decomposition despite 5-run coverage.",
     "",
     "## What to tune first (if anything)",
     "- Start with tiny weight adjustments on repeatedly dominant family/branch combinations only.",
     "",
     "## What to simulate again before tuning",
-    "- Extend multi-run large simulation from 3 to 5 runs for stronger confidence on memory and rare-branch effects.",
+    "- Keep 5-run large simulation as the minimum validation gate before medium/high-impact mechanics changes.",
 ]
 (out / "review-first.md").write_text("\n".join(review) + "\n")
 PY

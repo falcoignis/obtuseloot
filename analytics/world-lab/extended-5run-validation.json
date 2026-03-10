@@ -1,0 +1,83 @@
+{
+  "run_count": 5,
+  "config": {
+    "players": 600,
+    "artifactsPerPlayer": 4,
+    "sessionsPerSeason": 24,
+    "seasonCount": 4,
+    "encounterDensity": 8
+  },
+  "runs": [
+    {
+      "run": 1,
+      "seed": 90212,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.4406711471366104,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.17547743055555556,
+      "world_dominant_family_rate": 0.4406711471366104,
+      "world_branch_convergence_rate": 0.37511719140182465
+    },
+    {
+      "run": 2,
+      "seed": 90213,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.3903125046579596,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.2477777777777778,
+      "world_dominant_family_rate": 0.3903125046579596,
+      "world_branch_convergence_rate": 0.38202278880691676
+    },
+    {
+      "run": 3,
+      "seed": 90214,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.49853087935532286,
+      "dominant_branch": "chaos.sprawl",
+      "dominant_branch_share": 0.12139756944444445,
+      "world_dominant_family_rate": 0.49853087935532286,
+      "world_branch_convergence_rate": 0.36970766142219325
+    },
+    {
+      "run": 4,
+      "seed": 90215,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.47846196118519174,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.16625,
+      "world_dominant_family_rate": 0.47846196118519174,
+      "world_branch_convergence_rate": 0.3638569010390931
+    },
+    {
+      "run": 5,
+      "seed": 90216,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.45066014111656905,
+      "dominant_branch": "chaos.paradox",
+      "dominant_branch_share": 0.14115885416666665,
+      "world_dominant_family_rate": 0.45066014111656905,
+      "world_branch_convergence_rate": 0.3861284787797614
+    }
+  ],
+  "variance": {
+    "dominant_family_share_sigma": 0.03687945655857547,
+    "dominant_branch_share_sigma": 0.04309664800230442,
+    "world_dominant_family_rate_sigma": 0.03687945655857547,
+    "world_branch_convergence_rate_sigma": 0.00805831055433391
+  },
+  "dominant_family_frequency": {
+    "chaos": 5
+  },
+  "dominant_branch_frequency": {
+    "mobility.lane-dancer": 3,
+    "chaos.sprawl": 1,
+    "chaos.paradox": 1
+  },
+  "attractor_confirmation": {
+    "same_family_dominates": true,
+    "same_branch_dominates": false,
+    "notes": "Attractor considered recurring when same family and branch dominate >=4/5 runs.",
+    "status": "partial_persistence",
+    "summary": "Chaos remains dominant in all 5 runs, while branch dominance diversified (top branch only 3/5)."
+  }
+}
