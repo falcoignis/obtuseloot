@@ -2,6 +2,9 @@ name: Release ObtuseLoot
 
 on:
   push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   release:
@@ -24,7 +27,6 @@ jobs:
         run: mvn -B -ntp clean package
 
       - name: Resolve finalized JAR path
-        if: startsWith(github.ref, 'refs/tags/v')
         id: finalized_jar
         shell: bash
         run: |
@@ -44,12 +46,20 @@ jobs:
 
           echo "finalized_jar=${jar_path}" >> "$GITHUB_OUTPUT"
 
+      - name: Upload release JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obtuseloot-release-jar
+          path: ${{ steps.finalized_jar.outputs.finalized_jar }}
+          if-no-files-found: error
+
       - name: Create GitHub release and upload assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          generate_release_notes: true
           files: |
             ${{ steps.finalized_jar.outputs.finalized_jar }}
             analytics/world-lab/**/*.md
