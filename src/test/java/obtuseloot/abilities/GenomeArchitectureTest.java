@@ -94,6 +94,42 @@ class GenomeArchitectureTest {
     }
 
 
+
+    @Test
+    void regulatoryGateResolutionIsDeterministic() {
+        RegulatoryGateResolver resolver = new RegulatoryGateResolver();
+        Artifact artifact = artifactFor(99L);
+        ArtifactGenome genome = new GenomeResolver().resolve(99L);
+        ArtifactMemoryProfile memory = new ArtifactMemoryProfile(6, 1.2D, 1.3D, 0.8D, 1.4D, 1.1D, 0.6D, 0.4D);
+
+        AbilityRegulatoryProfile first = resolver.resolve(artifact, genome, memory, null, null);
+        AbilityRegulatoryProfile second = resolver.resolve(artifact, genome, memory, null, null);
+
+        assertEquals(first.profileKey(), second.profileKey());
+        assertEquals(first.openGatesCsv(), second.openGatesCsv());
+    }
+
+    @Test
+    void regulatoryEligibilityFilterShapesCandidatePool() {
+        AbilityRegistry registry = new AbilityRegistry();
+        RegulatoryEligibilityFilter filter = new RegulatoryEligibilityFilter();
+
+        AbilityRegulatoryProfile profile = new AbilityRegulatoryProfile(java.util.Map.of(
+                RegulatoryGate.SURVIVAL, RegulatoryGateState.open(0.9D),
+                RegulatoryGate.MEMORY, RegulatoryGateState.open(0.9D),
+                RegulatoryGate.DISCIPLINE, RegulatoryGateState.closed(0.1D),
+                RegulatoryGate.VOLATILITY, RegulatoryGateState.closed(0.1D),
+                RegulatoryGate.MOBILITY, RegulatoryGateState.closed(0.1D),
+                RegulatoryGate.RESONANCE, RegulatoryGateState.closed(0.1D),
+                RegulatoryGate.ENVIRONMENT, RegulatoryGateState.closed(0.1D),
+                RegulatoryGate.LINEAGE_MILESTONE, RegulatoryGateState.closed(0.1D)
+        ));
+
+        List<AbilityTemplate> filtered = filter.filter(registry.templates(), profile);
+        assertTrue(filtered.size() < registry.templates().size(), "Expected gating to reduce candidate pool");
+        assertTrue(filtered.stream().anyMatch(t -> t.family() == AbilityFamily.SURVIVAL));
+    }
+
     private Artifact artifactFor(long seed) {
         Artifact artifact = new Artifact(UUID.randomUUID(), "Test");
         artifact.setArtifactSeed(seed);

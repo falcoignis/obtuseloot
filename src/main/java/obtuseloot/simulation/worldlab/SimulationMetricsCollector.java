@@ -19,6 +19,9 @@ public class SimulationMetricsCollector {
     private final Map<String, Integer> abilityFamilies = new HashMap<>();
     private final Map<String, Integer> triggers = new HashMap<>();
     private final Map<String, Integer> mechanics = new HashMap<>();
+    private final Map<String, Integer> regulatoryProfiles = new HashMap<>();
+    private final Map<String, Integer> openGateCounts = new HashMap<>();
+    private final Map<String, Integer> gateCandidatePoolSizes = new HashMap<>();
     private final Map<String, Integer> mutationCounts = new HashMap<>();
     private final Map<String, Integer> playstyleClusters = new HashMap<>();
     private final Map<String, Integer> sessionLengths = new HashMap<>();
@@ -43,6 +46,13 @@ public class SimulationMetricsCollector {
         bump(driftAlignments, artifact.getDriftAlignment());
         bump(branchPaths, artifact.getLastAbilityBranchPath());
         bump(mutationCounts, artifact.getLastMutationHistory());
+        bump(regulatoryProfiles, artifact.getLastRegulatoryProfile());
+        for (String gate : artifact.getLastOpenRegulatoryGates().split(",")) {
+            if (!gate.isBlank()) {
+                bump(openGateCounts, gate.trim());
+            }
+        }
+        bump(gateCandidatePoolSizes, artifact.getLastGateCandidatePool());
         bump(lineageCounts, artifact.getLatentLineage());
         lineageDepth.merge(artifact.getLatentLineage(), 1, Integer::sum);
         for (ArtifactMemoryEvent event : ArtifactMemoryEvent.values()) {
@@ -102,6 +112,9 @@ public class SimulationMetricsCollector {
                 "family_distribution", abilityFamilies,
                 "trigger_distribution", triggers,
                 "mechanic_distribution", mechanics,
+                "regulatory_profile_distribution", regulatoryProfiles,
+                "open_gate_distribution", openGateCounts,
+                "gate_candidate_pool_distribution", gateCandidatePoolSizes,
                 "branch_diversity", shannon(branchPaths),
                 "memory_driven_ability_frequency", triggers.getOrDefault("on_memory_event", 0)
         ));
@@ -135,6 +148,8 @@ public class SimulationMetricsCollector {
     public Map<String, Integer> mutations() { return mutationCounts; }
     public Map<String, Integer> triggers() { return triggers; }
     public Map<String, Integer> mechanics() { return mechanics; }
+    public Map<String, Integer> regulatoryProfiles() { return regulatoryProfiles; }
+    public Map<String, Integer> openGateCounts() { return openGateCounts; }
     public Map<String, Integer> memories() { return memoryProfiles; }
     public List<Double> diversityTimeline() { return diversityTimeline; }
     public List<Double> dominantFamilyTimeline() { return dominantFamilyTimeline; }
