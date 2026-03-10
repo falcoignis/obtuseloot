@@ -1,0 +1,11 @@
+{
+  "END": 1.0,
+  "END_species": 1.0,
+  "TNT": 0.55,
+  "NSER": 1.0,
+  "diagnostic_state": "STAGNANT_ATTRACTOR",
+  "confidence": 0.9,
+  "warning_flags": ["stagnation"],
+  "explanation_summary": "END remains low despite visible turnover and novelty spikes; ecological structure is still concentrated in a single attractor and not yet sustainably diversified.",
+  "recommended_next_action": "Run additional seasons and confirm END recovery before interpreting NSER spikes as durable divergence."
+}

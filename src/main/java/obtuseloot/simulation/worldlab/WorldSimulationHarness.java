@@ -5,6 +5,9 @@ import obtuseloot.abilities.mutation.AbilityMutationEngine;
 import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
 import obtuseloot.analytics.ArtifactEcosystemBalancingAI;
+import obtuseloot.analytics.EcologyDiagnosticEngine;
+import obtuseloot.analytics.EcologyDiagnosticSnapshot;
+import obtuseloot.analytics.EcologyDiagnosticState;
 import obtuseloot.analytics.EcosystemHealthGaugeAnalyzer;
 import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
@@ -381,6 +384,129 @@ public class WorldSimulationHarness {
                 + "- Ecosystem status: " + result.status() + "\n"
                 + "- Trajectory: " + result.interpretation() + "\n";
         Files.writeString(Path.of("analytics/world-lab/ecosystem-health-gauge-review.md"), worldLabReview);
+
+        double dominantNicheShare = extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare");
+        double dominantSpeciesShare = extractLastSeasonDouble(seasonalSnapshots, "dominantSpeciesConcentration");
+        double dominantAttractorShare = Math.max(dominantNicheShare, dominantSpeciesShare);
+        int nicheCount = (int) Math.round(extractLastSeasonDouble(seasonalSnapshots, "nicheCount"));
+        int speciesCount = (int) Math.round(extractLastSeasonDouble(seasonalSnapshots, "speciesCount"));
+        int relabelingEvents = estimateRelabelingEvents(seasonalSnapshots);
+        boolean noveltyPersistenceWeak = nserResult.bySeason().stream().noneMatch(s -> !s.persistentNovelStrategies().isEmpty());
+
+        EcologyDiagnosticSnapshot diagnostic = new EcologyDiagnosticEngine().diagnose(
+                result.endArtifacts(),
+                result.endSpecies(),
+                result.tntTrend().isEmpty() ? 0.0D : result.tntTrend().get(result.tntTrend().size() - 1),
+                result.latestNser(),
+                dominantNicheShare,
+                dominantSpeciesShare,
+                dominantAttractorShare,
+                nicheCount,
+                speciesCount,
+                result.nserTrend(),
+                noveltyPersistenceWeak,
+                relabelingEvents);
+
+        String diagnosticMd = "# Ecology Diagnostic Report\n\n"
+                + "- END_artifacts: " + diagnostic.endArtifacts() + "\n"
+                + "- END_species: " + (diagnostic.endSpecies() == null ? "N/A" : diagnostic.endSpecies()) + "\n"
+                + "- TNT_latest: " + diagnostic.latestTnt() + "\n"
+                + "- NSER_latest: " + diagnostic.latestNser() + "\n"
+                + "- Diagnostic state: " + diagnostic.state() + "\n"
+                + "- Confidence: " + diagnostic.confidence() + "\n"
+                + "- Warning flags: " + diagnostic.warningFlags() + "\n"
+                + "- Supporting context: nicheCount=" + diagnostic.nicheCount() + ", speciesCount=" + diagnostic.speciesCount()
+                + ", dominantNicheShare=" + diagnostic.dominantNicheShare() + ", dominantSpeciesShare=" + diagnostic.dominantSpeciesShare()
+                + ", dominantAttractorShare=" + diagnostic.dominantAttractorShare() + ", relabelingEvents=" + diagnostic.relabelingEvents() + "\n\n"
+                + "## Explanation summary\n"
+                + diagnostic.explanation() + "\n\n"
+                + "## Recommended next action\n"
+                + diagnostic.recommendedNextAction() + "\n";
+        Files.writeString(Path.of("analytics/ecology-diagnostic-report.md"), diagnosticMd);
+
+        String diagnosticJson = "{\n"
+                + "  \"END\": " + diagnostic.endArtifacts() + ",\n"
+                + "  \"END_species\": " + (diagnostic.endSpecies() == null ? "null" : diagnostic.endSpecies()) + ",\n"
+                + "  \"TNT\": " + diagnostic.latestTnt() + ",\n"
+                + "  \"NSER\": " + diagnostic.latestNser() + ",\n"
+                + "  \"diagnostic_state\": \"" + diagnostic.state().name() + "\",\n"
+                + "  \"confidence\": " + diagnostic.confidence() + ",\n"
+                + "  \"warning_flags\": " + toJson(diagnostic.warningFlags(), 0) + ",\n"
+                + "  \"explanation_summary\": " + toJson(diagnostic.explanation(), 0) + ",\n"
+                + "  \"recommended_next_action\": " + toJson(diagnostic.recommendedNextAction(), 0) + "\n"
+                + "}\n";
+        Files.writeString(Path.of("analytics/ecology-diagnostic-state.json"), diagnosticJson);
+
+        String falseDivergenceReview = "# False Divergence Review\n\n"
+                + "False divergence means the ecology appears active (species/niches/turnover) but fails to produce stable novelty.\n\n"
+                + "## Active signals\n"
+                + "- high species count with weak divergence: " + (diagnostic.speciesCount() >= 6 && diagnostic.dominantSpeciesShare() >= 0.55D) + "\n"
+                + "- high niche count with weak END: " + (diagnostic.nicheCount() >= 4 && diagnostic.endArtifacts() < 2.5D) + "\n"
+                + "- high TNT with low NSER: " + (diagnostic.latestTnt() >= 0.45D && diagnostic.latestNser() < 0.15D) + "\n"
+                + "- relabeling/migration noise: " + (diagnostic.relabelingEvents() >= 4) + "\n"
+                + "- novelty persistence weak: " + diagnostic.noveltyPersistenceWeak() + "\n"
+                + "- dominant attractor remains sticky: " + (diagnostic.dominantAttractorShare() >= 0.60D) + "\n\n"
+                + "## Diagnosis\n"
+                + "- Current diagnostic state: " + diagnostic.state() + "\n"
+                + "- False divergence flagged automatically: " + diagnostic.warningFlags().contains("false_divergence") + "\n"
+                + "- Summary: " + diagnostic.explanation() + "\n";
+        Files.writeString(Path.of("analytics/false-divergence-review.md"), falseDivergenceReview);
+
+        String worldLabDiagnosticReview = "# World-Lab Ecology Diagnostic Review\n\n"
+                + "## Run 1\n"
+                + "- END across runs: " + result.endTrend() + "\n"
+                + "- TNT across seasons: " + result.tntTrend() + "\n"
+                + "- NSER across seasons: " + result.nserTrend() + "\n"
+                + "- false-divergence flags: " + diagnostic.warningFlags() + "\n"
+                + "- final diagnostic state: " + diagnostic.state() + "\n"
+                + "- attractor weakening vs relabeling: "
+                + (diagnostic.dominantAttractorShare() < 0.55D ? "attractor weakening is visible" : "dominant attractor is mostly being relabeled")
+                + "\n";
+        Files.writeString(Path.of("analytics/world-lab/ecology-diagnostic-review.md"), worldLabDiagnosticReview);
+
+        String openEndednessReview = "# Ecology Diagnostic Open-Endedness Review\n\n"
+                + "1. is the ecosystem genuinely diverging? " + (diagnostic.state() == EcologyDiagnosticState.EMERGENT_ECOLOGY || diagnostic.state() == EcologyDiagnosticState.HEALTHY_MULTI_ATTRACTOR) + "\n"
+                + "2. is it only reshuffling existing structures? " + (diagnostic.state() == EcologyDiagnosticState.FALSE_DIVERGENCE || diagnostic.state() == EcologyDiagnosticState.STAGNANT_ATTRACTOR) + "\n"
+                + "3. are new strategies appearing and persisting? " + (!diagnostic.noveltyPersistenceWeak() && diagnostic.latestNser() >= 0.15D) + "\n"
+                + "4. ecosystem description: "
+                + switch (diagnostic.state()) {
+                    case COLLAPSED_MONOCULTURE, STAGNANT_ATTRACTOR -> "bounded";
+                    case FALSE_DIVERGENCE -> "falsely divergent";
+                    case HEALTHY_MULTI_ATTRACTOR -> "healthy multi-attractor";
+                    case TURBULENT_THRASH -> "bounded";
+                    case EMERGENT_ECOLOGY -> "emergent";
+                }
+                + "\n\n"
+                + "State=" + diagnostic.state() + ", confidence=" + diagnostic.confidence() + ", warnings=" + diagnostic.warningFlags() + ".\n";
+        Files.writeString(Path.of("analytics/world-lab/open-endedness/ecology-diagnostic-open-endedness-review.md"), openEndednessReview);
+    }
+
+    private double extractLastSeasonDouble(List<Map<String, Object>> snapshots, String key) {
+        if (snapshots.isEmpty()) {
+            return 0.0D;
+        }
+        Object value = snapshots.get(snapshots.size() - 1).get(key);
+        return value instanceof Number number ? number.doubleValue() : 0.0D;
+    }
+
+    @SuppressWarnings("unchecked")
+    private int estimateRelabelingEvents(List<Map<String, Object>> snapshots) {
+        int events = 0;
+        for (int i = 1; i < snapshots.size(); i++) {
+            Map<String, Integer> previous = toIntegerMap((Map<?, ?>) snapshots.get(i - 1).getOrDefault("speciesPerNiche", Map.of()));
+            Map<String, Integer> current = toIntegerMap((Map<?, ?>) snapshots.get(i).getOrDefault("speciesPerNiche", Map.of()));
+            Set<String> keys = new LinkedHashSet<>();
+            keys.addAll(previous.keySet());
+            keys.addAll(current.keySet());
+            int deltaSum = 0;
+            for (String key : keys) {
+                deltaSum += Math.abs(current.getOrDefault(key, 0) - previous.getOrDefault(key, 0));
+            }
+            if (deltaSum >= 3) {
+                events++;
+            }
+        }
+        return events;
     }
 
     private NovelStrategyEmergenceAnalyzer.NserResult writeNovelStrategyEmergenceReports(List<Map<String, Object>> seasonalSnapshots) throws IOException {

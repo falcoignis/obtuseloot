@@ -1,5 +1,6 @@
 package obtuseloot.dashboard;
 
+import obtuseloot.analytics.EcologyDiagnosticState;
 import obtuseloot.analytics.EcosystemStatus;
 
 import java.io.IOException;
@@ -23,13 +24,15 @@ public class DashboardRenderer {
                 fmt(metrics.endArtifacts()),
                 fmt(metrics.latestTnt()),
                 fmt(metrics.latestNser()),
+                statusBadgeForDiagnostic(metrics.diagnosticState()),
                 statusBadge(metrics.ecosystemStatus()),
                 renderMap((Map<String, Integer>) data.get("archetypes")),
                 data.get("heatmapImage"),
                 renderMap((Map<String, Integer>) data.get("traits")),
                 renderMap((Map<String, Integer>) data.get("lineages")),
                 renderSpeciesNiche((Map<String, Object>) data.get("speciesNicheMetrics")),
-                renderEcosystemHealth(metrics)
+                renderEcosystemHealth(metrics),
+                renderEcologyDiagnostic(metrics)
         );
 
         Files.writeString(output, html);
@@ -47,7 +50,7 @@ public class DashboardRenderer {
                     body{font-family:Arial;background:#0f1524;color:#eaf0ff;margin:20px}
                     .grid{display:grid;grid-template-columns:repeat(2,minmax(360px,1fr));gap:14px}
                     .panel{background:#1a243b;border-radius:10px;padding:12px}
-                    .strip{display:grid;grid-template-columns:repeat(9,1fr);gap:8px}
+                    .strip{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
                     .metric{background:#25304d;padding:10px;border-radius:8px}
                     .small{color:#9bb1de;font-size:12px}
                     pre{white-space:pre-wrap}
@@ -69,6 +72,7 @@ public class DashboardRenderer {
                     <div class=\"metric\"><div class=\"small\">Effective Niches (END)</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Temporal Niche Turnover (TNT)</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Novel Strategy Emergence Rate (NSER)</div><b>%s</b></div>
+                    <div class=\"metric\"><div class=\"small\">Diagnostic Status Light</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Ecosystem Status</div><b>%s</b></div>
                   </div>
                   <div class=\"grid\">
@@ -78,6 +82,7 @@ public class DashboardRenderer {
                     <div class=\"panel\"><h3>Lineage Survival / Concentration</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Species & Niche Health</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Ecosystem Health Gauge</h3><pre>%s</pre></div>
+                    <div class=\"panel\"><h3>Ecology Diagnostic (END+TNT+NSER)</h3><pre>%s</pre></div>
                   </div>
                 </body>
                 </html>
@@ -121,6 +126,15 @@ public class DashboardRenderer {
                 + "\nstatus=" + metrics.ecosystemStatus();
     }
 
+    private String renderEcologyDiagnostic(DashboardMetrics metrics) {
+        return "state=" + metrics.diagnosticState()
+                + "\nconfidence=" + fmt(metrics.diagnosticConfidence())
+                + "\nwarningFlags=" + metrics.diagnosticWarningFlags()
+                + "\nEND=" + fmt(metrics.endArtifacts())
+                + "\nTNT=" + fmt(metrics.latestTnt())
+                + "\nNSER=" + fmt(metrics.latestNser());
+    }
+
     private String statusBadge(EcosystemStatus status) {
         String colorClass = switch (status) {
             case HEALTHY_ECOSYSTEM -> "green";
@@ -128,5 +142,14 @@ public class DashboardRenderer {
             case COLLAPSED, FRAGMENTED -> "red";
         };
         return "<span class=\"badge " + colorClass + "\">" + status.name() + "</span>";
+    }
+
+    private String statusBadgeForDiagnostic(EcologyDiagnosticState state) {
+        String colorClass = switch (state) {
+            case HEALTHY_MULTI_ATTRACTOR, EMERGENT_ECOLOGY -> "green";
+            case FALSE_DIVERGENCE, TURBULENT_THRASH -> "yellow";
+            case COLLAPSED_MONOCULTURE, STAGNANT_ATTRACTOR -> "red";
+        };
+        return "<span class=\"badge " + colorClass + "\">" + state.name() + "</span>";
     }
 }
