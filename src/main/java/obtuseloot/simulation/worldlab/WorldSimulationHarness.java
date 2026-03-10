@@ -319,6 +319,8 @@ public class WorldSimulationHarness {
 
     private Map<String, Object> captureSeasonSnapshot(List<SimulatedPlayer> players, int season) {
         Map<String, Integer> family = new HashMap<>();
+        Map<String, Integer> triggers = new HashMap<>();
+        Map<String, Integer> mechanics = new HashMap<>();
         Map<String, Integer> branch = new HashMap<>();
         Map<String, Integer> lineage = new HashMap<>();
         Map<String, Integer> mutations = new HashMap<>();
@@ -332,6 +334,8 @@ public class WorldSimulationHarness {
                 if (profile != null) {
                     for (AbilityDefinition definition : profile.abilities()) {
                         family.merge(definition.family().name().toLowerCase(Locale.ROOT), 1, Integer::sum);
+                        triggers.merge(definition.trigger().name().toLowerCase(Locale.ROOT), 1, Integer::sum);
+                        mechanics.merge(definition.mechanic().name().toLowerCase(Locale.ROOT), 1, Integer::sum);
                     }
                 }
             }
@@ -339,6 +343,8 @@ public class WorldSimulationHarness {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("season", season);
         out.put("families", family);
+        out.put("triggers", triggers);
+        out.put("mechanics", mechanics);
         out.put("branches", branch);
         out.put("lineages", lineage);
         out.put("mutations", mutations);

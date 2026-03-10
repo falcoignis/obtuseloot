@@ -1,0 +1,322 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "seed": 91001,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.4258849324461161,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.2072439236111111,
+      "family_entropy": 1.4848688621962902,
+      "branch_entropy": 2.5210668088353536,
+      "lineage_concentration": 0.038501388888889425,
+      "mutation_frequency": 0.9998524305555555,
+      "awakening_adoption": 0.9727560763888888,
+      "fusion_adoption": 0.2978168402777778,
+      "niche_count": 17,
+      "trait_variance": 1295749734.6666667,
+      "top_trigger": "on_fusion",
+      "top_trigger_share": 0.20508125714562536,
+      "top_mechanic": "revenant_trigger",
+      "top_mechanic_share": 0.2553734171055862,
+      "trigger_distribution": {
+        "on_chain_combat": 1123175,
+        "on_drift_mutation": 432827,
+        "on_awakening": 108801,
+        "on_reposition": 942198,
+        "on_memory_event": 775768,
+        "on_fusion": 1430887,
+        "on_hit": 290828,
+        "on_boss_kill": 24591,
+        "on_kill": 23432,
+        "on_low_health": 1398272,
+        "on_multi_kill": 426392
+      },
+      "mechanic_distribution": {
+        "battlefield_field": 448529,
+        "defensive_threshold": 8111,
+        "chain_escalation": 910516,
+        "burst_state": 77034,
+        "recovery_window": 322475,
+        "revenant_trigger": 1781784,
+        "unstable_detonation": 741159,
+        "pulse": 253466,
+        "memory_echo": 8559,
+        "movement_echo": 716933,
+        "mark": 423831,
+        "guardian_pulse": 1284774
+      }
+    },
+    {
+      "run": 2,
+      "seed": 91002,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.4188354535106297,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.15888020833333333,
+      "family_entropy": 1.4546751011125407,
+      "branch_entropy": 2.5515591674417,
+      "lineage_concentration": 0.03920416666666707,
+      "mutation_frequency": 0.9999175347222222,
+      "awakening_adoption": 0.9740668402777778,
+      "fusion_adoption": 0.27407118055555557,
+      "niche_count": 17,
+      "trait_variance": 1406455307.3333333,
+      "top_trigger": "on_fusion",
+      "top_trigger_share": 0.20498844098810456,
+      "top_mechanic": "revenant_trigger",
+      "top_mechanic_share": 0.2553334376567175,
+      "trigger_distribution": {
+        "on_drift_mutation": 416689,
+        "on_chain_combat": 1168655,
+        "on_awakening": 33690,
+        "on_memory_event": 670125,
+        "on_reposition": 931368,
+        "on_fusion": 1433091,
+        "on_hit": 487941,
+        "on_boss_kill": 24219,
+        "on_kill": 31960,
+        "on_low_health": 1270849,
+        "on_multi_kill": 522495
+      },
+      "mechanic_distribution": {
+        "battlefield_field": 424676,
+        "defensive_threshold": 9188,
+        "chain_escalation": 781850,
+        "burst_state": 104910,
+        "recovery_window": 444999,
+        "revenant_trigger": 1785057,
+        "unstable_detonation": 718380,
+        "pulse": 265247,
+        "memory_echo": 6642,
+        "movement_echo": 697405,
+        "mark": 675319,
+        "guardian_pulse": 1077409
+      }
+    },
+    {
+      "run": 3,
+      "seed": 91003,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.4469618243135725,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.11392795138888889,
+      "family_entropy": 1.46442626292597,
+      "branch_entropy": 2.5870921321773093,
+      "lineage_concentration": 0.04053611111111154,
+      "mutation_frequency": 0.9999131944444445,
+      "awakening_adoption": 0.9720920138888889,
+      "fusion_adoption": 0.296328125,
+      "niche_count": 17,
+      "trait_variance": 1266780910.3333333,
+      "top_trigger": "on_low_health",
+      "top_trigger_share": 0.21319596234267366,
+      "top_mechanic": "revenant_trigger",
+      "top_mechanic_share": 0.25973501874713806,
+      "trigger_distribution": {
+        "on_drift_mutation": 502185,
+        "on_chain_combat": 1171444,
+        "on_awakening": 114487,
+        "on_memory_event": 855753,
+        "on_reposition": 739802,
+        "on_fusion": 1427967,
+        "on_hit": 298319,
+        "on_boss_kill": 20262,
+        "on_kill": 30695,
+        "on_low_health": 1467069,
+        "on_multi_kill": 253334
+      },
+      "mechanic_distribution": {
+        "battlefield_field": 441563,
+        "defensive_threshold": 10799,
+        "chain_escalation": 791452,
+        "burst_state": 99122,
+        "recovery_window": 230094,
+        "revenant_trigger": 1787319,
+        "unstable_detonation": 846804,
+        "pulse": 268999,
+        "memory_echo": 9151,
+        "movement_echo": 501081,
+        "mark": 414184,
+        "guardian_pulse": 1480749
+      }
+    },
+    {
+      "run": 4,
+      "seed": 91004,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.46095073491961447,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.1598220486111111,
+      "family_entropy": 1.4157474955888008,
+      "branch_entropy": 2.5424778097223846,
+      "lineage_concentration": 0.03802881944444485,
+      "mutation_frequency": 0.99984375,
+      "awakening_adoption": 0.9740277777777778,
+      "fusion_adoption": 0.3012326388888889,
+      "niche_count": 17,
+      "trait_variance": 1399921348.6666667,
+      "top_trigger": "on_fusion",
+      "top_trigger_share": 0.2087807344143554,
+      "top_mechanic": "revenant_trigger",
+      "top_mechanic_share": 0.2594545873746798,
+      "trigger_distribution": {
+        "on_chain_combat": 1184522,
+        "on_drift_mutation": 498079,
+        "on_awakening": 113458,
+        "on_reposition": 931638,
+        "on_memory_event": 755420,
+        "on_fusion": 1437989,
+        "on_hit": 401907,
+        "on_boss_kill": 23211,
+        "on_kill": 32463,
+        "on_low_health": 1139648,
+        "on_multi_kill": 369221
+      },
+      "mechanic_distribution": {
+        "defensive_threshold": 7578,
+        "burst_state": 108448,
+        "unstable_detonation": 848935,
+        "memory_echo": 6213,
+        "movement_echo": 693893,
+        "guardian_pulse": 1144738,
+        "battlefield_field": 538881,
+        "chain_escalation": 586790,
+        "recovery_window": 343373,
+        "revenant_trigger": 1787008,
+        "retaliation": 9,
+        "pulse": 268968,
+        "mark": 552722
+      }
+    },
+    {
+      "run": 5,
+      "seed": 91005,
+      "dominant_family": "chaos",
+      "dominant_family_share": 0.42217760987596464,
+      "dominant_branch": "mobility.lane-dancer",
+      "dominant_branch_share": 0.15851996527777779,
+      "family_entropy": 1.5371484576199212,
+      "branch_entropy": 2.604280731361204,
+      "lineage_concentration": 0.037844791666667085,
+      "mutation_frequency": 0.9998784722222223,
+      "awakening_adoption": 0.9728428819444445,
+      "fusion_adoption": 0.3191059027777778,
+      "niche_count": 16,
+      "trait_variance": 1375640885,
+      "top_trigger": "on_fusion",
+      "top_trigger_share": 0.2054916534698687,
+      "top_mechanic": "revenant_trigger",
+      "top_mechanic_share": 0.25543147836266994,
+      "trigger_distribution": {
+        "on_drift_mutation": 406588,
+        "on_chain_combat": 1287599,
+        "on_awakening": 35192,
+        "on_reposition": 993371,
+        "on_memory_event": 592446,
+        "on_fusion": 1434768,
+        "on_hit": 414625,
+        "on_boss_kill": 28219,
+        "on_kill": 105351,
+        "on_low_health": 1154562,
+        "on_multi_kill": 529402
+      },
+      "mechanic_distribution": {
+        "battlefield_field": 437991,
+        "defensive_threshold": 9991,
+        "chain_escalation": 900754,
+        "burst_state": 376291,
+        "recovery_window": 234274,
+        "revenant_trigger": 1783454,
+        "unstable_detonation": 726251,
+        "pulse": 472213,
+        "memory_echo": 4287,
+        "movement_echo": 574486,
+        "mark": 595840,
+        "guardian_pulse": 866291
+      }
+    }
+  ],
+  "aggregate": {
+    "dominant_family_share": {
+      "avg": 0.4349621110131795,
+      "sd": 0.01628072120093027,
+      "min": 0.4188354535106297,
+      "max": 0.46095073491961447
+    },
+    "dominant_branch_share": {
+      "avg": 0.15967881944444445,
+      "sd": 0.029521457618157266,
+      "min": 0.11392795138888889,
+      "max": 0.2072439236111111
+    },
+    "family_entropy": {
+      "avg": 1.4713732358887046,
+      "sd": 0.03982417066427111,
+      "min": 1.4157474955888008,
+      "max": 1.5371484576199212
+    },
+    "branch_entropy": {
+      "avg": 2.5612953299075905,
+      "sd": 0.030266964098216234,
+      "min": 2.5210668088353536,
+      "max": 2.604280731361204
+    },
+    "lineage_concentration": {
+      "avg": 0.03882305555555599,
+      "sd": 0.000976840385771743,
+      "min": 0.037844791666667085,
+      "max": 0.04053611111111154
+    },
+    "mutation_frequency": {
+      "avg": 0.9998810763888889,
+      "sd": 3.027013155237625e-05,
+      "min": 0.99984375,
+      "max": 0.9999175347222222
+    },
+    "awakening_adoption": {
+      "avg": 0.9731571180555556,
+      "sd": 0.0007719674230542208,
+      "min": 0.9720920138888889,
+      "max": 0.9740668402777778
+    },
+    "fusion_adoption": {
+      "avg": 0.2977109375,
+      "sd": 0.014359027920515546,
+      "min": 0.27407118055555557,
+      "max": 0.3191059027777778
+    },
+    "niche_count": {
+      "avg": 16.8,
+      "sd": 0.4,
+      "min": 16,
+      "max": 17
+    },
+    "trait_variance": {
+      "avg": 1348909637.2,
+      "sd": 56919876.108246945,
+      "min": 1266780910.3333333,
+      "max": 1406455307.3333333
+    },
+    "top_trigger_share": {
+      "avg": 0.20750760967212553,
+      "sd": 0.0031709834299356835,
+      "min": 0.20498844098810456,
+      "max": 0.21319596234267366
+    },
+    "top_mechanic_share": {
+      "avg": 0.2570655878493583,
+      "sd": 0.002067233899704446,
+      "min": 0.2553334376567175,
+      "max": 0.25973501874713806
+    }
+  },
+  "repeated_winners": {
+    "families": {
+      "chaos": 5
+    },
+    "branches": {
+      "mobility.lane-dancer": 5
+    }
+  }
+}

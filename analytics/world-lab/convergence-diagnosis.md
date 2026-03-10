@@ -1,29 +1,31 @@
 # Convergence Diagnosis
 
 ## 1) Suspected root causes
-- Combat loop throughput reinforces `chaos` and `brutality.quarry` because high-frequency scoring contexts repeatedly reward the same branch family combinations.
-- Trait interaction amplification appears to favor recurring pair clusters over long-tail pairings.
-- Lineage reinforcement preserves winners once established, lowering replacement pressure.
-- Environmental pressure introduces movement but does not fully offset late-season lock-in.
+- Trait interaction amplification around repeated high-synergy pairs.
+- Combat throughput loops (kill-chain and direct combat trigger concentration).
+- Branch reinforcement where early winners retain high exposure across seasons.
+- Lineage stickiness from early winning lineages persisting with rising concentration.
+- Environmental pressure too weak to overturn dominant combat branches.
+- Non-combat pathways underrepresented among top triggers/mechanics.
 
-## 2) Supporting metrics
-- Chaos top-family frequency: 5/5 runs.
-- brutality.quarry top-branch frequency: 0/5 runs.
-- Branch reproduction rate (new-share): 0.042.
-- Branch survival rate (retained-share): 0.934.
-- Lineage survival curve mean retention: 1.000.
-- Branch entropy pre/post awakening-heavy half: 2.558 -> 2.489.
-- Mutation-driven branch expansion proxy: 1.000.
-- Trait pair amplification frequency (top 5): matrix.resonance.resonance=819.0, matrix.survivalinstinct.survivalinstinct=815.0, matrix.kineticbias.kineticbias=814.0, matrix.volatility.volatility=806.0, matrix.mutationsensitivity.mutationsensitivity=797.0.
+## 2) Supporting evidence
+- Run 1: dominant family chaos (42.59%), dominant branch mobility.lane-dancer (20.72%), top trigger on_fusion (20.51%), top mechanic revenant_trigger (25.54%).
+- Run 2: dominant family chaos (41.88%), dominant branch mobility.lane-dancer (15.89%), top trigger on_fusion (20.50%), top mechanic revenant_trigger (25.53%).
+- Run 3: dominant family chaos (44.70%), dominant branch mobility.lane-dancer (11.39%), top trigger on_low_health (21.32%), top mechanic revenant_trigger (25.97%).
+- Run 4: dominant family chaos (46.10%), dominant branch mobility.lane-dancer (15.98%), top trigger on_fusion (20.88%), top mechanic revenant_trigger (25.95%).
+- Run 5: dominant family chaos (42.22%), dominant branch mobility.lane-dancer (15.85%), top trigger on_fusion (20.55%), top mechanic revenant_trigger (25.54%).
+- Branch share spread is low (sd=0.0295); repeated branch winners imply reinforcement.
+- Mean lineage concentration 0.039 suggests sticky ancestry under long sessions.
+- Open-endedness timeline shows late-season branch entropy softening while lineage concentration trends upward.
 
 ## 3) Alternative explanations
-- Generator bias alone is unlikely as sole cause: diversity and mutation frequencies remain high while convergence still repeats.
-- Single-seed founder effects are unlikely as sole cause due to 5 independent large runs.
-- Environment pressure absence is not the only driver; convergence remains in full-system runs.
+- Current environment-event cadence may be sufficient, but branch graph topology might inherently favor a few throughput nodes.
+- Mutation remains high; convergence may be selection-dominated rather than novelty-limited.
 
 ## 4) Confidence level
-- Chaos dominance: **high**.
-- brutality.quarry dominance: **high**.
-- Trait interaction amplification contribution: **moderate**.
-- Environmental-pressure insufficiency: **moderate**.
-- Memory-trigger reinforcement contribution: **provisional**.
+- Repeated winners / concentration: **high**.
+- Primary-cause ranking between trait amplification vs combat loops: **moderate**.
+- Environmental-pressure weakness attribution: **provisional** (needs stronger ablation + duration sweep).
+
+## 5) Generator-level or ecosystem-level?
+- Predominantly **ecosystem-level**. Generator diversity is healthy in isolation, but world-scale selection dynamics collapse diversity.

@@ -1,39 +1,52 @@
-# Ecosystem Tuning Hypotheses (No Changes Implemented)
+# Ecosystem Tuning Hypotheses
 
-## H1: Modest chaos macro reinforcement dampening
-- Subsystem: generator/ecosystem weighting interfaces.
-- Behavior target: reduce persistent chaos over-selection at scale.
-- Expected divergence effect: increased family turnover, reduced top-family share.
-- Risk: medium.
-- Generator diversity impact: low (if narrowly scoped).
+(No broad tuning implemented in this pass.)
 
-## H2: Stronger drift-trigger pathways during lock-in
-- Subsystem: drift/evolution triggers.
-- Behavior target: activate exploration when branch concentration rises.
-- Expected divergence effect: higher niche count and branch entropy.
-- Risk: medium.
-- Generator diversity impact: none (post-generation).
+## Trait interaction weighting
+- subsystem to change: Trait interaction weighting
+- behavior it should alter: reduce runaway same-trait amplification
+- expected effect on divergence: increase branch diversity and reduce repeated family lock-in
+- expected risk: can flatten identity if overcorrected
+- focus: combat-focused
+- lab-branch-first: yes
 
-## H3: Longer environmental pressure windows
-- Subsystem: environmental pressure scheduling.
-- Behavior target: maintain counterpressure long enough to affect late-season incumbents.
-- Expected divergence effect: reduced convergence speed.
-- Risk: low-medium.
-- Generator diversity impact: none.
+## Combat throughput loop multipliers
+- subsystem to change: Combat throughput loop multipliers
+- behavior it should alter: lower compounding kill-chain reinforcement
+- expected effect on divergence: reduce branch reinforcement in long sessions
+- expected risk: may reduce pacing excitement
+- focus: combat-focused
+- lab-branch-first: yes
 
-## H4: Stronger lineage specialization trade-offs
-- Subsystem: lineage reinforcement.
-- Behavior target: limit runaway generalist dominance.
-- Expected divergence effect: lower lineage concentration, higher rare-lineage persistence.
-- Risk: medium-high.
-- Generator diversity impact: none.
+## Branch reinforcement decay
+- subsystem to change: Branch reinforcement decay
+- behavior it should alter: increase decay on repeatedly dominant branches
+- expected effect on divergence: raise turnover and novelty persistence
+- expected risk: could create excessive churn
+- focus: mixed
+- lab-branch-first: yes
 
-## H5: Trait interaction diversity nudges
-- Subsystem: trait interaction matrix scaling.
-- Behavior target: reduce repeated top-pair amplification.
-- Expected divergence effect: lower brutality.quarry lock-in likelihood.
-- Risk: medium-high.
-- Generator diversity impact: indirect positive.
+## Lineage stickiness controls
+- subsystem to change: Lineage stickiness controls
+- behavior it should alter: soft-cap lineage carryover bonuses for early winners
+- expected effect on divergence: lower lineage concentration
+- expected risk: may penalize authentic long-term progression
+- focus: mixed
+- lab-branch-first: yes
 
-## Confidence
-- H1 high, H2 moderate, H3 moderate, H4 moderate, H5 provisional.
+## Environmental pressure intensity/duration
+- subsystem to change: Environmental pressure intensity/duration
+- behavior it should alter: increase pressure duration and cross-branch coverage
+- expected effect on divergence: improve macro redirection away from entrenched meta
+- expected risk: could feel noisy if too strong
+- focus: non-combat-focused
+- lab-branch-first: yes
+
+## Memory/environment/support pathway weights
+- subsystem to change: Memory/environment/support pathway weights
+- behavior it should alter: raise impact floor for low-combat pathways
+- expected effect on divergence: improve non-combat viability and niche retention
+- expected risk: risk of incidental power creep
+- focus: non-combat-focused
+- lab-branch-first: yes
+
