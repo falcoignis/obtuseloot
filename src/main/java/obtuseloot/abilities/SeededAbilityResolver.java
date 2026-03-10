@@ -16,6 +16,7 @@ import obtuseloot.evolution.ExperienceEvolutionEngine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SeededAbilityResolver implements AbilityResolver {
     private final ProceduralAbilityGenerator generator;
@@ -57,12 +58,15 @@ public class SeededAbilityResolver implements AbilityResolver {
         ArtifactLineage lineage = lineageRegistry.assignLineage(artifact);
 
         artifact.setLastAbilityBranchPath(branchPath.toString());
+        artifact.setLastTriggerProfile(mutationResult.abilities().stream().map(a -> a.trigger().name()).collect(Collectors.joining(",")));
+        artifact.setLastMechanicProfile(mutationResult.abilities().stream().map(a -> a.mechanic().name()).collect(Collectors.joining(",")));
         artifact.setLastMutationHistory(mutationResult.mutations().toString());
         artifact.setLastMemoryInfluence("pressure=" + memoryProfile.pressure() + ", chaos=" + memoryProfile.chaosWeight() + ", discipline=" + memoryProfile.disciplineWeight()
                 + ", aggression=" + memoryProfile.aggressionWeight() + ", survival=" + memoryProfile.survivalWeight() + ", mobility=" + memoryProfile.mobilityWeight()
                 + ", boss=" + memoryProfile.bossWeight() + ", trauma=" + memoryProfile.traumaWeight() + ", activeMutation=" + mutated
                 + ", lineageTraits=" + lineageResolver.traitSnapshot(lineage)
                 + ", templates=" + generated.abilities().stream().map(AbilityDefinition::id).toList());
+        lineageRegistry.evaluateSpeciation(artifact);
         return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), mutationResult.abilities());
     }
 

@@ -28,10 +28,18 @@ public class SqlSchemaManager {
                     ability_branch_path TEXT,
                     mutation_history TEXT,
                     memory_influence TEXT,
+                    regulatory_profile TEXT,
+                    open_regulatory_gates TEXT,
+                    gate_candidate_pool TEXT,
+                    trigger_profile TEXT,
+                    mechanic_profile TEXT,
                     drift_level INT,
                     total_drifts INT,
                     last_drift_timestamp BIGINT,
                     latent_lineage VARCHAR(128),
+                    species_id VARCHAR(128),
+                    parent_species_id VARCHAR(128),
+                    species_compatibility_distance DOUBLE,
                     instability_state VARCHAR(64),
                     instability_expiry BIGINT,
                     seed_affinities_json TEXT,
@@ -43,6 +51,23 @@ public class SqlSchemaManager {
                     notable_events_json TEXT,
                     awakening_traits_json TEXT,
                     FOREIGN KEY (player_uuid) REFERENCES players(player_uuid)
+                )
+                """);
+            statement.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS species_registry (
+                    species_id VARCHAR(128) PRIMARY KEY,
+                    parent_species_id VARCHAR(128),
+                    origin_lineage_id VARCHAR(128) NOT NULL,
+                    created_at BIGINT NOT NULL,
+                    created_generation INT NOT NULL,
+                    divergence_snapshot TEXT,
+                    tendency_profile TEXT
+                )
+                """);
+            statement.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS lineage_species_roots (
+                    lineage_id VARCHAR(128) PRIMARY KEY,
+                    root_species_id VARCHAR(128) NOT NULL
                 )
                 """);
             statement.executeUpdate("""

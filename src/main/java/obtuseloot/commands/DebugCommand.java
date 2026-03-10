@@ -164,6 +164,8 @@ public class DebugCommand {
         sender.sendMessage("§7abilityEffects=§f" + abilityProfile.abilities().stream().map(a -> a.name() + ":" + a.effects().stream().map(e -> e.type().name()).toList()).toList());
         sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7fusion influence=§f" + artifact.getFusionPath());
         sender.sendMessage("§7branchPath=§f" + artifact.getLastAbilityBranchPath() + " §7mutationHistory=§f" + artifact.getLastMutationHistory());
+        sender.sendMessage("§7speciesId=§f" + artifact.getSpeciesId() + " §7parentSpecies=§f" + artifact.getParentSpeciesId()
+                + " §7compatibility=§f" + String.format(java.util.Locale.ROOT, "%.3f", artifact.getLastSpeciesCompatibilityDistance()));
         sender.sendMessage("§7memoryInfluence=§f" + artifact.getLastMemoryInfluence());
         sender.sendMessage("§7rep: P=" + rep.getPrecision() + " B=" + rep.getBrutality() + " S=" + rep.getSurvival()
                 + " M=" + rep.getMobility() + " X=" + rep.getChaos() + " C=" + rep.getConsistency()
