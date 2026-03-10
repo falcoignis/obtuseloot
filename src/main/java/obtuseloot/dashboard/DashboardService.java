@@ -65,8 +65,11 @@ public class DashboardService {
                 gaugeData.endArtifacts(),
                 gaugeData.endSpecies(),
                 gaugeData.latestTnt(),
+                gaugeData.latestNser(),
                 gaugeData.endTrend(),
                 gaugeData.tntTrend(),
+                gaugeData.nserTrend(),
+                gaugeData.nserInterpretation(),
                 gaugeData.status());
     }
 
@@ -134,13 +137,16 @@ public class DashboardService {
     private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
         Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
         if (!Files.exists(path)) {
-            return new EcosystemGaugeData(0.0D, null, 0.0D, List.of(), List.of(), EcosystemStatus.STAGNANT);
+            return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT);
         }
         String content = Files.readString(path);
         double endArtifacts = extractNumber(content, "END_artifacts");
         Double endSpecies = extractNullableNumber(content, "END_species");
         List<Double> endTrend = extractDoubleArray(content, "END_trend");
         List<Double> tntTrend = extractDoubleArray(content, "TNT_trend");
+        List<Double> nserTrend = extractDoubleArray(content, "NSER_trend");
+        double latestNser = nserTrend.isEmpty() ? extractNumber(content, "NSER_latest") : nserTrend.get(nserTrend.size() - 1);
+        String interpretation = extractString(content, "interpretation");
         String statusRaw = extractString(content, "ecosystem_status");
         EcosystemStatus status;
         try {
@@ -149,7 +155,8 @@ public class DashboardService {
             status = EcosystemStatus.STAGNANT;
         }
         double latestTnt = tntTrend.isEmpty() ? 0.0D : tntTrend.get(tntTrend.size() - 1);
-        return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, endTrend, tntTrend, status);
+        return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, endTrend, tntTrend, nserTrend,
+                interpretation == null ? "NSER not available." : interpretation, status);
     }
 
     private double extractNumber(String content, String key) {
@@ -193,7 +200,10 @@ public class DashboardService {
     private record EcosystemGaugeData(double endArtifacts,
                                       Double endSpecies,
                                       double latestTnt,
+                                      double latestNser,
                                       List<Double> endTrend,
                                       List<Double> tntTrend,
+                                      List<Double> nserTrend,
+                                      String nserInterpretation,
                                       EcosystemStatus status) {}
 }

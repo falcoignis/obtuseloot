@@ -7,11 +7,19 @@ public class EcosystemHealthGaugeAnalyzer {
                               Double endSpecies,
                               List<Double> endTrend,
                               List<Double> tntTrend,
+                              List<Double> nserTrend,
+                              double latestNser,
                               EcosystemStatus status,
                               String interpretation) {}
 
     public GaugeResult analyze(List<Map<String, Integer>> artifactOccupancyBySeason,
                                List<Map<String, Integer>> speciesOccupancyBySeason) {
+        return analyze(artifactOccupancyBySeason, speciesOccupancyBySeason, List.of());
+    }
+
+    public GaugeResult analyze(List<Map<String, Integer>> artifactOccupancyBySeason,
+                               List<Map<String, Integer>> speciesOccupancyBySeason,
+                               List<Double> nserTrend) {
         List<Double> endTrend = new ArrayList<>();
         for (Map<String, Integer> occupancy : artifactOccupancyBySeason) {
             endTrend.add(round4(effectiveNicheDiversity(occupancy)));
@@ -28,8 +36,11 @@ public class EcosystemHealthGaugeAnalyzer {
             endSpecies = round4(effectiveNicheDiversity(speciesOccupancyBySeason.get(speciesOccupancyBySeason.size() - 1)));
         }
         double tnt = tntTrend.isEmpty() ? 0.0D : tntTrend.get(tntTrend.size() - 1);
+        double latestNser = nserTrend == null || nserTrend.isEmpty() ? 0.0D : nserTrend.get(nserTrend.size() - 1);
         EcosystemStatus status = classify(endArtifacts, tnt);
-        return new GaugeResult(endArtifacts, endSpecies, endTrend, tntTrend, status, interpretation(endArtifacts, tnt, status));
+        return new GaugeResult(endArtifacts, endSpecies, endTrend, tntTrend,
+                nserTrend == null ? List.of() : List.copyOf(nserTrend), latestNser,
+                status, interpretation(endArtifacts, tnt, latestNser, status));
     }
 
     public double effectiveNicheDiversity(Map<String, Integer> occupancy) {
@@ -86,14 +97,19 @@ public class EcosystemHealthGaugeAnalyzer {
         return tnt >= 0.40D ? EcosystemStatus.TURBULENT : EcosystemStatus.HEALTHY_ECOSYSTEM;
     }
 
-    private String interpretation(double end, double tnt, EcosystemStatus status) {
+    private String interpretation(double end, double tnt, double nser, EcosystemStatus status) {
+        String novelty = nser < 0.05D ? " Novelty signal indicates mostly strategy reshuffling."
+                : nser < 0.15D ? " Novelty signal is weak but non-zero."
+                : nser < 0.30D ? " Novelty signal is healthy and bounded."
+                : nser < 0.50D ? " Novelty signal shows a strong innovation phase."
+                : " Novelty signal is very high and may reflect over-fragmentation.";
         return switch (status) {
-            case COLLAPSED -> "Low END with high TNT indicates unstable collapse or ecological thrashing.";
-            case STAGNANT -> "Low END with low TNT indicates monoculture stagnation.";
-            case EARLY_DIVERGENCE -> "END suggests early ecological differentiation with limited attractors.";
-            case HEALTHY_ECOSYSTEM -> "END/TNT indicate a stable multi-niche ecosystem that is still active.";
-            case TURBULENT -> "TNT indicates unstable or highly rotating niches despite some diversity.";
-            case FRAGMENTED -> "Very high turnover with high END suggests chaotic or fragmented ecology.";
+            case COLLAPSED -> "Low END with high TNT indicates unstable collapse or ecological thrashing." + novelty;
+            case STAGNANT -> "Low END with low TNT indicates monoculture stagnation." + novelty;
+            case EARLY_DIVERGENCE -> "END suggests early ecological differentiation with limited attractors." + novelty;
+            case HEALTHY_ECOSYSTEM -> "END/TNT indicate a stable multi-niche ecosystem that is still active." + novelty;
+            case TURBULENT -> "TNT indicates unstable or highly rotating niches despite some diversity." + novelty;
+            case FRAGMENTED -> "Very high turnover with high END suggests chaotic or fragmented ecology." + novelty;
         };
     }
 

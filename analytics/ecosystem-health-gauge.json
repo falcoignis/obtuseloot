@@ -11,6 +11,10 @@
   "TNT_trend": [
     0.002
   ],
+  "NSER_trend": [
+    0.0,
+    0.0
+  ],
   "ecosystem_status": "STAGNANT",
-  "interpretation": "Low END with low TNT indicates monoculture stagnation."
+  "interpretation": "Low END with low TNT indicates monoculture stagnation. Novelty signal indicates mostly strategy reshuffling."
 }

@@ -1,6 +1,7 @@
 package obtuseloot.simulation.worldlab;
 
 import obtuseloot.analytics.EcosystemHealthVisualizer;
+import obtuseloot.analytics.NovelStrategyEmergenceAnalyzer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,6 +69,7 @@ public final class OpenEndednessTestRunner {
         Files.writeString(outputDir.resolve("speciation-open-endedness-review.md"), speciationOpenEndednessReview(results));
         Files.writeString(outputDir.resolve("co-evolution-open-endedness-review.md"), coEvolutionOpenEndednessReview(results));
         Files.writeString(outputDir.resolve("ecology-repair-open-endedness-review.md"), ecologyRepairOpenEndednessReview(results));
+        Files.writeString(outputDir.resolve("novelty-open-endedness-review.md"), noveltyOpenEndednessReview(results));
 
         renderCharts(outputDir, results);
     }
@@ -137,6 +139,10 @@ public final class OpenEndednessTestRunner {
         summary.put("coEvolutionSupportTrend", simpleSeries(seasonal, "coEvolutionSupportPressure"));
         summary.put("coEvolutionModifierTrend", simpleSeries(seasonal, "coEvolutionModifier"));
         summary.put("coEvolutionMigrationTrend", simpleSeries(seasonal, "coEvolutionMigrationPressure"));
+
+        NovelStrategyEmergenceAnalyzer.NserResult nser = new NovelStrategyEmergenceAnalyzer().analyze(seasonal);
+        summary.put("nserTrend", nser.trend());
+        summary.put("latestNser", nser.trend().isEmpty() ? 0.0D : nser.trend().getLast());
         return summary;
     }
 
@@ -330,6 +336,7 @@ public final class OpenEndednessTestRunner {
                 + "- Classification combines concentration divergence, turnover divergence, and novelty persistence.\n\n"
                 + "## 3) Key findings\n"
                 + "- Classification: **" + status + "**\n"
+                + "- NSER (World A latest): " + fmt(a.getOrDefault("latestNser", 0.0D)) + "\n"
                 + "- Generator-only diversity remains balanced; ecosystem divergence appears only with active subsystem interactions.\n\n"
                 + "## 4) Dominant families / branches / lineages / mechanics\n"
                 + "- Full-system world maintains broader branch entropy than ablated worlds in late seasons.\n\n"
@@ -366,7 +373,26 @@ public final class OpenEndednessTestRunner {
         if (niches < 3.0D) {
             return "weakly ecological";
         }
+        double nser = summary.get("latestNser") instanceof Number n ? n.doubleValue() : 0.0D;
+        if (nser >= 0.15D && nser < 0.50D) {
+            return "multi-attractor ecosystem with sustained novelty";
+        }
         return "multi-attractor ecosystem";
+    }
+
+    private static String noveltyOpenEndednessReview(Map<String, Map<String, Object>> results) {
+        Map<String, Object> summary = castMap(results.getOrDefault("A", Map.of()).get("summary"));
+        List<Double> nserTrend = asDoubles(summary.get("nserTrend"));
+        double latestNser = nserTrend.isEmpty() ? 0.0D : nserTrend.getLast();
+        String noveltyClass = latestNser < 0.05D ? "mostly reshuffling existing forms"
+                : latestNser < 0.30D ? "producing bounded novelty"
+                : latestNser < 0.50D ? "producing sustained new strategies"
+                : "possibly over-fragmenting into noise";
+        return "# Novelty Open-Endedness Review\n\n"
+                + "- END proxy: adaptiveNicheCountTrend=" + summary.getOrDefault("adaptiveNicheCountTrend", List.of()) + "\n"
+                + "- TNT proxy: top5BranchTurnoverTrend=" + summary.getOrDefault("top5BranchTurnoverTrend", List.of()) + "\n"
+                + "- NSER trend: " + nserTrend + "\n"
+                + "- Combined END + TNT + NSER interpretation: ecosystem is " + noveltyClass + ".\n";
     }
 
     private static List<Double> asDoubles(Object value) {

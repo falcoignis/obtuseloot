@@ -22,6 +22,7 @@ public class DashboardRenderer {
                 metrics.collapseRisk().name(),
                 fmt(metrics.endArtifacts()),
                 fmt(metrics.latestTnt()),
+                fmt(metrics.latestNser()),
                 statusBadge(metrics.ecosystemStatus()),
                 renderMap((Map<String, Integer>) data.get("archetypes")),
                 data.get("heatmapImage"),
@@ -46,7 +47,7 @@ public class DashboardRenderer {
                     body{font-family:Arial;background:#0f1524;color:#eaf0ff;margin:20px}
                     .grid{display:grid;grid-template-columns:repeat(2,minmax(360px,1fr));gap:14px}
                     .panel{background:#1a243b;border-radius:10px;padding:12px}
-                    .strip{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+                    .strip{display:grid;grid-template-columns:repeat(9,1fr);gap:8px}
                     .metric{background:#25304d;padding:10px;border-radius:8px}
                     .small{color:#9bb1de;font-size:12px}
                     pre{white-space:pre-wrap}
@@ -67,6 +68,7 @@ public class DashboardRenderer {
                     <div class=\"metric\"><div class=\"small\">Collapse Risk</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Effective Niches (END)</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Temporal Niche Turnover (TNT)</div><b>%s</b></div>
+                    <div class=\"metric\"><div class=\"small\">Novel Strategy Emergence Rate (NSER)</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Ecosystem Status</div><b>%s</b></div>
                   </div>
                   <div class=\"grid\">
@@ -111,8 +113,11 @@ public class DashboardRenderer {
         return "END_artifacts=" + fmt(metrics.endArtifacts())
                 + "\nEND_species=" + (metrics.endSpecies() == null ? "N/A" : fmt(metrics.endSpecies()))
                 + "\nTNT_latest=" + fmt(metrics.latestTnt())
+                + "\nNSER_latest=" + fmt(metrics.latestNser())
                 + "\nEND_trend=" + metrics.endTrend()
                 + "\nTNT_trend=" + metrics.tntTrend()
+                + "\nNSER_trend=" + metrics.nserTrend()
+                + "\nNSER_note=" + metrics.nserInterpretation()
                 + "\nstatus=" + metrics.ecosystemStatus();
     }
 

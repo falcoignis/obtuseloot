@@ -13,8 +13,11 @@ public record DashboardMetrics(
         double endArtifacts,
         Double endSpecies,
         double latestTnt,
+        double latestNser,
         List<Double> endTrend,
         List<Double> tntTrend,
+        List<Double> nserTrend,
+        String nserInterpretation,
         EcosystemStatus ecosystemStatus
 ) {
     public enum CollapseRisk {
