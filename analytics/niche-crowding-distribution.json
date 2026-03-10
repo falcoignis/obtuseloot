@@ -1,0 +1,18 @@
+{
+  "occupancyByNiche": {
+    "niche-1": 1.0
+  },
+  "speciesFractionByNiche": {
+    "niche-1": 1.0
+  },
+  "successFractionByNiche": {
+    "niche-1": 1.0
+  },
+  "speciesPerNiche": {
+    "niche-1": 23
+  },
+  "penaltyActivationFrequency": 0.9761904761904762,
+  "overcrowdedNicheCount": 1,
+  "targetOccupancy": 0.18,
+  "beta": 0.4
+}

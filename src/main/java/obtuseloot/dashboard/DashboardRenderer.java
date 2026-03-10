@@ -21,7 +21,8 @@ public class DashboardRenderer {
                 renderMap((Map<String, Integer>) data.get("archetypes")),
                 data.get("heatmapImage"),
                 renderMap((Map<String, Integer>) data.get("traits")),
-                renderMap((Map<String, Integer>) data.get("lineages"))
+                renderMap((Map<String, Integer>) data.get("lineages")),
+                renderSpeciesNiche((Map<String, Object>) data.get("speciesNicheMetrics"))
         );
 
         Files.writeString(output, html);
@@ -61,6 +62,7 @@ public class DashboardRenderer {
                     <div class=\"panel\"><h3>Trait Interaction Heatmap</h3><img src=\"%s\" style=\"max-width:100%%\"></div>
                     <div class=\"panel\"><h3>Genome Trait Scatter Plot</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Lineage Survival / Concentration</h3><pre>%s</pre></div>
+                    <div class=\"panel\"><h3>Species & Niche Health</h3><pre>%s</pre></div>
                   </div>
                 </body>
                 </html>
@@ -78,4 +80,18 @@ public class DashboardRenderer {
     private String fmt(double value) {
         return String.format(Locale.ROOT, "%.4f", value);
     }
+
+    private String renderSpeciesNiche(Map<String, Object> speciesNicheMetrics) {
+        if (speciesNicheMetrics == null || speciesNicheMetrics.isEmpty()) {
+            return "Species/niche analytics not generated yet.";
+        }
+        return "activeSpecies=" + speciesNicheMetrics.getOrDefault("activeSpecies", 0)
+                + "\ndominantSpeciesShare=" + speciesNicheMetrics.getOrDefault("dominantSpeciesShare", 0)
+                + "\nnicheCount=" + speciesNicheMetrics.getOrDefault("nicheCount", 0)
+                + "\nspeciesPerNiche=" + speciesNicheMetrics.getOrDefault("speciesPerNiche", Map.of())
+                + "\nnicheTurnover=" + speciesNicheMetrics.getOrDefault("nicheTurnover", 0)
+                + "\ndominantNicheShare=" + speciesNicheMetrics.getOrDefault("dominantNicheShare", 0)
+                + "\novercrowdedNicheCount=" + speciesNicheMetrics.getOrDefault("overcrowdedNicheCount", 0);
+    }
+
 }
