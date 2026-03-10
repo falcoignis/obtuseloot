@@ -23,17 +23,25 @@ public final class EnvironmentPressureEngine {
                 new EventTemplate("DriftStorm", List.of(
                         new FitnessLandscapeModifier(GenomeTrait.CHAOS_AFFINITY, 1.18D),
                         new FitnessLandscapeModifier(GenomeTrait.VOLATILITY, 1.15D),
-                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 0.88D))),
+                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 0.88D),
+                        new FitnessLandscapeModifier(GenomeTrait.MUTATION_SENSITIVITY, 1.08D),
+                        new FitnessLandscapeModifier(GenomeTrait.SURVIVAL_INSTINCT, 0.94D))),
                 new EventTemplate("PrecisionAge", List.of(
                         new FitnessLandscapeModifier(GenomeTrait.PRECISION_AFFINITY, 1.20D),
-                        new FitnessLandscapeModifier(GenomeTrait.MOBILITY_AFFINITY, 0.80D))),
+                        new FitnessLandscapeModifier(GenomeTrait.MOBILITY_AFFINITY, 0.84D),
+                        new FitnessLandscapeModifier(GenomeTrait.RESONANCE, 1.10D),
+                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 1.06D))),
                 new EventTemplate("SurvivalWinter", List.of(
                         new FitnessLandscapeModifier(GenomeTrait.SURVIVAL_INSTINCT, 1.25D),
-                        new FitnessLandscapeModifier(GenomeTrait.CHAOS_AFFINITY, 0.86D))),
+                        new FitnessLandscapeModifier(GenomeTrait.CHAOS_AFFINITY, 0.88D),
+                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 1.10D),
+                        new FitnessLandscapeModifier(GenomeTrait.RESONANCE, 1.06D))),
                 new EventTemplate("MobilityBloom", List.of(
                         new FitnessLandscapeModifier(GenomeTrait.MOBILITY_AFFINITY, 1.22D),
                         new FitnessLandscapeModifier(GenomeTrait.KINETIC_BIAS, 1.12D),
-                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 0.92D)))
+                        new FitnessLandscapeModifier(GenomeTrait.STABILITY, 0.94D),
+                        new FitnessLandscapeModifier(GenomeTrait.SURVIVAL_INSTINCT, 1.08D),
+                        new FitnessLandscapeModifier(GenomeTrait.RESONANCE, 1.05D)))
         );
         rotateEvent();
     }
@@ -68,7 +76,7 @@ public final class EnvironmentPressureEngine {
 
     private void rotateEvent() {
         EventTemplate template = templates.get(random.nextInt(templates.size()));
-        int duration = random.nextInt(3) + 1;
+        int duration = random.nextInt(4) + 2;
         currentEvent = new EnvironmentalEvent(template.name(), duration, template.modifiers());
     }
 

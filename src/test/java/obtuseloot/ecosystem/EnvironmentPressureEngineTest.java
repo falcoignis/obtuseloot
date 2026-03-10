@@ -13,7 +13,7 @@ class EnvironmentPressureEngineTest {
         EnvironmentPressureEngine engine = new EnvironmentPressureEngine(9L);
         assertNotNull(engine.currentEvent());
         assertTrue(engine.currentEvent().remainingSeasons() >= 1);
-        assertTrue(engine.currentEvent().remainingSeasons() <= 3);
+        assertTrue(engine.currentEvent().remainingSeasons() <= 5);
         assertTrue(engine.currentModifiers().containsKey(GenomeTrait.PRECISION_AFFINITY));
     }
 
