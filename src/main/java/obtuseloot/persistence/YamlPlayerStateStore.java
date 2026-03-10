@@ -9,6 +9,8 @@ import obtuseloot.names.ArtifactRank;
 import obtuseloot.names.NamingArchetype;
 import obtuseloot.names.ToneProfile;
 import obtuseloot.reputation.ArtifactReputation;
+import obtuseloot.species.ArtifactSpecies;
+import obtuseloot.species.SpeciesRegistrySnapshot;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -107,6 +109,9 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
         artifact.setNaming(naming);
         artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", artifact.getLatentLineage()));
+        artifact.setSpeciesId(yaml.getString("artifact.species-id", artifact.getSpeciesId()));
+        artifact.setParentSpeciesId(yaml.getString("artifact.parent-species-id", artifact.getParentSpeciesId()));
+        artifact.setLastSpeciesCompatibilityDistance(yaml.getDouble("artifact.species-compatibility-distance", 0.0D));
         artifact.setDriftAlignment(yaml.getString("artifact.drift-alignment", artifact.getDriftAlignment()));
 
         readStatMap(yaml, "artifact.drift-bias", artifact.getDriftBiasAdjustments());
@@ -119,6 +124,11 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.getAwakeningTraits().addAll(yaml.getStringList("artifact.awakening-traits"));
         artifact.setLastAbilityBranchPath(yaml.getString("artifact.last-ability-branch-path", "[]"));
         artifact.setLastMutationHistory(yaml.getString("artifact.last-mutation-history", "[]"));
+        artifact.setLastRegulatoryProfile(yaml.getString("artifact.last-regulatory-profile", "[]"));
+        artifact.setLastOpenRegulatoryGates(yaml.getString("artifact.last-open-regulatory-gates", ""));
+        artifact.setLastGateCandidatePool(yaml.getString("artifact.last-gate-candidate-pool", "0->0"));
+        artifact.setLastTriggerProfile(yaml.getString("artifact.last-trigger-profile", ""));
+        artifact.setLastMechanicProfile(yaml.getString("artifact.last-mechanic-profile", ""));
         artifact.setLastMemoryInfluence(yaml.getString("artifact.last-memory-influence", "none"));
         for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
             try {
@@ -235,6 +245,64 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         });
     }
 
+
+    @Override
+    public void saveSpeciesSnapshot(SpeciesRegistrySnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        File file = new File(playerDataDir.getParentFile(), "species-registry.yml");
+        YamlConfiguration yaml = new YamlConfiguration();
+        snapshot.speciesById().forEach((id, species) -> {
+            String base = "species." + id + ".";
+            yaml.set(base + "parent-species-id", species.parentSpeciesId());
+            yaml.set(base + "origin-lineage-id", species.originLineageId());
+            yaml.set(base + "created-at", species.createdAtEpochMs());
+            yaml.set(base + "created-generation", species.createdGeneration());
+            yaml.set(base + "divergence-snapshot", species.divergenceSnapshot());
+            yaml.set(base + "tendency-profile", species.tendencyProfile());
+        });
+        yaml.set("lineage-roots", snapshot.lineageRoots());
+        try {
+            yaml.save(file);
+        } catch (IOException ex) {
+            logger.warning("[Persistence] Failed to save species snapshot: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public SpeciesRegistrySnapshot loadSpeciesSnapshot() {
+        File file = new File(playerDataDir.getParentFile(), "species-registry.yml");
+        if (!file.exists()) {
+            return null;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        java.util.Map<String, ArtifactSpecies> species = new java.util.LinkedHashMap<>();
+        if (yaml.getConfigurationSection("species") != null) {
+            for (String id : yaml.getConfigurationSection("species").getKeys(false)) {
+                String base = "species." + id + ".";
+                java.util.Map<String, Double> divergence = mapFromObject(yaml.getConfigurationSection(base + "divergence-snapshot") != null ? yaml.getConfigurationSection(base + "divergence-snapshot").getValues(false) : java.util.Map.of());
+                java.util.Map<String, Double> tendencies = mapFromObject(yaml.getConfigurationSection(base + "tendency-profile") != null ? yaml.getConfigurationSection(base + "tendency-profile").getValues(false) : java.util.Map.of());
+                species.put(id, new ArtifactSpecies(
+                        id,
+                        yaml.getString(base + "parent-species-id", "none"),
+                        yaml.getString(base + "origin-lineage-id", "unknown"),
+                        yaml.getLong(base + "created-at", 0L),
+                        yaml.getInt(base + "created-generation", 0),
+                        divergence,
+                        tendencies
+                ));
+            }
+        }
+        java.util.Map<String, String> lineageRoots = new java.util.LinkedHashMap<>();
+        if (yaml.getConfigurationSection("lineage-roots") != null) {
+            for (String key : yaml.getConfigurationSection("lineage-roots").getKeys(false)) {
+                lineageRoots.put(key, yaml.getString("lineage-roots." + key, ""));
+            }
+        }
+        return new SpeciesRegistrySnapshot(species, lineageRoots);
+    }
+
     private void writeArtifactSection(YamlConfiguration yaml, Artifact artifact) {
         String base = "artifact.";
         yaml.set(base + "owner-id", artifact.getOwnerId().toString());
@@ -261,6 +329,9 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "drift-alignment", artifact.getDriftAlignment());
         yaml.set(base + "last-drift-timestamp", artifact.getLastDriftTimestamp());
         yaml.set(base + "latent-lineage", artifact.getLatentLineage());
+        yaml.set(base + "species-id", artifact.getSpeciesId());
+        yaml.set(base + "parent-species-id", artifact.getParentSpeciesId());
+        yaml.set(base + "species-compatibility-distance", artifact.getLastSpeciesCompatibilityDistance());
         yaml.set(base + "current-instability-state", artifact.getCurrentInstabilityState());
         yaml.set(base + "instability-expiry", artifact.getInstabilityExpiryTimestamp());
 
@@ -278,6 +349,11 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "awakening-traits", List.copyOf(artifact.getAwakeningTraits()));
         yaml.set(base + "last-ability-branch-path", artifact.getLastAbilityBranchPath());
         yaml.set(base + "last-mutation-history", artifact.getLastMutationHistory());
+        yaml.set(base + "last-regulatory-profile", artifact.getLastRegulatoryProfile());
+        yaml.set(base + "last-open-regulatory-gates", artifact.getLastOpenRegulatoryGates());
+        yaml.set(base + "last-gate-candidate-pool", artifact.getLastGateCandidatePool());
+        yaml.set(base + "last-trigger-profile", artifact.getLastTriggerProfile());
+        yaml.set(base + "last-mechanic-profile", artifact.getLastMechanicProfile());
         yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
         artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
     }
@@ -308,6 +384,17 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         for (String stat : List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency")) {
             target.put(stat, yaml.getDouble(path + "." + stat, 0.0D));
         }
+    }
+
+
+    private Map<String, Double> mapFromObject(Map<String, Object> raw) {
+        Map<String, Double> out = new java.util.LinkedHashMap<>();
+        raw.forEach((k, v) -> {
+            if (v instanceof Number n) {
+                out.put(k, n.doubleValue());
+            }
+        });
+        return out;
     }
 
     private YamlConfiguration loadYaml(UUID playerId) {

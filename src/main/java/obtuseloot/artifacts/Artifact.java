@@ -27,6 +27,9 @@ public class Artifact {
     private long lastDriftTimestamp;
 
     private String latentLineage;
+    private String speciesId;
+    private String parentSpeciesId;
+    private double lastSpeciesCompatibilityDistance;
     private String currentInstabilityState;
     private long instabilityExpiryTimestamp;
 
@@ -53,6 +56,8 @@ public class Artifact {
     private String lastRegulatoryProfile;
     private String lastOpenRegulatoryGates;
     private String lastGateCandidatePool;
+    private String lastTriggerProfile;
+    private String lastMechanicProfile;
 
     public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
@@ -66,6 +71,9 @@ public class Artifact {
         this.fusionPath = "none";
         this.driftAlignment = "stable";
         this.latentLineage = "common";
+        this.speciesId = "unspeciated";
+        this.parentSpeciesId = "none";
+        this.lastSpeciesCompatibilityDistance = 0.0D;
         this.currentInstabilityState = "none";
         this.driftBiasAdjustments = new HashMap<>();
         this.awakeningBiasAdjustments = new HashMap<>();
@@ -81,6 +89,8 @@ public class Artifact {
         this.lastRegulatoryProfile = "[]";
         this.lastOpenRegulatoryGates = "";
         this.lastGateCandidatePool = "0->0";
+        this.lastTriggerProfile = "";
+        this.lastMechanicProfile = "";
     }
 
     public void resetMutableState() {
@@ -96,6 +106,9 @@ public class Artifact {
         awakeningPath = "dormant";
         fusionPath = "none";
         currentInstabilityState = "none";
+        speciesId = "unspeciated";
+        parentSpeciesId = "none";
+        lastSpeciesCompatibilityDistance = 0.0D;
         instabilityExpiryTimestamp = 0L;
         driftHistory.clear();
         loreHistory.clear();
@@ -107,6 +120,8 @@ public class Artifact {
         lastRegulatoryProfile = "[]";
         lastOpenRegulatoryGates = "";
         lastGateCandidatePool = "0->0";
+        lastTriggerProfile = "";
+        lastMechanicProfile = "";
     }
 
     public ArtifactRank getRank() { return ArtifactRankResolver.resolve(this); }
@@ -168,6 +183,12 @@ public class Artifact {
     public void setLastDriftTimestamp(long lastDriftTimestamp) { this.lastDriftTimestamp = lastDriftTimestamp; }
     public String getLatentLineage() { return latentLineage; }
     public void setLatentLineage(String latentLineage) { this.latentLineage = latentLineage; }
+    public String getSpeciesId() { return speciesId; }
+    public void setSpeciesId(String speciesId) { this.speciesId = speciesId; }
+    public String getParentSpeciesId() { return parentSpeciesId; }
+    public void setParentSpeciesId(String parentSpeciesId) { this.parentSpeciesId = parentSpeciesId; }
+    public double getLastSpeciesCompatibilityDistance() { return lastSpeciesCompatibilityDistance; }
+    public void setLastSpeciesCompatibilityDistance(double lastSpeciesCompatibilityDistance) { this.lastSpeciesCompatibilityDistance = lastSpeciesCompatibilityDistance; }
     public String getCurrentInstabilityState() { return currentInstabilityState; }
     public long getInstabilityExpiryTimestamp() { return instabilityExpiryTimestamp; }
     public double getSeedPrecisionAffinity() { return seedPrecisionAffinity; }
@@ -203,6 +224,10 @@ public class Artifact {
     public void setLastOpenRegulatoryGates(String lastOpenRegulatoryGates) { this.lastOpenRegulatoryGates = lastOpenRegulatoryGates; }
     public String getLastGateCandidatePool() { return lastGateCandidatePool; }
     public void setLastGateCandidatePool(String lastGateCandidatePool) { this.lastGateCandidatePool = lastGateCandidatePool; }
+    public String getLastTriggerProfile() { return lastTriggerProfile; }
+    public void setLastTriggerProfile(String lastTriggerProfile) { this.lastTriggerProfile = lastTriggerProfile; }
+    public String getLastMechanicProfile() { return lastMechanicProfile; }
+    public void setLastMechanicProfile(String lastMechanicProfile) { this.lastMechanicProfile = lastMechanicProfile; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {

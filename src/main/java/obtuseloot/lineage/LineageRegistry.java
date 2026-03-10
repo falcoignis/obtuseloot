@@ -1,18 +1,30 @@
 package obtuseloot.lineage;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.species.ArtifactPopulationSignature;
+import obtuseloot.species.ArtifactSpecies;
+import obtuseloot.species.LineageSpeciationEngine;
+import obtuseloot.species.SpeciesRegistry;
+import obtuseloot.species.SpeciesRegistrySnapshot;
+import obtuseloot.species.SpeciesSignatureResolver;
 
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
 public class LineageRegistry {
     private final Map<String, ArtifactLineage> lineages = new LinkedHashMap<>();
+    private final Map<String, LinkedList<ArtifactPopulationSignature>> speciesSignatures = new LinkedHashMap<>();
     private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
+    private final SpeciesRegistry speciesRegistry = new SpeciesRegistry();
+    private final LineageSpeciationEngine speciationEngine = new LineageSpeciationEngine();
+    private final SpeciesSignatureResolver signatureResolver = new SpeciesSignatureResolver();
 
     public ArtifactLineage assignLineage(Artifact artifact) {
         Random random = new Random(artifact.getArtifactSeed() ^ artifact.getOwnerId().getMostSignificantBits());
@@ -35,7 +47,50 @@ public class LineageRegistry {
         return lineages.get(lineageId);
     }
 
+    public ArtifactSpecies resolveSpecies(Artifact artifact) {
+        ArtifactLineage lineage = assignLineage(artifact);
+        return speciesRegistry.resolveSpecies(artifact, lineage);
+    }
+
+    public ArtifactSpecies evaluateSpeciation(Artifact artifact) {
+        ArtifactLineage lineage = assignLineage(artifact);
+        ArtifactSpecies currentSpecies = speciesRegistry.resolveSpecies(artifact, lineage);
+        ArtifactPopulationSignature currentSignature = signatureResolver.fromArtifact(artifact);
+        ArtifactPopulationSignature baseline = baselineFor(currentSpecies.speciesId(), currentSignature);
+        ArtifactSpecies resolved = speciationEngine.evaluate(artifact, lineage, speciesRegistry, currentSignature, baseline);
+        pushSignature(resolved.speciesId(), currentSignature);
+        return resolved;
+    }
+
+    private ArtifactPopulationSignature baselineFor(String speciesId, ArtifactPopulationSignature fallback) {
+        List<ArtifactPopulationSignature> history = speciesSignatures.get(speciesId);
+        if (history == null || history.isEmpty()) {
+            return fallback;
+        }
+        return history.get(history.size() - 1);
+    }
+
+    private void pushSignature(String speciesId, ArtifactPopulationSignature signature) {
+        LinkedList<ArtifactPopulationSignature> history = speciesSignatures.computeIfAbsent(speciesId, ignored -> new LinkedList<>());
+        history.add(signature);
+        while (history.size() > 20) {
+            history.removeFirst();
+        }
+    }
+
     public Map<String, ArtifactLineage> lineages() {
         return lineages;
+    }
+
+    public SpeciesRegistry speciesRegistry() {
+        return speciesRegistry;
+    }
+
+    public SpeciesRegistrySnapshot speciesSnapshot() {
+        return speciesRegistry.snapshot();
+    }
+
+    public void restoreSpeciesSnapshot(SpeciesRegistrySnapshot snapshot) {
+        speciesRegistry.restore(snapshot);
     }
 }

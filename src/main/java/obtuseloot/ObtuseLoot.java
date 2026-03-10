@@ -92,6 +92,7 @@ public class ObtuseLoot extends JavaPlugin {
         artifactMemoryEngine = new ArtifactMemoryEngine();
         ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
+        lineageRegistry.restoreSpeciesSnapshot(playerStateStore.loadSpeciesSnapshot());
         lineageInfluenceResolver = new LineageInfluenceResolver();
         itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
         itemAbilityManager.setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
@@ -159,6 +160,9 @@ public class ObtuseLoot extends JavaPlugin {
         }
         if (reputationManager != null) {
             reputationManager.saveAll();
+        }
+        if (playerStateStore != null && lineageRegistry != null) {
+            playerStateStore.saveSpeciesSnapshot(lineageRegistry.speciesSnapshot());
         }
         if (persistenceManager != null) {
             persistenceManager.close();
