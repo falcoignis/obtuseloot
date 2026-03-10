@@ -1,20 +1,15 @@
-# Environmental Pressure Effectiveness
+# Environment Pressure Effectiveness
 
-## Does pressure alter trajectory?
-- Yes, directionally: the controlled stack (including pressure) keeps higher entropy and lower concentration than the no-controls world.
-- No, not fully: long-horizon dominant branch convergence still occurs in full-system runs.
+- Environmental pressure is active but appears insufficient to redirect macro trajectories in 5 large runs.
+- Dominant family/branch winners remain stable despite event system presence.
+- Signals suggest event duration or coverage is too narrow to counter combat-loop reinforcement at scale.
+- Non-combat impact appears limited; trigger/mechanic winners remain combat-heavy.
 
-## Metrics
-| Metric | World A (pressure stack on) | World C (pressure stack off) |
-|---|---:|---:|
-| Branch entropy | 2.403 | 2.399 |
-| Lineage concentration | 0.039 | 0.038 |
-| Family turnover | 0.000 | 0.000 |
-| Rare lineage persistence | 507.000 | 518.000 |
+## Assessment
+- Material trajectory change: **low to moderate**.
+- Macro-meta redirection strength: **weak**.
+- Event duration: likely short relative to reinforcement half-life.
+- Event coverage: likely narrow against lineage-wide lock-in.
+- Non-combat effect: insufficient.
 
-## Diagnosis
-- Pressure appears too weak or too short to break high-throughput branch lock once established.
-- Pressure likely targets broad ecology, while convergence source is concentrated in combat throughput + reinforcement loops.
-
-## Confidence
-- **Moderate**.
+Confidence: **provisional-moderate** (no direct event ablation in this pass).

@@ -1,28 +1,27 @@
 # Trait Interaction Amplification Review
 
-## Frequency of dominant trait pairs
-| Rank | Trait pair key | Frequency |
-|---:|---|---:|
-| 1 | matrix.resonance.resonance | 819.0 |
-| 2 | matrix.survivalinstinct.survivalinstinct | 815.0 |
-| 3 | matrix.kineticbias.kineticbias | 814.0 |
-| 4 | matrix.volatility.volatility | 806.0 |
-| 5 | matrix.mutationsensitivity.mutationsensitivity | 797.0 |
-| 6 | matrix.chaosaffinity.chaosaffinity | 788.0 |
-| 7 | matrix.stability.stability | 785.0 |
-| 8 | matrix.mobilityaffinity.mobilityaffinity | 782.0 |
-| 9 | matrix.precisionaffinity.precisionaffinity | 779.0 |
-| 10 | matrix.kineticbias.volatility | 407.0 |
-| 11 | matrix.volatility.kineticbias | 407.0 |
-| 12 | matrix.mutationsensitivity.resonance | 395.0 |
-| 13 | matrix.mutationsensitivity.volatility | 395.0 |
-| 14 | matrix.resonance.mutationsensitivity | 395.0 |
-| 15 | matrix.volatility.mutationsensitivity | 395.0 |
+## strongest pairings
+- chaosaffinity × chaosaffinity: 339 observations (highest frequency; repeated same-trait loop).
+- volatility × volatility: 332 observations.
+- survivalinstinct × survivalinstinct: 331 observations.
+- mobilityaffinity × mobilityaffinity: 329 observations.
+- mutationsensitivity × mutationsensitivity: 327 observations.
 
-## Amplification / suppression assessment
-- Repeated high-frequency pair keys indicate disproportionate reinforcement under recurring combat contexts.
-- Long-tail keys are present but much lower-frequency, consistent with suppression-by-throughput rather than hard exclusion.
-- Interaction matrix bias plausibly contributes to chaos dominance when combined with lineage and combat reinforcement.
+## weakest pairings
+- kineticbias × resonance: 136 observations.
+- resonance × volatility: 137 observations.
+- mobilityaffinity × mutationsensitivity: 138 observations.
+- kineticbias × mobilityaffinity: 141 observations.
+- precisionaffinity × stability: 142 observations.
 
-## Confidence
-- **Moderate** (clear concentration signal, but richer per-season pair snapshots would improve attribution).
+## suspicious pairings
+- Same-trait pairings dominate the top 5 interactions, indicating consistent self-amplification bias.
+- Cross-trait pairings cluster in the bottom 5 interactions and appear systematically under-selected.
+- The strongest same-trait pairing (chaosaffinity × chaosaffinity) is ~2.49x the weakest observed pairing (kineticbias × resonance), which is large enough to drive macro selection pressure.
+
+## likely macro-ecology effects
+- Amplifies repeated chaos-family success via recurrent same-trait reinforcement.
+- Suppresses exploratory cross-trait builds before they can accumulate lineage depth.
+- Increases branch lock-in risk because high-frequency same-trait pairings repeatedly feed proven throughput branches.
+
+Confidence: **moderate** (pairing-frequency evidence is strong; per-season causal isolation is still limited).
