@@ -2,9 +2,12 @@ package obtuseloot.memory;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
+import obtuseloot.text.ArtifactTextChannel;
+import obtuseloot.text.ArtifactTextResolver;
 
 public class ArtifactMemoryEngine {
     private final MemoryInfluenceResolver influenceResolver = new MemoryInfluenceResolver();
+    private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
 
     public ArtifactMemoryProfile recordAndProfile(Artifact artifact, ArtifactMemoryEvent event) {
         if (!ArtifactEligibility.isMemoryEligible(artifact)) {
@@ -12,6 +15,7 @@ public class ArtifactMemoryEngine {
         }
         artifact.getMemory().record(event);
         artifact.addNotableEvent("memory." + event.name().toLowerCase());
+        artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.MEMORY, event.name().toLowerCase()));
         return influenceResolver.profileFor(artifact.getMemory());
     }
 

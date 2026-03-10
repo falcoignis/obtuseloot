@@ -34,8 +34,13 @@ public class LoreEngine {
     public List<String> buildLoreLines(Artifact artifact, ArtifactReputation reputation) {
         List<String> lines = new ArrayList<>();
         lines.add(fragmentGenerator.lineageFragment(artifact));
+        lines.add(fragmentGenerator.identifyFragment(artifact));
         lines.add(fragmentGenerator.driftFragment(artifact));
         lines.add(fragmentGenerator.awakeningFragment(artifact));
+        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) {
+            lines.add(fragmentGenerator.fusionFragment(artifact));
+        }
+        lines.add(fragmentGenerator.memoryFragment(artifact));
         if (artifact.hasInstability()) {
             lines.add(fragmentGenerator.instabilityFragment(artifact));
         }

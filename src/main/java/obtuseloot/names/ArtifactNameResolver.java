@@ -2,12 +2,16 @@ package obtuseloot.names;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
+import obtuseloot.text.ArtifactTextChannel;
+import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public final class ArtifactNameResolver {
+    private static final ArtifactTextResolver TEXT_RESOLVER = new ArtifactTextResolver();
+
     private ArtifactNameResolver() {
     }
 
@@ -27,7 +31,7 @@ public final class ArtifactNameResolver {
         List<String> lexemes = ArtifactLexemeRegistry.lexemesFor(tags, artifact.getArtifactSeed() ^ artifact.getTotalDrifts());
         String trueName = naming.getTrueName();
         if (trueName == null && shouldAssignTrueName(rank, discovery, artifact.getArtifactSeed())) {
-            trueName = titleCase(lexemes.isEmpty() ? "Vesper" : lexemes.get(0));
+            trueName = titleCase(lexemes.isEmpty() ? "Vesper" : lexemes.getFirst());
         }
 
         naming.setRankAtNaming(rank);
@@ -37,24 +41,8 @@ public final class ArtifactNameResolver {
         naming.setToneProfile(resolveTone(tags));
         naming.setTrueName(trueName);
         naming.setNamingArchetype(resolveArchetype(rank, discovery, trueName));
-        naming.setDisplayName(buildDisplayName(naming));
-    }
-
-    private static String buildDisplayName(ArtifactNaming naming) {
-        List<String> lexemes = naming.getAffinityLexemes();
-        String first = lexemes.isEmpty() ? "Strange" : titleCase(lexemes.get(0));
-        String second = lexemes.size() > 1 ? titleCase(lexemes.get(1)) : "";
-        String form = naming.getRootForm();
-
-        String raw = switch (naming.getNamingArchetype()) {
-            case TRAIT_FORM -> first + " " + form;
-            case COMPACT_COMPOUND -> first + second.toLowerCase();
-            case FORM_OF_CONCEPT -> form + " of the " + first;
-            case TRUE_NAME_ONLY -> naming.getTrueName();
-            case TRUE_NAME_WITH_EPITHET -> naming.getTrueName() + ", " + form + " of the " + first;
-            case TRUE_NAME_WITH_TITLE -> naming.getTrueName() + " the " + first + " " + form;
-        };
-        return ArtifactNameCompressor.compress(raw, RuntimeSettings.get().namingCompressionMaxWords());
+        String displayName = TEXT_RESOLVER.compose(artifact, ArtifactTextChannel.NAME, naming.getRootForm());
+        naming.setDisplayName(displayName);
     }
 
     private static NamingArchetype resolveArchetype(ArtifactRank rank, ArtifactDiscoveryState discovery, String trueName) {

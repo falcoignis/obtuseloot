@@ -44,7 +44,16 @@ public final class RuntimeSettings {
                 config.getInt("naming.discovery-thresholds.known", 3),
                 config.getInt("naming.discovery-thresholds.revealed", 8),
                 config.getInt("naming.discovery-thresholds.storied", 14),
-                config.getInt("naming.compression.max-words", 6)
+                config.getInt("naming.compression.max-words", 6),
+                config.getInt("text.channels.name.max-words", 4),
+                config.getInt("text.channels.lore.max-words", 14),
+                config.getInt("text.channels.identify.max-words", 16),
+                config.getInt("text.channels.awakening.max-words", 14),
+                config.getInt("text.channels.lineage.max-words", 16),
+                config.getInt("text.channels.memory.max-words", 16),
+                config.getInt("text.channels.drift.max-words", 10),
+                config.getInt("text.channels.fusion.max-words", 14),
+                config.getBoolean("runtime.triggerSubscriptionIndexing", true)
         );
     }
 
@@ -102,13 +111,23 @@ public final class RuntimeSettings {
             int namingDiscoveryKnownThreshold,
             int namingDiscoveryRevealedThreshold,
             int namingDiscoveryStoriedThreshold,
-            int namingCompressionMaxWords
+            int namingCompressionMaxWords,
+            int textNameMaxWords,
+            int textLoreMaxWords,
+            int textIdentifyMaxWords,
+            int textAwakeningMaxWords,
+            int textLineageMaxWords,
+            int textMemoryMaxWords,
+            int textDriftMaxWords,
+            int textFusionMaxWords,
+            boolean triggerSubscriptionIndexing
     ) {
         private static Snapshot defaults() {
             return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
                     true, ArtifactLexemeRegistry.defaultPools(), Map.of("BASE", 0, "TEMPERED", 20, "MYTHIC", 65, "AWAKENED", 90, "FUSED", 100),
-                    3, 8, 14, 6);
+                    3, 8, 14, 6,
+                    4, 14, 16, 14, 16, 16, 10, 14, true);
         }
     }
 }

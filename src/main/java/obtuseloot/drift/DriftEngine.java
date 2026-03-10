@@ -4,12 +4,15 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
+import obtuseloot.text.ArtifactTextChannel;
+import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class DriftEngine {
+    private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
     public boolean shouldDrift(ArtifactReputation reputation) {
         RuntimeSettings.Snapshot s = RuntimeSettings.get();
         double chance = s.driftBaseChance() + reputation.getChaos() * s.driftChaosMultiplier()
@@ -33,9 +36,9 @@ public class DriftEngine {
         artifact.setLastDriftTimestamp(now);
         artifact.setDriftAlignment(profile.name().toLowerCase());
         String instability = maybeApplyInstability(artifact, profile);
-        String msg = buildDriftMessage(profile);
+        String msg = buildDriftMessage(artifact, profile);
         artifact.addDriftHistory(msg);
-        artifact.addLoreHistory("Drift: " + msg);
+        artifact.addLoreHistory(msg);
         artifact.addNotableEvent("drift." + profile.name().toLowerCase());
         return new DriftMutation(true, profile.name().toLowerCase(), msg, true, instability);
     }
@@ -52,9 +55,9 @@ public class DriftEngine {
         artifact.setLastDriftTimestamp(now);
         artifact.setDriftAlignment(profile.name().toLowerCase());
         String instability = maybeApplyInstability(artifact, profile);
-        String msg = buildDriftMessage(profile);
+        String msg = buildDriftMessage(artifact, profile);
         artifact.addDriftHistory(msg);
-        artifact.addLoreHistory("Drift: " + msg);
+        artifact.addLoreHistory(msg);
         artifact.addNotableEvent("drift." + profile.name().toLowerCase());
         player.sendMessage(msg);
         return new DriftMutation(true, profile.name().toLowerCase(), msg, true, instability);
@@ -85,7 +88,7 @@ public class DriftEngine {
         return profile.instabilityType();
     }
 
-    public String buildDriftMessage(DriftProfile profile) {
-        return "§5Your artifact drifts: " + profile.name().toLowerCase() + " resonance awakens.";
+    public String buildDriftMessage(Artifact artifact, DriftProfile profile) {
+        return "§5" + textResolver.compose(artifact, ArtifactTextChannel.DRIFT, profile.name().toLowerCase());
     }
 }
