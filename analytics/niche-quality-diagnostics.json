@@ -1,0 +1,17 @@
+{
+  "nicheCount": 3,
+  "nicheOccupancy": {
+    "niche-3": 1,
+    "niche-1": 38,
+    "niche-2": 1
+  },
+  "nicheSeparationScore": 0.2526802467202471,
+  "nicheCollapseWarning": "warning: broad niche collapse risk detected",
+  "nicheInterpretability": {
+    "niche-1": "stable niche with dominant branch=mobility.lane, dominant family=mobility, successRate=0.82",
+    "niche-2": "stable niche with dominant branch=chaos.paradox, dominant family=chaos, successRate=0.80",
+    "niche-3": "stable niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.66"
+  },
+  "mirrorsBranches": false,
+  "mirrorsFamilies": false
+}

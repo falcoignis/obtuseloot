@@ -1,17 +1,25 @@
 {
   "occupancyByNiche": {
-    "niche-1": 1.0
+    "niche-3": 0.025,
+    "niche-1": 0.95,
+    "niche-2": 0.025
   },
   "speciesFractionByNiche": {
-    "niche-1": 1.0
+    "niche-3": 0.058823529411764705,
+    "niche-1": 0.8823529411764706,
+    "niche-2": 0.058823529411764705
   },
   "successFractionByNiche": {
-    "niche-1": 1.0
+    "niche-3": 0.025,
+    "niche-1": 0.95,
+    "niche-2": 0.025
   },
   "speciesPerNiche": {
-    "niche-1": 23
+    "niche-3": 1,
+    "niche-1": 15,
+    "niche-2": 1
   },
-  "penaltyActivationFrequency": 0.9761904761904762,
+  "penaltyActivationFrequency": 0.8520833333333333,
   "overcrowdedNicheCount": 1,
   "targetOccupancy": 0.18,
   "beta": 0.4

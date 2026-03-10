@@ -1,12 +1,12 @@
 # Speciation Report
 
-- Active species: 23
-- Species per lineage: {lineage-82390da2-b898-30d7-bd89-2755d1c4a8ca=1, lineage-0a9abcf3-c61e-3b17-aa36-dcb54fc9c6a0=1, gilded=1, lineage-f7035f28-caf9-3b6a-a23d-ef837faf0b0f=1, lineage-5bf2e997-4c47-3232-b3ae-8c3fc220f82a=1, lineage-e99dbb0d-c592-3089-9f7b-d8f02c6ba9e5=1, lineage-6a9fa729-ad54-36fa-9511-1eb6d04903b4=1, graveborn=1, ashen=1, wild-35642=1, lineage-540b4a93-8f91-3d82-ab3d-0d2dac387dc7=1, lineage-873e3396-e496-3ccd-bc00-ff2828579afe=1, lineage-fcd9a66c-807b-3e8b-90ec-b8ba65c19d7b=1, mirrored=1, lineage-133161f5-cc0b-3481-85b6-f17a109f46ce=1, wild-4233=1, lineage-7b9d6509-5c90-3e24-b9c4-ac3e0fa5d6dd=1, lineage-05342967-9c62-3849-a8ea-4164b88c14ec=1, lineage-73f84c0d-7866-34cd-a38c-21e15df6e06e=1, lineage-a57c0ebc-55eb-3b6b-97bf-6f537a049fe9=1, lineage-e84f5704-48b6-3ec0-990f-2fdf59d4ad58=1, lineage-8b3ae87a-0da1-3d5a-b31b-ad18e250b13e=1, lineage-c3f7e04b-43fa-38b8-9ebb-fe8d61c031fb=1}
-- Species divergence levels: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-- Species birth rate: 11.5
+- Active species: 17
+- Species per lineage: {lineage-1d37387a-7871-3b78-8531-558143e24c32=1, wild-39266=1, gilded=1, lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4=1, stormbound=1, graveborn=1, lineage-52ace7b6-7baa-3200-9e65-cae246f30b2f=1, lineage-d034bfbd-24b1-3ac5-8ff9-3ebbc778c7f8=1, lineage-7ff45d9f-69c7-3fde-9ff2-989ffa3d8a4b=1, lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126=1, lineage-5ebef5d2-bcf4-32e9-9061-c4b01bdf767e=1, lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd=1, lineage-ef617665-a0c8-30fb-9555-ebda433aa009=1, wild-24241=1, lineage-a6777d6b-bb0e-33ee-8e2c-f3ca25de6c12=1, lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033=1, lineage-b8ca7ff1-b0d3-30d1-806a-ee60e85861e7=1}
+- Species divergence levels: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+- Species birth rate: 8.5
 - Species extinction rate: 0.0
-- Dominant species concentration: 0.15
-- Species niche occupancy: {season-1={niche-1=23}, season-2={niche-1=23}}
+- Dominant species concentration: 0.2
+- Species niche occupancy: {season-1={niche-3=6, niche-1=12, niche-2=2}, season-2={niche-3=1, niche-1=15, niche-2=1}}
 
 ## Ecosystem impact
 Speciation is now tracked as a living population signal and tied directly to evolving niches. Birth/extinction rates and occupancy data reveal whether adaptation remains distributed or collapses into narrow attractors.

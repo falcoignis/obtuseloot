@@ -1,0 +1,42 @@
+{
+  "lineage_depth_distribution": {
+    "lineage-b8ca7ff1-b0d3-30d1-806a-ee60e85861e7": 6,
+    "lineage-52ace7b6-7baa-3200-9e65-cae246f30b2f": 6,
+    "gilded": 18,
+    "graveborn": 24,
+    "wild-24241": 36,
+    "lineage-ef617665-a0c8-30fb-9555-ebda433aa009": 6,
+    "lineage-d034bfbd-24b1-3ac5-8ff9-3ebbc778c7f8": 6,
+    "lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd": 6,
+    "lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126": 6,
+    "stormbound": 42,
+    "lineage-7ff45d9f-69c7-3fde-9ff2-989ffa3d8a4b": 6,
+    "lineage-1d37387a-7871-3b78-8531-558143e24c32": 6,
+    "lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4": 6,
+    "lineage-5ebef5d2-bcf4-32e9-9061-c4b01bdf767e": 6,
+    "lineage-a6777d6b-bb0e-33ee-8e2c-f3ca25de6c12": 6,
+    "lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033": 6,
+    "wild-39266": 48
+  },
+  "lineage_distribution": {
+    "lineage-b8ca7ff1-b0d3-30d1-806a-ee60e85861e7": 6,
+    "lineage-52ace7b6-7baa-3200-9e65-cae246f30b2f": 6,
+    "gilded": 18,
+    "graveborn": 24,
+    "wild-24241": 36,
+    "lineage-ef617665-a0c8-30fb-9555-ebda433aa009": 6,
+    "lineage-d034bfbd-24b1-3ac5-8ff9-3ebbc778c7f8": 6,
+    "lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd": 6,
+    "lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126": 6,
+    "stormbound": 42,
+    "lineage-7ff45d9f-69c7-3fde-9ff2-989ffa3d8a4b": 6,
+    "lineage-1d37387a-7871-3b78-8531-558143e24c32": 6,
+    "lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4": 6,
+    "lineage-5ebef5d2-bcf4-32e9-9061-c4b01bdf767e": 6,
+    "lineage-a6777d6b-bb0e-33ee-8e2c-f3ca25de6c12": 6,
+    "lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033": 6,
+    "wild-39266": 48
+  },
+  "lineage_extinction_rate": 0.0,
+  "lineage_count": 17
+}
