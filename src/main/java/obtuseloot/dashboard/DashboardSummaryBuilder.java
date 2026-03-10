@@ -9,7 +9,10 @@ public class DashboardSummaryBuilder {
                 + ", TraitVariance=" + fmt(metrics.traitVariance())
                 + ", LineageConcentration=" + fmt(metrics.lineageConcentration())
                 + ", CollapseRisk=" + metrics.collapseRisk().name()
-                + " | Data source: analytics/ecosystem-balance-data.json (generator/ecology aggregate, not live online players)";
+                + ", END=" + fmt(metrics.endArtifacts())
+                + ", TNT=" + fmt(metrics.latestTnt())
+                + ", EcosystemStatus=" + metrics.ecosystemStatus().name()
+                + " | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json";
     }
 
     private String fmt(double value) {
