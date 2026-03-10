@@ -24,13 +24,23 @@ public class SpeciesNicheAnalyticsEngine {
     private static final double MAX_PENALTY = 1.15D;
     private static final double MAX_COEVOLUTION_MODIFIER = 0.08D;
     private static final double MAX_NICHE_BIAS = 0.05D;
-    private static final double NICHE_ASSIGNMENT_THRESHOLD = 0.76D;
-    private static final int MAX_NICHES = 6;
+    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.29D;
+    private static final double NICHE_ASSIGNMENT_MARGIN = 0.05D;
+    private static final double HYSTERESIS_MARGIN = 0.06D;
+    private static final int MAX_NICHES = 8;
     private static final int MIN_NICHE_OBSERVATIONS_FOR_STABILITY = 20;
+    private static final int CANDIDATE_MIN_SUPPORT = 5;
+    private static final int CANDIDATE_MIN_PERSISTENCE = 2;
+    private static final double NICHE_MERGE_DISTANCE = 0.12D;
+    private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
 
     private final Random random;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
+    private final Map<String, CandidateNiche> candidateNiches = new LinkedHashMap<>();
+    private final Map<String, Integer> nicheLowSupportSeasons = new LinkedHashMap<>();
+    private final Map<Integer, Integer> nicheMergeEvents = new LinkedHashMap<>();
+    private final Map<Integer, Integer> nicheRetireEvents = new LinkedHashMap<>();
     private final Map<String, Map<String, Integer>> seasonSpeciesByNiche = new LinkedHashMap<>();
     private final Map<String, Integer> speciesBirthSeason = new LinkedHashMap<>();
     private final Map<String, Integer> speciesDeathSeason = new LinkedHashMap<>();
@@ -94,11 +104,14 @@ public class SpeciesNicheAnalyticsEngine {
                                 double crowdingPenalty) {
         String speciesId = species.speciesId();
         double[] vector = featureVector(artifact, profile, successful, crowdingPenalty);
-        String nicheId = assignNiche(vector, season, speciesId);
+        String previousNiche = Optional.ofNullable(artifactMembership.get(artifact.getArtifactSeed())).map(ArtifactNicheMembership::nicheId).orElse(null);
+        String nicheId = assignNiche(vector, season, speciesId, previousNiche);
         updatePairSignals(speciesId, nicheId, successful);
         artifactMembership.put(artifact.getArtifactSeed(), new ArtifactNicheMembership(nicheId, vector, successful));
         NicheProfile niche = niches.get(nicheId);
-        niche.observe(vector, successful, speciesId, profile, artifact);
+        if (niche != null) {
+            niche.observe(vector, successful, speciesId, profile, artifact, season);
+        }
         observeSpeciesSignal(speciesId, artifact, successful, nicheId);
         speciesBirthSeason.putIfAbsent(speciesId, season);
     }
@@ -164,6 +177,7 @@ public class SpeciesNicheAnalyticsEngine {
             }
         }
 
+        performMergeAndPrune(season, occupancy);
         seasonSpeciesByNiche.put("season-" + season, speciesByNiche);
         speciesCountTimeline.add(activeSpecies.size());
         nicheCountTimeline.add(niches.size());
@@ -321,6 +335,7 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("nicheInterpretability", interpretability);
         out.put("mirrorsBranches", mirrorsBranches);
         out.put("mirrorsFamilies", mirrorsFamilies);
+        out.put("fragmentationWarning", occupancy.size() > MAX_NICHES ? "warning: niche fragmentation detected" : "none");
         return out;
     }
 
@@ -331,6 +346,22 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("nicheLifetimes", nicheLifetimes());
         out.put("nicheStabilityTimeline", nicheStabilityTimeline);
         out.put("nicheMigrationBySpecies", new LinkedHashMap<>(speciesDominantNicheShifts));
+        out.put("nicheMergeEvents", new LinkedHashMap<>(nicheMergeEvents));
+        out.put("nicheRetireEvents", new LinkedHashMap<>(nicheRetireEvents));
+        return out;
+    }
+
+    public Map<String, Object> buildNichePrototypeDistribution() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        for (NicheProfile niche : niches.values()) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("prototype", niche.centroid());
+            item.put("observations", niche.observations);
+            item.put("successRate", niche.successes / (double) Math.max(1, niche.observations));
+            item.put("dominantBranch", niche.topToken(niche.branchUse));
+            item.put("dominantFamily", niche.topToken(niche.familyUse));
+            out.put(niche.nicheId, item);
+        }
         return out;
     }
 
@@ -413,27 +444,48 @@ public class SpeciesNicheAnalyticsEngine {
         return activePenaltyCount / (double) penaltyEvaluationCount;
     }
 
-    private String assignNiche(double[] vector, int season, String speciesId) {
+    private String assignNiche(double[] vector, int season, String speciesId, String previousNiche) {
         if (niches.isEmpty()) {
             return createNiche(vector, season);
         }
         int targetNiches = Math.max(3, Math.min(MAX_NICHES, (int) Math.round(Math.sqrt(artifactMembership.size() / 48.0D + 1.0D))));
-        Map<String, Double> scores = new LinkedHashMap<>();
         String bestNiche = null;
-        double best = -1.0D;
+        String secondBestNiche = null;
+        double bestDistance = Double.MAX_VALUE;
+        double secondDistance = Double.MAX_VALUE;
         for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
-            double score = weightedCosine(vector, entry.getValue().centroid()) + nicheCoEvolutionBias(speciesId, entry.getValue());
-            scores.put(entry.getKey(), score);
-            if (score > best) {
-                best = score;
+            double distance = weightedDistance(vector, entry.getValue().centroid()) - nicheCoEvolutionBias(speciesId, entry.getValue());
+            if (distance < bestDistance) {
+                secondDistance = bestDistance;
+                secondBestNiche = bestNiche;
+                bestDistance = distance;
                 bestNiche = entry.getKey();
+            } else if (distance < secondDistance) {
+                secondDistance = distance;
+                secondBestNiche = entry.getKey();
             }
         }
 
-        if ((best < NICHE_ASSIGNMENT_THRESHOLD || shouldSplitCrowded(bestNiche, vector, best)) && niches.size() < targetNiches) {
-            return createNiche(vector, season);
+        boolean clearWinner = bestDistance < NICHE_ASSIGNMENT_DISTANCE_THRESHOLD
+                && (secondDistance - bestDistance) > NICHE_ASSIGNMENT_MARGIN;
+        if (!clearWinner) {
+            String promoted = registerCandidate(vector, season, targetNiches);
+            if (promoted != null) {
+                return promoted;
+            }
+            if (previousNiche != null && niches.containsKey(previousNiche)) {
+                return previousNiche;
+            }
+            return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.9D) ? bestNiche : "unassigned";
         }
-        return bestNiche == null ? probabilisticPick(scores) : bestNiche;
+
+        if (previousNiche != null && niches.containsKey(previousNiche) && !previousNiche.equals(bestNiche)) {
+            double previousDistance = weightedDistance(vector, niches.get(previousNiche).centroid());
+            if ((previousDistance - bestDistance) < HYSTERESIS_MARGIN) {
+                return previousNiche;
+            }
+        }
+        return bestNiche == null ? secondBestNiche : bestNiche;
     }
 
     private String createNiche(double[] vector, int season) {
@@ -443,37 +495,25 @@ public class SpeciesNicheAnalyticsEngine {
         return nicheId;
     }
 
-    private boolean shouldSplitCrowded(String nicheId, double[] vector, double score) {
-        if (nicheId == null) {
-            return false;
+    private String registerCandidate(double[] vector, int season, int targetNiches) {
+        String key = candidateKey(vector);
+        CandidateNiche candidate = candidateNiches.computeIfAbsent(key, ignored -> new CandidateNiche(vector, season));
+        candidate.observe(vector, season);
+        boolean promotable = candidate.support >= CANDIDATE_MIN_SUPPORT
+                || candidate.persistenceSeasons() >= CANDIDATE_MIN_PERSISTENCE;
+        if (promotable && niches.size() < targetNiches) {
+            candidateNiches.remove(key);
+            return createNiche(candidate.prototype(), season);
         }
-        double occupancy = occupancyFor(nicheId);
-        if (occupancy < 0.45D) {
-            return false;
-        }
-        return score < 0.88D && (1.0D - weightedCosine(vector, niches.get(nicheId).centroid())) > 0.18D;
+        return null;
     }
 
-    private String probabilisticPick(Map<String, Double> scores) {
-        if (scores.isEmpty()) {
-            return "unassigned";
+    private String candidateKey(double[] vector) {
+        StringBuilder key = new StringBuilder("cand");
+        for (double value : vector) {
+            key.append('-').append((int) Math.round(clamp(value, 0.0D, 1.0D) * 4.0D));
         }
-        double total = 0.0D;
-        Map<String, Double> weighted = new LinkedHashMap<>();
-        for (Map.Entry<String, Double> entry : scores.entrySet()) {
-            double weight = Math.exp(Math.max(-4.0D, Math.min(4.0D, entry.getValue() * 3.0D)));
-            weighted.put(entry.getKey(), weight);
-            total += weight;
-        }
-        double roll = random.nextDouble() * total;
-        double cursor = 0.0D;
-        for (Map.Entry<String, Double> entry : weighted.entrySet()) {
-            cursor += entry.getValue();
-            if (roll <= cursor) {
-                return entry.getKey();
-            }
-        }
-        return weighted.keySet().iterator().next();
+        return key.toString();
     }
 
     private double occupancyFor(String nicheId) {
@@ -758,6 +798,88 @@ public class SpeciesNicheAnalyticsEngine {
         return value;
     }
 
+
+    private void performMergeAndPrune(int season, Map<String, Integer> occupancy) {
+        mergeSimilarNiches(season);
+        Set<String> toRetire = new LinkedHashSet<>();
+        for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
+            int pop = occupancy.getOrDefault(entry.getKey(), 0);
+            if (pop < 2) {
+                int low = nicheLowSupportSeasons.merge(entry.getKey(), 1, Integer::sum);
+                if (low >= NICHE_PRUNE_GRACE_SEASONS && entry.getValue().observations < MIN_NICHE_OBSERVATIONS_FOR_STABILITY) {
+                    toRetire.add(entry.getKey());
+                }
+            } else {
+                nicheLowSupportSeasons.put(entry.getKey(), 0);
+            }
+        }
+        for (String nicheId : toRetire) {
+            retireNiche(nicheId, season);
+        }
+    }
+
+    private void mergeSimilarNiches(int season) {
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            List<String> ids = new ArrayList<>(niches.keySet());
+            for (int i = 0; i < ids.size() && !changed; i++) {
+                for (int j = i + 1; j < ids.size(); j++) {
+                    String aId = ids.get(i);
+                    String bId = ids.get(j);
+                    NicheProfile a = niches.get(aId);
+                    NicheProfile b = niches.get(bId);
+                    if (a == null || b == null) {
+                        continue;
+                    }
+                    double distance = weightedDistance(a.centroid(), b.centroid());
+                    if (distance <= NICHE_MERGE_DISTANCE) {
+                        a.absorb(b);
+                        niches.remove(bId);
+                        remapMembership(bId, aId);
+                        nicheMergeEvents.merge(season, 1, Integer::sum);
+                        nicheDeathSeason.put(bId, season);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void retireNiche(String nicheId, int season) {
+        NicheProfile removed = niches.remove(nicheId);
+        if (removed == null) {
+            return;
+        }
+        nicheRetireEvents.merge(season, 1, Integer::sum);
+        nicheDeathSeason.put(nicheId, season);
+        String fallback = nearestNiche(removed.centroid());
+        remapMembership(nicheId, fallback);
+    }
+
+    private String nearestNiche(double[] vector) {
+        String best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
+            double distance = weightedDistance(vector, entry.getValue().centroid());
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = entry.getKey();
+            }
+        }
+        return best == null ? "unassigned" : best;
+    }
+
+    private void remapMembership(String fromNiche, String toNiche) {
+        for (Map.Entry<Long, ArtifactNicheMembership> entry : new ArrayList<>(artifactMembership.entrySet())) {
+            ArtifactNicheMembership membership = entry.getValue();
+            if (fromNiche.equals(membership.nicheId())) {
+                artifactMembership.put(entry.getKey(), new ArtifactNicheMembership(toNiche, membership.vector(), membership.successful()));
+            }
+        }
+    }
+
     private double avg(double total, int count) {
         return count == 0 ? 0.0D : total / count;
     }
@@ -908,6 +1030,18 @@ public class SpeciesNicheAnalyticsEngine {
         return dot / (Math.sqrt(na) * Math.sqrt(nb));
     }
 
+    private double weightedDistance(double[] a, double[] b) {
+        double[] w = {1.2D, 1.2D, 1.05D, 0.9D, 0.95D, 0.95D, 0.95D, 1.1D, 1.1D, 1.0D, 1.0D, 0.85D, 1.05D};
+        double distance = 0.0D;
+        double weightSum = 0.0D;
+        for (int i = 0; i < a.length; i++) {
+            double wi = w[i];
+            distance += wi * Math.abs(a[i] - b[i]);
+            weightSum += wi;
+        }
+        return weightSum == 0.0D ? 1.0D : clamp(distance / weightSum, 0.0D, 1.0D);
+    }
+
     private double weightedCosine(double[] a, double[] b) {
         double[] w = {1.15D, 1.15D, 1.0D, 0.75D, 0.85D, 0.85D, 0.85D, 1.0D, 1.0D, 1.0D, 1.0D, 0.95D, 1.1D};
         double dot = 0.0D;
@@ -933,7 +1067,7 @@ public class SpeciesNicheAnalyticsEngine {
         int pairs = 0;
         for (int i = 0; i < list.size(); i++) {
             for (int j = i + 1; j < list.size(); j++) {
-                total += (1.0D - weightedCosine(list.get(i).centroid(), list.get(j).centroid()));
+                total += weightedDistance(list.get(i).centroid(), list.get(j).centroid());
                 pairs++;
             }
         }
@@ -994,7 +1128,7 @@ public class SpeciesNicheAnalyticsEngine {
             this.centroid = Arrays.copyOf(initial, initial.length);
         }
 
-        private void observe(double[] vector, boolean successful, String speciesId, AbilityProfile profile, Artifact artifact) {
+        private void observe(double[] vector, boolean successful, String speciesId, AbilityProfile profile, Artifact artifact, int season) {
             observations++;
             if (successful) {
                 successes++;
@@ -1009,6 +1143,26 @@ public class SpeciesNicheAnalyticsEngine {
             double alpha = 1.0D / Math.max(2, observations);
             for (int i = 0; i < centroid.length; i++) {
                 centroid[i] = centroid[i] * (1.0D - alpha) + vector[i] * alpha;
+            }
+        }
+
+        private void absorb(NicheProfile other) {
+            int total = Math.max(1, observations + other.observations);
+            double ownWeight = observations / (double) total;
+            double otherWeight = other.observations / (double) total;
+            for (int i = 0; i < centroid.length; i++) {
+                centroid[i] = (centroid[i] * ownWeight) + (other.centroid[i] * otherWeight);
+            }
+            observations += other.observations;
+            successes += other.successes;
+            mergeCounts(speciesUse, other.speciesUse);
+            mergeCounts(branchUse, other.branchUse);
+            mergeCounts(familyUse, other.familyUse);
+        }
+
+        private void mergeCounts(Map<String, Integer> target, Map<String, Integer> source) {
+            for (Map.Entry<String, Integer> entry : source.entrySet()) {
+                target.merge(entry.getKey(), entry.getValue(), Integer::sum);
             }
         }
 
@@ -1033,6 +1187,37 @@ public class SpeciesNicheAnalyticsEngine {
             }
             String[] tokens = branchPath.split("[/|>\\-]");
             return tokens.length == 0 ? branchPath : tokens[0].trim().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    private static final class CandidateNiche {
+        private final double[] prototype;
+        private int support;
+        private int firstSeason;
+        private int lastSeason;
+
+        private CandidateNiche(double[] vector, int season) {
+            this.prototype = Arrays.copyOf(vector, vector.length);
+            this.support = 0;
+            this.firstSeason = season;
+            this.lastSeason = season;
+        }
+
+        private void observe(double[] vector, int season) {
+            support++;
+            lastSeason = season;
+            double alpha = 1.0D / Math.max(2, support);
+            for (int i = 0; i < prototype.length; i++) {
+                prototype[i] = prototype[i] * (1.0D - alpha) + vector[i] * alpha;
+            }
+        }
+
+        private int persistenceSeasons() {
+            return Math.max(1, lastSeason - firstSeason + 1);
+        }
+
+        private double[] prototype() {
+            return Arrays.copyOf(prototype, prototype.length);
         }
     }
 

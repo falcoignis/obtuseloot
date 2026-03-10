@@ -1,0 +1,23 @@
+{
+  "niche-3": {
+    "prototype": [],
+    "observations": 1,
+    "successRate": null,
+    "dominantBranch": "unknown",
+    "dominantFamily": "unknown"
+  },
+  "niche-1": {
+    "prototype": [],
+    "observations": 38,
+    "successRate": null,
+    "dominantBranch": "unknown",
+    "dominantFamily": "unknown"
+  },
+  "niche-2": {
+    "prototype": [],
+    "observations": 1,
+    "successRate": null,
+    "dominantBranch": "unknown",
+    "dominantFamily": "unknown"
+  }
+}
