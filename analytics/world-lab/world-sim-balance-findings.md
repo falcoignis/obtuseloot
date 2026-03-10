@@ -1,32 +1,40 @@
 # World Simulation Balance Findings
 
-## Focused diagnostics for dominant systems
-- Run 1 seed 90212: dominant family chaos (29.04%), dominant branch brutality.quarry (58.14%).
-- Run 2 seed 90213: dominant family chaos (28.03%), dominant branch brutality.quarry (58.15%).
-- Run 3 seed 90214: dominant family chaos (28.57%), dominant branch brutality.quarry (57.07%).
+## 1) Scope / sample size
+- Findings synthesized from world-scale simulation outputs plus open-endedness ablation evidence.
 
-## Ranked recommendations
-### Dominant family concentration persists across large runs (medium)
-1. Issue summary: Dominant family concentration persists across large runs
-2. Evidence: Average dominant-family share 28.55%, σ=0.41%.
-3. Confidence level: high confidence
-4. Estimated impact: late-season high (large sim only)
-5. Suggested response: Candidate for small weight adjustment
-6. Act now or gather more data: act now (small safe tuning pass)
+## 2) Method summary
+- Converted raw underrepresentation flags into ranked decisions with explicit confidence and action timing.
 
-### Branch convergence increases with scale (medium)
-1. Issue summary: Branch convergence increases with scale
-2. Evidence: Small 50.71% vs large avg 57.45%.
-3. Confidence level: moderate confidence
-4. Estimated impact: mid/late season medium-high (small + large)
-5. Suggested response: Needs another simulation pass
-6. Act now or gather more data: gather more simulation first
+## 3) Key findings
+- No high-severity emergency imbalance requiring immediate broad correction.
+- Several low-share systems exist, but many remain viable rather than dead.
+- Highest decision value is reducing late-season lock-in risk, not increasing top-line variety counts.
 
-### Memory-driven trigger underrepresentation (low)
-1. Issue summary: Memory-driven trigger underrepresentation
-2. Evidence: on_memory_event trigger is present but not top-ranked in any large run.
-3. Confidence level: provisional
-4. Estimated impact: late-season medium (isolated ecology vs world-lab mismatch)
-5. Suggested response: Observe only
-6. Act now or gather more data: needs another simulation pass
+## 4) Dominant families / branches / lineages / mechanics
+- Large-world dominant pressure remains concentrated in chaos-linked families/branches and throughput mechanics.
 
+## 5) Rare but viable systems
+- Underrepresented branch/trigger/mechanic candidates remain present; these are suitable for controlled micro-adjustments only.
+
+## 6) Dead or suspicious systems
+- Suspicious systems are primarily concentration and entropy trends under subsystem ablation, not absolute zero-count branches.
+
+## 7) Confidence / caveats
+- Confidence in low-severity recommendation class: **moderate**.
+- Confidence that no emergency intervention is needed: **moderate-high**.
+- Caveat: single-pass ablation run limits run-to-run variance certainty.
+
+## 8) Actionable next review steps
+1. **Underrepresented family candidate (low, moderate confidence)**  
+   - Evidence: brutality far below chaos in world-scale counts.  
+   - Action: test +5% family-weight micro-adjustment only in lab branch.
+2. **Underrepresented branch candidate (low, moderate confidence)**  
+   - Evidence: awakened variant branches remain very low-share.  
+   - Action: tune branch selection floor instead of hard forcing.
+3. **Underrepresented trigger candidate (low, moderate confidence)**  
+   - Evidence: drift-trigger pathways trail memory/combat triggers heavily.  
+   - Action: modest drift trigger activation uplift in test profile.
+4. **Underrepresented mechanic candidate (low, moderate confidence)**  
+   - Evidence: recovery-window style mechanics remain low compared with guardian/burst loops.  
+   - Action: evaluate small coefficient increase, then re-check collapse-risk metrics.

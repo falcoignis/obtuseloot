@@ -17,8 +17,11 @@ commands:
       /<command> reset [player]
       /<command> reload
       /<command> debug help
-      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate
+      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate|ability|memory|persistence|ecosystem|lineage|genome|projection
       /<command> debug seed show|reroll|set|export|import
+      /<command> debug ecosystem [bias|balance]
+      /<command> debug projection [cache|stats]
+      /<command> debug genome interactions
       /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
       /<command> dashboard
       /<command> ecosystem [health|dashboard]

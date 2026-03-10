@@ -970,6 +970,11 @@ public class DebugCommand {
                 "/" + label + " debug seed set <seed> [player]",
                 "/" + label + " debug seed export [player]",
                 "/" + label + " debug seed import <seed> [player]",
+                "/" + label + " debug ability [player]",
+                "/" + label + " debug memory [show|reset] [player]",
+                "/" + label + " debug persistence [status|migrate <sqlite|mysql>]",
+                "/" + label + " debug ecosystem [bias|balance]",
+                "/" + label + " debug lineage [player]",
                 "/" + label + " debug genome interactions",
                 "/" + label + " debug projection [cache|stats]",
                 "/" + label + " debug simulate help"
