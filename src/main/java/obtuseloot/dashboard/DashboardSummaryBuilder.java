@@ -13,6 +13,9 @@ public class DashboardSummaryBuilder {
                 + ", TNT=" + fmt(metrics.latestTnt())
                 + ", NSER=" + fmt(metrics.latestNser())
                 + ", EcosystemStatus=" + metrics.ecosystemStatus().name()
+                + ", EcologyDiagnostic=" + metrics.diagnosticState().name()
+                + ", DiagnosticConfidence=" + fmt(metrics.diagnosticConfidence())
+                + ", WarningFlags=" + metrics.diagnosticWarningFlags()
                 + " | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json";
     }
 

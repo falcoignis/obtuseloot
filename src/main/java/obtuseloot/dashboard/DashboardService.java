@@ -1,6 +1,7 @@
 package obtuseloot.dashboard;
 
 import obtuseloot.analytics.EcosystemStatus;
+import obtuseloot.analytics.EcologyDiagnosticState;
 import obtuseloot.analytics.RankAbundanceAnalyzer;
 import obtuseloot.analytics.RankAbundanceAnalyzer.RankAbundanceResult;
 
@@ -70,7 +71,10 @@ public class DashboardService {
                 gaugeData.tntTrend(),
                 gaugeData.nserTrend(),
                 gaugeData.nserInterpretation(),
-                gaugeData.status());
+                gaugeData.status(),
+                gaugeData.diagnosticState(),
+                gaugeData.diagnosticConfidence(),
+                gaugeData.warningFlags());
     }
 
     public Path regenerateDashboard() throws IOException {
@@ -137,7 +141,7 @@ public class DashboardService {
     private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
         Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
         if (!Files.exists(path)) {
-            return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT);
+            return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT, EcologyDiagnosticState.STAGNANT_ATTRACTOR, 0.0D, List.of("stagnation"));
         }
         String content = Files.readString(path);
         double endArtifacts = extractNumber(content, "END_artifacts");
@@ -155,8 +159,40 @@ public class DashboardService {
             status = EcosystemStatus.STAGNANT;
         }
         double latestTnt = tntTrend.isEmpty() ? 0.0D : tntTrend.get(tntTrend.size() - 1);
+        EcologyDiagnosticState diagnosticState = loadDiagnosticState();
+        double confidence = loadDiagnosticConfidence();
+        List<String> warnings = loadDiagnosticWarnings();
         return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, endTrend, tntTrend, nserTrend,
-                interpretation == null ? "NSER not available." : interpretation, status);
+                interpretation == null ? "NSER not available." : interpretation, status, diagnosticState, confidence, warnings);
+    }
+
+    private EcologyDiagnosticState loadDiagnosticState() throws IOException {
+        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        if (!Files.exists(path)) {
+            return EcologyDiagnosticState.STAGNANT_ATTRACTOR;
+        }
+        String raw = extractString(Files.readString(path), "diagnostic_state");
+        try {
+            return raw == null ? EcologyDiagnosticState.STAGNANT_ATTRACTOR : EcologyDiagnosticState.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return EcologyDiagnosticState.STAGNANT_ATTRACTOR;
+        }
+    }
+
+    private double loadDiagnosticConfidence() throws IOException {
+        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        if (!Files.exists(path)) {
+            return 0.0D;
+        }
+        return extractNumber(Files.readString(path), "confidence");
+    }
+
+    private List<String> loadDiagnosticWarnings() throws IOException {
+        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        if (!Files.exists(path)) {
+            return List.of();
+        }
+        return extractStringArray(Files.readString(path), "warning_flags");
     }
 
     private double extractNumber(String content, String key) {
@@ -197,6 +233,19 @@ public class DashboardService {
         return out;
     }
 
+    private List<String> extractStringArray(String content, String key) {
+        Matcher matcher = Pattern.compile("\\\"" + Pattern.quote(key) + "\\\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL).matcher(content);
+        if (!matcher.find()) {
+            return List.of();
+        }
+        Matcher strMatcher = Pattern.compile("\"([^\"]+)\"").matcher(matcher.group(1));
+        List<String> out = new java.util.ArrayList<>();
+        while (strMatcher.find()) {
+            out.add(strMatcher.group(1));
+        }
+        return out;
+    }
+
     private record EcosystemGaugeData(double endArtifacts,
                                       Double endSpecies,
                                       double latestTnt,
@@ -205,5 +254,8 @@ public class DashboardService {
                                       List<Double> tntTrend,
                                       List<Double> nserTrend,
                                       String nserInterpretation,
-                                      EcosystemStatus status) {}
+                                      EcosystemStatus status,
+                                      EcologyDiagnosticState diagnosticState,
+                                      double diagnosticConfidence,
+                                      List<String> warningFlags) {}
 }
