@@ -1,7 +1,9 @@
-# Ecology Repair Open-Endedness Review
+# Ecology Rebind Open-Endedness Review
 
-- Species count trend: [40.0, 40.0]
-- Adaptive niche count trend: [3.0, 3.0]
-- Dominant attractor trend: [0.0528, 0.0528]
-- Co-evolution modifier trend: [-0.05387350182690792, -0.05889859000033326]
-- Classification: **multi-attractor ecosystem**
+Classification: adaptive but bounded.
+
+- Species meaningfulness improved through cleanup: 69 active species after cosmetic merge/retire.
+- Cosmetic species counts dropped via merge set: {}.
+- Co-evolution discriminativeness: competition/support means=0.9716734148000116/0.84318289140665, suppression=[{pair=species-root-lineage-2d1d2ce8-9e9b-34c1-b4f4-2b24a2cff0ab<->species-root-lineage-70540b09-8ffa-35b4-afda-7eb3548c97db, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-6a02ce45-ff29-3e2c-bb27-32f276d75797<->species-root-lineage-1eacb169-fe13-3b6d-8a4f-121591efba6d, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-6a02ce45-ff29-3e2c-bb27-32f276d75797<->species-root-lineage-ff92eb11-20ec-3951-a07e-8ef5fad1efb6, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-980f0b7c-2575-3455-b5bd-5ab81bc27da4<->species-root-lineage-ccfff16e-c224-36e8-9e8f-a2321f0ffe89, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-0500f06c-0880-32b7-919f-a6940a0903c9<->species-root-lineage-c7ba98ae-a734-373d-bbf3-50272d822f0a, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-ad11d1ea-f493-3f22-9ea9-fae9667288b1<->species-root-lineage-0876aee6-8fb8-3d87-be4f-81274c0347b9, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-1eacb169-fe13-3b6d-8a4f-121591efba6d<->species-root-lineage-ff92eb11-20ec-3951-a07e-8ef5fad1efb6, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-270a128d-6607-33b7-beed-68afcb32cfa3<->species-root-lineage-03ee83b0-b189-33cb-b93f-e812ead262fc, score=0.8448000000000001, sharedNicheFraction=1.0}].
+- Niche coexistence: niche timeline=[2, 2], crowding activation=0.9615625.
+- Dominant attractor trend: concentration timeline=[0.13125, 0.13125].

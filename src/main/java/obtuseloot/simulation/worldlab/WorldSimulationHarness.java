@@ -892,8 +892,12 @@ public class WorldSimulationHarness {
                 + "- Niche separation score: " + nicheQualityDiagnostics.get("nicheSeparationScore") + "\n"
                 + "- Niche collapse warnings: " + nicheQualityDiagnostics.get("nicheCollapseWarning") + "\n"
                 + "- Niche fragmentation warning: " + nicheQualityDiagnostics.get("fragmentationWarning") + "\n"
+                + "- Whether niches are too coarse: " + nicheQualityDiagnostics.get("nicheCollapseWarning") + "\n"
+                + "- Whether niches are too fragmented: " + nicheQualityDiagnostics.get("fragmentationWarning") + "\n"
                 + "- Niche interpretability summary: " + nicheQualityDiagnostics.get("nicheInterpretability") + "\n"
                 + "- Mirrors branches/families: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
+                + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n"
+                + "- Whether niches are aliases for existing labels: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
                 + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n";
         Files.writeString(analytics.resolve("niche-detection-quality-report.md"), nicheQualityReport);
 
@@ -938,6 +942,9 @@ public class WorldSimulationHarness {
                 + "- " + coEvolutionRelationships.get("competitiveRelationships") + "\n\n"
                 + "## Strongest supportive relationships\n"
                 + "- " + coEvolutionRelationships.get("supportiveRelationships") + "\n\n"
+                + "## Asymmetric relationship examples\n"
+                + "- Directed competition: " + coEvolutionRelationships.get("directedCompetitiveRelationships") + "\n"
+                + "- Directed support: " + coEvolutionRelationships.get("directedSupportiveRelationships") + "\n\n"
                 + "## Niche-based interaction examples\n"
                 + "- Suppression from overlap: " + coEvolutionRelationships.get("suppressionRelationships") + "\n"
                 + "- Migration pressure from crowding: " + coEvolutionRelationships.get("migrationPressureRelationships") + "\n\n"
@@ -960,6 +967,7 @@ public class WorldSimulationHarness {
         Files.writeString(analytics.resolve("niche-crowding-validation.md"), nicheCrowdingValidation);
         String speciesValidityAudit = "# Species Validity Audit\n\n"
                 + "- Category assignments: " + cleanupResult.audit().get("speciesCategories") + "\n"
+                + "- Category counts: " + cleanupResult.audit().get("categoryCounts") + "\n"
                 + "- Population by species: " + cleanupResult.audit().get("speciesPopulation") + "\n"
                 + "- Dominant niche by species: " + cleanupResult.audit().get("speciesDominantNiche") + "\n"
                 + "- Merge targets: " + cleanupResult.audit().get("mergeTargets") + "\n"
@@ -977,7 +985,7 @@ public class WorldSimulationHarness {
         String nicheCrowdingRevalidation = "# Niche Crowding Revalidation\n\n"
                 + "- is crowding acting on multiple real niches? yes; occupancy map=" + crowdingDistribution.get("occupancyByNiche") + " with nicheCount=" + speciesNicheEngine.nicheCount() + ".\n"
                 + "- does crowding now help niche coexistence? yes; penalty activation=" + crowdingDistribution.get("penaltyActivationFrequency") + " and speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n"
-                + "- is the dampener now more informative than before? yes; per-niche success/species fractions and overcrowded counts=" + crowdingDistribution.get("overcrowdedNicheCount") + ".\n";
+                + "- are overcrowded niches now meaningfully distinct from one another? see occupancyByNiche=" + crowdingDistribution.get("occupancyByNiche") + ", speciesPerNiche=" + crowdingDistribution.get("speciesPerNiche") + ".\n";
         Files.writeString(analytics.resolve("niche-crowding-revalidation.md"), nicheCrowdingRevalidation);
 
         String impactReview = "# Speciation Impact Review\n\n"
@@ -1021,7 +1029,7 @@ public class WorldSimulationHarness {
                 + "4. Did divergence improve without instability? modifier timeline=" + speciationSummary.get("coEvolutionModifierTimeline") + " (bounded), migration timeline=" + speciationSummary.get("coEvolutionMigrationPressureTimeline") + ".\n";
         Files.writeString(worldLab.resolve("co-evolution-impact-review.md"), coEvolutionImpact);
 
-        String ecologyRepairImpact = "# Ecology Rebind Impact Review\n\n"
+        String ecologyRepairImpact = "# Ecology Repair Impact Review\n\n"
                 + "1. did species divergence become meaningful? divergence levels=" + speciationSummary.get("speciesDivergenceLevels")
                 + ", speciesPerLineage=" + speciationSummary.get("speciesPerLineage") + ".\n"
                 + "2. did co-evolution relationships become more discriminative? competitive=" + coEvolutionRelationships.get("competitiveRelationships")
@@ -1032,6 +1040,7 @@ public class WorldSimulationHarness {
                 + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
                 + "4. did dominant attractor strength weaken? concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration")
                 + ", concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
+        Files.writeString(worldLab.resolve("ecology-repair-impact-review.md"), ecologyRepairImpact);
         Files.writeString(worldLab.resolve("ecology-rebind-impact-review.md"), ecologyRepairImpact);
 
         String coEvolutionOpenEndedness = "# Co-Evolution Open-Endedness Review\n\n"
@@ -1061,6 +1070,7 @@ public class WorldSimulationHarness {
                 + "- Niche coexistence: niche timeline=" + speciationSummary.get("nicheCountTimeline") + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
                 + "- Dominant attractor trend: concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
         Files.writeString(openEnded.resolve("ecology-rebind-open-endedness-review.md"), ecologyRebindOpenEndedness);
+        Files.writeString(openEnded.resolve("ecology-repair-open-endedness-review.md"), ecologyRebindOpenEndedness);
     }
 
     public List<Map<String, Object>> seasonalSnapshots() {

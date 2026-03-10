@@ -1,14 +1,15 @@
 {
   "nicheCount": 1,
   "nicheOccupancy": {
-    "niche-1": 80
+    "niche-1": 160
   },
-  "nicheSeparationScore": 0.0,
+  "nicheSeparationScore": 0.3112902899032721,
   "nicheCollapseWarning": "warning: broad niche collapse risk detected",
   "nicheInterpretability": {
-    "niche-1": "stable niche with dominant branch=survival.shelter, dominant family=chaos, successRate=0.96"
+    "niche-1": "stable niche with dominant branch=chaos.awakened, dominant family=chaos, successRate=0.93",
+    "niche-2": "stable niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.71"
   },
-  "mirrorsBranches": true,
+  "mirrorsBranches": false,
   "mirrorsFamilies": true,
   "fragmentationWarning": "none"
 }

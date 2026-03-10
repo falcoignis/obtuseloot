@@ -31,6 +31,7 @@ public class DashboardRenderer {
                 renderMap((Map<String, Integer>) data.get("traits")),
                 renderMap((Map<String, Integer>) data.get("lineages")),
                 renderSpeciesNiche((Map<String, Object>) data.get("speciesNicheMetrics")),
+                renderCoEvolution((Map<String, Object>) data.get("coEvolutionMetrics")),
                 renderEcosystemHealth(metrics),
                 renderEcologyDiagnostic(metrics)
         );
@@ -81,6 +82,7 @@ public class DashboardRenderer {
                     <div class=\"panel\"><h3>Genome Trait Scatter Plot</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Lineage Survival / Concentration</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Species & Niche Health</h3><pre>%s</pre></div>
+                    <div class=\"panel\"><h3>Co-Evolution Context</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Ecosystem Health Gauge</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Ecology Diagnostic (END+TNT+NSER)</h3><pre>%s</pre></div>
                   </div>
@@ -112,6 +114,17 @@ public class DashboardRenderer {
                 + "\nnicheTurnover=" + speciesNicheMetrics.getOrDefault("nicheTurnover", 0)
                 + "\ndominantNicheShare=" + speciesNicheMetrics.getOrDefault("dominantNicheShare", 0)
                 + "\novercrowdedNicheCount=" + speciesNicheMetrics.getOrDefault("overcrowdedNicheCount", 0);
+    }
+
+    private String renderCoEvolution(Map<String, Object> coEvolutionMetrics) {
+        if (coEvolutionMetrics == null || coEvolutionMetrics.isEmpty()) {
+            return "Co-evolution analytics not generated yet.";
+        }
+        return "averageCompetitionPressure=" + coEvolutionMetrics.getOrDefault("averageCompetitionPressure", 0)
+                + "\naverageSupportPressure=" + coEvolutionMetrics.getOrDefault("averageSupportPressure", 0)
+                + "\nnicheMigrationPressure=" + coEvolutionMetrics.getOrDefault("nicheMigrationPressure", 0)
+                + "\ncompetitivePairings=" + coEvolutionMetrics.getOrDefault("competitivePairings", java.util.List.of())
+                + "\nsupportivePairings=" + coEvolutionMetrics.getOrDefault("supportivePairings", java.util.List.of());
     }
 
     private String renderEcosystemHealth(DashboardMetrics metrics) {

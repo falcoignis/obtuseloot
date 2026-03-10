@@ -24,14 +24,14 @@ public class SpeciesNicheAnalyticsEngine {
     private static final double MAX_PENALTY = 1.15D;
     private static final double MAX_COEVOLUTION_MODIFIER = 0.08D;
     private static final double MAX_NICHE_BIAS = 0.05D;
-    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.29D;
+    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.24D;
     private static final double NICHE_ASSIGNMENT_MARGIN = 0.05D;
     private static final double HYSTERESIS_MARGIN = 0.06D;
     private static final int MAX_NICHES = 8;
     private static final int MIN_NICHE_OBSERVATIONS_FOR_STABILITY = 20;
     private static final int CANDIDATE_MIN_SUPPORT = 5;
     private static final int CANDIDATE_MIN_PERSISTENCE = 2;
-    private static final double NICHE_MERGE_DISTANCE = 0.12D;
+    private static final double NICHE_MERGE_DISTANCE = 0.10D;
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
 
     private final Random random;
@@ -243,10 +243,12 @@ public class SpeciesNicheAnalyticsEngine {
         }
         int births = speciesBirthSeason.size();
         int extinctions = speciesDeathSeason.size();
-        int totalSpecies = Math.max(1, speciesRegistry.size());
+        int ecologicalSpecies = Math.max(1, speciesSignals.size());
+        int registrySpecies = Math.max(1, speciesRegistry.size());
 
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("activeSpecies", totalSpecies);
+        out.put("activeSpecies", ecologicalSpecies);
+        out.put("registrySpecies", registrySpecies);
         out.put("speciesPerLineage", speciesPerLineage);
         out.put("speciesDivergenceLevels", divergenceLevels);
         out.put("speciesBirthRate", births / (double) Math.max(1, seasonCount));
@@ -390,13 +392,13 @@ public class SpeciesNicheAnalyticsEngine {
                 continue;
             }
 
-            if (observations >= 14 && divergence >= 0.62D && nicheDivergence >= 0.14D && dominantNicheShare >= 0.55D) {
+            if (observations >= 14 && divergence >= 0.62D && nicheDivergence >= 0.16D && dominantNicheShare >= 0.55D && nicheCount >= 1) {
                 categories.put(speciesId, "valid ecological species");
                 reasons.put(speciesId, "persistent occupancy and multi-axis divergence from parent lineage");
-            } else if (observations >= 8 && (divergence >= 0.54D || (nicheCount >= 2 && dominantNicheShare <= 0.75D))) {
+            } else if (observations >= 8 && nicheDivergence >= 0.10D && (divergence >= 0.54D || (nicheCount >= 2 && dominantNicheShare <= 0.75D))) {
                 categories.put(speciesId, "weak / borderline species");
                 reasons.put(speciesId, "partial divergence signal but limited persistence or niche stability");
-            } else if (observations < 4 || (divergence < 0.46D && nicheCount <= 1)) {
+            } else if (observations < 4 || nicheDivergence < 0.08D || (divergence < 0.46D && nicheCount <= 1)) {
                 categories.put(speciesId, "cosmetic species");
                 String target = resolveMergeTarget(species, speciesRegistry);
                 if (target != null && !target.equals(speciesId)) {
@@ -435,8 +437,14 @@ public class SpeciesNicheAnalyticsEngine {
         retiredSpecies.addAll(mergeTargets.keySet());
         rebuildSignalsFromArtifacts(artifacts);
 
+        Map<String, Integer> categoryCounts = new LinkedHashMap<>();
+        for (String category : categories.values()) {
+            categoryCounts.merge(category, 1, Integer::sum);
+        }
+
         Map<String, Object> audit = new LinkedHashMap<>();
         audit.put("speciesCategories", categories);
+        audit.put("categoryCounts", categoryCounts);
         audit.put("speciesReasons", reasons);
         audit.put("speciesDominantNiche", dominantNicheBySpecies);
         audit.put("speciesPopulation", population);
@@ -537,6 +545,8 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("sampleSize", artifacts.size());
         out.put("competitiveRelationships", competition);
         out.put("supportiveRelationships", support);
+        out.put("directedCompetitiveRelationships", strongestDirectedRelationships(true));
+        out.put("directedSupportiveRelationships", strongestDirectedRelationships(false));
         out.put("suppressionRelationships", suppression);
         out.put("migrationPressureRelationships", migrationPressure);
         out.put("nicheMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
@@ -662,8 +672,10 @@ public class SpeciesNicheAnalyticsEngine {
         String key = candidateKey(vector);
         CandidateNiche candidate = candidateNiches.computeIfAbsent(key, ignored -> new CandidateNiche(vector, season));
         candidate.observe(vector, season);
-        boolean promotable = candidate.support >= CANDIDATE_MIN_SUPPORT
-                || candidate.persistenceSeasons() >= CANDIDATE_MIN_PERSISTENCE;
+        boolean sufficientlySeparated = nearestDistance(candidate.prototype()) > (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD + 0.03D);
+        boolean promotable = (candidate.support >= CANDIDATE_MIN_SUPPORT
+                || candidate.persistenceSeasons() >= CANDIDATE_MIN_PERSISTENCE)
+                && sufficientlySeparated;
         if (promotable && niches.size() < targetNiches) {
             candidateNiches.remove(key);
             return createNiche(candidate.prototype(), season);
@@ -677,6 +689,14 @@ public class SpeciesNicheAnalyticsEngine {
             key.append('-').append((int) Math.round(clamp(value, 0.0D, 1.0D) * 4.0D));
         }
         return key.toString();
+    }
+
+    private double nearestDistance(double[] vector) {
+        double best = Double.MAX_VALUE;
+        for (NicheProfile profile : niches.values()) {
+            best = Math.min(best, weightedDistance(vector, profile.centroid()));
+        }
+        return best == Double.MAX_VALUE ? 1.0D : best;
     }
 
     private double occupancyFor(String nicheId) {
@@ -843,6 +863,26 @@ public class SpeciesNicheAnalyticsEngine {
         }
         relationships.sort((left, right) -> Double.compare(((Number) right.get("score")).doubleValue(), ((Number) left.get("score")).doubleValue()));
         return relationships.size() > 8 ? relationships.subList(0, 8) : relationships;
+    }
+
+    private List<Map<String, Object>> strongestDirectedRelationships(boolean competition) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (String speciesId : speciesSignals.keySet()) {
+            RelationshipScore relationship = dominantRelationship(speciesId);
+            String target = competition ? relationship.competitor() : relationship.supporter();
+            double score = competition ? relationship.competition() : relationship.support();
+            if (target == null || "none".equals(target) || score < 0.06D) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("from", speciesId);
+            row.put("to", target);
+            row.put("score", score);
+            row.put("sameNicheFraction", sameNicheFraction(speciesId, target));
+            out.add(row);
+        }
+        out.sort((l, r) -> Double.compare(((Number) r.get("score")).doubleValue(), ((Number) l.get("score")).doubleValue()));
+        return out.size() > 8 ? out.subList(0, 8) : out;
     }
 
     private List<Map<String, Object>> strongestSuppressionPairs() {
@@ -1085,24 +1125,68 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double[] featureVector(Artifact artifact, AbilityProfile profile, boolean successful, double crowdingPenalty) {
-        double[] vector = new double[13];
-        vector[0] = normalizedEntropy(tokens(artifact.getLastTriggerProfile()));
-        vector[1] = normalizedEntropy(tokens(artifact.getLastMechanicProfile()));
-        vector[2] = normalizedEntropy(tokens(artifact.getLastOpenRegulatoryGates()));
-        vector[3] = normalizedEntropy(tokens(artifact.getLastAbilityBranchPath()));
-        vector[4] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "chaos", "volatile", "mutation");
-        vector[5] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "stable", "precision", "discipline");
-        vector[6] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "mobility", "movement", "reposition");
-        vector[7] = survivalStyleSignal(artifact, profile, successful, "burst");
-        vector[8] = survivalStyleSignal(artifact, profile, successful, "sustained");
-        vector[9] = survivalStyleSignal(artifact, profile, successful, "support");
+        Map<String, Integer> triggerTokens = tokens(artifact.getLastTriggerProfile());
+        Map<String, Integer> mechanicTokens = tokens(artifact.getLastMechanicProfile());
+        Map<String, Integer> gateTokens = tokens(artifact.getLastOpenRegulatoryGates());
+        Map<String, Integer> branchTokens = tokens(artifact.getLastAbilityBranchPath());
+
+        double[] vector = new double[16];
+        vector[0] = normalizedEntropy(triggerTokens);
+        vector[1] = topShare(triggerTokens);
+        vector[2] = normalizedEntropy(mechanicTokens);
+        vector[3] = topShare(mechanicTokens);
+        vector[4] = normalizedEntropy(gateTokens);
+        vector[5] = topShare(gateTokens);
+        vector[6] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "chaos", "volatile", "mutation");
+        vector[7] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "stable", "precision", "discipline");
+        vector[8] = survivalStyleSignal(artifact, profile, successful, "support");
+        vector[9] = roleCombatSignal(artifact, successful);
         vector[10] = survivalStyleSignal(artifact, profile, successful, "persistence");
         vector[11] = memoryEnvironmentSignal(artifact);
+        vector[12] = topShare(branchTokens);
+        vector[13] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "mobility", "movement", "reposition");
+        vector[14] = regulatoryPressureSignal(gateTokens);
         ArtifactDynamics dynamics = artifactDynamics.computeIfAbsent(artifact.getArtifactSeed(), ignored -> new ArtifactDynamics());
         dynamics.observations++;
         if (successful) dynamics.successes++;
-        vector[12] = clamp((dynamics.successes / (double) Math.max(1, dynamics.observations)) * (1.0D / Math.max(1.0D, crowdingPenalty)), 0.0D, 1.0D);
+        vector[15] = clamp((dynamics.successes / (double) Math.max(1, dynamics.observations)) * (1.0D / Math.max(1.0D, crowdingPenalty)), 0.0D, 1.0D);
         return vector;
+    }
+
+    private double topShare(Map<String, Integer> values) {
+        int total = values.values().stream().mapToInt(Integer::intValue).sum();
+        if (total <= 0) {
+            return 0.0D;
+        }
+        int top = values.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        return clamp(top / (double) total, 0.0D, 1.0D);
+    }
+
+    private double roleCombatSignal(Artifact artifact, boolean successful) {
+        String token = (Optional.ofNullable(artifact.getLastTriggerProfile()).orElse("") + ","
+                + Optional.ofNullable(artifact.getLastMechanicProfile()).orElse("")).toLowerCase(Locale.ROOT);
+        double support = markerShare(token, "guard", "field", "pulse", "assist", "reposition");
+        double combat = markerShare(token, "kill", "burst", "retaliation", "detonation", "hit");
+        double role = (support * 0.6D) + ((1.0D - combat) * 0.4D);
+        return successful ? clamp(role + 0.06D, 0.0D, 1.0D) : role;
+    }
+
+    private double regulatoryPressureSignal(Map<String, Integer> gateTokens) {
+        if (gateTokens.isEmpty()) {
+            return 0.0D;
+        }
+        String joined = String.join(",", gateTokens.keySet()).toLowerCase(Locale.ROOT);
+        return markerShare(joined, "cooldown", "limit", "safety", "environment", "lineage");
+    }
+
+    private double markerShare(String token, String... markers) {
+        int hits = 0;
+        for (String marker : markers) {
+            if (token.contains(marker)) {
+                hits++;
+            }
+        }
+        return hits / (double) Math.max(1, markers.length);
     }
 
     private Map<String, Integer> tokens(String csv) {
@@ -1194,7 +1278,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedDistance(double[] a, double[] b) {
-        double[] w = {1.2D, 1.2D, 1.05D, 0.9D, 0.95D, 0.95D, 0.95D, 1.1D, 1.1D, 1.0D, 1.0D, 0.85D, 1.05D};
+        double[] w = {1.2D, 1.1D, 1.2D, 1.1D, 1.05D, 1.0D, 0.9D, 0.9D, 1.15D, 1.0D, 1.0D, 0.85D, 0.95D, 0.9D, 1.05D, 1.05D};
         double distance = 0.0D;
         double weightSum = 0.0D;
         for (int i = 0; i < a.length; i++) {
@@ -1206,7 +1290,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedCosine(double[] a, double[] b) {
-        double[] w = {1.15D, 1.15D, 1.0D, 0.75D, 0.85D, 0.85D, 0.85D, 1.0D, 1.0D, 1.0D, 1.0D, 0.95D, 1.1D};
+        double[] w = {1.15D, 1.05D, 1.15D, 1.05D, 0.95D, 0.95D, 0.8D, 0.8D, 1.1D, 0.95D, 1.0D, 0.95D, 0.9D, 0.9D, 1.0D, 1.1D};
         double dot = 0.0D;
         double na = 0.0D;
         double nb = 0.0D;
