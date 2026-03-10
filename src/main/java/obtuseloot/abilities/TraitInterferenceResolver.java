@@ -9,6 +9,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TraitInterferenceResolver {
@@ -53,6 +54,73 @@ public class TraitInterferenceResolver {
                 .limit(Math.max(0, picks))
                 .map(v -> v.template)
                 .toList();
+    }
+
+
+    public List<AbilityTemplate> selectTopWithInterferenceShuffle(List<AbilityTemplate> templates,
+                                                                  ArtifactGenome genome,
+                                                                  int picks,
+                                                                  long deterministicSeed,
+                                                                  double shortlistThreshold,
+                                                                  int shortlistCap) {
+        long start = System.nanoTime();
+        Map<String, Double> scoreByAbility = scoresByMode(genome, scoringMode);
+        scoringCalls.incrementAndGet();
+        totalScoringNanos.addAndGet(System.nanoTime() - start);
+
+        List<ScoredTemplate> scored = new ArrayList<>(templates.size());
+        for (AbilityTemplate template : templates) {
+            scored.add(new ScoredTemplate(template, scoreByAbility.getOrDefault(template.id(), 0.0D)));
+        }
+        scored.sort(Comparator.comparingDouble((ScoredTemplate v) -> -v.score)
+                .thenComparing(v -> v.template.id()));
+
+        List<AbilityTemplate> picked = new ArrayList<>();
+        Random random = new Random(deterministicSeed);
+        List<ScoredTemplate> remaining = new ArrayList<>(scored);
+        int target = Math.max(0, picks);
+        while (picked.size() < target && !remaining.isEmpty()) {
+            ScoredTemplate selected = selectNearTop(remaining, random, shortlistThreshold, shortlistCap);
+            picked.add(selected.template());
+            remaining.removeIf(v -> v.template().id().equals(selected.template().id()));
+        }
+        return picked;
+    }
+
+    private ScoredTemplate selectNearTop(List<ScoredTemplate> sortedRemaining, Random random, double shortlistThreshold, int shortlistCap) {
+        ScoredTemplate top = sortedRemaining.get(0);
+        if (sortedRemaining.size() == 1 || top.score() <= 0.0D) {
+            return top;
+        }
+        double threshold = Math.max(0.90D, Math.min(0.97D, shortlistThreshold));
+        int cap = Math.max(2, Math.min(3, shortlistCap));
+        double floor = top.score() * threshold;
+
+        List<ScoredTemplate> shortlist = new ArrayList<>();
+        for (ScoredTemplate candidate : sortedRemaining) {
+            if (candidate.score() >= floor) {
+                shortlist.add(candidate);
+            }
+            if (shortlist.size() >= cap) {
+                break;
+            }
+        }
+        if (shortlist.size() <= 1) {
+            return top;
+        }
+
+        double total = 0.0D;
+        for (ScoredTemplate candidate : shortlist) {
+            total += Math.max(1.0E-6D, candidate.score());
+        }
+        double roll = random.nextDouble() * total;
+        for (ScoredTemplate candidate : shortlist) {
+            roll -= Math.max(1.0E-6D, candidate.score());
+            if (roll <= 0.0D) {
+                return candidate;
+            }
+        }
+        return shortlist.get(shortlist.size() - 1);
     }
 
     public Map<String, Double> scoresByMode(ArtifactGenome genome, ScoringMode mode) {

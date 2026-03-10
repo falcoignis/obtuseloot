@@ -119,16 +119,17 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> allCandidates = registry.templates();
         List<AbilityTemplate> gatedCandidates = regulatoryEligibilityFilter.filter(allCandidates, regulatoryProfile);
         List<AbilityTemplate> scoringPool = gatedCandidates.isEmpty() ? allCandidates : gatedCandidates;
-        List<AbilityTemplate> selected = traitInteractionsEnabled
-                ? traitInterferenceResolver.selectTop(scoringPool, genome, picks)
-                : scoringPool.stream()
-                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage)))
-                .limit(picks)
-                .toList();
 
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
         Random random = new Random(seed);
+
+        List<AbilityTemplate> selected = traitInteractionsEnabled
+                ? traitInterferenceResolver.selectTopWithInterferenceShuffle(scoringPool, genome, picks, seed ^ 0x5DEECE66DL, 0.94D, 3)
+                : scoringPool.stream()
+                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage)))
+                .limit(picks)
+                .toList();
         List<AbilityDefinition> picked = new ArrayList<>();
         artifact.setLastRegulatoryProfile(regulatoryProfile.profileKey());
         artifact.setLastOpenRegulatoryGates(regulatoryProfile.openGatesCsv());
@@ -176,7 +177,7 @@ public class ProceduralAbilityGenerator {
         double total = 0.0D;
         double[] scores = new double[pool.size()];
         for (int i = 0; i < pool.size(); i++) {
-            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage));
+            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage) * rarityModifier(pool.get(i)));
             total += scores[i];
         }
         double roll = random.nextDouble() * total;
@@ -197,7 +198,19 @@ public class ProceduralAbilityGenerator {
         if (template.id().contains("paradox")) score += ("paradox".equalsIgnoreCase(artifact.getDriftAlignment()) ? 1.2D : 0.0D) + (stage >= 5 ? 0.6D : 0.0D);
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 1.0D;
         if (!"none".equalsIgnoreCase(artifact.getFusionPath()) && template.trigger() == AbilityTrigger.ON_FUSION) score += 0.8D;
-        return score;
+        return score * rarityModifier(template);
+    }
+
+
+    private double rarityModifier(AbilityTemplate template) {
+        if (ecosystemEngine == null || template == null) {
+            return 1.0D;
+        }
+        double observedShare = ecosystemEngine.branchShare(template.id());
+        double targetShare = 0.10D;
+        double alpha = 0.5D;
+        double modifier = 1.0D + alpha * (targetShare - observedShare);
+        return Math.max(0.93D, Math.min(1.07D, modifier));
     }
 
     private double scoreFamily(Artifact artifact, AbilityFamily family, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage) {
