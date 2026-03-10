@@ -1,5 +1,6 @@
 package obtuseloot.abilities;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
@@ -60,12 +61,22 @@ public class ItemAbilityManager {
             indexedDispatchCalls.increment();
             totalIndexedSubscribers.add(bindings.size());
             subscriberByTrigger.get(context.trigger()).add(bindings.size());
-            return dispatcher.dispatchIndexed(context, bindings, this);
+            java.util.List<String> effects = dispatcher.dispatchIndexed(context, bindings, this);
+            ObtuseLoot plugin = ObtuseLoot.get();
+            if (plugin != null) {
+                plugin.getArtifactManager().markDirty(context.artifact());
+            }
+            return effects;
         }
 
         fullScanDispatchCalls.increment();
         AbilityProfile profile = profileFor(context.artifact(), context.reputation());
-        return dispatcher.dispatchFullScan(context, profile, this);
+        java.util.List<String> effects = dispatcher.dispatchFullScan(context, profile, this);
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin != null) {
+            plugin.getArtifactManager().markDirty(context.artifact());
+        }
+        return effects;
     }
 
     void recordTriggerDispatch(AbilityDefinition def, AbilityTrigger trigger) {
@@ -77,16 +88,30 @@ public class ItemAbilityManager {
             return;
         }
         subscriptionIndex.rebuild(playerId, artifact, reputation, this, reason);
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin != null) {
+            plugin.getArtifactManager().pinSubscriptions(playerId, true);
+        }
     }
 
     public void clearSubscriptions(UUID playerId) {
         if (playerId != null) {
             subscriptionIndex.remove(playerId);
+            ObtuseLoot plugin = ObtuseLoot.get();
+            if (plugin != null) {
+                plugin.getArtifactManager().pinSubscriptions(playerId, false);
+            }
         }
     }
 
     public void clearAllSubscriptions() {
         subscriptionIndex.clear();
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin != null) {
+            for (org.bukkit.entity.Player online : org.bukkit.Bukkit.getOnlinePlayers()) {
+                plugin.getArtifactManager().pinSubscriptions(online.getUniqueId(), false);
+            }
+        }
     }
 
     public PlayerArtifactTriggerMap triggerMap(UUID playerId) {

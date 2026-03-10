@@ -1,7 +1,10 @@
 package obtuseloot.artifacts;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.artifacts.cache.ArtifactCacheEntry;
+import obtuseloot.artifacts.cache.ArtifactCacheManager;
 import obtuseloot.names.ArtifactNameResolver;
+import obtuseloot.config.RuntimeSettings;
 import obtuseloot.persistence.PlayerStateStore;
 
 import java.util.Map;
@@ -14,28 +17,37 @@ public class ArtifactManager {
     private final ArtifactSeedFactory seedFactory;
     private final Map<UUID, Artifact> loadedArtifacts = new ConcurrentHashMap<>();
     private final Map<String, UUID> storageToOwner = new ConcurrentHashMap<>();
+    private final ArtifactCacheManager cache;
 
     public ArtifactManager(PlayerStateStore stateStore) {
         this.stateStore = stateStore;
         this.seedFactory = new ArtifactSeedFactory();
+        this.cache = new ArtifactCacheManager(
+                stateStore,
+                RuntimeSettings.get().activeArtifactCache(),
+                RuntimeSettings.get().activeArtifactCacheMaxEntries(),
+                RuntimeSettings.get().activeArtifactCacheIdleExpireMs()
+        );
     }
 
     public Artifact getOrCreate(UUID playerId) {
-        return loadedArtifacts.computeIfAbsent(playerId, id -> {
-            Artifact loaded = stateStore.loadArtifact(id);
-            Artifact artifact = loaded != null ? loaded : ArtifactGenerator.generateFor(id);
-            if (artifact.getNaming() == null) {
-                artifact.setNaming(ArtifactNameResolver.initialize(artifact));
+        Artifact artifact = cache.resolve(playerId, () -> {
+            Artifact loaded = stateStore.loadArtifact(playerId);
+            Artifact resolved = loaded != null ? loaded : ArtifactGenerator.generateFor(playerId);
+            if (resolved.getNaming() == null) {
+                resolved.setNaming(ArtifactNameResolver.initialize(resolved));
             }
-            if (artifact.getArtifactStorageKey() == null || artifact.getArtifactStorageKey().isBlank()) {
-                artifact.setArtifactStorageKey(Artifact.buildDefaultStorageKey(id));
+            if (resolved.getArtifactStorageKey() == null || resolved.getArtifactStorageKey().isBlank()) {
+                resolved.setArtifactStorageKey(Artifact.buildDefaultStorageKey(playerId));
             }
-            storageToOwner.put(artifact.getArtifactStorageKey(), id);
-            if (ObtuseLoot.get() != null) {
-                ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+            if (loaded == null && ObtuseLoot.get() != null) {
+                ObtuseLoot.get().getArtifactUsageTracker().trackCreated(resolved);
             }
-            return artifact;
-        });
+            return resolved;
+        }).artifact();
+        loadedArtifacts.put(playerId, artifact);
+        storageToOwner.put(artifact.getArtifactStorageKey(), playerId);
+        return artifact;
     }
 
     public void save(UUID playerId) {
@@ -43,14 +55,16 @@ public class ArtifactManager {
         if (artifact != null) {
             stateStore.saveArtifact(playerId, artifact);
         }
+        cache.saveOwner(playerId);
     }
 
     public void saveAll() {
         loadedArtifacts.forEach(stateStore::saveArtifact);
+        cache.saveAllDirty();
     }
 
     public void unload(UUID playerId) {
-        save(playerId);
+        cache.releaseOwner(playerId);
         Artifact removed = loadedArtifacts.remove(playerId);
         if (removed != null) {
             storageToOwner.remove(removed.getArtifactStorageKey());
@@ -72,6 +86,7 @@ public class ArtifactManager {
         }
         loadedArtifacts.put(playerId, fresh);
         storageToOwner.put(fresh.getArtifactStorageKey(), playerId);
+        cache.put(playerId, fresh, true, true);
         return fresh;
     }
 
@@ -82,6 +97,22 @@ public class ArtifactManager {
         UUID owner = storageToOwner.get(storageKey);
         if (owner != null) {
             return getOrCreate(owner);
+        }
+        Artifact fromCacheOrStore = cache.resolveByStorageKey(storageKey, () -> {
+            if (storageKey.startsWith("player:")) {
+                try {
+                    UUID parsed = UUID.fromString(storageKey.substring("player:".length()));
+                    return getOrCreate(parsed);
+                } catch (IllegalArgumentException ignored) {
+                    return null;
+                }
+            }
+            return null;
+        });
+        if (fromCacheOrStore != null) {
+            storageToOwner.put(fromCacheOrStore.getArtifactStorageKey(), fromCacheOrStore.getOwnerId());
+            loadedArtifacts.put(fromCacheOrStore.getOwnerId(), fromCacheOrStore);
+            return fromCacheOrStore;
         }
         if (storageKey.startsWith("player:")) {
             try {
@@ -101,10 +132,44 @@ public class ArtifactManager {
         }
         artifact.resetMutableState();
         regenerateBaselineIdentity(artifact, newSeed);
+        markDirty(playerId);
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
         }
         return artifact;
+    }
+
+    public void markDirty(UUID playerId) {
+        cache.markDirtyByOwner(playerId);
+    }
+
+    public void markDirty(Artifact artifact) {
+        cache.markDirty(artifact);
+    }
+
+    public void pinSubscriptions(UUID playerId, boolean pinned) {
+        cache.pinSubscription(playerId, pinned);
+    }
+
+    public ArtifactCacheManager.ArtifactCacheStats cacheStats() {
+        return cache.stats();
+    }
+
+    public Map<String, ArtifactCacheEntry> cacheSnapshotByStorageKey() {
+        Map<String, ArtifactCacheEntry> copy = new ConcurrentHashMap<>();
+        for (ArtifactCacheEntry entry : cache.snapshotEntries()) {
+            copy.put(entry.key().storageKey(), entry);
+        }
+        return copy;
+    }
+
+    public void invalidateAll(String reason) {
+        cache.invalidateAll();
+        loadedArtifacts.clear();
+        storageToOwner.clear();
+        if (ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getLogger().info("[ArtifactCache] Invalidated all entries: " + reason);
+        }
     }
 
     public void regenerateBaselineIdentity(Artifact artifact) {

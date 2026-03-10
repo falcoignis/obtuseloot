@@ -80,6 +80,9 @@ dashboard:
 
 runtime:
   triggerSubscriptionIndexing: true
+  activeArtifactCache: true
+  activeArtifactCacheMaxEntries: 2048
+  activeArtifactCacheIdleExpireMs: 300000
 
 text:
   channels:
