@@ -39,6 +39,15 @@ public final class RuntimeSettings {
                 config.getInt("persistence.autosave-interval-seconds", 300),
                 config.getInt("naming.prefix-suffix-chance-percent", 60),
                 config.getBoolean("naming.use-deterministic-owner-seed", true),
+                config.getDouble("naming.implication-base-score", 0.18D),
+                config.getDouble("naming.implication-threshold", 0.52D),
+                config.getDouble("naming.implication-intimate-boost", 0.20D),
+                config.getDouble("naming.implication-predatory-boost", 0.16D),
+                config.getDouble("naming.implication-voice-boost", 0.12D),
+                config.getDouble("naming.implication-storied-boost", 0.11D),
+                config.getDouble("naming.implication-utilitarian-penalty", 0.25D),
+                config.getBoolean("naming.enable-cadence-preference", true),
+                config.getBoolean("naming.enable-tone-safety-filter", true),
                 config.getBoolean("runtime.triggerSubscriptionIndexing", true)
         );
     }
@@ -70,12 +79,21 @@ public final class RuntimeSettings {
             int autosaveIntervalSeconds,
             int namingPrefixSuffixChancePercent,
             boolean namingUseDeterministicOwnerSeed,
+            double namingImplicationBaseScore,
+            double namingImplicationThreshold,
+            double namingImplicationIntimateBoost,
+            double namingImplicationPredatoryBoost,
+            double namingImplicationVoiceBoost,
+            double namingImplicationStoriedBoost,
+            double namingImplicationUtilitarianPenalty,
+            boolean namingEnableCadencePreference,
+            boolean namingEnableToneSafetyFilter,
             boolean triggerSubscriptionIndexing
     ) {
         private static Snapshot defaults() {
             return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
-                    60, true, true);
+                    60, true, 0.18D, 0.52D, 0.20D, 0.16D, 0.12D, 0.11D, 0.25D, true, true, true);
         }
     }
 }

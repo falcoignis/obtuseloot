@@ -22,7 +22,7 @@ public final class ArtifactGenerator {
         artifact.setArtifactSeed(artifactSeed);
         artifact.resetMutableState();
         seedFactory.applySeedProfile(artifact, artifactSeed);
-        artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(artifactSeed));
+        artifact.setGeneratedName(ArtifactNameGenerator.generateForArtifact(artifact));
         artifact.setItemCategory(resolveCategory(artifactSeed));
         return artifact;
     }

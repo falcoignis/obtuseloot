@@ -82,7 +82,7 @@ public class ArtifactManager {
 
     public void regenerateBaselineIdentity(Artifact artifact, long seed) {
         seedFactory.regenerateFromSeed(artifact, seed);
-        artifact.setGeneratedName(ArtifactNameGenerator.generateFromSeed(seed));
+        artifact.setGeneratedName(ArtifactNameGenerator.generateForArtifact(artifact));
         artifact.setItemCategory(ArtifactGenerator.resolveCategory(seed));
     }
 
