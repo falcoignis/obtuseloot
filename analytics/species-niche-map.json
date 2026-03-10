@@ -1,101 +1,206 @@
 {
   "speciesNicheCounts": {
-    "species-root-lineage-7ff45d9f-69c7-3fde-9ff2-989ffa3d8a4b": {
-      "niche-3": 1
+    "species-root-wild-36790": {
+      "niche-1": 9
     },
-    "species-root-lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd": {
-      "niche-1": 1
+    "species-root-wild-3085": {
+      "niche-1": 12
     },
-    "species-root-lineage-ef617665-a0c8-30fb-9555-ebda433aa009": {
-      "niche-1": 1
-    },
-    "species-root-wild-39266": {
-      "niche-1": 8
-    },
-    "species-root-wild-24241": {
-      "niche-1": 6
-    },
-    "species-root-gilded": {
-      "niche-1": 3
-    },
-    "species-root-lineage-52ace7b6-7baa-3200-9e65-cae246f30b2f": {
-      "niche-1": 1
-    },
-    "species-root-lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126": {
+    "species-root-lineage-4c8d5de8-9bab-3b89-9b29-bba8e6b6a172": {
       "niche-1": 1
     },
     "species-root-stormbound": {
-      "niche-1": 7
+      "niche-1": 6
     },
-    "species-root-lineage-d034bfbd-24b1-3ac5-8ff9-3ebbc778c7f8": {
+    "species-root-lineage-d6b72173-5e40-3ec1-865e-0a68d70a1961": {
       "niche-1": 1
     },
-    "species-root-lineage-5ebef5d2-bcf4-32e9-9061-c4b01bdf767e": {
+    "species-root-ashen": {
+      "niche-1": 5
+    },
+    "species-root-lineage-b5d704bb-ecac-3d18-a914-40b55f2ebd82": {
       "niche-1": 1
     },
-    "species-root-lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033": {
+    "species-root-lineage-e282e378-7c15-3145-ba7e-4f39272810d3": {
       "niche-1": 1
     },
-    "species-root-lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4": {
-      "niche-2": 1
+    "species-root-lineage-d248ffad-f414-3635-81c4-3629faf6ddc0": {
+      "niche-1": 1
     },
-    "species-root-lineage-b8ca7ff1-b0d3-30d1-806a-ee60e85861e7": {
+    "species-root-lineage-cad9ffb8-fe46-3641-a19b-3f4d570d3e92": {
+      "niche-1": 1
+    },
+    "species-root-lineage-d92d041b-5cf6-3ec1-ab49-01a59cd531b1": {
+      "niche-1": 1
+    },
+    "species-root-lineage-524f26c9-0a61-3817-8ba3-f4d857c9b8f4": {
+      "niche-1": 1
+    },
+    "species-root-lineage-799c6c87-9b2c-3c6b-8bdd-e42aeafd4506": {
+      "niche-1": 1
+    },
+    "species-root-lineage-98c7a63a-7d2f-31e9-aca2-af9512cd8a3d": {
+      "niche-1": 1
+    },
+    "species-root-lineage-a3b2e45b-29c7-36ec-bbd6-5693d42594d1": {
+      "niche-1": 1
+    },
+    "species-root-lineage-d66e29c7-d9a5-313b-a97c-fb5c27a629e0": {
+      "niche-1": 1
+    },
+    "species-root-lineage-ebd1bbc2-4788-3758-b450-4fe1068849a6": {
+      "niche-1": 1
+    },
+    "species-root-lineage-d82b13ba-3aed-3916-94b9-267418e69152": {
+      "niche-1": 1
+    },
+    "species-root-lineage-041c3ced-7faa-3611-a463-b9a3a6192b6a": {
       "niche-1": 1
     },
     "species-root-graveborn": {
       "niche-1": 4
     },
-    "species-root-lineage-1d37387a-7871-3b78-8531-558143e24c32": {
+    "species-root-lineage-e55ec5a4-86e5-313d-becb-deffab699395": {
       "niche-1": 1
     },
-    "species-root-lineage-a6777d6b-bb0e-33ee-8e2c-f3ca25de6c12": {
+    "species-root-lineage-eedde689-5736-3cef-9d96-7fd042905a66": {
+      "niche-1": 1
+    },
+    "species-root-lineage-4dd28acf-cae4-3f0f-9dc9-a8bc31834bc7": {
+      "niche-1": 1
+    },
+    "species-root-mirrored": {
+      "niche-1": 1
+    },
+    "species-root-lineage-a5de263a-6ad0-3ad7-84ea-2935328f3e13": {
+      "niche-1": 1
+    },
+    "species-root-lineage-86a7de33-e49c-38da-b7d6-b22f6dfeaedf": {
+      "niche-1": 1
+    },
+    "species-root-lineage-f66aa9f1-cfbe-3d24-afd4-a6d14712dfbf": {
+      "niche-1": 1
+    },
+    "species-root-gilded": {
+      "niche-1": 9
+    },
+    "species-root-lineage-239b1112-9ae6-367e-9194-ff0c4c2efd69": {
+      "niche-1": 1
+    },
+    "species-root-lineage-c0292b16-5f48-3f5e-bdc8-87b92d11e266": {
+      "niche-1": 1
+    },
+    "species-root-lineage-428fffb3-64cc-3822-a91d-079295ee26a3": {
+      "niche-1": 1
+    },
+    "species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e": {
+      "niche-1": 1
+    },
+    "species-root-lineage-ffaad374-a8c1-32ff-b9c8-0b91266fa2cc": {
+      "niche-1": 1
+    },
+    "species-root-lineage-c59325ac-a1f9-3a42-acc1-83d85544f913": {
+      "niche-1": 1
+    },
+    "species-root-lineage-0d58ce08-6d22-3fcb-bd8d-fff64667477e": {
+      "niche-1": 1
+    },
+    "species-root-lineage-3575a091-dd34-3abd-aaca-ea762b165819": {
+      "niche-1": 1
+    },
+    "species-root-lineage-9d1ea226-0b85-36e1-88ae-f3e99f84c706": {
+      "niche-1": 1
+    },
+    "species-root-lineage-0313873f-aea1-30d6-b798-eaad329c6eda": {
+      "niche-1": 1
+    },
+    "species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402": {
+      "niche-1": 1
+    },
+    "species-root-lineage-742b4804-b35f-3d7f-b1f0-af932378a07d": {
+      "niche-1": 1
+    },
+    "species-root-lineage-7a85fe80-877c-3af5-883d-abbe6f8729e7": {
       "niche-1": 1
     }
   },
   "nicheOccupancy": {
-    "niche-3": 1,
-    "niche-1": 38,
-    "niche-2": 1
+    "niche-1": 80
   },
   "dominatingSpeciesByNiche": {
-    "niche-3": 1,
-    "niche-1": 8,
-    "niche-2": 1
+    "niche-1": 12
   },
   "competingSpeciesPerNiche": {
-    "niche-3": 1,
-    "niche-1": 15,
-    "niche-2": 1
+    "niche-1": 41
   },
   "nicheEmergenceEvents": {
-    "1": 3
+    "1": 1
   },
   "speciesMigrationCounts": {
-    "species-root-lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd": 1,
-    "species-root-lineage-ef617665-a0c8-30fb-9555-ebda433aa009": 1,
-    "species-root-lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126": 1,
+    "species-root-wild-36790": 1,
+    "species-root-wild-3085": 1,
+    "species-root-lineage-4c8d5de8-9bab-3b89-9b29-bba8e6b6a172": 1,
     "species-root-stormbound": 1,
-    "species-root-lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033": 1,
-    "species-root-lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4": 1
+    "species-root-lineage-b5d704bb-ecac-3d18-a914-40b55f2ebd82": 1,
+    "species-root-lineage-cad9ffb8-fe46-3641-a19b-3f4d570d3e92": 1,
+    "species-root-lineage-d92d041b-5cf6-3ec1-ab49-01a59cd531b1": 1,
+    "species-root-lineage-799c6c87-9b2c-3c6b-8bdd-e42aeafd4506": 1,
+    "species-root-lineage-98c7a63a-7d2f-31e9-aca2-af9512cd8a3d": 1,
+    "species-root-lineage-ebd1bbc2-4788-3758-b450-4fe1068849a6": 1,
+    "species-root-lineage-d82b13ba-3aed-3916-94b9-267418e69152": 1,
+    "species-root-lineage-041c3ced-7faa-3611-a463-b9a3a6192b6a": 1,
+    "species-root-lineage-eedde689-5736-3cef-9d96-7fd042905a66": 1,
+    "species-root-lineage-4dd28acf-cae4-3f0f-9dc9-a8bc31834bc7": 1,
+    "species-root-lineage-c0292b16-5f48-3f5e-bdc8-87b92d11e266": 1,
+    "species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e": 1,
+    "species-root-lineage-ffaad374-a8c1-32ff-b9c8-0b91266fa2cc": 1,
+    "species-root-lineage-c59325ac-a1f9-3a42-acc1-83d85544f913": 1,
+    "species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402": 1,
+    "species-root-lineage-742b4804-b35f-3d7f-b1f0-af932378a07d": 1,
+    "species-root-lineage-7a85fe80-877c-3af5-883d-abbe6f8729e7": 1
   },
   "coEvolutionMigrationCounts": {
-    "species-root-lineage-ef617665-a0c8-30fb-9555-ebda433aa009": 16,
-    "species-root-wild-39266": 181,
-    "species-root-wild-24241": 123,
-    "species-root-gilded": 69,
-    "species-root-lineage-fbfd0454-c850-39ef-ae4e-3a5fbb127126": 17,
-    "species-root-stormbound": 127,
-    "species-root-lineage-d034bfbd-24b1-3ac5-8ff9-3ebbc778c7f8": 23,
-    "species-root-lineage-5ebef5d2-bcf4-32e9-9061-c4b01bdf767e": 22,
-    "species-root-lineage-e2baad6d-64b2-3aba-b8e0-b1750d1f1033": 14,
-    "species-root-lineage-acb0d3b7-a5a0-356b-bfbb-eaa4798a24a4": 20,
-    "species-root-lineage-b8ca7ff1-b0d3-30d1-806a-ee60e85861e7": 23,
-    "species-root-graveborn": 91,
-    "species-root-lineage-1d37387a-7871-3b78-8531-558143e24c32": 23,
-    "species-root-lineage-a6777d6b-bb0e-33ee-8e2c-f3ca25de6c12": 23,
-    "species-root-lineage-7ff45d9f-69c7-3fde-9ff2-989ffa3d8a4b": 8,
-    "species-root-lineage-7c52f707-fb43-3e50-b25b-57f5f3c539bd": 8,
-    "species-root-lineage-52ace7b6-7baa-3200-9e65-cae246f30b2f": 16
+    "species-root-wild-3085": 1698,
+    "species-root-lineage-4c8d5de8-9bab-3b89-9b29-bba8e6b6a172": 143,
+    "species-root-stormbound": 852,
+    "species-root-lineage-d6b72173-5e40-3ec1-865e-0a68d70a1961": 143,
+    "species-root-ashen": 715,
+    "species-root-wild-36790": 1251,
+    "species-root-lineage-b5d704bb-ecac-3d18-a914-40b55f2ebd82": 78,
+    "species-root-lineage-e282e378-7c15-3145-ba7e-4f39272810d3": 143,
+    "species-root-lineage-d248ffad-f414-3635-81c4-3629faf6ddc0": 143,
+    "species-root-lineage-cad9ffb8-fe46-3641-a19b-3f4d570d3e92": 143,
+    "species-root-lineage-d92d041b-5cf6-3ec1-ab49-01a59cd531b1": 78,
+    "species-root-lineage-524f26c9-0a61-3817-8ba3-f4d857c9b8f4": 142,
+    "species-root-lineage-799c6c87-9b2c-3c6b-8bdd-e42aeafd4506": 138,
+    "species-root-lineage-98c7a63a-7d2f-31e9-aca2-af9512cd8a3d": 143,
+    "species-root-lineage-a3b2e45b-29c7-36ec-bbd6-5693d42594d1": 143,
+    "species-root-lineage-d66e29c7-d9a5-313b-a97c-fb5c27a629e0": 143,
+    "species-root-lineage-ebd1bbc2-4788-3758-b450-4fe1068849a6": 78,
+    "species-root-lineage-d82b13ba-3aed-3916-94b9-267418e69152": 78,
+    "species-root-lineage-041c3ced-7faa-3611-a463-b9a3a6192b6a": 141,
+    "species-root-graveborn": 572,
+    "species-root-lineage-e55ec5a4-86e5-313d-becb-deffab699395": 143,
+    "species-root-lineage-eedde689-5736-3cef-9d96-7fd042905a66": 143,
+    "species-root-lineage-4dd28acf-cae4-3f0f-9dc9-a8bc31834bc7": 78,
+    "species-root-mirrored": 143,
+    "species-root-lineage-a5de263a-6ad0-3ad7-84ea-2935328f3e13": 143,
+    "species-root-lineage-86a7de33-e49c-38da-b7d6-b22f6dfeaedf": 143,
+    "species-root-lineage-f66aa9f1-cfbe-3d24-afd4-a6d14712dfbf": 143,
+    "species-root-gilded": 1211,
+    "species-root-lineage-239b1112-9ae6-367e-9194-ff0c4c2efd69": 143,
+    "species-root-lineage-c0292b16-5f48-3f5e-bdc8-87b92d11e266": 143,
+    "species-root-lineage-428fffb3-64cc-3822-a91d-079295ee26a3": 142,
+    "species-root-lineage-ffaad374-a8c1-32ff-b9c8-0b91266fa2cc": 75,
+    "species-root-lineage-c59325ac-a1f9-3a42-acc1-83d85544f913": 76,
+    "species-root-lineage-0d58ce08-6d22-3fcb-bd8d-fff64667477e": 142,
+    "species-root-lineage-3575a091-dd34-3abd-aaca-ea762b165819": 142,
+    "species-root-lineage-9d1ea226-0b85-36e1-88ae-f3e99f84c706": 142,
+    "species-root-lineage-0313873f-aea1-30d6-b798-eaad329c6eda": 139,
+    "species-root-lineage-742b4804-b35f-3d7f-b1f0-af932378a07d": 76,
+    "species-root-lineage-7a85fe80-877c-3af5-883d-abbe6f8729e7": 76,
+    "species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e": 132,
+    "species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402": 132
   },
   "nicheExtinctionEvents": {
   }

@@ -1,23 +1,9 @@
 {
-  "niche-3": {
-    "prototype": [],
-    "observations": 1,
-    "successRate": null,
-    "dominantBranch": "unknown",
-    "dominantFamily": "unknown"
-  },
   "niche-1": {
-    "prototype": [],
-    "observations": 38,
-    "successRate": null,
-    "dominantBranch": "unknown",
-    "dominantFamily": "unknown"
-  },
-  "niche-2": {
-    "prototype": [],
-    "observations": 1,
-    "successRate": null,
-    "dominantBranch": "unknown",
-    "dominantFamily": "unknown"
+    "prototype": [D@11d8b2b2,
+    "observations": 11517,
+    "successRate": 0.962924372666493,
+    "dominantBranch": "survival.shelter",
+    "dominantFamily": "chaos"
   }
 }

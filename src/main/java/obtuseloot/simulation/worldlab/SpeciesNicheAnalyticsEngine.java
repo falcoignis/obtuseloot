@@ -365,6 +365,169 @@ public class SpeciesNicheAnalyticsEngine {
         return out;
     }
 
+    public SpeciesCleanupResult cleanupCosmeticSpecies(List<Artifact> artifacts, Map<String, ArtifactSpecies> speciesRegistry) {
+        Map<String, Integer> population = speciesPopulation(artifacts);
+        Map<String, String> dominantNicheBySpecies = dominantNicheBySpecies(artifacts);
+        Map<String, String> categories = new LinkedHashMap<>();
+        Map<String, String> reasons = new LinkedHashMap<>();
+        Map<String, String> mergeTargets = new LinkedHashMap<>();
+        Set<String> retiredSpecies = new LinkedHashSet<>();
+
+        for (Map.Entry<String, ArtifactSpecies> entry : speciesRegistry.entrySet()) {
+            String speciesId = entry.getKey();
+            ArtifactSpecies species = entry.getValue();
+            SpeciesSignal signal = speciesSignals.get(speciesId);
+            int observations = Math.max(population.getOrDefault(speciesId, 0), signal == null ? 0 : signal.observations);
+            int nicheCount = signal == null ? 0 : signal.niches.size();
+            double dominantNicheShare = dominantShare(signal == null ? Map.of() : signal.niches);
+            double divergence = species.divergenceSnapshot().getOrDefault("compatibility", 0.0D);
+            double nicheDivergence = species.divergenceSnapshot().getOrDefault("nicheOccupancy", 0.0D);
+            boolean root = speciesId.startsWith("species-root-");
+
+            if (root) {
+                categories.put(speciesId, "valid ecological species");
+                reasons.put(speciesId, "lineage root retained as canonical fallback identity");
+                continue;
+            }
+
+            if (observations >= 14 && divergence >= 0.62D && nicheDivergence >= 0.14D && dominantNicheShare >= 0.55D) {
+                categories.put(speciesId, "valid ecological species");
+                reasons.put(speciesId, "persistent occupancy and multi-axis divergence from parent lineage");
+            } else if (observations >= 8 && (divergence >= 0.54D || (nicheCount >= 2 && dominantNicheShare <= 0.75D))) {
+                categories.put(speciesId, "weak / borderline species");
+                reasons.put(speciesId, "partial divergence signal but limited persistence or niche stability");
+            } else if (observations < 4 || (divergence < 0.46D && nicheCount <= 1)) {
+                categories.put(speciesId, "cosmetic species");
+                String target = resolveMergeTarget(species, speciesRegistry);
+                if (target != null && !target.equals(speciesId)) {
+                    mergeTargets.put(speciesId, target);
+                    reasons.put(speciesId, "insufficient ecological separation; merged into parent chain");
+                } else {
+                    retiredSpecies.add(speciesId);
+                    reasons.put(speciesId, "insufficient ecological separation; retired label");
+                }
+            } else {
+                categories.put(speciesId, "merge candidates");
+                String target = resolveMergeTarget(species, speciesRegistry);
+                if (target != null && !target.equals(speciesId)) {
+                    mergeTargets.put(speciesId, target);
+                    reasons.put(speciesId, "borderline divergence with parent-overlap dominant niche");
+                } else {
+                    reasons.put(speciesId, "borderline divergence with no safe parent available");
+                }
+            }
+        }
+
+        for (Artifact artifact : artifacts) {
+            String speciesId = artifact.getSpeciesId();
+            String mapped = resolveTarget(speciesId, mergeTargets);
+            if (mapped != null && !mapped.equals(speciesId)) {
+                artifact.setParentSpeciesId(speciesId);
+                artifact.setSpeciesId(mapped);
+            }
+            if (retiredSpecies.contains(artifact.getSpeciesId())) {
+                ArtifactSpecies species = speciesRegistry.get(artifact.getSpeciesId());
+                String fallback = species == null ? null : resolveMergeTarget(species, speciesRegistry);
+                artifact.setSpeciesId(fallback == null ? artifact.getSpeciesId() : fallback);
+            }
+        }
+
+        retiredSpecies.addAll(mergeTargets.keySet());
+        rebuildSignalsFromArtifacts(artifacts);
+
+        Map<String, Object> audit = new LinkedHashMap<>();
+        audit.put("speciesCategories", categories);
+        audit.put("speciesReasons", reasons);
+        audit.put("speciesDominantNiche", dominantNicheBySpecies);
+        audit.put("speciesPopulation", population);
+        audit.put("mergeTargets", mergeTargets);
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("mergedSpecies", new LinkedHashMap<>(mergeTargets));
+        summary.put("retiredSpecies", new ArrayList<>(retiredSpecies));
+        summary.put("postCleanupSpeciesCount", speciesSignals.size());
+
+        return new SpeciesCleanupResult(audit, mergeTargets, retiredSpecies, summary);
+    }
+
+    private void rebuildSignalsFromArtifacts(List<Artifact> artifacts) {
+        speciesSignals.clear();
+        pairSignals.clear();
+        Map<String, List<Artifact>> artifactsByNiche = new LinkedHashMap<>();
+        for (Artifact artifact : artifacts) {
+            String speciesId = artifact.getSpeciesId() == null ? "unknown" : artifact.getSpeciesId();
+            ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
+            String nicheId = membership == null ? "unassigned" : membership.nicheId();
+            boolean successful = membership != null && membership.successful();
+            observeSpeciesSignal(speciesId, artifact, successful, nicheId);
+            artifactsByNiche.computeIfAbsent(nicheId, ignored -> new ArrayList<>()).add(artifact);
+        }
+
+        for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
+            entry.getValue().speciesUse.clear();
+        }
+
+        for (Map.Entry<String, List<Artifact>> entry : artifactsByNiche.entrySet()) {
+            String nicheId = entry.getKey();
+            List<Artifact> local = entry.getValue();
+            NicheProfile niche = niches.get(nicheId);
+            if (niche != null) {
+                for (Artifact artifact : local) {
+                    niche.speciesUse.merge(artifact.getSpeciesId(), 1, Integer::sum);
+                }
+            }
+            for (int i = 0; i < local.size(); i++) {
+                Artifact a = local.get(i);
+                for (int j = i + 1; j < local.size(); j++) {
+                    Artifact b = local.get(j);
+                    String aId = a.getSpeciesId() == null ? "unknown" : a.getSpeciesId();
+                    String bId = b.getSpeciesId() == null ? "unknown" : b.getSpeciesId();
+                    if (aId.equals(bId)) {
+                        continue;
+                    }
+                    PairSignal pair = pairSignals.computeIfAbsent(pairKey(aId, bId), ignored -> new PairSignal(aId, bId));
+                    pair.coOccurrences++;
+                    pair.sharedNicheOccurrences++;
+                    ArtifactNicheMembership am = artifactMembership.get(a.getArtifactSeed());
+                    ArtifactNicheMembership bm = artifactMembership.get(b.getArtifactSeed());
+                    if ((am != null && am.successful()) || (bm != null && bm.successful())) {
+                        pair.successesWhenTogether++;
+                    }
+                }
+            }
+        }
+    }
+
+    private String resolveMergeTarget(ArtifactSpecies species, Map<String, ArtifactSpecies> speciesRegistry) {
+        String current = species.parentSpeciesId();
+        Set<String> seen = new HashSet<>();
+        while (current != null && !current.isBlank() && !"none".equals(current) && seen.add(current)) {
+            if (speciesRegistry.containsKey(current)) {
+                return current;
+            }
+            ArtifactSpecies next = speciesRegistry.get(current);
+            current = next == null ? null : next.parentSpeciesId();
+        }
+        return null;
+    }
+
+    private String resolveTarget(String speciesId, Map<String, String> mergeTargets) {
+        if (speciesId == null) {
+            return null;
+        }
+        String current = speciesId;
+        Set<String> seen = new HashSet<>();
+        while (mergeTargets.containsKey(current) && seen.add(current)) {
+            current = mergeTargets.get(current);
+        }
+        return current;
+    }
+
+    public record SpeciesCleanupResult(Map<String, Object> audit,
+                                       Map<String, String> mergedSpecies,
+                                       Set<String> retiredSpecies,
+                                       Map<String, Object> summary) {}
+
     public Map<String, Object> buildCoEvolutionRelationships(List<Artifact> artifacts) {
         List<Map<String, Object>> competition = strongestPairs(true);
         List<Map<String, Object>> support = strongestPairs(false);
