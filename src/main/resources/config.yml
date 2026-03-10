@@ -51,6 +51,15 @@ persistence:
 naming:
   prefix-suffix-chance-percent: 60
   use-deterministic-owner-seed: true
+  implication-base-score: 0.18
+  implication-threshold: 0.52
+  implication-intimate-boost: 0.20
+  implication-predatory-boost: 0.16
+  implication-voice-boost: 0.12
+  implication-storied-boost: 0.11
+  implication-utilitarian-penalty: 0.25
+  enable-cadence-preference: true
+  enable-tone-safety-filter: true
 
 combat:
   precision-threshold-damage: 10.0
