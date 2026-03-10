@@ -4,17 +4,42 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.reputation.ArtifactReputation;
 
-import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.LongAdder;
 
 public class ItemAbilityManager {
     private final AbilityResolver resolver;
     private final Map<String, Integer> triggerCounts = new HashMap<>();
+    private final TriggerSubscriptionIndex subscriptionIndex = new TriggerSubscriptionIndex();
+    private final EventAbilityDispatcher dispatcher = new EventAbilityDispatcher();
+
+    private final LongAdder dispatchCalls = new LongAdder();
+    private final LongAdder indexedDispatchCalls = new LongAdder();
+    private final LongAdder fullScanDispatchCalls = new LongAdder();
+    private final LongAdder totalIndexedSubscribers = new LongAdder();
+    private final EnumMap<AbilityTrigger, LongAdder> dispatchByTrigger = new EnumMap<>(AbilityTrigger.class);
+    private final EnumMap<AbilityTrigger, LongAdder> subscriberByTrigger = new EnumMap<>(AbilityTrigger.class);
+
+    private volatile boolean triggerSubscriptionIndexingEnabled = true;
 
     public ItemAbilityManager(AbilityResolver resolver) {
         this.resolver = resolver;
+        for (AbilityTrigger trigger : AbilityTrigger.values()) {
+            dispatchByTrigger.put(trigger, new LongAdder());
+            subscriberByTrigger.put(trigger, new LongAdder());
+        }
+    }
+
+    public void setTriggerSubscriptionIndexingEnabled(boolean enabled) {
+        this.triggerSubscriptionIndexingEnabled = enabled;
+    }
+
+    public boolean isTriggerSubscriptionIndexingEnabled() {
+        return triggerSubscriptionIndexingEnabled;
     }
 
     public AbilityProfile profileFor(Artifact artifact, ArtifactReputation rep) {
@@ -25,16 +50,78 @@ public class ItemAbilityManager {
     }
 
     public List<String> resolveEffects(AbilityEventContext context) {
-        AbilityProfile profile = profileFor(context.artifact(), context.reputation());
-        List<String> activated = new ArrayList<>();
-        int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
-        for (AbilityDefinition def : profile.abilities()) {
-            if (def.trigger() == context.trigger()) {
-                activated.add(def.name() + " -> " + def.stageDescription(stage));
-                triggerCounts.merge(def.id() + "@" + context.trigger(), 1, Integer::sum);
-            }
+        dispatchCalls.increment();
+        dispatchByTrigger.get(context.trigger()).increment();
+
+        UUID ownerId = context.artifact().getOwnerId();
+        if (triggerSubscriptionIndexingEnabled && ownerId != null) {
+            PlayerArtifactTriggerMap triggerMap = subscriptionIndex.getOrRebuild(ownerId, context.artifact(), context.reputation(), this, "lazy-event-build");
+            List<ArtifactTriggerBinding> bindings = triggerMap.bindingsFor(context.trigger());
+            indexedDispatchCalls.increment();
+            totalIndexedSubscribers.add(bindings.size());
+            subscriberByTrigger.get(context.trigger()).add(bindings.size());
+            return dispatcher.dispatchIndexed(context, bindings, this);
         }
-        return activated;
+
+        fullScanDispatchCalls.increment();
+        AbilityProfile profile = profileFor(context.artifact(), context.reputation());
+        return dispatcher.dispatchFullScan(context, profile, this);
+    }
+
+    void recordTriggerDispatch(AbilityDefinition def, AbilityTrigger trigger) {
+        triggerCounts.merge(def.id() + "@" + trigger, 1, Integer::sum);
+    }
+
+    public void rebuildSubscriptions(UUID playerId, Artifact artifact, ArtifactReputation reputation, String reason) {
+        if (playerId == null || artifact == null || reputation == null) {
+            return;
+        }
+        subscriptionIndex.rebuild(playerId, artifact, reputation, this, reason);
+    }
+
+    public void clearSubscriptions(UUID playerId) {
+        if (playerId != null) {
+            subscriptionIndex.remove(playerId);
+        }
+    }
+
+    public void clearAllSubscriptions() {
+        subscriptionIndex.clear();
+    }
+
+    public PlayerArtifactTriggerMap triggerMap(UUID playerId) {
+        return subscriptionIndex.get(playerId);
+    }
+
+    public TriggerSubscriptionIndexStats indexStats() {
+        return new TriggerSubscriptionIndexStats(
+                triggerSubscriptionIndexingEnabled,
+                subscriptionIndex.playerCount(),
+                subscriptionIndex.rebuildCount(),
+                subscriptionIndex.averageRebuildMicros(),
+                dispatchCalls.sum(),
+                indexedDispatchCalls.sum(),
+                fullScanDispatchCalls.sum(),
+                averageIndexedSubscribers()
+        );
+    }
+
+    public Map<AbilityTrigger, Double> averageSubscribersPerTrigger() {
+        EnumMap<AbilityTrigger, Double> averages = new EnumMap<>(AbilityTrigger.class);
+        for (AbilityTrigger trigger : AbilityTrigger.values()) {
+            long dispatches = dispatchByTrigger.get(trigger).sum();
+            long subscribers = subscriberByTrigger.get(trigger).sum();
+            averages.put(trigger, dispatches == 0 ? 0.0D : (double) subscribers / dispatches);
+        }
+        return Map.copyOf(averages);
+    }
+
+    private double averageIndexedSubscribers() {
+        long indexedCalls = indexedDispatchCalls.sum();
+        if (indexedCalls == 0) {
+            return 0.0D;
+        }
+        return (double) totalIndexedSubscribers.sum() / indexedCalls;
     }
 
     public Map<String, Integer> triggerCounts() {
@@ -46,5 +133,17 @@ public class ItemAbilityManager {
             return seeded.traitProjectionStats();
         }
         return new TraitProjectionStats(false, ScoringMode.BASELINE, 0, 0, 0, 0, 0, 0, 0, 0, 0.0D, 1.0D);
+    }
+
+    public record TriggerSubscriptionIndexStats(
+            boolean enabled,
+            int indexedPlayers,
+            long rebuildCount,
+            double averageRebuildMicros,
+            long dispatchCalls,
+            long indexedDispatchCalls,
+            long fallbackFullScanCalls,
+            double averageIndexedSubscribers
+    ) {
     }
 }

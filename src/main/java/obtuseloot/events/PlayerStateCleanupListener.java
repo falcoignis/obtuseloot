@@ -14,6 +14,7 @@ public final class PlayerStateCleanupListener implements Listener {
         plugin.getArtifactManager().unload(playerId);
         plugin.getReputationManager().unload(playerId);
         plugin.getCombatContextManager().remove(playerId);
+        plugin.getItemAbilityManager().clearSubscriptions(playerId);
         plugin.getLoreEngine().removePlayer(playerId);
     }
 }

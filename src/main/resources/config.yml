@@ -59,3 +59,7 @@ combat:
 dashboard:
   webServerEnabled: false
   port: 8085
+
+
+runtime:
+  triggerSubscriptionIndexing: true
