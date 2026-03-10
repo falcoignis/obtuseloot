@@ -5,42 +5,38 @@
 - Artifacts per player: 4
 - Sessions per season: 24
 - Seasons: 4
-- Ability profile rows: 6828989
+- Ability profile rows: 6,828,989
 
 ## 2) Method summary
-- Simulated progression loop with encounters, memory events, evolution, mutation, awakening, and fusion.
-- Metrics summarize final artifact state + cumulative ability generation outcomes.
+- Ran full progression stack under high-throughput world pressure.
+- Compared concentration, convergence, and rare-system retention against small-world behavior.
 
 ## 3) Key findings
-- Dominant family share: 29.04%
-- Branch convergence rate: 57.56%
-- Mutation frequency: 86.52%
-- Awakening/Fusion rates: 73.16% / 21.38%
+- Dominant family share: 29.04%.
+- Branch convergence rate: 57.56%.
+- Mutation frequency: 86.52%.
+- Awakening/Fusion rates: 73.16% / 21.38%.
+- Interpretation: convergence pressure increases at scale even while mutation remains active.
 
-## 4) Dominant families / branches / mechanics
-- Family chaos: 1982885
-- Family brutality: 1683324
-- Family survival: 1420040
-- Branch brutality.quarry: 133959
-- Branch survival.guardian: 15108
-- Branch survival.shelter: 14237
-- Mechanic guardian_pulse: 1969414
-- Mechanic burst_state: 1438035
-- Mechanic revenant_trigger: 1387683
+## 4) Dominant families / branches / lineages / mechanics
+- Families: chaos (1,982,885), brutality (1,683,324), survival (1,420,040).
+- Branches: brutality.quarry (133,959), survival.guardian (15,108), survival.shelter (14,237).
+- Mechanics: guardian_pulse (1,969,414), burst_state (1,438,035), revenant_trigger (1,387,683).
+- Interpretation: throughput-heavy combat mechanics continue to dominate late-world volume.
 
 ## 5) Rare but viable systems
-- chaos.sprawl: 236 (0.10%)
-- chaos.paradox: 257 (0.11%)
-- survival.awakened-variant: 415 (0.18%)
-- survival.awakened-remnant: 596 (0.26%)
+- chaos.sprawl (0.10%), chaos.paradox (0.11%), survival.awakened-variant (0.18%), survival.awakened-remnant (0.26%).
+- Rare branch survival persists, but practical influence remains limited at this scale.
 
 ## 6) Dead or suspicious systems
-- Dead branch rate: 0.00%
-- Low-memory trigger frequency (on_memory_event): 891879
+- Dead branch rate: 0.00%.
+- Suspicious: low representation of some mutation/memory pathways relative to combat-loop mechanics.
 
 ## 7) Confidence / caveats
-- Single-run summary; trust improves when checked against multi-run large-world validation.
+- Large-scale descriptive confidence: **high**.
+- Causal attribution to one subsystem: **moderate** (needs ablation + rerun coupling).
 
-## 8) Suggested next review steps
-- Compare this summary against `multirun-world-sim-report.md` for stability checks.
-- Use `world-sim-confidence-report.md` before applying any balancing changes.
+## 8) Actionable next review steps
+1. Use open-endedness ablation results to target subsystem-level tuning, not blanket family buffs.
+2. Track branch entropy and concentration jointly in next rerun set.
+3. Validate any tuning against both rare-lineage persistence and collapse-risk trend.

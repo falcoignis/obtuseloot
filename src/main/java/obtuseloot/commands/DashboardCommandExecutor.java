@@ -104,6 +104,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 player.sendMessage("§7Lineage Concentration: §f" + format(metrics.lineageConcentration()));
                 player.sendMessage("§7Collapse Risk: §f" + metrics.collapseRisk().name());
                 player.sendMessage("§7Summary: §f" + "Dominance " + format(metrics.dominanceIndex()) + ", Risk " + metrics.collapseRisk().name());
+                player.sendMessage("§8Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json.");
                 if (dashboardWebServer.isRunning()) {
                     TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
                     link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, dashboardUrl));
@@ -124,6 +125,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage("Dashboard generation succeeded: " + Files.exists(dashboardPath));
             sender.sendMessage("Web endpoint: " + dashboardUrl);
             sender.sendMessage("Latest season snapshot: " + latestSeason);
+            sender.sendMessage("Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json (not online-player-only telemetry).");
         } catch (IOException exception) {
             sender.sendMessage("§cUnable to read ecosystem analytics: " + exception.getMessage());
         }

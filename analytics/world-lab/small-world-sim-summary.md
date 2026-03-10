@@ -5,48 +5,37 @@
 - Artifacts per player: 2
 - Sessions per season: 12
 - Seasons: 2
-- Ability profile rows: 40894
+- Ability profile rows: 40,894
 
 ## 2) Method summary
-- Simulated progression loop with encounters, memory events, evolution, mutation, awakening, and fusion.
-- Metrics summarize final artifact state + cumulative ability generation outcomes.
+- Ran compact world simulation including evolution, mutation, awakening, fusion, memory, and ecosystem feedback.
+- Used this run as an early-signal sanity check before larger-world conclusions.
 
 ## 3) Key findings
-- Dominant family share: 30.42%
-- Branch convergence rate: 50.71%
-- Mutation frequency: 86.88%
-- Awakening/Fusion rates: 63.02% / 22.66%
+- Dominant family share: 30.42%.
+- Branch convergence rate: 50.71%.
+- Mutation frequency: 86.88%.
+- Awakening/Fusion rates: 63.02% / 22.66%.
+- Interpretation: small world already shows measurable convergence pressure; it is useful for directionality, not final balancing decisions.
 
-## 4) Dominant families / branches / mechanics
-- Family chaos: 12440
-- Family brutality: 9894
-- Family survival: 8448
-- Branch brutality.quarry: 936
-- Branch survival.shelter: 172
-- Branch survival.guardian: 150
-- Mechanic guardian_pulse: 10486
-- Mechanic burst_state: 9337
-- Mechanic revenant_trigger: 8039
+## 4) Dominant families / branches / lineages / mechanics
+- Families: chaos (12,440), brutality (9,894), survival (8,448).
+- Branches: brutality.quarry (936), survival.shelter (172), survival.guardian (150).
+- Mechanics: guardian_pulse (10,486), burst_state (9,337), revenant_trigger (8,039).
 
 ## 5) Rare but viable systems
-- chaos.awakened-variant: 3 (0.16%)
-- consistency.discipline: 3 (0.16%)
-- consistency.anchor: 3 (0.16%)
-- chaos.sprawl: 4 (0.21%)
-- precision.awakened-variant: 5 (0.26%)
-- chaos.paradox: 6 (0.31%)
-- consistency.boss-ledger: 7 (0.36%)
-- chaos.awakened-entropy: 10 (0.52%)
-- survival.awakened-remnant: 10 (0.52%)
-- survival.awakened-variant: 14 (0.73%)
+- Lowest non-zero branches remain active (0.16%–0.73% range), including chaos.awakened-variant and consistency.discipline.
+- Interpretation: tail systems are weak but alive at this scale.
 
 ## 6) Dead or suspicious systems
-- Dead branch rate: 0.00%
-- Low-memory trigger frequency (on_memory_event): 4914
+- Dead branch rate: 0.00%.
+- Suspicious: convergence appears quickly (2 seasons), so tiny-world outcomes can overstate short-horizon stickiness.
 
 ## 7) Confidence / caveats
-- Single-run summary; trust improves when checked against multi-run large-world validation.
+- Operational confidence: **moderate** for early warning.
+- Balancing confidence: **low** for production tuning because of small world size and short horizon.
 
-## 8) Suggested next review steps
-- Compare this summary against `multirun-world-sim-report.md` for stability checks.
-- Use `world-sim-confidence-report.md` before applying any balancing changes.
+## 8) Actionable next review steps
+1. Use this report only as a pre-screen.
+2. Base balancing decisions on large-world and multi-run comparisons.
+3. Re-check whether any suspicious branch remains suspicious at larger scale.

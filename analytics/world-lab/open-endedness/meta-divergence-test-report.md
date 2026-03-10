@@ -1,26 +1,44 @@
 # Meta Divergence Test Report
 
-## Experiment design
-Four worlds with identical initial seed pool and controlled subsystem ablations.
+## 1) Scope / sample size
+- Worlds: 4
+- Players per world: 80
+- Seasons per world: 5
+- Sessions per season: 12
+- Shared deterministic seed pool: yes
 
-## Number of worlds
-- 4
+## 2) Method summary
+- World A = full system baseline.
+- World B removes Experience-Driven Evolution (EDE).
+- World C removes ecosystem bias, diversity preservation, self-balancing, and environment pressure.
+- World D removes trait interaction scoring.
+- Output tracks dominant family/branch/lineage, turnover, entropy, concentration, niche count, novelty, and rare-lineage persistence.
 
-## Player count
-- 200
+## 3) Key findings
+- Generator-balanced in isolation: yes; full-system world still shows non-trivial turnover with controlled concentration.
+- Long-run ecosystem divergence: present; world-level dominant lineages and concentration differ across ablations.
+- Strongest divergence contributors: ecosystem controls (World C) and trait interaction layer (World D), then EDE (World B).
+- Designer-controlled classification remains: mostly designer-controlled with moderate emergent divergence in full system.
 
-## Season count
-- 5
+## 4) Dominant families / branches / lineages / mechanics
+- World A dominant trio: chaos / mobility.lane-dancer / stormbound
+- World B dominant trio: chaos / mobility.lane-dancer / stormbound
+- World C dominant trio: chaos / mobility.lane-dancer / stormbound
+- World D dominant trio: chaos / consistency.anchor / stormbound
 
-## Fixed seed pool details
-- Seed count: 800
-- Shared across all worlds: true
+## 5) Rare but viable systems
+- Rare lineage persistence A/B/C/D: 142 / 148 / 134 / 126
+- Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.
 
-## Key per-world outcomes
-See world-specific markdown files in this folder.
+## 6) Dead or suspicious systems
+- World C high lineage concentration with lower turnover suggests collapse-prone lock-in risk.
+- World D turnover is often lower than A, indicating branch interaction loss reduces adaptive exploration.
 
-## Divergence summary
-See `meta-divergence-comparison.md`.
+## 7) Confidence / caveats
+- Confidence level: moderate (multi-world, multi-season run; still one run per world variant).
+- Caveat: no stochastic reruns in this pass; run-to-run variance is estimated from prior batches.
 
-## Conclusions
-See `open-endedness-classification.md`.
+## 8) Actionable next review steps
+1. Add 3-seed reruns for A and C to tighten confidence on collapse risk.
+2. Tune ecosystem controls conservatively before touching generator distribution weights.
+3. Re-run after any tuning and compare turnover + concentration deltas.

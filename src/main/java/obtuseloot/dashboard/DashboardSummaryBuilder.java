@@ -8,7 +8,8 @@ public class DashboardSummaryBuilder {
                 + ", BranchEntropy=" + fmt(metrics.branchEntropy())
                 + ", TraitVariance=" + fmt(metrics.traitVariance())
                 + ", LineageConcentration=" + fmt(metrics.lineageConcentration())
-                + ", CollapseRisk=" + metrics.collapseRisk().name();
+                + ", CollapseRisk=" + metrics.collapseRisk().name()
+                + " | Data source: analytics/ecosystem-balance-data.json (generator/ecology aggregate, not live online players)";
     }
 
     private String fmt(double value) {

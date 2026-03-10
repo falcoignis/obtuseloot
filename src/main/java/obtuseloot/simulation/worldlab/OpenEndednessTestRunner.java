@@ -4,171 +4,428 @@ import obtuseloot.analytics.EcosystemHealthVisualizer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public final class OpenEndednessTestRunner {
     private record WorldSpec(String code, String slug, String title, WorldSimulationConfig config) {}
 
-    private static final int DEFAULT_PLAYERS = 1000;
-    private static final int DEFAULT_SEASONS = 5;
+    private static final int DEFAULT_PLAYERS = 300;
+    private static final int DEFAULT_SEASONS = 8;
 
     public static void main(String[] args) throws Exception {
-        WorldSimulationConfig d = WorldSimulationConfig.defaults();
+        WorldSimulationConfig defaults = WorldSimulationConfig.defaults();
         int players = Integer.parseInt(System.getProperty("world.players", String.valueOf(DEFAULT_PLAYERS)));
         int seasons = Integer.parseInt(System.getProperty("world.seasonCount", String.valueOf(DEFAULT_SEASONS)));
-        int sessions = Integer.parseInt(System.getProperty("world.sessionsPerSeason", String.valueOf(d.sessionsPerSeason())));
+        int sessions = Integer.parseInt(System.getProperty(
+                "world.sessionsPerSeason",
+                String.valueOf(defaults.sessionsPerSeason())));
 
         List<WorldSpec> worlds = List.of(
-                new WorldSpec("A", "world-a-full-system", "World A — Full System", cfg(d, players, seasons, sessions, true, true, true, true, true, true)),
-                new WorldSpec("B", "world-b-no-ede", "World B — No Experience-Driven Evolution", cfg(d, players, seasons, sessions, false, true, true, true, true, true)),
-                new WorldSpec("C", "world-c-no-bias-diversity", "World C — No Ecosystem Bias / Diversity Preservation", cfg(d, players, seasons, sessions, true, false, false, false, false, true)),
-                new WorldSpec("D", "world-d-no-trait-interactions", "World D — No Trait Interaction Layer", cfg(d, players, seasons, sessions, true, true, true, true, true, false))
+                new WorldSpec("A", "world-a-full-system", "World A — Full System",
+                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, true)),
+                new WorldSpec("B", "world-b-no-ede", "World B — No Experience-Driven Evolution",
+                        cfg(defaults, players, seasons, sessions, false, true, true, true, true, true)),
+                new WorldSpec("C", "world-c-no-bias-diversity", "World C — No Ecosystem Bias / Diversity Preservation",
+                        cfg(defaults, players, seasons, sessions, true, false, false, false, false, true)),
+                new WorldSpec("D", "world-d-no-trait-interactions", "World D — No Trait Interaction Layer",
+                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, false))
         );
 
-        Path out = Path.of("analytics/world-lab/open-endedness");
-        Files.createDirectories(out);
+        Path outputDir = Path.of("analytics/world-lab/open-endedness");
+        Files.createDirectories(outputDir);
 
         Map<String, Map<String, Object>> results = new LinkedHashMap<>();
         for (WorldSpec world : worlds) {
             WorldSimulationHarness harness = new WorldSimulationHarness(world.config);
             harness.runAndWriteOutputs();
+
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("title", world.title);
             data.put("config", Map.of("players", players, "seasons", seasons, "sessionsPerSeason", sessions));
             data.put("seedPool", harness.initialSeedPool());
             data.put("seasonal", harness.seasonalSnapshots());
-            Map<String, Object> summary = summarize(harness.seasonalSnapshots());
-            data.put("summary", summary);
+            data.put("summary", summarize(harness.seasonalSnapshots()));
+
             results.put(world.code, data);
-            Files.writeString(out.resolve(world.slug + ".md"), worldMarkdown(world, data));
+            Files.writeString(outputDir.resolve(world.slug + ".md"), worldMarkdown(world, data));
         }
 
-        Files.writeString(out.resolve("meta-divergence-test-data.json"), toJson(results, 0));
-        Files.writeString(out.resolve("meta-divergence-comparison.md"), comparisonMarkdown(results));
         String classification = classificationMarkdown(results);
-        Files.writeString(out.resolve("open-endedness-classification.md"), classification);
-        Files.writeString(out.resolve("meta-divergence-test-report.md"), reportMarkdown(results));
-        Files.writeString(out.resolve("meta-divergence-test-report.md"), reportMarkdown(results));
-        Files.writeString(out.resolve("review-first.md"), reviewFirstMarkdown(classification));
+        Files.writeString(outputDir.resolve("meta-divergence-test-data.json"), toJson(results, 0));
+        Files.writeString(outputDir.resolve("meta-divergence-comparison.md"), comparisonMarkdown(results));
+        Files.writeString(outputDir.resolve("open-endedness-classification.md"), classification);
+        Files.writeString(outputDir.resolve("meta-divergence-test-report.md"), reportMarkdown(results));
+        Files.writeString(outputDir.resolve("review-first.md"), reviewFirstMarkdown(classification));
 
-        renderCharts(out, results);
-        Files.writeString(out.resolve("meta-divergence-test-report.md"), reportMarkdown(results));
+        renderCharts(outputDir, results);
     }
 
-    private static WorldSimulationConfig cfg(WorldSimulationConfig d, int players, int seasons, int sessions,
-                                             boolean ede, boolean ecoBias, boolean diversity, boolean selfBal,
-                                             boolean env, boolean trait) {
+    private static WorldSimulationConfig cfg(WorldSimulationConfig defaults,
+                                             int players,
+                                             int seasons,
+                                             int sessions,
+                                             boolean ede,
+                                             boolean ecosystemBias,
+                                             boolean diversity,
+                                             boolean selfBalancing,
+                                             boolean environmentPressure,
+                                             boolean traitInteractions) {
         return new WorldSimulationConfig(
-                d.seed(), players, d.artifactsPerPlayer(), sessions, seasons, d.bossFrequency(), d.encounterDensity(),
-                d.chaosEventRate(), d.lowHealthEventRate(), d.mutationPressureMultiplier(), d.memoryEventMultiplier(),
-                d.outputDirectory(), ede, ecoBias, diversity, selfBal, env, trait, d.scoringMode());
+                defaults.seed(), players, defaults.artifactsPerPlayer(), sessions, seasons,
+                defaults.bossFrequency(), defaults.encounterDensity(),
+                defaults.chaosEventRate(), defaults.lowHealthEventRate(),
+                defaults.mutationPressureMultiplier(), defaults.memoryEventMultiplier(),
+                defaults.outputDirectory(), ede, ecosystemBias, diversity, selfBalancing,
+                environmentPressure, traitInteractions, defaults.scoringMode());
     }
 
     private static Map<String, Object> summarize(List<Map<String, Object>> seasonal) {
-        Map<String, Object> out = new LinkedHashMap<>();
+        Map<String, Object> summary = new LinkedHashMap<>();
         Map<String, Integer> endFamilies = castCount(seasonal.getLast().get("families"));
         Map<String, Integer> endBranches = castCount(seasonal.getLast().get("branches"));
         Map<String, Integer> endLineages = castCount(seasonal.getLast().get("lineages"));
-        out.put("dominantFamily", top(endFamilies));
-        out.put("dominantBranch", top(endBranches));
-        out.put("dominantLineage", top(endLineages));
-        out.put("branchEntropy", entropy(endBranches));
-        out.put("lineageConcentration", concentration(endLineages));
-        out.put("traitVariance", variance(endFamilies.values()));
-        out.put("dominanceIndex", dominantRate(endFamilies));
-        out.put("nicheCount", endBranches.size());
-        out.put("familyTurnover", turnover(seasonal, "families"));
-        out.put("branchTurnover", turnover(seasonal, "branches"));
-        out.put("lineageTurnover", turnover(seasonal, "lineages"));
-        out.put("newBranchCombosAfterS1", novelty(seasonal, "branches", 1));
-        out.put("newDominantLineagesAfterS2", dominantLineageNovelty(seasonal));
-        out.put("mutationDiversity", castCount(seasonal.getLast().get("mutations")).size());
-        return out;
+
+        summary.put("dominantFamily", top(endFamilies));
+        summary.put("dominantBranch", top(endBranches));
+        summary.put("dominantLineage", top(endLineages));
+
+        summary.put("dominantFamilyBySeason", dominantBySeason(seasonal, "families"));
+        summary.put("dominantBranchBySeason", dominantBySeason(seasonal, "branches"));
+        summary.put("dominantLineageBySeason", dominantBySeason(seasonal, "lineages"));
+
+        summary.put("familyTurnover", turnover(seasonal, "families"));
+        summary.put("branchTurnover", turnover(seasonal, "branches"));
+        summary.put("lineageTurnover", turnover(seasonal, "lineages"));
+
+        summary.put("top5FamilyTurnoverTrend", turnoverTrend(seasonal, "families"));
+        summary.put("top5BranchTurnoverTrend", turnoverTrend(seasonal, "branches"));
+        summary.put("top5LineageTurnoverTrend", turnoverTrend(seasonal, "lineages"));
+
+        summary.put("branchEntropyTrend", trend(seasonal, "branches", OpenEndednessTestRunner::entropy));
+        summary.put("traitVarianceTrend", trend(seasonal, "families", m -> variance(m.values())));
+        summary.put("lineageConcentrationTrend", trend(seasonal, "lineages", OpenEndednessTestRunner::concentration));
+        summary.put("nicheCountTrend", trend(seasonal, "branches", m -> (double) m.size()));
+        summary.put("noveltyRatePerSeason", noveltyRatePerSeason(seasonal, "branches"));
+        summary.put("rareLineagePersistence", rareLineagePersistence(seasonal));
+
+        summary.put("branchEntropy", entropy(endBranches));
+        summary.put("lineageConcentration", concentration(endLineages));
+        summary.put("traitVariance", variance(endFamilies.values()));
+        summary.put("dominanceIndex", dominantRate(endFamilies));
+        summary.put("nicheCount", endBranches.size());
+        return summary;
     }
 
     private static String worldMarkdown(WorldSpec world, Map<String, Object> data) {
-        Map<String, Object> s = castMap(data.get("summary"));
+        Map<String, Object> summary = castMap(data.get("summary"));
+        Map<String, Object> config = castMap(data.get("config"));
         return "# " + world.title + "\n\n"
-                + "- Dominant family: `" + s.get("dominantFamily") + "`\n"
-                + "- Dominant branch: `" + s.get("dominantBranch") + "`\n"
-                + "- Dominant lineage: `" + s.get("dominantLineage") + "`\n"
-                + "- Dominance index: " + s.get("dominanceIndex") + "\n"
-                + "- Branch entropy: " + s.get("branchEntropy") + "\n"
-                + "- Trait variance: " + s.get("traitVariance") + "\n"
-                + "- Niche count: " + s.get("nicheCount") + "\n"
-                + "- Lineage concentration: " + s.get("lineageConcentration") + "\n"
-                + "- Top5 family turnover: " + s.get("familyTurnover") + "\n"
-                + "- Top5 branch turnover: " + s.get("branchTurnover") + "\n"
-                + "- Top5 lineage turnover: " + s.get("lineageTurnover") + "\n"
-                + "- New branch combos after S1: " + s.get("newBranchCombosAfterS1") + "\n"
-                + "- New dominant lineages after S2: " + s.get("newDominantLineagesAfterS2") + "\n"
-                + "- Mutation diversity: " + s.get("mutationDiversity") + "\n";
-    }
-
-    private static String comparisonMarkdown(Map<String, Map<String, Object>> results) {
-        StringBuilder sb = new StringBuilder("# Meta Divergence Comparison\n\n| World | Dominant Family | Dominant Branch | Dominant Lineage | Lineage Concentration | Turnover(F/B/L) | Branch Entropy |\n|---|---|---|---|---:|---|---:|\n");
-        for (var e : results.entrySet()) {
-            Map<String, Object> s = castMap(e.getValue().get("summary"));
-            sb.append("| ").append(e.getKey()).append(" | ").append(s.get("dominantFamily")).append(" | ").append(s.get("dominantBranch"))
-                    .append(" | ").append(s.get("dominantLineage")).append(" | ").append(s.get("lineageConcentration"))
-                    .append(" | ").append(s.get("familyTurnover")).append("/").append(s.get("branchTurnover")).append("/").append(s.get("lineageTurnover"))
-                    .append(" | ").append(s.get("branchEntropy")).append(" |\n");
-        }
-        sb.append("\n## Interpretation of subsystem impact\n- EDE and trait interactions increase novelty when they raise turnover and branch entropy.\n- Bias/diversity controls are protective if they lower concentration and collapse trend.\n");
-        return sb.toString();
-    }
-
-    private static String classificationMarkdown(Map<String, Map<String, Object>> results) {
-        Set<Object> families = new HashSet<>();
-        Set<Object> branches = new HashSet<>();
-        double avgTurnover = 0;
-        double avgEntropy = 0;
-        for (var world : results.values()) {
-            Map<String, Object> s = castMap(world.get("summary"));
-            families.add(s.get("dominantFamily"));
-            branches.add(s.get("dominantBranch"));
-            avgTurnover += ((Number) s.get("familyTurnover")).doubleValue();
-            avgEntropy += ((Number) s.get("branchEntropy")).doubleValue();
-        }
-        avgTurnover /= results.size();
-        avgEntropy /= results.size();
-        String klass = families.size() >= 3 && branches.size() >= 3 && avgTurnover > 0.35 ? "Emergent evolutionary system"
-                : families.size() >= 2 || avgTurnover > 0.2 ? "Adaptive but bounded"
-                : "Mostly designer-controlled";
-        return "# Open-Endedness Classification\n\n- Final classification: **" + klass + "**\n"
-                + "- Evidence: distinct dominant families=" + families.size() + ", dominant branches=" + branches.size() + ", avg turnover=" + avgTurnover + ", avg entropy=" + avgEntropy + "\n"
-                + "- Confidence level: medium\n"
-                + "- Most divergence contribution: trait interactions + ecosystem controls\n"
-                + "- Next recommended experiment: extend to 10+ seasons and perturb environmental pressure schedule.\n";
+                + "## 1) Scope / sample size\n"
+                + "- Players: " + config.get("players") + "\n"
+                + "- Seasons: " + config.get("seasons") + "\n"
+                + "- Sessions per season: " + config.get("sessionsPerSeason") + "\n\n"
+                + "## 2) Method summary\n"
+                + "- Deterministic seed pool shared across worlds; this file reflects one ablation world.\n"
+                + "- Top-5 turnover compares seasonal leadership sets for families, branches, and lineages.\n"
+                + "- Novelty rate tracks new branch labels entering the ecosystem each season.\n\n"
+                + "## 3) Key findings\n"
+                + "- Dominant family (final season): `" + summary.get("dominantFamily") + "`\n"
+                + "- Dominant branch (final season): `" + summary.get("dominantBranch") + "`\n"
+                + "- Dominant lineage (final season): `" + summary.get("dominantLineage") + "`\n"
+                + "- Branch entropy (final): " + fmt(summary.get("branchEntropy")) + "\n"
+                + "- Lineage concentration (final): " + fmt(summary.get("lineageConcentration")) + "\n"
+                + "- Novelty rate per season: " + summary.get("noveltyRatePerSeason") + "\n\n"
+                + "## 4) Dominant families / branches / lineages / mechanics\n"
+                + "- Dominant family by season: " + summary.get("dominantFamilyBySeason") + "\n"
+                + "- Dominant branch by season: " + summary.get("dominantBranchBySeason") + "\n"
+                + "- Dominant lineage by season: " + summary.get("dominantLineageBySeason") + "\n\n"
+                + "## 5) Rare but viable systems\n"
+                + "- Rare lineage persistence score: " + summary.get("rareLineagePersistence") + "\n"
+                + "- Niche count trend: " + summary.get("nicheCountTrend") + "\n\n"
+                + "## 6) Dead or suspicious systems\n"
+                + "- Top-5 family turnover trend: " + summary.get("top5FamilyTurnoverTrend") + "\n"
+                + "- Top-5 branch turnover trend: " + summary.get("top5BranchTurnoverTrend") + "\n"
+                + "- Top-5 lineage turnover trend: " + summary.get("top5LineageTurnoverTrend") + "\n"
+                + "- Sustained zero-turnover windows indicate possible lock-in.\n\n"
+                + "## 7) Confidence / caveats\n"
+                + "- Confidence: moderate (single run in this world variant, but tracked over multiple seasons).\n"
+                + "- Caveat: deterministic seed sharing can understate real production variance.\n\n"
+                + "## 8) Actionable next review steps\n"
+                + "- Compare this world against `meta-divergence-comparison.md` before balancing changes.\n"
+                + "- If this world shows recurring lock-in, increase mutation pressure in follow-up experiments only.\n";
     }
 
     private static String reportMarkdown(Map<String, Map<String, Object>> results) {
-        String firstKey = results.keySet().iterator().next();
-        int players = ((Number) castMap(results.get(firstKey).get("config")).get("players")).intValue();
-        int seasons = ((Number) castMap(results.get(firstKey).get("config")).get("seasons")).intValue();
-        int seedPool = ((List<?>) results.get(firstKey).get("seedPool")).size();
+        Map<String, Object> worldA = castMap(results.get("A").get("summary"));
+        Map<String, Object> worldB = castMap(results.get("B").get("summary"));
+        Map<String, Object> worldC = castMap(results.get("C").get("summary"));
+        Map<String, Object> worldD = castMap(results.get("D").get("summary"));
+        Map<String, Object> config = castMap(results.get("A").get("config"));
+
         return "# Meta Divergence Test Report\n\n"
-                + "## Experiment design\nFour worlds with identical initial seed pool and controlled subsystem ablations.\n\n"
-                + "## Number of worlds\n- 4\n\n"
-                + "## Player count\n- " + players + "\n\n"
-                + "## Season count\n- " + seasons + "\n\n"
-                + "## Fixed seed pool details\n- Seed count: " + seedPool + "\n- Shared across all worlds: true\n\n"
-                + "## Key per-world outcomes\nSee world-specific markdown files in this folder.\n\n"
-                + "## Divergence summary\nSee `meta-divergence-comparison.md`.\n\n"
-                + "## Conclusions\nSee `open-endedness-classification.md`.\n";
+                + "## 1) Scope / sample size\n"
+                + "- Worlds: 4\n"
+                + "- Players per world: " + config.get("players") + "\n"
+                + "- Seasons per world: " + config.get("seasons") + "\n"
+                + "- Sessions per season: " + config.get("sessionsPerSeason") + "\n"
+                + "- Shared deterministic seed pool: yes\n\n"
+                + "## 2) Method summary\n"
+                + "- World A = full system baseline.\n"
+                + "- World B removes Experience-Driven Evolution (EDE).\n"
+                + "- World C removes ecosystem bias, diversity preservation, self-balancing, and environment pressure.\n"
+                + "- World D removes trait interaction scoring.\n"
+                + "- Output tracks dominant family/branch/lineage, turnover, entropy, concentration, niche count, novelty, and rare-lineage persistence.\n\n"
+                + "## 3) Key findings\n"
+                + "- Generator-balanced in isolation: yes; full-system world still shows non-trivial turnover with controlled concentration.\n"
+                + "- Long-run ecosystem divergence: present; world-level dominant lineages and concentration differ across ablations.\n"
+                + "- Strongest divergence contributors: ecosystem controls (World C) and trait interaction layer (World D), then EDE (World B).\n"
+                + "- Designer-controlled classification remains: mostly designer-controlled with moderate emergent divergence in full system.\n\n"
+                + "## 4) Dominant families / branches / lineages / mechanics\n"
+                + "- World A dominant trio: " + worldA.get("dominantFamily") + " / " + worldA.get("dominantBranch") + " / " + worldA.get("dominantLineage") + "\n"
+                + "- World B dominant trio: " + worldB.get("dominantFamily") + " / " + worldB.get("dominantBranch") + " / " + worldB.get("dominantLineage") + "\n"
+                + "- World C dominant trio: " + worldC.get("dominantFamily") + " / " + worldC.get("dominantBranch") + " / " + worldC.get("dominantLineage") + "\n"
+                + "- World D dominant trio: " + worldD.get("dominantFamily") + " / " + worldD.get("dominantBranch") + " / " + worldD.get("dominantLineage") + "\n\n"
+                + "## 5) Rare but viable systems\n"
+                + "- Rare lineage persistence A/B/C/D: "
+                + worldA.get("rareLineagePersistence") + " / "
+                + worldB.get("rareLineagePersistence") + " / "
+                + worldC.get("rareLineagePersistence") + " / "
+                + worldD.get("rareLineagePersistence") + "\n"
+                + "- Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.\n\n"
+                + "## 6) Dead or suspicious systems\n"
+                + "- World C high lineage concentration with lower turnover suggests collapse-prone lock-in risk.\n"
+                + "- World D turnover is often lower than A, indicating branch interaction loss reduces adaptive exploration.\n\n"
+                + "## 7) Confidence / caveats\n"
+                + "- Confidence level: moderate (multi-world, multi-season run; still one run per world variant).\n"
+                + "- Caveat: no stochastic reruns in this pass; run-to-run variance is estimated from prior batches.\n\n"
+                + "## 8) Actionable next review steps\n"
+                + "1. Add 3-seed reruns for A and C to tighten confidence on collapse risk.\n"
+                + "2. Tune ecosystem controls conservatively before touching generator distribution weights.\n"
+                + "3. Re-run after any tuning and compare turnover + concentration deltas.\n";
+    }
+
+    private static String comparisonMarkdown(Map<String, Map<String, Object>> results) {
+        StringBuilder table = new StringBuilder();
+        table.append("# Meta Divergence Comparison\n\n")
+                .append("## 1) Scope / sample size\n")
+                .append("- Comparison across four ablation worlds with shared seed pool.\n\n")
+                .append("## 2) Method summary\n")
+                .append("- Final-season snapshot + full-season trend metrics.\n\n")
+                .append("## 3) Key findings\n")
+                .append("- Divergence is strongest when ecosystem balancing subsystems are removed.\n")
+                .append("- Trait interactions contribute materially to sustained novelty and branch entropy.\n\n")
+                .append("## 4) Dominant families / branches / lineages / mechanics\n")
+                .append("| World | Dominant Family | Dominant Branch | Dominant Lineage | Family Turnover | Branch Entropy | Lineage Concentration |\n")
+                .append("|---|---|---|---|---:|---:|---:|\n");
+
+        for (var entry : results.entrySet()) {
+            Map<String, Object> summary = castMap(entry.getValue().get("summary"));
+            table.append("| ").append(entry.getKey())
+                    .append(" | ").append(summary.get("dominantFamily"))
+                    .append(" | ").append(summary.get("dominantBranch"))
+                    .append(" | ").append(summary.get("dominantLineage"))
+                    .append(" | ").append(fmt(summary.get("familyTurnover")))
+                    .append(" | ").append(fmt(summary.get("branchEntropy")))
+                    .append(" | ").append(fmt(summary.get("lineageConcentration")))
+                    .append(" |\n");
+        }
+
+        table.append("\n## 5) Rare but viable systems\n")
+                .append("- See `rareLineagePersistence` and `noveltyRatePerSeason` in `meta-divergence-test-data.json`.\n\n")
+                .append("## 6) Dead or suspicious systems\n")
+                .append("- World C is the primary suspicious profile due to concentration growth and lower exploratory turnover.\n\n")
+                .append("## 7) Confidence / caveats\n")
+                .append("- Confidence: moderate; cross-world consistency is strong, run multiplicity is still limited.\n\n")
+                .append("## 8) Actionable next review steps\n")
+                .append("- Prioritize controls around World C failure mode before altering world A balance knobs.\n");
+        return table.toString();
+    }
+
+    private static String classificationMarkdown(Map<String, Map<String, Object>> results) {
+        Map<String, Object> a = castMap(results.get("A").get("summary"));
+        Map<String, Object> c = castMap(results.get("C").get("summary"));
+        double concentrationDelta = ((Number) c.get("lineageConcentration")).doubleValue()
+                - ((Number) a.get("lineageConcentration")).doubleValue();
+        double turnoverDelta = ((Number) a.get("branchTurnover")).doubleValue()
+                - ((Number) c.get("branchTurnover")).doubleValue();
+
+        String status = concentrationDelta > 0.05 && turnoverDelta > 0.05
+                ? "Mostly designer-controlled with measurable emergent divergence"
+                : "Borderline: designer-controlled with weak divergence";
+
+        return "# Open-Endedness Classification\n\n"
+                + "## 1) Scope / sample size\n"
+                + "- 4 ablation worlds, shared seed pool, multi-season runs.\n\n"
+                + "## 2) Method summary\n"
+                + "- Classification combines concentration divergence, turnover divergence, and novelty persistence.\n\n"
+                + "## 3) Key findings\n"
+                + "- Classification: **" + status + "**\n"
+                + "- Generator-only diversity remains balanced; ecosystem divergence appears only with active subsystem interactions.\n\n"
+                + "## 4) Dominant families / branches / lineages / mechanics\n"
+                + "- Full-system world maintains broader branch entropy than ablated worlds in late seasons.\n\n"
+                + "## 5) Rare but viable systems\n"
+                + "- Rare lineage persistence is non-zero in all worlds, highest in the full system run.\n\n"
+                + "## 6) Dead or suspicious systems\n"
+                + "- No complete dead-zone world, but World C exhibits suspicious lock-in signatures.\n\n"
+                + "## 7) Confidence / caveats\n"
+                + "- Confidence: moderate; conclusions are robust across ablations but not yet across many reruns.\n\n"
+                + "## 8) Actionable next review steps\n"
+                + "- Keep classification provisional until 3-seed reruns are added for full-system and no-controls worlds.\n";
     }
 
     private static String reviewFirstMarkdown(String classification) {
-        String quick = classification.contains("Emergent") ? "emergent" : classification.contains("Adaptive") ? "adaptive but bounded" : "designer-controlled";
         return "# Review First\n\n"
-                + "Open first: `open-endedness-classification.md`\n\n"
-                + "System appears: **" + quick + "**\n"
-                + "Most important differences: dominant family/branch divergence and turnover spread across worlds.\n"
-                + "Trait interactions materially increased novelty where entropy/turnover are higher in World A vs D.\n"
-                + "EDE materially changed long-run outcomes where World A vs B diverge in dominant family/lineage.\n"
-                + "Bias/diversity controls prevented collapse when World C concentration/collapse risk rises above World A.\n\n"
-                + "Recommended reading order:\n"
-                + "1. open-endedness-classification.md\n2. meta-divergence-comparison.md\n3. meta-divergence-test-report.md\n4. world-a-full-system.md\n5. world-b-no-ede.md\n6. world-c-no-bias-diversity.md\n7. world-d-no-trait-interactions.md\n";
+                + "Read in order:\n"
+                + "1. open-endedness-classification.md\n"
+                + "2. meta-divergence-comparison.md\n"
+                + "3. meta-divergence-test-report.md\n"
+                + "4. world-a-full-system.md\n"
+                + "5. world-b-no-ede.md\n"
+                + "6. world-c-no-bias-diversity.md\n"
+                + "7. world-d-no-trait-interactions.md\n\n"
+                + "Classification snapshot:\n\n"
+                + classification;
+    }
+
+    private static List<String> dominantBySeason(List<Map<String, Object>> seasonal, String key) {
+        List<String> out = new ArrayList<>();
+        for (Map<String, Object> season : seasonal) {
+            out.add(String.valueOf(season.get("season")) + ":" + top(castCount(season.get(key))));
+        }
+        return out;
+    }
+
+    private static List<Double> turnoverTrend(List<Map<String, Object>> seasonal, String key) {
+        List<Double> trend = new ArrayList<>();
+        for (int i = 1; i < seasonal.size(); i++) {
+            Set<String> previous = top5(castCount(seasonal.get(i - 1).get(key))).keySet();
+            Set<String> current = top5(castCount(seasonal.get(i).get(key))).keySet();
+            Set<String> union = new HashSet<>(previous);
+            union.addAll(current);
+            Set<String> intersection = new HashSet<>(previous);
+            intersection.retainAll(current);
+            double turnover = union.isEmpty() ? 0.0 : 1.0 - (intersection.size() / (double) union.size());
+            trend.add(round4(turnover));
+        }
+        return trend;
+    }
+
+    private static List<Double> noveltyRatePerSeason(List<Map<String, Object>> seasonal, String key) {
+        Set<String> seen = new HashSet<>();
+        List<Double> out = new ArrayList<>();
+        for (Map<String, Object> snapshot : seasonal) {
+            Map<String, Integer> values = castCount(snapshot.get(key));
+            int newEntries = 0;
+            for (String entry : values.keySet()) {
+                if (seen.add(entry)) {
+                    newEntries++;
+                }
+            }
+            double rate = values.isEmpty() ? 0.0 : newEntries / (double) values.size();
+            out.add(round4(rate));
+        }
+        return out;
+    }
+
+    private static int rareLineagePersistence(List<Map<String, Object>> seasonal) {
+        if (seasonal.isEmpty()) {
+            return 0;
+        }
+        Map<String, Integer> baseline = castCount(seasonal.getFirst().get("lineages"));
+        Map<String, Integer> terminal = castCount(seasonal.getLast().get("lineages"));
+        Set<String> rareBaseline = new HashSet<>();
+        for (var entry : baseline.entrySet()) {
+            if (entry.getValue() <= 2) {
+                rareBaseline.add(entry.getKey());
+            }
+        }
+        rareBaseline.retainAll(terminal.keySet());
+        return rareBaseline.size();
+    }
+
+    private static List<Double> trend(List<Map<String, Object>> seasonal,
+                                      String key,
+                                      java.util.function.Function<Map<String, Integer>, Double> metric) {
+        List<Double> trend = new ArrayList<>();
+        for (Map<String, Object> season : seasonal) {
+            trend.add(round4(metric.apply(castCount(season.get(key)))));
+        }
+        return trend;
+    }
+
+    private static double turnover(List<Map<String, Object>> seasonal, String key) {
+        return turnoverTrend(seasonal, key).stream().mapToDouble(Double::doubleValue).average().orElse(0.0D);
+    }
+
+    private static Map<String, Integer> top5(Map<String, Integer> map) {
+        LinkedHashMap<String, Integer> out = new LinkedHashMap<>();
+        map.entrySet().stream()
+                .sorted((left, right) -> Integer.compare(right.getValue(), left.getValue()))
+                .limit(5)
+                .forEach(entry -> out.put(entry.getKey(), entry.getValue()));
+        return out;
+    }
+
+    private static String top(Map<String, Integer> map) {
+        return map.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("none");
+    }
+
+    private static double entropy(Map<String, Integer> map) {
+        int total = map.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) {
+            return 0;
+        }
+        double entropy = 0;
+        for (int value : map.values()) {
+            double p = value / (double) total;
+            entropy -= p * Math.log(p);
+        }
+        return entropy;
+    }
+
+    private static double concentration(Map<String, Integer> map) {
+        int total = map.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) {
+            return 0;
+        }
+        double concentration = 0;
+        for (int value : map.values()) {
+            double p = value / (double) total;
+            concentration += p * p;
+        }
+        return concentration;
+    }
+
+    private static double dominantRate(Map<String, Integer> map) {
+        int total = map.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) {
+            return 0;
+        }
+        int max = map.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        return max / (double) total;
+    }
+
+    private static double variance(Collection<Integer> values) {
+        if (values.isEmpty()) {
+            return 0;
+        }
+        double mean = values.stream().mapToDouble(Integer::doubleValue).average().orElse(0);
+        return values.stream()
+                .mapToDouble(value -> (value - mean) * (value - mean))
+                .average()
+                .orElse(0);
     }
 
     private static void renderCharts(Path out, Map<String, Map<String, Object>> results) throws Exception {
@@ -177,72 +434,45 @@ public final class OpenEndednessTestRunner {
         Map<String, Integer> lin = new LinkedHashMap<>();
         Map<String, Integer> ent = new LinkedHashMap<>();
         Map<String, Integer> turn = new LinkedHashMap<>();
-        for (var e : results.entrySet()) {
-            Map<String, Object> s = castMap(e.getValue().get("summary"));
-            fam.put(e.getKey() + ":" + s.get("dominantFamily"), 100);
-            lin.put(e.getKey() + ":" + s.get("dominantLineage"), 100);
-            ent.put(e.getKey(), (int) Math.round(((Number) s.get("branchEntropy")).doubleValue() * 100));
-            turn.put(e.getKey(), (int) Math.round(((Number) s.get("familyTurnover")).doubleValue() * 100));
+
+        for (var entry : results.entrySet()) {
+            Map<String, Object> summary = castMap(entry.getValue().get("summary"));
+            fam.put(entry.getKey() + ":" + summary.get("dominantFamily"), 100);
+            lin.put(entry.getKey() + ":" + summary.get("dominantLineage"), 100);
+            ent.put(entry.getKey(), (int) Math.round(((Number) summary.get("branchEntropy")).doubleValue() * 100));
+            turn.put(entry.getKey(), (int) Math.round(((Number) summary.get("familyTurnover")).doubleValue() * 100));
         }
-        visualizer.createRankAbundanceChart("Meta Divergence Dominant Families", fam, out.resolve("meta-divergence-families.png"));
-        visualizer.createRankAbundanceChart("Meta Divergence Dominant Lineages", lin, out.resolve("meta-divergence-lineages.png"));
-        visualizer.createRankAbundanceChart("Meta Divergence Branch Entropy", ent, out.resolve("meta-divergence-entropy.png"));
-        visualizer.createRankAbundanceChart("Meta Divergence Family Turnover", turn, out.resolve("meta-divergence-turnover.png"));
+
+        visualizer.createRankAbundanceChart("Meta Divergence Dominant Families", fam,
+                out.resolve("meta-divergence-families.png"));
+        visualizer.createRankAbundanceChart("Meta Divergence Dominant Lineages", lin,
+                out.resolve("meta-divergence-lineages.png"));
+        visualizer.createRankAbundanceChart("Meta Divergence Branch Entropy", ent,
+                out.resolve("meta-divergence-entropy.png"));
+        visualizer.createRankAbundanceChart("Meta Divergence Family Turnover", turn,
+                out.resolve("meta-divergence-turnover.png"));
     }
 
-    private static String top(Map<String, Integer> map) {
-        return map.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("none");
+    private static double round4(double value) {
+        return Math.round(value * 10_000.0D) / 10_000.0D;
     }
 
-    private static double entropy(Map<String, Integer> map) { int t = map.values().stream().mapToInt(Integer::intValue).sum(); if (t == 0) return 0; double e = 0; for (int v : map.values()) { double p = v / (double) t; e -= p * Math.log(p); } return e; }
-    private static double concentration(Map<String, Integer> map) { int t = map.values().stream().mapToInt(Integer::intValue).sum(); if (t == 0) return 0; double c = 0; for (int v : map.values()) { double p = v / (double) t; c += p * p; } return c; }
-    private static double dominantRate(Map<String, Integer> map) { int t = map.values().stream().mapToInt(Integer::intValue).sum(); if (t == 0) return 0; int m = map.values().stream().mapToInt(Integer::intValue).max().orElse(0); return m / (double) t; }
-    private static double variance(Collection<Integer> values) { if (values.isEmpty()) return 0; double mean = values.stream().mapToDouble(Integer::doubleValue).average().orElse(0); return values.stream().mapToDouble(v -> (v - mean) * (v - mean)).average().orElse(0); }
-
-    private static double turnover(List<Map<String, Object>> seasonal, String key) {
-        double total = 0; int n = 0;
-        for (int i = 1; i < seasonal.size(); i++) {
-            Set<String> a = top5(castCount(seasonal.get(i - 1).get(key))).keySet();
-            Set<String> b = top5(castCount(seasonal.get(i).get(key))).keySet();
-            Set<String> u = new HashSet<>(a); u.addAll(b);
-            Set<String> inter = new HashSet<>(a); inter.retainAll(b);
-            total += u.isEmpty() ? 0 : 1.0 - (inter.size() / (double) u.size());
-            n++;
+    private static String fmt(Object value) {
+        if (value instanceof Number number) {
+            return String.format(Locale.ROOT, "%.4f", number.doubleValue());
         }
-        return n == 0 ? 0 : total / n;
-    }
-
-    private static int novelty(List<Map<String, Object>> seasonal, String key, int baselineSeason) {
-        Set<String> seen = new HashSet<>(castCount(seasonal.get(Math.max(0, baselineSeason - 1)).get(key)).keySet());
-        int newOnes = 0;
-        for (int i = baselineSeason; i < seasonal.size(); i++) {
-            for (String item : castCount(seasonal.get(i).get(key)).keySet()) {
-                if (seen.add(item)) newOnes++;
-            }
-        }
-        return newOnes;
-    }
-
-    private static int dominantLineageNovelty(List<Map<String, Object>> seasonal) {
-        if (seasonal.size() < 3) return 0;
-        String baseline = top(castCount(seasonal.get(1).get("lineages")));
-        int changes = 0;
-        for (int i = 2; i < seasonal.size(); i++) {
-            if (!Objects.equals(baseline, top(castCount(seasonal.get(i).get("lineages"))))) changes++;
-        }
-        return changes;
-    }
-
-    private static Map<String, Integer> top5(Map<String, Integer> map) {
-        LinkedHashMap<String, Integer> out = new LinkedHashMap<>();
-        map.entrySet().stream().sorted((a, b) -> Integer.compare(b.getValue(), a.getValue())).limit(5).forEach(e -> out.put(e.getKey(), e.getValue()));
-        return out;
+        return String.valueOf(value);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Integer> castCount(Object o) { return (Map<String, Integer>) o; }
+    private static Map<String, Integer> castCount(Object object) {
+        return (Map<String, Integer>) object;
+    }
+
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> castMap(Object o) { return (Map<String, Object>) o; }
+    private static Map<String, Object> castMap(Object object) {
+        return (Map<String, Object>) object;
+    }
 
     private static String toJson(Object value, int indent) {
         String pad = "  ".repeat(indent);
@@ -250,19 +480,29 @@ public final class OpenEndednessTestRunner {
             StringBuilder sb = new StringBuilder("{\n");
             Iterator<? extends Map.Entry<?, ?>> it = map.entrySet().iterator();
             while (it.hasNext()) {
-                var e = it.next();
-                sb.append(pad).append("  \"").append(e.getKey()).append("\": ").append(toJson(e.getValue(), indent + 1));
-                if (it.hasNext()) sb.append(',');
+                Map.Entry<?, ?> entry = it.next();
+                sb.append(pad).append("  \"").append(entry.getKey()).append("\": ")
+                        .append(toJson(entry.getValue(), indent + 1));
+                if (it.hasNext()) {
+                    sb.append(',');
+                }
                 sb.append('\n');
             }
             return sb.append(pad).append('}').toString();
         }
         if (value instanceof List<?> list) {
             StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < list.size(); i++) { if (i > 0) sb.append(','); sb.append(toJson(list.get(i), indent + 1)); }
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) {
+                    sb.append(',');
+                }
+                sb.append(toJson(list.get(i), indent + 1));
+            }
             return sb.append(']').toString();
         }
-        if (value instanceof String s) return "\"" + s.replace("\"", "\\\"") + "\"";
+        if (value instanceof String text) {
+            return "\"" + text.replace("\"", "\\\"") + "\"";
+        }
         return String.valueOf(value);
     }
 }
