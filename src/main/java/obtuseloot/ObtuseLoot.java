@@ -26,7 +26,6 @@ import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.lore.LoreEngine;
-import obtuseloot.names.NamePoolManager;
 import obtuseloot.obtuseengine.EngineScheduler;
 import obtuseloot.obtuseengine.ObtuseEngine;
 import obtuseloot.persistence.PersistenceConfig;
@@ -69,7 +68,6 @@ public class ObtuseLoot extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         RuntimeSettings.load(getConfig());
-        NamePoolManager.initialize(this);
 
         persistenceManager = new PersistenceManager(this, PersistenceConfig.from(getConfig(), getDataFolder()));
         try {

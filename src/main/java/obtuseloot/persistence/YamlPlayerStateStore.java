@@ -2,7 +2,12 @@ package obtuseloot.persistence;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactSeedFactory;
-import obtuseloot.names.ArtifactNameGenerator;
+import obtuseloot.names.ArtifactNameResolver;
+import obtuseloot.names.ArtifactNaming;
+import obtuseloot.names.ArtifactDiscoveryState;
+import obtuseloot.names.ArtifactRank;
+import obtuseloot.names.NamingArchetype;
+import obtuseloot.names.ToneProfile;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -72,7 +77,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             }
         }
 
-        Artifact artifact = new Artifact(playerId, "");
+        Artifact artifact = new Artifact(playerId);
         artifact.setOwnerId(UUID.fromString(yaml.getString("artifact.owner-id", playerId.toString())));
         artifact.setArtifactStorageKey(yaml.getString("artifact.storage-key", Artifact.buildDefaultStorageKey(artifact.getOwnerId())));
         artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
@@ -88,8 +93,19 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         long artifactSeed = yaml.getLong("artifact.artifact-seed", 0L);
         artifact.setArtifactSeed(artifactSeed);
         seedFactory.applySeedProfile(artifact, artifactSeed);
-        String generatedName = yaml.getString("artifact.generated-name", ArtifactNameGenerator.generateFromSeed(artifactSeed));
-        artifact.setGeneratedName(generatedName);
+        ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
+        naming.setDisplayName(yaml.getString("artifact.naming.display-name", naming.getDisplayName()));
+        naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
+        naming.setRootForm(yaml.getString("artifact.naming.root-form", naming.getRootForm()));
+        naming.setNamingArchetype(NamingArchetype.valueOf(yaml.getString("artifact.naming.archetype", naming.getNamingArchetype().name())));
+        naming.setToneProfile(ToneProfile.valueOf(yaml.getString("artifact.naming.tone", naming.getToneProfile().name())));
+        naming.setDiscoveryState(ArtifactDiscoveryState.valueOf(yaml.getString("artifact.naming.discovery", naming.getDiscoveryState().name())));
+        naming.setRankAtNaming(ArtifactRank.valueOf(yaml.getString("artifact.naming.rank-at-naming", naming.getRankAtNaming().name())));
+        naming.setIdentityTags(yaml.getStringList("artifact.naming.identity-tags"));
+        naming.setAffinityLexemes(yaml.getStringList("artifact.naming.affinity-lexemes"));
+        naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
+        naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
+        artifact.setNaming(naming);
         artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", artifact.getLatentLineage()));
         artifact.setDriftAlignment(yaml.getString("artifact.drift-alignment", artifact.getDriftAlignment()));
 
@@ -224,7 +240,17 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "owner-id", artifact.getOwnerId().toString());
         yaml.set(base + "storage-key", artifact.getArtifactStorageKey());
         yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
-        yaml.set(base + "generated-name", artifact.getGeneratedName());
+        yaml.set(base + "naming.display-name", artifact.getDisplayName());
+        yaml.set(base + "naming.true-name", artifact.getTrueName());
+        yaml.set(base + "naming.root-form", artifact.getNaming().getRootForm());
+        yaml.set(base + "naming.archetype", artifact.getNaming().getNamingArchetype().name());
+        yaml.set(base + "naming.tone", artifact.getNaming().getToneProfile().name());
+        yaml.set(base + "naming.discovery", artifact.getNaming().getDiscoveryState().name());
+        yaml.set(base + "naming.rank-at-naming", artifact.getNaming().getRankAtNaming().name());
+        yaml.set(base + "naming.identity-tags", artifact.getNaming().getIdentityTags());
+        yaml.set(base + "naming.affinity-lexemes", artifact.getNaming().getAffinityLexemes());
+        yaml.set(base + "naming.epithet-seed", artifact.getNaming().getEpithetSeed());
+        yaml.set(base + "naming.title-seed", artifact.getNaming().getTitleSeed());
         yaml.set(base + "item-category", artifact.getItemCategory());
         yaml.set(base + "archetype-path", artifact.getArchetypePath());
         yaml.set(base + "evolution-path", artifact.getEvolutionPath());

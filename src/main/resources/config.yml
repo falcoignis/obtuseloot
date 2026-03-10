@@ -22,10 +22,7 @@ reputation:
   mobility-distance-threshold: 12.0
   kill-chain-window-ms: 8000
   multi-target-chaos-threshold: 3
-  boss-types:
-    - ENDER_DRAGON
-    - WITHER
-    - WARDEN
+  boss-types: [ENDER_DRAGON, WITHER, WARDEN]
   volatile-decay-interval-seconds: 300
   volatile-decay-factor: 0.96
   context-cleanup-seconds: 120
@@ -49,12 +46,32 @@ persistence:
   autosave-interval-seconds: 300
 
 naming:
-  prefix-suffix-chance-percent: 60
   use-deterministic-owner-seed: true
+  true-name-probability:
+    base: 0
+    tempered: 20
+    mythic: 65
+    awakened: 90
+    fused: 100
+  discovery-thresholds:
+    known: 3
+    revealed: 8
+    storied: 14
+  compression:
+    max-words: 6
+  lexeme-pools:
+    defensive: [ward, bastion, vigil]
+    chaotic: [ruin, hollow, mire]
+    precision: [oath, glass, warden]
+    aggression: [hunger, thorn, harrow]
+    memory: [echo, reliquary, vesper]
+    mobility: [storm, dusk, choir]
+    ritual: [pyre, cairn, vesper]
+    support: [mercy, bloom, ward]
+    control: [warden, vigil, glass]
 
 combat:
   precision-threshold-damage: 10.0
-
 
 dashboard:
   webServerEnabled: false

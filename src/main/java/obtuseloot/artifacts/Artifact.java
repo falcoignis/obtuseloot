@@ -1,14 +1,11 @@
 package obtuseloot.artifacts;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
 import obtuseloot.memory.ArtifactMemory;
+import obtuseloot.names.ArtifactNaming;
+import obtuseloot.names.ArtifactRank;
+import obtuseloot.names.ArtifactRankResolver;
+
+import java.util.*;
 
 public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
@@ -16,7 +13,7 @@ public class Artifact {
     private long artifactSeed;
     private String artifactStorageKey;
     private UUID ownerId;
-    private String generatedName;
+    private ArtifactNaming naming;
     private String itemCategory;
     private String archetypePath;
     private String evolutionPath;
@@ -25,8 +22,6 @@ public class Artifact {
 
     private int driftLevel;
     private int totalDrifts;
-    // Seed initialization sets the baseline drift tendency, and runtime drift mutations
-    // update the same field as the current mutable drift alignment state.
     private String driftAlignment;
     private long lastDriftTimestamp;
 
@@ -58,8 +53,9 @@ public class Artifact {
     private String lastOpenRegulatoryGates;
     private String lastGateCandidatePool;
 
-    public Artifact(UUID ownerId, String generatedName) {
+    public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
+        this.naming = new ArtifactNaming();
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
         this.generatedName = generatedName;
         this.itemCategory = "artifact";
@@ -112,9 +108,16 @@ public class Artifact {
         lastGateCandidatePool = "0->0";
     }
 
+    public ArtifactRank getRank() { return ArtifactRankResolver.resolve(this); }
     public long getArtifactSeed() { return artifactSeed; }
     public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
     public UUID getOwnerId() { return ownerId; }
+    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
+    public String getDisplayName() { return naming.getDisplayName(); }
+    public void setDisplayName(String displayName) { naming.setDisplayName(displayName); }
+    public String getTrueName() { return naming.getTrueName(); }
+    public ArtifactNaming getNaming() { return naming; }
+    public void setNaming(ArtifactNaming naming) { this.naming = naming == null ? new ArtifactNaming() : naming; }
     public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
         if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
@@ -131,8 +134,7 @@ public class Artifact {
     }
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
-    public String getName() { return generatedName; }
-    public void setGeneratedName(String generatedName) { this.generatedName = generatedName; }
+    public String getName() { return naming.getDisplayName(); }
     public void setItemCategory(String itemCategory) { this.itemCategory = itemCategory; }
     public String getArchetypePath() { return archetypePath; }
     public void setArchetypePath(String archetypePath) { this.archetypePath = archetypePath; }
@@ -217,11 +219,9 @@ public class Artifact {
         if (entry == null || entry.isBlank()) {
             return;
         }
-
         if (!history.isEmpty() && entry.equals(history.get(history.size() - 1))) {
             return;
         }
-
         history.add(entry);
         if (history.size() > MAX_HISTORY_ENTRIES) {
             history.remove(0);
