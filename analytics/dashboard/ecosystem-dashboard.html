@@ -7,7 +7,7 @@
     body{font-family:Arial;background:#0f1524;color:#eaf0ff;margin:20px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(360px,1fr));gap:14px}
     .panel{background:#1a243b;border-radius:10px;padding:12px}
-    .strip{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+    .strip{display:grid;grid-template-columns:repeat(9,1fr);gap:8px}
     .metric{background:#25304d;padding:10px;border-radius:8px}
     .small{color:#9bb1de;font-size:12px}
     pre{white-space:pre-wrap}
@@ -19,7 +19,7 @@
 </head>
 <body>
   <h1>ObtuseLoot Ecosystem Dashboard</h1>
-  <p class="small">Dominance=0.1736, BranchEntropy=2.8888, TraitVariance=534.9600, LineageConcentration=0.1670, CollapseRisk=LOW, END=1.2663, TNT=0.0020, EcosystemStatus=STAGNANT | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json</p>
+  <p class="small">Dominance=0.1736, BranchEntropy=2.8888, TraitVariance=534.9600, LineageConcentration=0.1670, CollapseRisk=LOW, END=1.2663, TNT=0.0020, NSER=0.0000, EcosystemStatus=STAGNANT | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json</p>
   <div class="strip">
     <div class="metric"><div class="small">Dominance Index</div><b>0.1736</b></div>
     <div class="metric"><div class="small">Branch Entropy</div><b>2.8888</b></div>
@@ -28,6 +28,7 @@
     <div class="metric"><div class="small">Collapse Risk</div><b>LOW</b></div>
     <div class="metric"><div class="small">Effective Niches (END)</div><b>1.2663</b></div>
     <div class="metric"><div class="small">Temporal Niche Turnover (TNT)</div><b>0.0020</b></div>
+    <div class="metric"><div class="small">Novel Strategy Emergence Rate (NSER)</div><b>0.0000</b></div>
     <div class="metric"><div class="small">Ecosystem Status</div><b><span class="badge yellow">STAGNANT</span></b></div>
   </div>
   <div class="grid">
@@ -84,6 +85,7 @@ END_species=1.5586
 TNT_latest=0.0020
 END_trend=[1.2624, 1.2663]
 TNT_trend=[0.002]
+NSER_trend=[0.0, 0.0]
 status=STAGNANT</pre></div>
   </div>
 </body>

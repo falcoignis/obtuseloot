@@ -8,6 +8,7 @@ import obtuseloot.analytics.ArtifactEcosystemBalancingAI;
 import obtuseloot.analytics.EcosystemHealthGaugeAnalyzer;
 import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
+import obtuseloot.analytics.NovelStrategyEmergenceAnalyzer;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.dashboard.DashboardService;
@@ -311,12 +312,14 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics);
-        writeEcosystemHealthGauge(seasonalSnapshots);
+        NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
+        writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
         writeTraitProjectionPerformanceReport();
     }
 
     @SuppressWarnings("unchecked")
-    private void writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots) throws IOException {
+    private void writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots,
+                                           NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
         EcosystemHealthGaugeAnalyzer gaugeAnalyzer = new EcosystemHealthGaugeAnalyzer();
         List<Map<String, Integer>> artifactOccupancy = new ArrayList<>();
         List<Map<String, Integer>> speciesOccupancy = new ArrayList<>();
@@ -334,7 +337,7 @@ public class WorldSimulationHarness {
             }
         }
 
-        var result = gaugeAnalyzer.analyze(artifactOccupancy, speciesOccupancy);
+        var result = gaugeAnalyzer.analyze(artifactOccupancy, speciesOccupancy, nserResult.trend());
         List<Double> tntBySeason = result.tntTrend();
         List<String> tntPairs = new ArrayList<>();
         for (int i = 1; i < seasons.size(); i++) {
@@ -345,6 +348,7 @@ public class WorldSimulationHarness {
                 + "- END_artifacts: " + result.endArtifacts() + "\n"
                 + "- END_species: " + (result.endSpecies() == null ? "N/A" : result.endSpecies()) + "\n"
                 + "- TNT per season: " + tntPairs + "\n"
+                + "- NSER trend: " + result.nserTrend() + "\n"
                 + "- END trend: " + result.endTrend() + "\n"
                 + "- TNT trend: " + result.tntTrend() + "\n"
                 + "- ecosystem status: " + result.status() + "\n\n"
@@ -356,8 +360,10 @@ public class WorldSimulationHarness {
                 + "  \"END_artifacts\": " + result.endArtifacts() + ",\n"
                 + "  \"END_species\": " + (result.endSpecies() == null ? "null" : result.endSpecies()) + ",\n"
                 + "  \"TNT_per_season\": " + toJsonArrayOfLabeledValues(tntPairs) + ",\n"
+                + "  \"NSER_latest\": " + result.latestNser() + ",\n"
                 + "  \"END_trend\": " + toJsonArray(result.endTrend()) + ",\n"
                 + "  \"TNT_trend\": " + toJsonArray(result.tntTrend()) + ",\n"
+                + "  \"NSER_trend\": " + toJsonArray(result.nserTrend()) + ",\n"
                 + "  \"ecosystem_status\": \"" + result.status().name() + "\",\n"
                 + "  \"interpretation\": \"" + result.interpretation().replace("\"", "\\\"") + "\"\n"
                 + "}\n";
@@ -367,9 +373,115 @@ public class WorldSimulationHarness {
                 + "## Run 1\n"
                 + "- END trend: " + result.endTrend() + "\n"
                 + "- TNT across seasons: " + result.tntTrend() + "\n"
+                + "- NSER trend: " + result.nserTrend() + "\n"
                 + "- Ecosystem status: " + result.status() + "\n"
                 + "- Trajectory: " + result.interpretation() + "\n";
         Files.writeString(Path.of("analytics/world-lab/ecosystem-health-gauge-review.md"), worldLabReview);
+    }
+
+    private NovelStrategyEmergenceAnalyzer.NserResult writeNovelStrategyEmergenceReports(List<Map<String, Object>> seasonalSnapshots) throws IOException {
+        NovelStrategyEmergenceAnalyzer analyzer = new NovelStrategyEmergenceAnalyzer();
+        NovelStrategyEmergenceAnalyzer.NserResult result = analyzer.analyze(seasonalSnapshots);
+
+        StringBuilder table = new StringBuilder();
+        table.append("| Season | Novel Significant | Total Significant | NSER | NSER_artifacts | NSER_species | Representative novel strategies |\\n")
+                .append("|---|---:|---:|---:|---:|---:|---|\\n");
+        for (NovelStrategyEmergenceAnalyzer.SeasonNser season : result.bySeason()) {
+            table.append("| ").append(season.season())
+                    .append(" | ").append(season.novelSignificantStrategies())
+                    .append(" | ").append(season.totalSignificantStrategies())
+                    .append(" | ").append(season.nser())
+                    .append(" | ").append(season.nserArtifacts())
+                    .append(" | ").append(season.nserSpecies())
+                    .append(" | ").append(season.representativeNovelStrategies())
+                    .append(" |\\n");
+        }
+
+        String markdown = "# Novel Strategy Emergence Report (NSER)\n\n"
+                + "## Strategy signature definition\n"
+                + result.signatureDefinition() + "\n\n"
+                + "## Significance rules\n"
+                + result.significanceRules() + "\n\n"
+                + "## NSER thresholds\n"
+                + "- " + String.join("\n- ", result.strategyThresholdGuidance()) + "\n\n"
+                + "## Per-season NSER\n"
+                + table + "\n"
+                + "## NSER trend over time\n"
+                + result.trend() + "\n\n"
+                + "## Interpretation summary\n"
+                + result.interpretation() + "\n";
+        Files.writeString(Path.of("analytics/novel-strategy-emergence-report.md"), markdown);
+
+        StringBuilder bySeasonJson = new StringBuilder("[");
+        for (int i = 0; i < result.bySeason().size(); i++) {
+            NovelStrategyEmergenceAnalyzer.SeasonNser season = result.bySeason().get(i);
+            if (i > 0) {
+                bySeasonJson.append(',');
+            }
+            bySeasonJson.append("{\"season\":").append(season.season())
+                    .append(",\"novelSignificant\":").append(season.novelSignificantStrategies())
+                    .append(",\"totalSignificant\":").append(season.totalSignificantStrategies())
+                    .append(",\"NSER\":").append(season.nser())
+                    .append(",\"NSER_artifacts\":").append(season.nserArtifacts())
+                    .append(",\"NSER_species\":").append(season.nserSpecies())
+                    .append(",\"representativeNovel\":").append(toJson(season.representativeNovelStrategies(), 0))
+                    .append(",\"persistentNovel\":").append(toJson(season.persistentNovelStrategies(), 0))
+                    .append('}');
+        }
+        bySeasonJson.append(']');
+
+        String json = "{\n"
+                + "  \"signatureDefinition\": " + toJson(result.signatureDefinition(), 0) + ",\n"
+                + "  \"significanceRules\": " + toJson(result.significanceRules(), 0) + ",\n"
+                + "  \"thresholds\": {\n"
+                + "    \"minimumObservations\": " + result.thresholds().minimumObservations() + ",\n"
+                + "    \"minimumOccupancyShare\": " + result.thresholds().minimumOccupancyShare() + ",\n"
+                + "    \"minimumPersistenceSeasons\": " + result.thresholds().minimumPersistenceSeasons() + ",\n"
+                + "    \"noveltySimilarityThreshold\": " + result.thresholds().noveltySimilarityThreshold() + "\n"
+                + "  },\n"
+                + "  \"bySeason\": " + bySeasonJson + ",\n"
+                + "  \"NSER_trend\": " + toJsonArray(result.trend()) + ",\n"
+                + "  \"interpretation\": " + toJson(result.interpretation(), 0) + ",\n"
+                + "  \"thresholdGuidance\": " + toJson(result.strategyThresholdGuidance(), 0) + "\n"
+                + "}\n";
+        Files.writeString(Path.of("analytics/novel-strategy-emergence.json"), json);
+
+        String worldLabReview = "# Novel Strategy Emergence Review\n\n"
+                + "## NSER by season\n"
+                + result.bySeason().stream().map(s -> "- season " + s.season() + ": NSER=" + s.nser() + " (novel=" + s.novelSignificantStrategies() + ", total=" + s.totalSignificantStrategies() + ")").toList() + "\n\n"
+                + "## Representative novel strategies\n"
+                + result.bySeason().stream().map(s -> "- season " + s.season() + ": " + s.representativeNovelStrategies()).toList() + "\n\n"
+                + "## Persistence analysis\n"
+                + result.bySeason().stream().map(s -> "- season " + s.season() + ": persistent novel signatures=" + s.persistentNovelStrategies()).toList() + "\n\n"
+                + "## Divergence impact\n"
+                + result.interpretation() + "\n";
+        Files.writeString(Path.of("analytics/world-lab/novel-strategy-emergence-review.md"), worldLabReview);
+
+        String openEndednessReview = "# Novelty + Open-Endedness Review\n\n"
+                + "- END/TNT are read from ecosystem-health-gauge outputs.\n"
+                + "- NSER trend: " + result.trend() + "\n"
+                + "- NSER interpretation: " + result.interpretation() + "\n\n"
+                + "## Open-endedness judgment using END + TNT + NSER\n"
+                + classifyOpenEndednessWithNovelty(result.trend()) + "\n";
+        Files.writeString(Path.of("analytics/world-lab/open-endedness/novelty-open-endedness-review.md"), openEndednessReview);
+        return result;
+    }
+
+    private String classifyOpenEndednessWithNovelty(List<Double> nserTrend) {
+        if (nserTrend.isEmpty()) {
+            return "Insufficient NSER data.";
+        }
+        double latest = nserTrend.get(nserTrend.size() - 1);
+        if (latest < 0.05D) {
+            return "Ecosystem is mostly reshuffling existing forms.";
+        }
+        if (latest < 0.30D) {
+            return "Ecosystem is producing bounded novelty.";
+        }
+        if (latest < 0.50D) {
+            return "Ecosystem is producing sustained new strategies.";
+        }
+        return "Ecosystem may be over-fragmenting into noise despite high novelty.";
     }
 
     private Map<String, Integer> toIntegerMap(Map<?, ?> source) {

@@ -11,6 +11,7 @@ public class DashboardSummaryBuilder {
                 + ", CollapseRisk=" + metrics.collapseRisk().name()
                 + ", END=" + fmt(metrics.endArtifacts())
                 + ", TNT=" + fmt(metrics.latestTnt())
+                + ", NSER=" + fmt(metrics.latestNser())
                 + ", EcosystemStatus=" + metrics.ecosystemStatus().name()
                 + " | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json";
     }

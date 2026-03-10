@@ -1,0 +1,23 @@
+{
+  "signatureDefinition": "Signature = [type (artifact/species), niche identity, dominant regulatory gate profile, dominant trigger class, dominant mechanic class, branch role/preference, co-evolution tendency].",
+  "significanceRules": "A signature is significant when observation count >= 3, occupancy share >= 0.05, and persistence >= 2 seasons. Novelty additionally requires max similarity < 0.75 vs prior significant signatures.",
+  "thresholds": {
+    "minimumObservations": 3,
+    "minimumOccupancyShare": 0.05,
+    "minimumPersistenceSeasons": 2,
+    "noveltySimilarityThreshold": 0.75
+  },
+  "bySeason": [
+    {"season":1,"novelSignificant":0,"totalSignificant":0,"NSER":0.0,"NSER_artifacts":0.0,"NSER_species":0.0,"representativeNovel":[],"persistentNovel":[]},
+    {"season":2,"novelSignificant":0,"totalSignificant":9,"NSER":0.0,"NSER_artifacts":0.0,"NSER_species":0.0,"representativeNovel":[],"persistentNovel":[]}
+  ],
+  "NSER_trend": [0.0, 0.0],
+  "interpretation": "The ecosystem is currently recycling old strategies more than generating novel persistent strategies.",
+  "thresholdGuidance": [
+    "NSER < 0.05 => no real novelty",
+    "0.05 <= NSER < 0.15 => weak novelty",
+    "0.15 <= NSER < 0.30 => healthy novelty",
+    "0.30 <= NSER < 0.50 => strong innovation phase",
+    "NSER >= 0.50 => likely over-fragmented/noisy"
+  ]
+}
