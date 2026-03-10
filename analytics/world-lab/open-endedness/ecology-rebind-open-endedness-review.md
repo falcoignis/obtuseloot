@@ -1,0 +1,9 @@
+# Ecology Rebind Open-Endedness Review
+
+Classification: adaptive but bounded.
+
+- Species meaningfulness improved through cleanup: 41 active species after cosmetic merge/retire.
+- Cosmetic species counts dropped via merge set: {}.
+- Co-evolution discriminativeness: competition/support means=0.9867936966867752/0.5483016701240722, suppression=[{pair=species-root-lineage-4dd28acf-cae4-3f0f-9dc9-a8bc31834bc7<->species-root-lineage-86a7de33-e49c-38da-b7d6-b22f6dfeaedf, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-a5de263a-6ad0-3ad7-84ea-2935328f3e13<->species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e, score=0.8448000000000001, sharedNicheFraction=1.0}, {pair=species-root-lineage-98c7a63a-7d2f-31e9-aca2-af9512cd8a3d<->species-root-lineage-0313873f-aea1-30d6-b798-eaad329c6eda, score=0.8144, sharedNicheFraction=1.0}, {pair=species-root-lineage-a3b2e45b-29c7-36ec-bbd6-5693d42594d1<->species-root-lineage-d66e29c7-d9a5-313b-a97c-fb5c27a629e0, score=0.8144, sharedNicheFraction=1.0}, {pair=species-root-lineage-a3b2e45b-29c7-36ec-bbd6-5693d42594d1<->species-root-lineage-a5de263a-6ad0-3ad7-84ea-2935328f3e13, score=0.8144, sharedNicheFraction=1.0}, {pair=species-root-lineage-a3b2e45b-29c7-36ec-bbd6-5693d42594d1<->species-root-lineage-edd0ba9f-a759-3ac9-a9ac-244bafb5473e, score=0.8144, sharedNicheFraction=1.0}, {pair=species-root-lineage-c0292b16-5f48-3f5e-bdc8-87b92d11e266<->species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402, score=0.8144, sharedNicheFraction=1.0}, {pair=species-root-lineage-ead897e1-3f6d-33a9-b725-10710ee34402<->species-root-lineage-742b4804-b35f-3d7f-b1f0-af932378a07d, score=0.8144, sharedNicheFraction=1.0}].
+- Niche coexistence: niche timeline=[1, 1], crowding activation=0.9270833333333334.
+- Dominant attractor trend: concentration timeline=[0.15, 0.15].

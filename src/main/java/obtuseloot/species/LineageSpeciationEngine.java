@@ -7,13 +7,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class LineageSpeciationEngine {
-    private static final double COMPATIBILITY_THRESHOLD = 0.64D;
-    private static final double STRICT_COMPATIBILITY_THRESHOLD = 0.72D;
-    private static final int PERSISTENCE_GENERATIONS = 4;
-    private static final int MIN_OBSERVATIONS = 6;
-    private static final double MIN_COMPONENT_DIVERGENCE = 0.08D;
-    private static final double MIN_NICHE_DIVERGENCE = 0.12D;
-    private static final double MIN_ENV_DIVERGENCE = 0.09D;
+    private static final double COMPATIBILITY_THRESHOLD = 0.66D;
+    private static final double STRICT_COMPATIBILITY_THRESHOLD = 0.74D;
+    private static final int PERSISTENCE_GENERATIONS = 5;
+    private static final int MIN_OBSERVATIONS = 8;
+    private static final double MIN_COMPONENT_DIVERGENCE = 0.09D;
+    private static final double MIN_NICHE_DIVERGENCE = 0.14D;
+    private static final double MIN_ENV_DIVERGENCE = 0.10D;
+    private static final double STABLE_NICHE_TENDENCY = 0.62D;
 
     private final SpeciesCompatibilityModel compatibilityModel = new SpeciesCompatibilityModel();
     private final Map<String, DivergenceState> divergenceStates = new LinkedHashMap<>();
@@ -32,7 +33,9 @@ public class LineageSpeciationEngine {
         DivergenceState state = divergenceStates.computeIfAbsent(key, ignored -> new DivergenceState());
         state.observations++;
 
-        double nicheOverlap = profileOverlap(currentSignature.branchPreferences(), speciesSignature.branchPreferences());
+        double branchOverlap = profileOverlap(currentSignature.branchPreferences(), speciesSignature.branchPreferences());
+        double environmentOverlap = profileOverlap(currentSignature.environmentalProfile(), speciesSignature.environmentalProfile());
+        double nicheOverlap = (branchOverlap * 0.65D) + (environmentOverlap * 0.35D);
         boolean sameNiche = nicheOverlap >= 0.72D;
         double threshold = sameNiche ? STRICT_COMPATIBILITY_THRESHOLD : COMPATIBILITY_THRESHOLD;
         if (compatibility >= threshold) {
@@ -41,8 +44,11 @@ public class LineageSpeciationEngine {
             state.persistenceStreak = Math.max(0, state.persistenceStreak - 1);
         }
 
+        if (profile.nicheOccupancy() >= MIN_NICHE_DIVERGENCE) {
+            state.nicheStableObservations++;
+        }
         boolean persistent = state.persistenceStreak >= PERSISTENCE_GENERATIONS;
-        boolean stableNiche = state.observations >= MIN_OBSERVATIONS;
+        boolean stableNiche = state.observations >= MIN_OBSERVATIONS && (state.nicheStableObservations / (double) Math.max(1, state.observations)) >= STABLE_NICHE_TENDENCY;
         boolean notSpike = state.persistenceStreak * 2 >= state.observations;
         boolean meaningfulDivergence = hasMeaningfulDivergence(profile);
         boolean ecologicalDivergence = profile.nicheOccupancy() >= MIN_NICHE_DIVERGENCE
@@ -64,8 +70,11 @@ public class LineageSpeciationEngine {
         divergenceSnapshot.put("sameNichePressure", sameNiche ? 1.0D : 0.0D);
         divergenceSnapshot.put("compatibilityThreshold", threshold);
         divergenceSnapshot.put("nicheOverlap", nicheOverlap);
+        divergenceSnapshot.put("branchOverlap", branchOverlap);
+        divergenceSnapshot.put("environmentOverlap", environmentOverlap);
         divergenceSnapshot.put("persistence", (double) state.persistenceStreak);
         divergenceSnapshot.put("observations", (double) state.observations);
+        divergenceSnapshot.put("stableNicheRatio", state.nicheStableObservations / (double) Math.max(1, state.observations));
 
         Map<String, Double> tendencyProfile = new LinkedHashMap<>(deriveTendencies(currentSignature));
         tendencyProfile.put("nicheMigrationPressure", Math.max(0.0D, profile.nicheOccupancy() - nicheOverlap));
@@ -83,7 +92,7 @@ public class LineageSpeciationEngine {
         if (profile.mechanics() >= MIN_COMPONENT_DIVERGENCE) components++;
         if (profile.branches() >= MIN_COMPONENT_DIVERGENCE) components++;
         if (profile.environment() >= MIN_COMPONENT_DIVERGENCE) components++;
-        return components >= 3;
+        return components >= 3 && profile.weightedDistance() >= COMPATIBILITY_THRESHOLD;
     }
 
     private double profileOverlap(Map<String, Double> left, Map<String, Double> right) {
@@ -114,5 +123,6 @@ public class LineageSpeciationEngine {
     private static final class DivergenceState {
         private int persistenceStreak;
         private int observations;
+        private int nicheStableObservations;
     }
 }

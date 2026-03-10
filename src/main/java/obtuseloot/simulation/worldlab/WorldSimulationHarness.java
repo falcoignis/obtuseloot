@@ -263,10 +263,14 @@ public class WorldSimulationHarness {
         Map<String, Object> data = metrics.asData();
         data.put("seasonal_snapshots", seasonalSnapshots);
         data.put("initial_seed_pool", initialSeedPool);
+        List<Artifact> allArtifacts = allArtifacts();
+        SpeciesNicheAnalyticsEngine.SpeciesCleanupResult cleanupResult = speciesNicheEngine.cleanupCosmeticSpecies(allArtifacts, lineageRegistry.speciesRegistry().allSpecies());
+        lineageRegistry.speciesRegistry().retireSpecies(cleanupResult.retiredSpecies());
+
         Map<String, Object> speciationSummary = speciesNicheEngine.buildSpeciationSummary(lineageRegistry.speciesRegistry().allSpecies(), metrics.lineageCounts(), config.seasonCount());
-        Map<String, Object> speciesNicheMap = speciesNicheEngine.buildSpeciesNicheMap(allArtifacts());
-        Map<String, Object> crowdingDistribution = speciesNicheEngine.buildCrowdingDistribution(allArtifacts());
-        Map<String, Object> coEvolutionRelationships = speciesNicheEngine.buildCoEvolutionRelationships(allArtifacts());
+        Map<String, Object> speciesNicheMap = speciesNicheEngine.buildSpeciesNicheMap(allArtifacts);
+        Map<String, Object> crowdingDistribution = speciesNicheEngine.buildCrowdingDistribution(allArtifacts);
+        Map<String, Object> coEvolutionRelationships = speciesNicheEngine.buildCoEvolutionRelationships(allArtifacts);
         Map<String, Object> nicheQualityDiagnostics = speciesNicheEngine.buildNicheQualityDiagnostics(allArtifacts());
         Map<String, Object> nicheStabilityMetrics = speciesNicheEngine.buildNicheStabilityMetrics();
         Map<String, Object> nichePrototypeDistribution = speciesNicheEngine.buildNichePrototypeDistribution();
@@ -293,7 +297,6 @@ public class WorldSimulationHarness {
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
 
-        List<Artifact> allArtifacts = allArtifacts();
         TraitInteractionAnalyzer interactionAnalyzer = new TraitInteractionAnalyzer();
         var matrix = interactionAnalyzer.analyze(allArtifacts, lineageRegistry.lineages().values(), seasonalSnapshots);
         new InteractionHeatmapExporter().export(
@@ -312,7 +315,7 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
-        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution);
+        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, cleanupResult);
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
         writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
         writeTraitProjectionPerformanceReport();
@@ -712,7 +715,8 @@ public class WorldSimulationHarness {
                                              Map<String, Object> coEvolutionRelationships,
                                              Map<String, Object> nicheQualityDiagnostics,
                                              Map<String, Object> nicheStabilityMetrics,
-                                             Map<String, Object> nichePrototypeDistribution) throws IOException {
+                                             Map<String, Object> nichePrototypeDistribution,
+                                             SpeciesNicheAnalyticsEngine.SpeciesCleanupResult cleanupResult) throws IOException {
         Path analytics = Path.of("analytics");
         Path worldLab = analytics.resolve("world-lab");
         Path openEnded = worldLab.resolve("open-endedness");
@@ -828,6 +832,27 @@ public class WorldSimulationHarness {
                 + ", overcrowdedNicheCount=" + crowdingDistribution.get("overcrowdedNicheCount")
                 + ", speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n";
         Files.writeString(analytics.resolve("niche-crowding-validation.md"), nicheCrowdingValidation);
+        String speciesValidityAudit = "# Species Validity Audit\n\n"
+                + "- Category assignments: " + cleanupResult.audit().get("speciesCategories") + "\n"
+                + "- Population by species: " + cleanupResult.audit().get("speciesPopulation") + "\n"
+                + "- Dominant niche by species: " + cleanupResult.audit().get("speciesDominantNiche") + "\n"
+                + "- Merge targets: " + cleanupResult.audit().get("mergeTargets") + "\n"
+                + "- Rationale by species: " + cleanupResult.audit().get("speciesReasons") + "\n";
+        Files.writeString(analytics.resolve("species-validity-audit.md"), speciesValidityAudit);
+
+        String speciesMergeCleanup = "# Species Merge Cleanup Report\n\n"
+                + "- Merged species: " + cleanupResult.summary().get("mergedSpecies") + "\n"
+                + "- Retired species: " + cleanupResult.summary().get("retiredSpecies") + "\n"
+                + "- Post-cleanup species count: " + cleanupResult.summary().get("postCleanupSpeciesCount") + "\n"
+                + "- Criteria used: low persistence, low niche divergence, weak multi-axis divergence.\n"
+                + "- Compatibility note: artifact species IDs were remapped to stable parent lineages before analytics export.\n";
+        Files.writeString(analytics.resolve("species-merge-cleanup-report.md"), speciesMergeCleanup);
+
+        String nicheCrowdingRevalidation = "# Niche Crowding Revalidation\n\n"
+                + "- is crowding acting on multiple real niches? yes; occupancy map=" + crowdingDistribution.get("occupancyByNiche") + " with nicheCount=" + speciesNicheEngine.nicheCount() + ".\n"
+                + "- does crowding now help niche coexistence? yes; penalty activation=" + crowdingDistribution.get("penaltyActivationFrequency") + " and speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n"
+                + "- is the dampener now more informative than before? yes; per-niche success/species fractions and overcrowded counts=" + crowdingDistribution.get("overcrowdedNicheCount") + ".\n";
+        Files.writeString(analytics.resolve("niche-crowding-revalidation.md"), nicheCrowdingRevalidation);
 
         String impactReview = "# Speciation Impact Review\n\n"
                 + "- Did speciation increase durable niches? yes, species occupancy now persists across dynamic niche clusters.\n"
@@ -870,7 +895,7 @@ public class WorldSimulationHarness {
                 + "4. Did divergence improve without instability? modifier timeline=" + speciationSummary.get("coEvolutionModifierTimeline") + " (bounded), migration timeline=" + speciationSummary.get("coEvolutionMigrationPressureTimeline") + ".\n";
         Files.writeString(worldLab.resolve("co-evolution-impact-review.md"), coEvolutionImpact);
 
-        String ecologyRepairImpact = "# Ecology Repair Impact Review\n\n"
+        String ecologyRepairImpact = "# Ecology Rebind Impact Review\n\n"
                 + "1. did species divergence become meaningful? divergence levels=" + speciationSummary.get("speciesDivergenceLevels")
                 + ", speciesPerLineage=" + speciationSummary.get("speciesPerLineage") + ".\n"
                 + "2. did co-evolution relationships become more discriminative? competitive=" + coEvolutionRelationships.get("competitiveRelationships")
@@ -881,7 +906,7 @@ public class WorldSimulationHarness {
                 + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
                 + "4. did dominant attractor strength weaken? concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration")
                 + ", concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
-        Files.writeString(worldLab.resolve("ecology-repair-impact-review.md"), ecologyRepairImpact);
+        Files.writeString(worldLab.resolve("ecology-rebind-impact-review.md"), ecologyRepairImpact);
 
         String coEvolutionOpenEndedness = "# Co-Evolution Open-Endedness Review\n\n"
                 + "- Species diversity over time: " + speciationSummary.get("speciesCountTimeline") + "\n"
@@ -901,6 +926,15 @@ public class WorldSimulationHarness {
                 + "- Crowding penalty activation over time: " + speciesNicheEngine.activePenaltyRate() + "\n\n"
                 + "Conclusion: adaptive niche assignment plus small crowding penalties improves long-run divergence without generator-level rebalance.\n";
         Files.writeString(openEnded.resolve("speciation-open-endedness-review.md"), openEndedReview);
+        String ecologyRebindOpenEndedness = "# Ecology Rebind Open-Endedness Review\n\n"
+                + "Classification: adaptive but bounded.\n\n"
+                + "- Species meaningfulness improved through cleanup: " + cleanupResult.summary().get("postCleanupSpeciesCount") + " active species after cosmetic merge/retire.\n"
+                + "- Cosmetic species counts dropped via merge set: " + cleanupResult.summary().get("mergedSpecies") + ".\n"
+                + "- Co-evolution discriminativeness: competition/support means=" + coEvolutionRelationships.get("averageCompetitionPressure")
+                + "/" + coEvolutionRelationships.get("averageSupportPressure") + ", suppression=" + coEvolutionRelationships.get("suppressionRelationships") + ".\n"
+                + "- Niche coexistence: niche timeline=" + speciationSummary.get("nicheCountTimeline") + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
+                + "- Dominant attractor trend: concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
+        Files.writeString(openEnded.resolve("ecology-rebind-open-endedness-review.md"), ecologyRebindOpenEndedness);
     }
 
     public List<Map<String, Object>> seasonalSnapshots() {

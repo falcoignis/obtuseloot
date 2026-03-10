@@ -85,7 +85,7 @@ public class DashboardDataAssembler {
         String nicheContent = Files.readString(nicheMap);
         String crowdingContent = Files.readString(crowding);
         out.put("activeSpecies", extractNumber(speciationContent, "activeSpecies"));
-        out.put("nicheCount", parseIntegerMap(speciationContent, "speciesPerLineage").size());
+        out.put("nicheCount", parseIntegerMap(nicheContent, "nicheOccupancy").size());
         out.put("speciesPerNiche", parseIntegerMap(nicheContent, "competingSpeciesPerNiche"));
         out.put("nicheTurnover", parseIntegerMap(nicheContent, "speciesMigrationCounts").values().stream().mapToInt(Integer::intValue).sum());
         out.put("dominantNicheShare", extractMaxShare(crowdingContent, "occupancyByNiche"));

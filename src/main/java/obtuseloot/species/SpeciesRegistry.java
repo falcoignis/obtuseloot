@@ -4,7 +4,9 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.lineage.ArtifactLineage;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class SpeciesRegistry {
@@ -73,5 +75,18 @@ public class SpeciesRegistry {
         }
         speciesById.putAll(snapshot.speciesById());
         lineageRoots.putAll(snapshot.lineageRoots());
+    }
+
+    public void retireSpecies(Set<String> retiredSpeciesIds) {
+        if (retiredSpeciesIds == null || retiredSpeciesIds.isEmpty()) {
+            return;
+        }
+        Set<String> protectedRoots = new LinkedHashSet<>(lineageRoots.values());
+        for (String speciesId : retiredSpeciesIds) {
+            if (speciesId == null || speciesId.isBlank() || protectedRoots.contains(speciesId)) {
+                continue;
+            }
+            speciesById.remove(speciesId);
+        }
     }
 }
