@@ -28,6 +28,8 @@ public class ProceduralAbilityGenerator {
     private final TraitInterferenceResolver traitInterferenceResolver;
     private final ExperienceEvolutionEngine experienceEvolutionEngine;
     private final boolean traitInteractionsEnabled;
+    private final RegulatoryGateResolver regulatoryGateResolver;
+    private final RegulatoryEligibilityFilter regulatoryEligibilityFilter;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -91,6 +93,8 @@ public class ProceduralAbilityGenerator {
         this.traitInterferenceResolver.setScoringMode(scoringMode);
         this.experienceEvolutionEngine = experienceEvolutionEngine;
         this.traitInteractionsEnabled = traitInteractionsEnabled;
+        this.regulatoryGateResolver = new RegulatoryGateResolver();
+        this.regulatoryEligibilityFilter = new RegulatoryEligibilityFilter();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -106,9 +110,18 @@ public class ProceduralAbilityGenerator {
                 ? lineageGenome
                 : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed());
         int picks = evolutionStage >= 4 ? 3 : 2;
+        AbilityRegulatoryProfile regulatoryProfile = regulatoryGateResolver.resolve(
+                artifact,
+                genome,
+                memoryProfile,
+                lineage,
+                ecosystemEngine == null ? null : ecosystemEngine.pressureEngine());
+        List<AbilityTemplate> allCandidates = registry.templates();
+        List<AbilityTemplate> gatedCandidates = regulatoryEligibilityFilter.filter(allCandidates, regulatoryProfile);
+        List<AbilityTemplate> scoringPool = gatedCandidates.isEmpty() ? allCandidates : gatedCandidates;
         List<AbilityTemplate> selected = traitInteractionsEnabled
-                ? traitInterferenceResolver.selectTop(registry.templates(), genome, picks)
-                : registry.templates().stream()
+                ? traitInterferenceResolver.selectTop(scoringPool, genome, picks)
+                : scoringPool.stream()
                 .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage)))
                 .limit(picks)
                 .toList();
@@ -117,6 +130,9 @@ public class ProceduralAbilityGenerator {
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
         Random random = new Random(seed);
         List<AbilityDefinition> picked = new ArrayList<>();
+        artifact.setLastRegulatoryProfile(regulatoryProfile.profileKey());
+        artifact.setLastOpenRegulatoryGates(regulatoryProfile.openGatesCsv());
+        artifact.setLastGateCandidatePool(allCandidates.size() + "->" + scoringPool.size());
         for (AbilityTemplate template : selected) {
             picked.add(fromTemplate(template, template.family(), evolutionStage));
         }
@@ -124,7 +140,8 @@ public class ProceduralAbilityGenerator {
         if (picked.size() < picks) {
             List<AbilityFamily> fallbackRanked = new ArrayList<>(ranked);
             for (AbilityFamily family : fallbackRanked) {
-                List<AbilityTemplate> pool = registry.byFamily(family).stream()
+                List<AbilityTemplate> pool = scoringPool.stream()
+                        .filter(t -> t.family() == family)
                         .filter(t -> picked.stream().noneMatch(p -> p.id().equals(t.id())))
                         .toList();
                 if (pool.isEmpty()) {

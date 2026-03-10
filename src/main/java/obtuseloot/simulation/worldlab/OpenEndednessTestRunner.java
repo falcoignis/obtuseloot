@@ -116,12 +116,15 @@ public final class OpenEndednessTestRunner {
         summary.put("nicheCountTrend", trend(seasonal, "branches", m -> (double) m.size()));
         summary.put("noveltyRatePerSeason", noveltyRatePerSeason(seasonal, "branches"));
         summary.put("rareLineagePersistence", rareLineagePersistence(seasonal));
+        summary.put("gateDiversityTrend", trend(seasonal, "openGates", OpenEndednessTestRunner::entropy));
+        summary.put("regulatoryProfileSurvival", profileSurvival(seasonal));
 
         summary.put("branchEntropy", entropy(endBranches));
         summary.put("lineageConcentration", concentration(endLineages));
         summary.put("traitVariance", variance(endFamilies.values()));
         summary.put("dominanceIndex", dominantRate(endFamilies));
         summary.put("nicheCount", endBranches.size());
+        summary.put("gateDiversity", entropy(castCount(seasonal.getLast().get("openGates"))));
         return summary;
     }
 
@@ -224,8 +227,8 @@ public final class OpenEndednessTestRunner {
                 .append("- Divergence is strongest when ecosystem balancing subsystems are removed.\n")
                 .append("- Trait interactions contribute materially to sustained novelty and branch entropy.\n\n")
                 .append("## 4) Dominant families / branches / lineages / mechanics\n")
-                .append("| World | Dominant Family | Dominant Branch | Dominant Lineage | Family Turnover | Branch Entropy | Lineage Concentration |\n")
-                .append("|---|---|---|---|---:|---:|---:|\n");
+                .append("| World | Dominant Family | Dominant Branch | Dominant Lineage | Family Turnover | Branch Entropy | Gate Diversity | Lineage Concentration |\n")
+                .append("|---|---|---|---|---:|---:|---:|---:|\n");
 
         for (var entry : results.entrySet()) {
             Map<String, Object> summary = castMap(entry.getValue().get("summary"));
@@ -235,6 +238,7 @@ public final class OpenEndednessTestRunner {
                     .append(" | ").append(summary.get("dominantLineage"))
                     .append(" | ").append(fmt(summary.get("familyTurnover")))
                     .append(" | ").append(fmt(summary.get("branchEntropy")))
+                    .append(" | ").append(fmt(summary.get("gateDiversity")))
                     .append(" | ").append(fmt(summary.get("lineageConcentration")))
                     .append(" |\n");
         }
@@ -334,6 +338,21 @@ public final class OpenEndednessTestRunner {
             out.add(round4(rate));
         }
         return out;
+    }
+
+    private static int profileSurvival(List<Map<String, Object>> seasonal) {
+        Set<String> recurring = new HashSet<>();
+        Set<String> seen = new HashSet<>();
+        for (Map<String, Object> season : seasonal) {
+            Map<String, Integer> profiles = castCount(season.get("regulatoryProfiles"));
+            for (String profile : profiles.keySet()) {
+                if (seen.contains(profile)) {
+                    recurring.add(profile);
+                }
+                seen.add(profile);
+            }
+        }
+        return recurring.size();
     }
 
     private static int rareLineagePersistence(List<Map<String, Object>> seasonal) {

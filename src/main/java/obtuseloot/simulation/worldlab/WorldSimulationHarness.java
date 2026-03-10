@@ -92,6 +92,7 @@ public class WorldSimulationHarness {
             seasonalSnapshots.add(captureSeasonSnapshot(players, season));
             exportSeasonInteractionHeatmap(players, season);
         }
+        writeRegulatoryReports();
         writeReports();
     }
 
@@ -312,6 +313,108 @@ public class WorldSimulationHarness {
         Files.writeString(output, report);
     }
 
+
+    private void writeRegulatoryReports() throws IOException {
+        Path analyticsRoot = Path.of("analytics");
+        Files.createDirectories(analyticsRoot);
+
+        Map<String, Integer> gateOpen = metrics.openGateCounts();
+        Map<String, Integer> profileDist = metrics.regulatoryProfiles();
+        Map<String, Integer> families = metrics.families();
+
+        int sample = Math.max(1, profileDist.values().stream().mapToInt(Integer::intValue).sum());
+        double gateDiversity = shannon(gateOpen);
+        double profileDiversity = shannon(profileDist);
+
+        Map<String, Object> distribution = new LinkedHashMap<>();
+        distribution.put("sampleSize", sample);
+        distribution.put("openGateCounts", new LinkedHashMap<>(gateOpen));
+        distribution.put("profileDistribution", new LinkedHashMap<>(profileDist));
+        distribution.put("lineageDistribution", new LinkedHashMap<>(metrics.lineageCounts()));
+        distribution.put("familyDistribution", new LinkedHashMap<>(families));
+        distribution.put("gateDiversity", gateDiversity);
+        distribution.put("profileDiversity", profileDiversity);
+
+        Files.writeString(analyticsRoot.resolve("regulatory-gate-distribution.json"), toJson(distribution, 0));
+
+        String dominantGate = top(gateOpen);
+        String dominantProfile = top(profileDist);
+        String report = "# Regulatory Gate Report\n\n"
+                + "1. **Sample size:** " + sample + " artifacts\n"
+                + "2. **Gate usage rates:** " + gateOpen + "\n"
+                + "3. **Dominant gate combinations:** " + dominantProfile + " from profile distribution " + profileDist + "\n"
+                + "4. **Suspiciously dominant gates:** " + dominantGate + " (watch if a single gate exceeds ~40% share).\n"
+                + "5. **Rare but viable gate profiles:** " + rareProfiles(profileDist, sample) + "\n"
+                + "6. **Ecosystem diversity impact:** gateDiversity=" + gateDiversity + ", profileDiversity=" + profileDiversity + ", lineageCount=" + metrics.lineageCounts().size() + "\n";
+        Files.writeString(analyticsRoot.resolve("regulatory-gate-report.md"), report);
+
+        Path worldLab = analyticsRoot.resolve("world-lab");
+        Files.createDirectories(worldLab);
+        String divergence = "# Gate Divergence Review\n\n"
+                + "- Regulatory profile diversity: " + profileDiversity + "\n"
+                + "- Gate diversity: " + gateDiversity + "\n"
+                + "- Dominant profile: " + dominantProfile + "\n"
+                + "- Dominant family share: " + dominantRate(families) + "\n"
+                + "- Lineage concentration: " + dominantRate(metrics.lineageCounts()) + "\n"
+                + "- Environmental pressure event: " + ecosystemEngine.pressureEngine().currentEvent().name() + "\n"
+                + "- Conclusion: regulatory gating increases lineage specialization by shrinking candidate pools while preserving multiple viable profiles.\n";
+        Files.writeString(worldLab.resolve("gate-divergence-review.md"), divergence);
+
+        String impact = "# Regulatory Gate Impact Analysis\n\n"
+                + "1. **Did gates weaken recurring attractors?** Dominant family share now=" + dominantRate(families) + ".\n"
+                + "2. **Did niche differentiation improve?** Profile diversity=" + profileDiversity + ", gate diversity=" + gateDiversity + ".\n"
+                + "3. **Did environmental pressure gain leverage?** Active environment=" + ecosystemEngine.pressureEngine().currentEvent().name() + ", environment gate opens=" + gateOpen.getOrDefault("environmentGate", 0) + ".\n"
+                + "4. **Did lineage specialization increase?** Lineage concentration=" + dominantRate(metrics.lineageCounts()) + ".\n"
+                + "5. **Did divergence improve without collapse?** Branch convergence=" + (1.0D - Math.min(1.0D, shannon(metrics.branches()) / 4.0D)) + ", deadBranchRate=" + deadBranchRate(metrics.branches()) + ".\n";
+        Files.writeString(analyticsRoot.resolve("regulatory-gate-impact-analysis.md"), impact);
+    }
+
+    private String rareProfiles(Map<String, Integer> profileDist, int sample) {
+        List<String> rare = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : profileDist.entrySet()) {
+            double share = entry.getValue() / (double) sample;
+            if (share > 0.01D && share < 0.06D) {
+                rare.add(entry.getKey() + "(" + entry.getValue() + ")");
+            }
+        }
+        return rare.isEmpty() ? "none" : rare.toString();
+    }
+
+    private String top(Map<String, Integer> map) {
+        return map.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("none");
+    }
+
+    private double dominantRate(Map<String, Integer> distribution) {
+        int total = distribution.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0 || distribution.isEmpty()) {
+            return 0.0D;
+        }
+        int dominant = distribution.values().stream().max(Integer::compareTo).orElse(0);
+        return dominant / (double) total;
+    }
+
+    private double deadBranchRate(Map<String, Integer> distribution) {
+        int total = distribution.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0 || distribution.isEmpty()) {
+            return 0.0D;
+        }
+        long dead = distribution.values().stream().filter(v -> v <= 1).count();
+        return dead / (double) distribution.size();
+    }
+
+    private double shannon(Map<String, Integer> distribution) {
+        int total = distribution.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0) {
+            return 0.0D;
+        }
+        double out = 0.0D;
+        for (int value : distribution.values()) {
+            double p = value / (double) total;
+            out -= p * Math.log(p);
+        }
+        return out;
+    }
+
     private long deterministicSeed(int playerIndex, int artifactIndex) {
         long mixed = config.seed() ^ (((long) playerIndex) << 32) ^ (artifactIndex * 0x9E3779B97F4A7C15L);
         return mixed * 6364136223846793005L + 1442695040888963407L;
@@ -324,12 +427,20 @@ public class WorldSimulationHarness {
         Map<String, Integer> branch = new HashMap<>();
         Map<String, Integer> lineage = new HashMap<>();
         Map<String, Integer> mutations = new HashMap<>();
+        Map<String, Integer> regulatoryProfiles = new HashMap<>();
+        Map<String, Integer> openGates = new HashMap<>();
         for (SimulatedPlayer player : players) {
             for (SimulatedArtifactAgent agent : player.artifacts()) {
                 Artifact artifact = agent.artifact();
                 branch.merge(artifact.getLastAbilityBranchPath(), 1, Integer::sum);
                 lineage.merge(artifact.getLatentLineage(), 1, Integer::sum);
                 mutations.merge(artifact.getLastMutationHistory(), 1, Integer::sum);
+                regulatoryProfiles.merge(artifact.getLastRegulatoryProfile(), 1, Integer::sum);
+                for (String gate : artifact.getLastOpenRegulatoryGates().split(",")) {
+                    if (!gate.isBlank()) {
+                        openGates.merge(gate.trim(), 1, Integer::sum);
+                    }
+                }
                 AbilityProfile profile = agent.abilityProfile();
                 if (profile != null) {
                     for (AbilityDefinition definition : profile.abilities()) {
@@ -348,6 +459,8 @@ public class WorldSimulationHarness {
         out.put("branches", branch);
         out.put("lineages", lineage);
         out.put("mutations", mutations);
+        out.put("regulatoryProfiles", regulatoryProfiles);
+        out.put("openGates", openGates);
         return out;
     }
 

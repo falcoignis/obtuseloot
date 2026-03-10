@@ -53,6 +53,9 @@ public class Artifact {
     private String lastAbilityBranchPath;
     private String lastMutationHistory;
     private String lastMemoryInfluence;
+    private String lastRegulatoryProfile;
+    private String lastOpenRegulatoryGates;
+    private String lastGateCandidatePool;
 
     public Artifact(UUID ownerId, String generatedName) {
         this.ownerId = ownerId;
@@ -76,6 +79,9 @@ public class Artifact {
         this.lastAbilityBranchPath = "[]";
         this.lastMutationHistory = "[]";
         this.lastMemoryInfluence = "none";
+        this.lastRegulatoryProfile = "[]";
+        this.lastOpenRegulatoryGates = "";
+        this.lastGateCandidatePool = "0->0";
     }
 
     public void resetMutableState() {
@@ -99,6 +105,9 @@ public class Artifact {
         lastAbilityBranchPath = "[]";
         lastMutationHistory = "[]";
         lastMemoryInfluence = "none";
+        lastRegulatoryProfile = "[]";
+        lastOpenRegulatoryGates = "";
+        lastGateCandidatePool = "0->0";
     }
 
     public long getArtifactSeed() { return artifactSeed; }
@@ -157,6 +166,12 @@ public class Artifact {
     public void setLastMutationHistory(String lastMutationHistory) { this.lastMutationHistory = lastMutationHistory; }
     public String getLastMemoryInfluence() { return lastMemoryInfluence; }
     public void setLastMemoryInfluence(String lastMemoryInfluence) { this.lastMemoryInfluence = lastMemoryInfluence; }
+    public String getLastRegulatoryProfile() { return lastRegulatoryProfile; }
+    public void setLastRegulatoryProfile(String lastRegulatoryProfile) { this.lastRegulatoryProfile = lastRegulatoryProfile; }
+    public String getLastOpenRegulatoryGates() { return lastOpenRegulatoryGates; }
+    public void setLastOpenRegulatoryGates(String lastOpenRegulatoryGates) { this.lastOpenRegulatoryGates = lastOpenRegulatoryGates; }
+    public String getLastGateCandidatePool() { return lastGateCandidatePool; }
+    public void setLastGateCandidatePool(String lastGateCandidatePool) { this.lastGateCandidatePool = lastGateCandidatePool; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {
