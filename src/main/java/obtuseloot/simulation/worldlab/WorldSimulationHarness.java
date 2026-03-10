@@ -5,6 +5,7 @@ import obtuseloot.abilities.mutation.AbilityMutationEngine;
 import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
 import obtuseloot.analytics.ArtifactEcosystemBalancingAI;
+import obtuseloot.analytics.EcosystemHealthGaugeAnalyzer;
 import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
@@ -310,7 +311,99 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics);
+        writeEcosystemHealthGauge(seasonalSnapshots);
         writeTraitProjectionPerformanceReport();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots) throws IOException {
+        EcosystemHealthGaugeAnalyzer gaugeAnalyzer = new EcosystemHealthGaugeAnalyzer();
+        List<Map<String, Integer>> artifactOccupancy = new ArrayList<>();
+        List<Map<String, Integer>> speciesOccupancy = new ArrayList<>();
+        List<Integer> seasons = new ArrayList<>();
+
+        for (Map<String, Object> snapshot : seasonalSnapshots) {
+            seasons.add(((Number) snapshot.getOrDefault("season", seasons.size() + 1)).intValue());
+            Object niches = snapshot.get("nicheOccupancy");
+            if (niches instanceof Map<?, ?> map) {
+                artifactOccupancy.add(toIntegerMap(map));
+            }
+            Object species = snapshot.get("speciesPerNiche");
+            if (species instanceof Map<?, ?> map) {
+                speciesOccupancy.add(toIntegerMap(map));
+            }
+        }
+
+        var result = gaugeAnalyzer.analyze(artifactOccupancy, speciesOccupancy);
+        List<Double> tntBySeason = result.tntTrend();
+        List<String> tntPairs = new ArrayList<>();
+        for (int i = 1; i < seasons.size(); i++) {
+            tntPairs.add("season-" + seasons.get(i - 1) + "→" + seasons.get(i) + ":" + tntBySeason.get(i - 1));
+        }
+
+        String markdown = "# Ecosystem Health Gauge\n\n"
+                + "- END_artifacts: " + result.endArtifacts() + "\n"
+                + "- END_species: " + (result.endSpecies() == null ? "N/A" : result.endSpecies()) + "\n"
+                + "- TNT per season: " + tntPairs + "\n"
+                + "- END trend: " + result.endTrend() + "\n"
+                + "- TNT trend: " + result.tntTrend() + "\n"
+                + "- ecosystem status: " + result.status() + "\n\n"
+                + "## Interpretation\n"
+                + result.interpretation() + "\n";
+        Files.writeString(Path.of("analytics/ecosystem-health-gauge.md"), markdown);
+
+        String json = "{\n"
+                + "  \"END_artifacts\": " + result.endArtifacts() + ",\n"
+                + "  \"END_species\": " + (result.endSpecies() == null ? "null" : result.endSpecies()) + ",\n"
+                + "  \"TNT_per_season\": " + toJsonArrayOfLabeledValues(tntPairs) + ",\n"
+                + "  \"END_trend\": " + toJsonArray(result.endTrend()) + ",\n"
+                + "  \"TNT_trend\": " + toJsonArray(result.tntTrend()) + ",\n"
+                + "  \"ecosystem_status\": \"" + result.status().name() + "\",\n"
+                + "  \"interpretation\": \"" + result.interpretation().replace("\"", "\\\"") + "\"\n"
+                + "}\n";
+        Files.writeString(Path.of("analytics/ecosystem-health-gauge.json"), json);
+
+        String worldLabReview = "# Ecosystem Health Gauge Review\n\n"
+                + "## Run 1\n"
+                + "- END trend: " + result.endTrend() + "\n"
+                + "- TNT across seasons: " + result.tntTrend() + "\n"
+                + "- Ecosystem status: " + result.status() + "\n"
+                + "- Trajectory: " + result.interpretation() + "\n";
+        Files.writeString(Path.of("analytics/world-lab/ecosystem-health-gauge-review.md"), worldLabReview);
+    }
+
+    private Map<String, Integer> toIntegerMap(Map<?, ?> source) {
+        Map<String, Integer> out = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            if (entry.getValue() instanceof Number number) {
+                out.put(String.valueOf(entry.getKey()), number.intValue());
+            }
+        }
+        return out;
+    }
+
+    private String toJsonArray(List<Double> values) {
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append(values.get(i));
+        }
+        builder.append(']');
+        return builder.toString();
+    }
+
+    private String toJsonArrayOfLabeledValues(List<String> values) {
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                builder.append(',');
+            }
+            builder.append('"').append(values.get(i)).append('"');
+        }
+        builder.append(']');
+        return builder.toString();
     }
 
     private void writeTraitProjectionPerformanceReport() throws IOException {

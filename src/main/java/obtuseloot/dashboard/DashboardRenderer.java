@@ -1,5 +1,7 @@
 package obtuseloot.dashboard;
 
+import obtuseloot.analytics.EcosystemStatus;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,11 +20,15 @@ public class DashboardRenderer {
                 fmt(metrics.traitVariance()),
                 fmt(metrics.lineageConcentration()),
                 metrics.collapseRisk().name(),
+                fmt(metrics.endArtifacts()),
+                fmt(metrics.latestTnt()),
+                statusBadge(metrics.ecosystemStatus()),
                 renderMap((Map<String, Integer>) data.get("archetypes")),
                 data.get("heatmapImage"),
                 renderMap((Map<String, Integer>) data.get("traits")),
                 renderMap((Map<String, Integer>) data.get("lineages")),
-                renderSpeciesNiche((Map<String, Object>) data.get("speciesNicheMetrics"))
+                renderSpeciesNiche((Map<String, Object>) data.get("speciesNicheMetrics")),
+                renderEcosystemHealth(metrics)
         );
 
         Files.writeString(output, html);
@@ -30,7 +36,6 @@ public class DashboardRenderer {
     }
 
     private String htmlTemplate() {
-        // Keep this as a template with positional placeholders so dashboard content remains easy to review.
         return """
                 <!DOCTYPE html>
                 <html>
@@ -41,10 +46,14 @@ public class DashboardRenderer {
                     body{font-family:Arial;background:#0f1524;color:#eaf0ff;margin:20px}
                     .grid{display:grid;grid-template-columns:repeat(2,minmax(360px,1fr));gap:14px}
                     .panel{background:#1a243b;border-radius:10px;padding:12px}
-                    .strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+                    .strip{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
                     .metric{background:#25304d;padding:10px;border-radius:8px}
                     .small{color:#9bb1de;font-size:12px}
                     pre{white-space:pre-wrap}
+                    .badge{padding:2px 8px;border-radius:999px;font-weight:bold}
+                    .green{background:#1d7f49;color:#d7ffe7}
+                    .yellow{background:#957500;color:#fff6cc}
+                    .red{background:#962c2c;color:#ffd7d7}
                   </style>
                 </head>
                 <body>
@@ -56,6 +65,9 @@ public class DashboardRenderer {
                     <div class=\"metric\"><div class=\"small\">Trait Variance</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Lineage Concentration</div><b>%s</b></div>
                     <div class=\"metric\"><div class=\"small\">Collapse Risk</div><b>%s</b></div>
+                    <div class=\"metric\"><div class=\"small\">Effective Niches (END)</div><b>%s</b></div>
+                    <div class=\"metric\"><div class=\"small\">Temporal Niche Turnover (TNT)</div><b>%s</b></div>
+                    <div class=\"metric\"><div class=\"small\">Ecosystem Status</div><b>%s</b></div>
                   </div>
                   <div class=\"grid\">
                     <div class=\"panel\"><h3>Rank-Abundance Curve</h3><pre>%s</pre></div>
@@ -63,6 +75,7 @@ public class DashboardRenderer {
                     <div class=\"panel\"><h3>Genome Trait Scatter Plot</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Lineage Survival / Concentration</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Species & Niche Health</h3><pre>%s</pre></div>
+                    <div class=\"panel\"><h3>Ecosystem Health Gauge</h3><pre>%s</pre></div>
                   </div>
                 </body>
                 </html>
@@ -94,4 +107,21 @@ public class DashboardRenderer {
                 + "\novercrowdedNicheCount=" + speciesNicheMetrics.getOrDefault("overcrowdedNicheCount", 0);
     }
 
+    private String renderEcosystemHealth(DashboardMetrics metrics) {
+        return "END_artifacts=" + fmt(metrics.endArtifacts())
+                + "\nEND_species=" + (metrics.endSpecies() == null ? "N/A" : fmt(metrics.endSpecies()))
+                + "\nTNT_latest=" + fmt(metrics.latestTnt())
+                + "\nEND_trend=" + metrics.endTrend()
+                + "\nTNT_trend=" + metrics.tntTrend()
+                + "\nstatus=" + metrics.ecosystemStatus();
+    }
+
+    private String statusBadge(EcosystemStatus status) {
+        String colorClass = switch (status) {
+            case HEALTHY_ECOSYSTEM -> "green";
+            case EARLY_DIVERGENCE, TURBULENT, STAGNANT -> "yellow";
+            case COLLAPSED, FRAGMENTED -> "red";
+        };
+        return "<span class=\"badge " + colorClass + "\">" + status.name() + "</span>";
+    }
 }

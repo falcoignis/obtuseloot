@@ -1,0 +1,16 @@
+{
+  "END_artifacts": 1.2663,
+  "END_species": 1.5586,
+  "TNT_per_season": [
+    "season-1\u21922:0.002"
+  ],
+  "END_trend": [
+    1.2624,
+    1.2663
+  ],
+  "TNT_trend": [
+    0.002
+  ],
+  "ecosystem_status": "STAGNANT",
+  "interpretation": "Low END with low TNT indicates monoculture stagnation."
+}

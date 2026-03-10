@@ -1,5 +1,6 @@
 package obtuseloot.dashboard;
 
+import obtuseloot.analytics.EcosystemStatus;
 import obtuseloot.analytics.RankAbundanceAnalyzer;
 import obtuseloot.analytics.RankAbundanceAnalyzer.RankAbundanceResult;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,12 +54,20 @@ public class DashboardService {
                 branch.entropy(),
                 lineage.concentration());
 
+        EcosystemGaugeData gaugeData = loadEcosystemGaugeData();
+
         return new DashboardMetrics(
                 ecosystem.dominanceRatio(),
                 branch.entropy(),
                 lineage.concentration(),
                 trait.variance(),
-                collapseRisk);
+                collapseRisk,
+                gaugeData.endArtifacts(),
+                gaugeData.endSpecies(),
+                gaugeData.latestTnt(),
+                gaugeData.endTrend(),
+                gaugeData.tntTrend(),
+                gaugeData.status());
     }
 
     public Path regenerateDashboard() throws IOException {
@@ -120,4 +130,70 @@ public class DashboardService {
         }
         return result;
     }
+
+    private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
+        Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
+        if (!Files.exists(path)) {
+            return new EcosystemGaugeData(0.0D, null, 0.0D, List.of(), List.of(), EcosystemStatus.STAGNANT);
+        }
+        String content = Files.readString(path);
+        double endArtifacts = extractNumber(content, "END_artifacts");
+        Double endSpecies = extractNullableNumber(content, "END_species");
+        List<Double> endTrend = extractDoubleArray(content, "END_trend");
+        List<Double> tntTrend = extractDoubleArray(content, "TNT_trend");
+        String statusRaw = extractString(content, "ecosystem_status");
+        EcosystemStatus status;
+        try {
+            status = statusRaw == null || statusRaw.isBlank() ? EcosystemStatus.STAGNANT : EcosystemStatus.valueOf(statusRaw);
+        } catch (IllegalArgumentException ex) {
+            status = EcosystemStatus.STAGNANT;
+        }
+        double latestTnt = tntTrend.isEmpty() ? 0.0D : tntTrend.get(tntTrend.size() - 1);
+        return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, endTrend, tntTrend, status);
+    }
+
+    private double extractNumber(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)").matcher(content);
+        return matcher.find() ? Double.parseDouble(matcher.group(1)) : 0.0D;
+    }
+
+    private Double extractNullableNumber(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*(null|[0-9]+(?:\\.[0-9]+)?)").matcher(content);
+        if (!matcher.find()) {
+            return null;
+        }
+        return "null".equals(matcher.group(1)) ? null : Double.parseDouble(matcher.group(1));
+    }
+
+    private String extractString(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]+)\"").matcher(content);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private List<Double> extractDoubleArray(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL).matcher(content);
+        if (!matcher.find()) {
+            return List.of();
+        }
+        String body = matcher.group(1).trim();
+        if (body.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = body.split(",");
+        List<Double> out = new java.util.ArrayList<>();
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                out.add(Double.parseDouble(trimmed));
+            }
+        }
+        return out;
+    }
+
+    private record EcosystemGaugeData(double endArtifacts,
+                                      Double endSpecies,
+                                      double latestTnt,
+                                      List<Double> endTrend,
+                                      List<Double> tntTrend,
+                                      EcosystemStatus status) {}
 }
