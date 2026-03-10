@@ -33,6 +33,7 @@ public class DashboardDataAssembler {
         data.put("heatmapImage", "../visualizations/trait-interaction-heatmap.png");
         data.put("heatmapJson", "../visualizations/trait-interaction-matrix.json");
         data.put("collapseMetrics", parseCollapse(analyticsRoot.resolve("ecosystem-health-report.md")));
+        data.put("speciesNicheMetrics", parseSpeciesNicheMetrics(analyticsRoot));
         return data;
     }
 
@@ -70,4 +71,57 @@ public class DashboardDataAssembler {
         }
         return result;
     }
+
+    private Map<String, Object> parseSpeciesNicheMetrics(Path analyticsRoot) throws IOException {
+        Map<String, Object> out = new LinkedHashMap<>();
+        Path speciation = analyticsRoot.resolve("speciation-distribution.json");
+        Path nicheMap = analyticsRoot.resolve("species-niche-map.json");
+        Path crowding = analyticsRoot.resolve("niche-crowding-distribution.json");
+        if (!Files.exists(speciation) || !Files.exists(nicheMap) || !Files.exists(crowding)) {
+            return out;
+        }
+        String speciationContent = Files.readString(speciation);
+        String nicheContent = Files.readString(nicheMap);
+        String crowdingContent = Files.readString(crowding);
+        out.put("activeSpecies", extractNumber(speciationContent, "activeSpecies"));
+        out.put("nicheCount", parseIntegerMap(speciationContent, "speciesPerLineage").size());
+        out.put("speciesPerNiche", parseIntegerMap(nicheContent, "competingSpeciesPerNiche"));
+        out.put("nicheTurnover", parseIntegerMap(nicheContent, "speciesMigrationCounts").values().stream().mapToInt(Integer::intValue).sum());
+        out.put("dominantNicheShare", extractMaxShare(crowdingContent, "occupancyByNiche"));
+        out.put("overcrowdedNicheCount", extractNumber(crowdingContent, "overcrowdedNicheCount"));
+        out.put("dominantSpeciesShare", extractNumber(speciationContent, "dominantSpeciesConcentration"));
+        return out;
+    }
+
+    private double extractNumber(String content, String key) {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
+        Matcher matcher = pattern.matcher(content);
+        if (!matcher.find()) {
+            return 0.0D;
+        }
+        return Double.parseDouble(matcher.group(1));
+    }
+
+    private double extractMaxShare(String content, String section) {
+        Map<String, Double> map = parseDoubleMap(content, section);
+        if (map.isEmpty()) {
+            return 0.0D;
+        }
+        return map.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0D);
+    }
+
+    private Map<String, Double> parseDoubleMap(String content, String section) {
+        Pattern sectionPattern = Pattern.compile("\"" + Pattern.quote(section) + "\"\\s*:\\s*\\{([^}]*)}", Pattern.DOTALL);
+        Matcher sectionMatcher = sectionPattern.matcher(content);
+        if (!sectionMatcher.find()) {
+            return new LinkedHashMap<>();
+        }
+        Matcher entryMatcher = ENTRY_PATTERN.matcher(sectionMatcher.group(1));
+        Map<String, Double> result = new LinkedHashMap<>();
+        while (entryMatcher.find()) {
+            result.put(entryMatcher.group(1), Double.parseDouble(entryMatcher.group(2)));
+        }
+        return result;
+    }
+
 }
