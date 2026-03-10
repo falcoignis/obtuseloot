@@ -14,6 +14,7 @@ public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
 
     private long artifactSeed;
+    private String artifactStorageKey;
     private UUID ownerId;
     private String generatedName;
     private String itemCategory;
@@ -59,6 +60,7 @@ public class Artifact {
 
     public Artifact(UUID ownerId, String generatedName) {
         this.ownerId = ownerId;
+        this.artifactStorageKey = buildDefaultStorageKey(ownerId);
         this.generatedName = generatedName;
         this.itemCategory = "artifact";
         this.archetypePath = "unformed";
@@ -113,7 +115,20 @@ public class Artifact {
     public long getArtifactSeed() { return artifactSeed; }
     public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
     public UUID getOwnerId() { return ownerId; }
-    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
+        if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
+            artifactStorageKey = buildDefaultStorageKey(ownerId);
+        }
+    }
+    public String getArtifactStorageKey() { return artifactStorageKey; }
+    public void setArtifactStorageKey(String artifactStorageKey) {
+        if (artifactStorageKey == null || artifactStorageKey.isBlank()) {
+            this.artifactStorageKey = buildDefaultStorageKey(ownerId);
+            return;
+        }
+        this.artifactStorageKey = artifactStorageKey;
+    }
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return generatedName; }
@@ -211,5 +226,9 @@ public class Artifact {
         if (history.size() > MAX_HISTORY_ENTRIES) {
             history.remove(0);
         }
+    }
+
+    public static String buildDefaultStorageKey(UUID ownerId) {
+        return "player:" + ownerId;
     }
 }

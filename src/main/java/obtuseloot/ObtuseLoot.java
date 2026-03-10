@@ -1,6 +1,7 @@
 package obtuseloot;
 
 import obtuseloot.artifacts.ArtifactManager;
+import obtuseloot.artifacts.ArtifactItemStorage;
 import obtuseloot.abilities.AbilityRegistry;
 import obtuseloot.abilities.ItemAbilityManager;
 import obtuseloot.abilities.SeededAbilityResolver;
@@ -42,6 +43,7 @@ public class ObtuseLoot extends JavaPlugin {
     private PersistenceManager persistenceManager;
     private PlayerStateStore playerStateStore;
     private ArtifactManager artifactManager;
+    private ArtifactItemStorage artifactItemStorage;
     private ReputationManager reputationManager;
     private CombatContextManager combatContextManager;
     private EvolutionEngine evolutionEngine;
@@ -79,6 +81,7 @@ public class ObtuseLoot extends JavaPlugin {
         }
         playerStateStore = persistenceManager.stateStore();
         artifactManager = new ArtifactManager(playerStateStore);
+        artifactItemStorage = new ArtifactItemStorage(this);
         reputationManager = new ReputationManager(playerStateStore);
 
         combatContextManager = new CombatContextManager();
@@ -182,6 +185,7 @@ public class ObtuseLoot extends JavaPlugin {
     public PlayerStateStore getPlayerStateStore() { return playerStateStore; }
     public PersistenceManager getPersistenceManager() { return persistenceManager; }
     public ArtifactManager getArtifactManager() { return artifactManager; }
+    public ArtifactItemStorage getArtifactItemStorage() { return artifactItemStorage; }
     public ReputationManager getReputationManager() { return reputationManager; }
     public CombatContextManager getCombatContextManager() { return combatContextManager; }
     public EvolutionEngine getEvolutionEngine() { return evolutionEngine; }

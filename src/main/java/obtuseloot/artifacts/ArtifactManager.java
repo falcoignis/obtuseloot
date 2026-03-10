@@ -13,6 +13,7 @@ public class ArtifactManager {
     private final PlayerStateStore stateStore;
     private final ArtifactSeedFactory seedFactory;
     private final Map<UUID, Artifact> loadedArtifacts = new ConcurrentHashMap<>();
+    private final Map<String, UUID> storageToOwner = new ConcurrentHashMap<>();
 
     public ArtifactManager(PlayerStateStore stateStore) {
         this.stateStore = stateStore;
@@ -23,6 +24,10 @@ public class ArtifactManager {
         return loadedArtifacts.computeIfAbsent(playerId, id -> {
             Artifact loaded = stateStore.loadArtifact(id);
             Artifact artifact = loaded != null ? loaded : ArtifactGenerator.generateFor(id);
+            if (artifact.getArtifactStorageKey() == null || artifact.getArtifactStorageKey().isBlank()) {
+                artifact.setArtifactStorageKey(Artifact.buildDefaultStorageKey(id));
+            }
+            storageToOwner.put(artifact.getArtifactStorageKey(), id);
             if (ObtuseLoot.get() != null) {
                 ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
             }
@@ -43,7 +48,10 @@ public class ArtifactManager {
 
     public void unload(UUID playerId) {
         save(playerId);
-        loadedArtifacts.remove(playerId);
+        Artifact removed = loadedArtifacts.remove(playerId);
+        if (removed != null) {
+            storageToOwner.remove(removed.getArtifactStorageKey());
+        }
     }
 
     public Map<UUID, Artifact> getLoadedArtifacts() {
@@ -60,7 +68,27 @@ public class ArtifactManager {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
         }
         loadedArtifacts.put(playerId, fresh);
+        storageToOwner.put(fresh.getArtifactStorageKey(), playerId);
         return fresh;
+    }
+
+    public Artifact resolveByStorageKey(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            return null;
+        }
+        UUID owner = storageToOwner.get(storageKey);
+        if (owner != null) {
+            return getOrCreate(owner);
+        }
+        if (storageKey.startsWith("player:")) {
+            try {
+                UUID parsed = UUID.fromString(storageKey.substring("player:".length()));
+                return getOrCreate(parsed);
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     public Artifact reseed(UUID playerId, long newSeed) {
