@@ -3,7 +3,7 @@
 ## 1) Scope / sample size
 - Worlds: 4
 - Players per world: 40
-- Seasons per world: 3
+- Seasons per world: 2
 - Sessions per season: 4
 - Shared deterministic seed pool: yes
 
@@ -27,7 +27,7 @@
 - World D dominant trio: chaos / consistency.boss-ledger / gilded
 
 ## 5) Rare but viable systems
-- Rare lineage persistence A/B/C/D: 71 / 69 / 67 / 70
+- Rare lineage persistence A/B/C/D: 68 / 71 / 74 / 69
 - Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.
 
 ## 6) Dead or suspicious systems

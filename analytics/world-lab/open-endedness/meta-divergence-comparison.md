@@ -13,10 +13,10 @@
 ## 4) Dominant families / branches / lineages / mechanics
 | World | Dominant Family | Dominant Branch | Dominant Lineage | Family Turnover | Branch Entropy | Gate Diversity | Lineage Concentration |
 |---|---|---|---|---:|---:|---:|---:|
-| A | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.5724 | 1.9887 | 0.0452 |
-| B | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.5050 | 1.9861 | 0.0474 |
-| C | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.5901 | 1.9713 | 0.0497 |
-| D | chaos | consistency.boss-ledger | gilded | 0.2000 | 1.6186 | 1.9857 | 0.0459 |
+| A | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.6264 | 1.9757 | 0.0483 |
+| B | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.5367 | 1.9837 | 0.0460 |
+| C | chaos | mobility.lane-dancer | gilded | 0.0000 | 2.6451 | 1.9590 | 0.0444 |
+| D | chaos | consistency.boss-ledger | gilded | 0.0000 | 1.6279 | 1.9903 | 0.0464 |
 
 ## 5) Rare but viable systems
 - See `rareLineagePersistence` and `noveltyRatePerSeason` in `meta-divergence-test-data.json`.

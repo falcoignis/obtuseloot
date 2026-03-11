@@ -1,7 +1,8 @@
-# Novelty Open-Endedness Review
+# PNNC Open-Endedness Review
 
-- END proxy: adaptiveNicheCountTrend=[1.0, 1.0, 1.0]
-- TNT proxy: top5BranchTurnoverTrend=[0.3333, 0.0]
-- NSER trend: [0.0, 0.0, 1.0]
-- PNNC trend: [0, 0, 1]
-- Combined END + TNT + NSER + PNNC interpretation: ecosystem is producing weak but durable novelty.
+1. are new niches appearing? true
+2. are they surviving long enough to matter? false
+3. is the system only reshuffling old niches? true
+4. has the ecosystem crossed into durable ecological expansion? false
+
+END + TNT + NSER + PNNC interpretation: PNNC=0: ecosystem is generating temporary novelty but no durable novel niches.

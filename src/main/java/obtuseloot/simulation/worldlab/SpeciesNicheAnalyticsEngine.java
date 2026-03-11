@@ -12,7 +12,7 @@ public class SpeciesNicheAnalyticsEngine {
                                              double traitEcologyWeight,
                                              double behaviorWeight) {
         public static BehavioralProjectionConfig defaults() {
-            return new BehavioralProjectionConfig(true, 0.35D, 0.65D);
+            return new BehavioralProjectionConfig(true, 0.25D, 0.75D);
         }
     }
     public record PenaltyResult(double effectiveScore,
@@ -37,29 +37,29 @@ public class SpeciesNicheAnalyticsEngine {
     private static final double MAX_PENALTY = 1.15D;
     private static final double MAX_COEVOLUTION_MODIFIER = 0.08D;
     private static final double MAX_NICHE_BIAS = 0.05D;
-    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.20D;
-    private static final double NICHE_ASSIGNMENT_MARGIN = 0.08D;
-    private static final double HYSTERESIS_MARGIN = 0.09D;
+    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.17D;
+    private static final double NICHE_ASSIGNMENT_MARGIN = 0.11D;
+    private static final double HYSTERESIS_MARGIN = 0.10D;
     private static final int MAX_NICHES = 8;
     private static final int MIN_NICHE_OBSERVATIONS_FOR_STABILITY = 20;
-    private static final int CANDIDATE_MIN_SUPPORT = 7;
+    private static final int CANDIDATE_MIN_SUPPORT = 8;
     private static final int CANDIDATE_MIN_PERSISTENCE = 3;
-    private static final double NICHE_MERGE_DISTANCE = 0.08D;
+    private static final double NICHE_MERGE_DISTANCE = 0.05D;
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
     private static final int NICHE_VECTOR_DIMENSIONS = 12;
     private static final List<String> NICHE_DIMENSION_LABELS = List.of(
-            "trigger_activation_mix",
-            "mechanic_activation_mix",
+            "trigger_class_activation_distribution",
+            "mechanic_usage_distribution",
             "support_action_ratio",
             "damage_action_ratio",
             "persistence_action_ratio",
             "mobility_usage_ratio",
             "environment_dependent_activation_ratio",
             "memory_driven_activation_ratio",
-            "latent_activation_rate",
-            "persistence_window_usage",
-            "interaction_diversity",
-            "activation_burstiness");
+            "latent_trait_activation_rate",
+            "activation_temporal_density",
+            "encounter_persistence_behavior",
+            "interaction_diversity");
 
     private final Random random;
     private final FitnessSharingConfig fitnessSharing;
@@ -848,7 +848,7 @@ public class SpeciesNicheAnalyticsEngine {
             if (previousNiche != null && niches.containsKey(previousNiche)) {
                 return previousNiche;
             }
-            return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.85D) ? bestNiche : "unassigned";
+            return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.80D) ? bestNiche : "unassigned";
         }
 
         if (previousNiche != null && niches.containsKey(previousNiche) && !previousNiche.equals(bestNiche)) {
@@ -871,7 +871,7 @@ public class SpeciesNicheAnalyticsEngine {
         String key = candidateKey(vector);
         CandidateNiche candidate = candidateNiches.computeIfAbsent(key, ignored -> new CandidateNiche(vector, season));
         candidate.observe(vector, season);
-        boolean sufficientlySeparated = nearestDistance(candidate.prototype()) > (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD + 0.06D);
+        boolean sufficientlySeparated = nearestDistance(candidate.prototype()) > (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD + 0.08D);
         boolean promotable = (candidate.support >= CANDIDATE_MIN_SUPPORT
                 || candidate.persistenceSeasons() >= CANDIDATE_MIN_PERSISTENCE)
                 && sufficientlySeparated;
@@ -1369,18 +1369,18 @@ public class SpeciesNicheAnalyticsEngine {
         String mechanicCsv = Optional.ofNullable(artifact.getLastMechanicProfile()).orElse("").toLowerCase(Locale.ROOT);
 
         double[] vector = new double[NICHE_VECTOR_DIMENSIONS];
-        vector[0] = normalizedEntropy(triggerTokens); // trigger activation mix
-        vector[1] = normalizedEntropy(mechanicTokens); // mechanic activation mix
-        vector[2] = supportActionRatio(triggerCsv, mechanicCsv); // support vs damage vs persistence ratio (support axis)
-        vector[3] = damageActionRatio(triggerCsv, mechanicCsv); // damage axis
-        vector[4] = persistenceActionRatio(triggerCsv, mechanicCsv); // persistence axis
-        vector[5] = clamp(markerShare(triggerCsv + "," + mechanicCsv + "," + String.join(",", branchTokens.keySet()), "move", "mobility", "dash", "reposition", "teleport"), 0.0D, 1.0D); // mobility usage ratio
-        vector[6] = environmentDependentActivationRatio(gateTokens, triggerCsv, mechanicCsv); // environment dependent activation ratio
-        vector[7] = memoryDrivenActivationRatio(memory, triggerCsv, mechanicCsv, gateTokens); // memory driven activation ratio
-        vector[8] = clamp(artifact.getLastLatentActivationRate(), 0.0D, 1.0D); // latent activation rate
-        vector[9] = persistenceWindowUsage(successful, triggerCsv, mechanicCsv); // average persistence / survival window usage
-        vector[10] = interactionDiversitySignal(profile, triggerTokens, mechanicTokens); // interaction diversity and encounter participation style
-        vector[11] = activationBurstiness(triggerTokens, mechanicTokens); // activation density / burstiness
+        vector[0] = normalizedEntropy(triggerTokens);
+        vector[1] = normalizedEntropy(mechanicTokens);
+        vector[2] = supportActionRatio(triggerCsv, mechanicCsv);
+        vector[3] = damageActionRatio(triggerCsv, mechanicCsv);
+        vector[4] = persistenceActionRatio(triggerCsv, mechanicCsv);
+        vector[5] = mobilityUsageRatio(triggerCsv, mechanicCsv, branchTokens, profile);
+        vector[6] = environmentDependentActivationRatio(gateTokens, triggerCsv, mechanicCsv);
+        vector[7] = memoryDrivenActivationRatio(memory, triggerCsv, mechanicCsv, gateTokens);
+        vector[8] = latentTraitActivationRate(artifact, activatedLatent);
+        vector[9] = activationTemporalDensity(triggerTokens, mechanicTokens, triggerCsv, mechanicCsv);
+        vector[10] = encounterPersistenceBehavior(successful, triggerCsv, mechanicCsv, gateTokens);
+        vector[11] = interactionDiversitySignal(profile, triggerTokens, mechanicTokens);
         return vector;
     }
 
@@ -1537,9 +1537,62 @@ public class SpeciesNicheAnalyticsEngine {
         return clamp(memorySignal + triggerSignal + gateSignal, 0.0D, 1.0D);
     }
 
-    private double persistenceWindowUsage(boolean successful, String triggers, String mechanics) {
-        double base = markerShare(triggers + "," + mechanics, "on_low_health", "recovery_window", "defensive_threshold", "survival", "shield_window");
-        return successful ? clamp(base + 0.05D, 0.0D, 1.0D) : base;
+    private double mobilityUsageRatio(String triggers,
+                                      String mechanics,
+                                      Map<String, Integer> branchTokens,
+                                      AbilityProfile profile) {
+        double triggerMechanicMobility = markerShare(triggers + "," + mechanics,
+                "move", "mobility", "dash", "reposition", "teleport", "blink", "phase");
+        double branchMobility = markerShare(String.join(",", branchTokens.keySet()), "mobility", "scout", "skirmish", "dash");
+        double abilityMobility = 0.0D;
+        if (profile != null && profile.abilities() != null && !profile.abilities().isEmpty()) {
+            int mobilityAbilities = 0;
+            for (AbilityDefinition definition : profile.abilities()) {
+                String name = definition.id().toLowerCase(Locale.ROOT);
+                if (name.contains("dash") || name.contains("teleport") || name.contains("mobility") || name.contains("reposition")) {
+                    mobilityAbilities++;
+                }
+            }
+            abilityMobility = mobilityAbilities / (double) profile.abilities().size();
+        }
+        return clamp((triggerMechanicMobility * 0.5D) + (branchMobility * 0.2D) + (abilityMobility * 0.3D), 0.0D, 1.0D);
+    }
+
+    private double latentTraitActivationRate(Artifact artifact, String activatedLatent) {
+        double storedRate = clamp(artifact.getLastLatentActivationRate(), 0.0D, 1.0D);
+        double latentSignal = activatedLatent.isBlank() || "[]".equals(activatedLatent)
+                ? 0.0D
+                : clamp(tokens(activatedLatent).size() / 6.0D, 0.0D, 0.35D);
+        return clamp(storedRate * 0.75D + latentSignal, 0.0D, 1.0D);
+    }
+
+    private double activationTemporalDensity(Map<String, Integer> triggerTokens,
+                                             Map<String, Integer> mechanicTokens,
+                                             String triggers,
+                                             String mechanics) {
+        double concentrated = (topShare(triggerTokens) + topShare(mechanicTokens)) / 2.0D;
+        double eventMarkers = markerShare(triggers + "," + mechanics,
+                "on_hit", "on_kill", "on_crit", "chain", "burst", "window", "loop");
+        double diversityPenalty = (normalizedEntropy(triggerTokens) + normalizedEntropy(mechanicTokens)) / 2.0D;
+        return clamp((concentrated * 0.5D) + (eventMarkers * 0.35D) + ((1.0D - diversityPenalty) * 0.15D), 0.0D, 1.0D);
+    }
+
+    private double encounterPersistenceBehavior(boolean successful,
+                                                String triggers,
+                                                String mechanics,
+                                                Map<String, Integer> gateTokens) {
+        double sustainMarkers = markerShare(triggers + "," + mechanics,
+                "on_low_health", "recovery_window", "defensive_threshold", "survival", "shield_window", "stabilize");
+        double persistenceGateRatio = 0.0D;
+        if (!gateTokens.isEmpty()) {
+            long persistentGates = gateTokens.keySet().stream()
+                    .map(token -> token.toLowerCase(Locale.ROOT))
+                    .filter(token -> token.contains("persist") || token.contains("survival") || token.contains("recovery") || token.contains("stability"))
+                    .count();
+            persistenceGateRatio = persistentGates / (double) gateTokens.size();
+        }
+        double successPersistence = successful ? 0.12D : 0.0D;
+        return clamp((sustainMarkers * 0.65D) + (persistenceGateRatio * 0.23D) + successPersistence, 0.0D, 1.0D);
     }
 
     private double interactionDiversitySignal(AbilityProfile profile,
@@ -1554,15 +1607,6 @@ public class SpeciesNicheAnalyticsEngine {
         return clamp((triggerDiversity * 0.35D) + (mechanicDiversity * 0.35D) + (abilityBreadth * 0.30D), 0.0D, 1.0D);
     }
 
-    private double activationBurstiness(Map<String, Integer> triggerTokens, Map<String, Integer> mechanicTokens) {
-        double triggerTop = topShare(triggerTokens);
-        double mechanicTop = topShare(mechanicTokens);
-        double triggerEntropy = normalizedEntropy(triggerTokens);
-        double mechanicEntropy = normalizedEntropy(mechanicTokens);
-        double concentration = (triggerTop + mechanicTop) / 2.0D;
-        double spread = (triggerEntropy + mechanicEntropy) / 2.0D;
-        return clamp((concentration * 0.7D) + ((1.0D - spread) * 0.3D), 0.0D, 1.0D);
-    }
     private int hashTokens(String value) {
         if (value == null || value.isBlank()) {
             return 0;
@@ -1590,7 +1634,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedDistance(double[] a, double[] b) {
-        double[] w = {1.25D, 1.25D, 1.35D, 1.35D, 1.25D, 1.20D, 1.15D, 1.15D, 1.10D, 1.10D, 1.20D, 1.15D};
+        double[] w = {1.30D, 1.30D, 1.45D, 1.45D, 1.35D, 1.30D, 1.25D, 1.25D, 1.20D, 1.20D, 1.28D, 1.22D};
         double distance = 0.0D;
         double weightSum = 0.0D;
         for (int i = 0; i < a.length; i++) {
@@ -1793,14 +1837,14 @@ public class SpeciesNicheAnalyticsEngine {
         private int support;
         private int firstSeason;
         private int lastSeason;
-        private double branchDominance;
+        private double actionDominance;
 
         private CandidateNiche(double[] vector, int season) {
             this.prototype = Arrays.copyOf(vector, vector.length);
             this.support = 0;
             this.firstSeason = season;
             this.lastSeason = season;
-            this.branchDominance = vector.length > 12 ? clampStatic(vector[12], 0.0D, 1.0D) : 0.5D;
+            this.actionDominance = dominantActionAxis(vector);
         }
 
         private void observe(double[] vector, int season) {
@@ -1810,9 +1854,7 @@ public class SpeciesNicheAnalyticsEngine {
             for (int i = 0; i < prototype.length; i++) {
                 prototype[i] = prototype[i] * (1.0D - alpha) + vector[i] * alpha;
             }
-            if (vector.length > 12) {
-                branchDominance = (branchDominance * (1.0D - alpha)) + (clampStatic(vector[12], 0.0D, 1.0D) * alpha);
-            }
+            actionDominance = (actionDominance * (1.0D - alpha)) + (dominantActionAxis(vector) * alpha);
         }
 
         private int persistenceSeasons() {
@@ -1820,15 +1862,18 @@ public class SpeciesNicheAnalyticsEngine {
         }
 
         private double familyPurity() {
-            return branchDominance;
+            return actionDominance;
         }
 
         private double[] prototype() {
             return Arrays.copyOf(prototype, prototype.length);
         }
 
-        private static double clampStatic(double value, double min, double max) {
-            return Math.max(min, Math.min(max, value));
+        private static double dominantActionAxis(double[] vector) {
+            if (vector.length <= 4) {
+                return 0.5D;
+            }
+            return Math.max(vector[2], Math.max(vector[3], vector[4]));
         }
     }
 

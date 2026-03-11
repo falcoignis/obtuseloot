@@ -1,37 +1,30 @@
 # Behavioral Signature Projection Report
 
 ## Behavioral features used
-- trigger activation mix by trigger family
-- mechanic activation mix by mechanic family
-- support/damage/persistence action ratios
-- mobility usage ratio
-- environment-dependent activation ratio
-- memory-driven activation ratio
-- latent activation rate
-- persistence/survival window usage
-- interaction diversity / encounter participation style
-- activation burstiness
+- Dimensions: [trigger_class_activation_distribution, mechanic_usage_distribution, support_action_ratio, damage_action_ratio, persistence_action_ratio, mobility_usage_ratio, environment_dependent_activation_ratio, memory_driven_activation_ratio, latent_trait_activation_rate, activation_temporal_density, encounter_persistence_behavior, interaction_diversity]
+- Top separation contributors: [trigger_class_activation_distribution, mechanic_usage_distribution, interaction_diversity]
+- Strategy-level signatures combine trigger/mechanic mixes, action ratios, mobility, environment/memory dependency, latent activation, temporal density, encounter persistence behavior, and interaction diversity.
 
 ## Normalization strategy
-- All dimensions are bounded to [0,1] via normalized entropy, marker-share ratios, or capped rates.
-- Population-size-dependent raw counts are avoided.
+- All dimensions are normalized to [0,1] using entropy, marker shares, bounded rates, or capped proportions.
+- Raw population counts are avoided; ratios and bounded signals dominate the signature.
 
 ## Trait vs behavior weighting
-- behavioralProjection.enabled = true
-- traitEcologyWeight = 0.35
-- behaviorWeight = 0.65
-- mode = behavior-dominated
+- Enabled: true
+- traitEcologyWeight: 0.25
+- behaviorWeight: 0.75
+- Projection mode: behavior-dominated
 
 ## Previously merged strategies now separated
-- Top separation dimensions: []
-- Interpretability summary: {'niche-1': 'stable niche with dominant branch=survival.guardian, dominant family=chaos, successRate=0.97'}
+- Separation dimensions with strongest variance now: [trigger_class_activation_distribution, mechanic_usage_distribution, interaction_diversity]
+- Niche interpretability map: {niche-1=stable niche with dominant branch=chaos.sprawl, dominant family=survival, successRate=0.71, niche-2=emergent niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.95}
 
-## Impact on niche count and occupancy distribution
-- Niche count: 1
-- Niche occupancy: {'niche-1': 160}
-- Niche separation score: 0.0
+## Impact on niche count and occupancy
+- Niche count: 2
+- Occupancy: {niche-1=39, niche-2=1}
+- Dominant niche share: 0.975
 
 ## Risk analysis
-- Collapse warning: warning: broad niche collapse risk detected
 - Fragmentation warning: none
-- Stability controls (margin/hysteresis/min-support promotion/merge-prune) remain active in niche analytics engine.
+- Collapse warning: warning: broad niche collapse risk detected
+- Stability controls preserved: margin/hysteresis/candidate promotion/merge-prune remain active.

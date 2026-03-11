@@ -6,12 +6,12 @@ False divergence means the ecology appears active (species/niches/turnover) but 
 - high species count with weak divergence: false
 - high niche count with weak END: false
 - high TNT with low NSER: false
-- PNNC remains zero: false
+- PNNC remains zero: true
 - relabeling/migration noise: false
-- novelty persistence weak: false
+- novelty persistence weak: true
 - dominant attractor remains sticky: true
 
 ## Diagnosis
-- Current diagnostic state: STAGNANT_ATTRACTOR
+- Current diagnostic state: COLLAPSED_MONOCULTURE
 - False divergence flagged automatically: false
-- Summary: Turnover is near zero with weak novelty, indicating a stagnant ecological basin.
+- Summary: END/TNT/NSER are all low, indicating collapse into a monoculture attractor.

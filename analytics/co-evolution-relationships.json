@@ -1,136 +1,106 @@
 {
-  "sampleSize": 160,
+  "sampleSize": 40,
   "competitiveRelationships": [{
-      "pair": "species-root-graveborn<->species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2",
-      "score": 1.0,
-      "coOccurrences": 7,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
-      "pair": "species-root-graveborn<->species-root-lineage-5aee8c73-f279-3df7-b34a-7509862d402f",
-      "score": 1.0,
-      "coOccurrences": 7,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
-      "pair": "species-root-graveborn<->species-root-lineage-e936990e-ef62-3842-abb9-a40345601cd4",
-      "score": 1.0,
-      "coOccurrences": 7,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
-      "pair": "species-root-graveborn<->species-root-ashen",
-      "score": 1.0,
-      "coOccurrences": 98,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
-      "pair": "species-root-graveborn<->species-root-wild-65015",
-      "score": 1.0,
-      "coOccurrences": 49,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
-      "pair": "species-root-graveborn<->species-root-wild-14504",
-      "score": 1.0,
-      "coOccurrences": 63,
-      "sharedNicheFraction": 1.0,
-      "survivalTogether": 1.0
-    },{
       "pair": "species-root-graveborn<->species-root-wild-35642",
       "score": 1.0,
-      "coOccurrences": 70,
+      "coOccurrences": 12,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-graveborn<->species-root-gilded",
+      "pair": "species-root-graveborn<->species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7",
       "score": 1.0,
-      "coOccurrences": 154,
+      "coOccurrences": 4,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-wild-4233",
+      "score": 1.0,
+      "coOccurrences": 20,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "score": 1.0,
+      "coOccurrences": 4,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86",
+      "score": 1.0,
+      "coOccurrences": 4,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502",
+      "score": 1.0,
+      "coOccurrences": 4,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85",
+      "score": 1.0,
+      "coOccurrences": 4,
+      "sharedNicheFraction": 1.0,
+      "survivalTogether": 1.0
+    },{
+      "pair": "species-root-graveborn<->species-root-lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc",
+      "score": 1.0,
+      "coOccurrences": 4,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     }],
   "supportiveRelationships": [{
-      "pair": "species-root-gilded<->species-root-lineage-3e314fc5-2538-3569-a30e-9c7a331bf4d8",
-      "score": 1.0,
-      "coOccurrences": 22,
+      "pair": "species-root-wild-4233<->species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "score": 0.354,
+      "coOccurrences": 5,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-gilded<->species-root-lineage-c1138d9f-950e-337b-b5da-0bd1b59096ef",
-      "score": 1.0,
-      "coOccurrences": 22,
+      "pair": "species-root-wild-4233<->species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502",
+      "score": 0.354,
+      "coOccurrences": 5,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-gilded<->species-root-lineage-d3ee51dc-f089-35ed-a4da-91d51e156bd2",
-      "score": 1.0,
-      "coOccurrences": 22,
+      "pair": "species-root-wild-4233<->species-root-mirrored",
+      "score": 0.354,
+      "coOccurrences": 5,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-gilded<->species-root-lineage-55e559d0-1f2c-350a-89d5-344c82d5c25f",
-      "score": 1.0,
-      "coOccurrences": 22,
+      "pair": "species-root-wild-4233<->species-root-lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26",
+      "score": 0.354,
+      "coOccurrences": 5,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-ashen<->species-root-gilded",
-      "score": 0.9967272727272727,
-      "coOccurrences": 308,
+      "pair": "species-root-wild-35642<->species-root-wild-4233",
+      "score": 0.3442857142857143,
+      "coOccurrences": 15,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-gilded<->species-root-mirrored",
-      "score": 0.996,
-      "coOccurrences": 154,
+      "pair": "species-root-ashen<->species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd",
+      "score": 0.3425,
+      "coOccurrences": 3,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2<->species-root-gilded",
-      "score": 0.9948888888888889,
-      "coOccurrences": 22,
+      "pair": "species-root-ashen<->species-root-lineage-8c765107-856c-3879-a914-08c4c40e8684",
+      "score": 0.3425,
+      "coOccurrences": 3,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     },{
-      "pair": "species-root-lineage-5aee8c73-f279-3df7-b34a-7509862d402f<->species-root-gilded",
-      "score": 0.9948888888888889,
-      "coOccurrences": 22,
+      "pair": "species-root-graveborn<->species-root-lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72",
+      "score": 0.33666666666666667,
+      "coOccurrences": 4,
       "sharedNicheFraction": 1.0,
       "survivalTogether": 1.0
     }],
   "directedCompetitiveRelationships": [{
       "from": "species-root-graveborn",
-      "to": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2",
-      "to": "species-root-graveborn",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-lineage-5aee8c73-f279-3df7-b34a-7509862d402f",
-      "to": "species-root-graveborn",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-lineage-e936990e-ef62-3842-abb9-a40345601cd4",
-      "to": "species-root-graveborn",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-ashen",
-      "to": "species-root-graveborn",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-wild-65015",
-      "to": "species-root-graveborn",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-wild-14504",
-      "to": "species-root-graveborn",
+      "to": "species-root-wild-35642",
       "score": 1.0,
       "sameNicheFraction": 1.0
     },{
@@ -138,200 +108,177 @@
       "to": "species-root-graveborn",
       "score": 1.0,
       "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-wild-4233",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85",
+      "to": "species-root-graveborn",
+      "score": 1.0,
+      "sameNicheFraction": 1.0
     }],
   "directedSupportiveRelationships": [{
-      "from": "species-root-gilded",
-      "to": "species-root-lineage-3e314fc5-2538-3569-a30e-9c7a331bf4d8",
-      "score": 1.0,
+      "from": "species-root-wild-4233",
+      "to": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "score": 0.354,
       "sameNicheFraction": 1.0
     },{
-      "from": "species-root-lineage-3e314fc5-2538-3569-a30e-9c7a331bf4d8",
-      "to": "species-root-gilded",
-      "score": 1.0,
+      "from": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "to": "species-root-wild-4233",
+      "score": 0.354,
       "sameNicheFraction": 1.0
     },{
-      "from": "species-root-lineage-c1138d9f-950e-337b-b5da-0bd1b59096ef",
-      "to": "species-root-gilded",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-lineage-d3ee51dc-f089-35ed-a4da-91d51e156bd2",
-      "to": "species-root-gilded",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-lineage-55e559d0-1f2c-350a-89d5-344c82d5c25f",
-      "to": "species-root-gilded",
-      "score": 1.0,
-      "sameNicheFraction": 1.0
-    },{
-      "from": "species-root-ashen",
-      "to": "species-root-gilded",
-      "score": 0.9967272727272727,
+      "from": "species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502",
+      "to": "species-root-wild-4233",
+      "score": 0.354,
       "sameNicheFraction": 1.0
     },{
       "from": "species-root-mirrored",
-      "to": "species-root-gilded",
-      "score": 0.996,
+      "to": "species-root-wild-4233",
+      "score": 0.354,
       "sameNicheFraction": 1.0
     },{
-      "from": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2",
-      "to": "species-root-gilded",
-      "score": 0.9948888888888889,
+      "from": "species-root-lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26",
+      "to": "species-root-wild-4233",
+      "score": 0.354,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-wild-35642",
+      "to": "species-root-wild-4233",
+      "score": 0.3442857142857143,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-ashen",
+      "to": "species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd",
+      "score": 0.3425,
+      "sameNicheFraction": 1.0
+    },{
+      "from": "species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd",
+      "to": "species-root-ashen",
+      "score": 0.3425,
       "sameNicheFraction": 1.0
     }],
   "suppressionRelationships": [{
-      "pair": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2<->species-root-lineage-4b4b4bd8-748e-3b0a-858a-c3020eb206c5",
-      "score": 0.8448000000000001,
+      "pair": "species-root-wild-35642<->species-root-mirrored",
+      "score": 0.8200000000000001,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2<->species-root-lineage-a45cfe6c-2bd1-33ab-b4b9-ef38cd99f59f",
-      "score": 0.8448000000000001,
+      "pair": "species-root-wild-35642<->species-root-lineage-8c765107-856c-3879-a914-08c4c40e8684",
+      "score": 0.8200000000000001,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-e936990e-ef62-3842-abb9-a40345601cd4<->species-root-lineage-f3aeb78a-3aff-3638-afab-07052c44b233",
-      "score": 0.8448000000000001,
+      "pair": "species-root-lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc<->species-root-lineage-a16d24e6-f506-3036-bf71-7515af1b9a32",
+      "score": 0.8042666666666666,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-e936990e-ef62-3842-abb9-a40345601cd4<->species-root-lineage-6a623a39-7358-3540-8fc7-781a58714b87",
-      "score": 0.8448000000000001,
+      "pair": "species-root-gilded<->species-root-lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b",
+      "score": 0.798984126984127,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-9214f86b-7a1d-3495-a2b9-ab2405e2899f<->species-root-lineage-8fe09fea-ae72-3a95-acc8-f8692f77518c",
-      "score": 0.8448000000000001,
+      "pair": "species-root-wild-35642<->species-root-gilded",
+      "score": 0.79,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-61f5b8fc-9664-3fa9-807d-23b883f0d094<->species-root-lineage-5fa37044-c7a7-329c-9bd1-88f52bd98464",
-      "score": 0.8448000000000001,
+      "pair": "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7<->species-root-gilded",
+      "score": 0.7845079365079366,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-61f5b8fc-9664-3fa9-807d-23b883f0d094<->species-root-lineage-317e6a5d-8466-30d4-941b-52389665fdef",
-      "score": 0.8448000000000001,
+      "pair": "species-root-lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223<->species-root-gilded",
+      "score": 0.7845079365079366,
       "sharedNicheFraction": 1.0
     },{
-      "pair": "species-root-lineage-61f5b8fc-9664-3fa9-807d-23b883f0d094<->species-root-lineage-a514fcce-77ae-3d6d-8dd9-1c47a5cf3a22",
-      "score": 0.8448000000000001,
+      "pair": "species-root-mirrored<->species-root-gilded",
+      "score": 0.7760634920634921,
       "sharedNicheFraction": 1.0
     }],
   "migrationPressureRelationships": [{
       "species": "species-root-graveborn",
       "dominantNiche": "niche-1",
-      "pressure": 0.9562499999999985
-    },{
-      "species": "species-root-wild-65015",
-      "dominantNiche": "niche-1",
-      "pressure": 0.9562499999999985
-    },{
-      "species": "species-root-wild-4233",
-      "dominantNiche": "niche-1",
-      "pressure": 0.9562499999999985
-    },{
-      "species": "species-root-stormbound",
-      "dominantNiche": "niche-1",
-      "pressure": 0.9562499999999985
-    },{
-      "species": "species-root-mirrored",
-      "dominantNiche": "niche-1",
-      "pressure": 0.9562499999999985
-    },{
-      "species": "species-root-wild-14504",
-      "dominantNiche": "niche-1",
-      "pressure": 0.9437499999999984
+      "pressure": 0.8562698412698417
     },{
       "species": "species-root-wild-35642",
       "dominantNiche": "niche-1",
-      "pressure": 0.9374999999999984
+      "pressure": 0.8484005952380951
     },{
-      "species": "species-root-ashen",
+      "species": "species-root-gilded",
       "dominantNiche": "niche-1",
-      "pressure": 0.9124999999999985
+      "pressure": 0.8465212962962962
+    },{
+      "species": "species-root-wild-4233",
+      "dominantNiche": "niche-1",
+      "pressure": 0.8413948412698417
+    },{
+      "species": "species-root-lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b",
+      "dominantNiche": "niche-1",
+      "pressure": 0.722977380952381
+    },{
+      "species": "species-root-lineage-cd40524b-b534-3733-bf57-e54661e9fe25",
+      "dominantNiche": "niche-1",
+      "pressure": 0.7189549603174603
+    },{
+      "species": "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7",
+      "dominantNiche": "niche-1",
+      "pressure": 0.7184158730158727
+    },{
+      "species": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "dominantNiche": "niche-1",
+      "pressure": 0.7157882936507936
     }],
-  "nicheMigrationPressure": 0.7494941392048063,
-  "averageCompetitionPressure": 0.9607185329876898,
-  "averageSupportPressure": 0.661574773260845,
-  "averageModifier": -0.050040635089631746,
+  "nicheMigrationPressure": 0.41752476824618845,
+  "averageCompetitionPressure": 0.7533867262361865,
+  "averageSupportPressure": 0.3836157054471342,
+  "averageModifier": -0.042245871557090676,
   "speciesPersistenceDelta": {
-    "species-root-graveborn": -0.5903853276353276,
-    "species-root-lineage-e9ff9f64-0bca-33b2-94f6-f80e48fe89b2": -0.797605056980057,
-    "species-root-lineage-5aee8c73-f279-3df7-b34a-7509862d402f": -0.7929896723646723,
-    "species-root-lineage-e936990e-ef62-3842-abb9-a40345601cd4": -0.7929896723646723,
-    "species-root-ashen": -0.32771254208754197,
-    "species-root-wild-65015": -0.5879700854700853,
-    "species-root-wild-14504": -0.5192210428460434,
-    "species-root-wild-35642": -0.4735449735449735,
-    "species-root-gilded": -0.008953120953120841,
-    "species-root-lineage-9214f86b-7a1d-3495-a2b9-ab2405e2899f": -0.8140238603988604,
-    "species-root-lineage-0ce639b8-a440-383b-859d-4813b79adc68": -0.7823571937321936,
-    "species-root-lineage-61f5b8fc-9664-3fa9-807d-23b883f0d094": -0.8094084757834759,
-    "species-root-wild-4233": -0.6005813492063492,
-    "species-root-lineage-d84d9f9c-3451-3529-898e-067d2f1df59f": -0.8264348290598291,
-    "species-root-stormbound": -0.5899840252340249,
-    "species-root-lineage-89c35287-f3e5-3259-9008-f97acf1ccff4": -0.8218194444444444,
-    "species-root-lineage-3e314fc5-2538-3569-a30e-9c7a331bf4d8": -0.7789583333333332,
-    "species-root-lineage-a58c9a9e-da48-3650-b0a0-b6ca2dc7a2cb": -0.8094084757834759,
-    "species-root-lineage-f9e219be-8fd5-34ff-99c3-12607b06dff1": -0.8094084757834759,
-    "species-root-lineage-2d389c62-6662-3111-883e-108a05f7daa4": -0.8140238603988604,
-    "species-root-lineage-614803d1-a1f7-3fa1-868e-3d4135b0bfe5": -0.7951178774928774,
-    "species-root-lineage-d22bcef3-a939-30bb-8d01-f918ffaebc8d": -0.8317019230769231,
-    "species-root-lineage-fac438f7-028a-322d-9e72-ebe49641cfcc": -0.8270865384615385,
-    "species-root-lineage-ae7e8820-b17a-3250-9205-cfdae78327fa": -0.8076819800569801,
-    "species-root-mirrored": -0.5962222222222227,
-    "species-root-lineage-f3aeb78a-3aff-3638-afab-07052c44b233": -0.8102439458689459,
-    "species-root-lineage-4b4b4bd8-748e-3b0a-858a-c3020eb206c5": -0.8148593304843305,
-    "species-root-lineage-8a7ece99-9e6f-370c-ba46-a14344a2d89e": -0.8148593304843305,
-    "species-root-lineage-2f28dd81-a67c-38c7-85d5-0bd0e1215475": -0.8264348290598291,
-    "species-root-lineage-a45cfe6c-2bd1-33ab-b4b9-ef38cd99f59f": -0.8264348290598291,
-    "species-root-lineage-6a623a39-7358-3540-8fc7-781a58714b87": -0.8102439458689459,
-    "species-root-lineage-cb8c7307-bb5e-3c4e-b994-b6a376df9d90": -0.822871794871795,
-    "species-root-lineage-e1f654fb-ee9b-360c-b1e3-3b97f7f81237": -0.8143486467236467,
-    "species-root-lineage-5fa37044-c7a7-329c-9bd1-88f52bd98464": -0.7929896723646723,
-    "species-root-lineage-ffc0bcdb-a870-374c-b079-c132fa37b6fc": -0.797605056980057,
-    "species-root-lineage-b17a68a3-a057-3ec2-a0b8-a46417d4f441": -0.797605056980057,
-    "species-root-lineage-8e9ff70a-35bc-385d-afe9-2dce0c5c0366": -0.797605056980057,
-    "species-root-lineage-9ed42ce3-369d-37aa-b7f0-1d044dc83246": -0.7987321937321936,
-    "species-root-lineage-3ca02243-92c5-3a10-8b1a-890546edc11e": -0.7987321937321936,
-    "species-root-lineage-43e0caa5-1f51-3e2a-91c5-dd92ec3cf780": -0.8035772792022792,
-    "species-root-lineage-c9f9bab4-2e33-33ef-97e9-f126041b7ff7": -0.8035772792022792,
-    "species-root-lineage-0bc9d146-e37a-3520-9cd2-89f27566985a": -0.822871794871795,
-    "species-root-lineage-d73bb3ea-2125-3dbb-88c8-b3cb8ffbb2d2": -0.8139116809116809,
-    "species-root-lineage-317e6a5d-8466-30d4-941b-52389665fdef": -0.8110794159544159,
-    "species-root-lineage-3f165000-ac16-3d0a-bd17-6e98b9637c09": -0.8156948005698006,
-    "species-root-lineage-9f21e3e1-a915-326b-a219-69fa972480bc": -0.8156948005698006,
-    "species-root-lineage-b1022352-f0e4-343f-b5ed-0de4347528d0": -0.8140238603988604,
-    "species-root-lineage-80b1f9e3-0ff9-33f1-afa8-e0ac70f7eba4": -0.7823571937321936,
-    "species-root-lineage-5e711a46-6bc5-3b47-aff7-f11aecbcbde1": -0.8035772792022792,
-    "species-root-lineage-31ad0cbf-8212-39e7-b07f-6d8c1e2b6046": -0.8044127492877493,
-    "species-root-lineage-c6098856-f1e9-3258-a2f0-0fa0e7cbbb94": -0.797605056980057,
-    "species-root-lineage-f30df19c-b438-399b-a1ea-1f086dacb4bf": -0.7863230056980057,
-    "species-root-lineage-c1138d9f-950e-337b-b5da-0bd1b59096ef": -0.7621549145299145,
-    "species-root-lineage-25e3c141-3199-3319-9c5e-7fbafc7cac7e": -0.8110794159544159,
-    "species-root-lineage-f492e018-504e-3d3f-ac99-987488c4ad94": -0.7737589031339032,
-    "species-root-lineage-96ba9386-d5b4-3435-bfec-576ed4f6f74a": -0.7918486467236467,
-    "species-root-lineage-61a36112-a671-37a4-84ff-a4724a9a5b05": -0.8139116809116809,
-    "species-root-lineage-09c0a31a-f39d-3e96-b0be-3943dcd42889": -0.8205783475783475,
-    "species-root-lineage-5ed87ac1-7db3-3e7f-9bc3-961344dc32ec": -0.8205783475783475,
-    "species-root-lineage-fd9cf601-a78d-325e-9aa4-70ce9ae96c30": -0.8212735042735043,
-    "species-root-lineage-c03631e5-7f79-3dcd-8d64-5235d7b83079": -0.8251937321937322,
-    "species-root-lineage-8c489310-c4a5-300c-89ed-a5b9d5fb0760": -0.797605056980057,
-    "species-root-lineage-242a4c69-5f9b-3763-8737-b2f2010a9c22": -0.8189640313390314,
-    "species-root-lineage-a514fcce-77ae-3d6d-8dd9-1c47a5cf3a22": -0.8295384615384616,
-    "species-root-lineage-70a2a258-8457-3148-8eab-2b529cb6f5b8": -0.8179629629629629,
-    "species-root-lineage-f4049ae7-d52d-3478-94d4-27df97a7bdd7": -0.8148593304843306,
-    "species-root-lineage-26450db0-2f05-3bad-be8b-95b969bc950d": -0.8179629629629629,
-    "species-root-lineage-fc296088-dfea-3aa8-8fb5-3585df154ea3": -0.8027418091168091,
-    "species-root-lineage-d3ee51dc-f089-35ed-a4da-91d51e156bd2": -0.7853087606837605,
-    "species-root-lineage-781f9a50-a606-34fd-b0c0-40e45c9a89f2": -0.7910131766381766,
-    "species-root-lineage-44208134-6cff-3cc6-96f9-3bbe66ca611f": -0.7863230056980057,
-    "species-root-lineage-3ca9810a-023c-3acd-b610-e0435cadf527": -0.7737589031339032,
-    "species-root-lineage-55e559d0-1f2c-350a-89d5-344c82d5c25f": -0.7639497863247864,
-    "species-root-lineage-b97e5a01-2e45-3864-a41d-e96174b57f75": -0.7659383903133903,
-    "species-root-lineage-2ebed2a6-3124-389e-9ac2-10c330276475": -0.8179629629629629,
-    "species-root-lineage-a31be38c-751e-3aee-afe7-d56a68ff5e5f": -0.8076819800569801,
-    "species-root-lineage-47a8d2ff-ca57-3da3-a70d-13c22a63f187": -0.8112962962962964,
-    "species-root-lineage-05e120b1-b147-38ec-87a7-44313a31accc": -0.8156948005698006,
-    "species-root-lineage-8fe09fea-ae72-3a95-acc8-f8692f77518c": -0.8156948005698006
+    "species-root-graveborn": -0.7166533333333331,
+    "species-root-wild-35642": -0.7542019047619046,
+    "species-root-ashen": -0.7046666666666668,
+    "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": -0.8291999999999999,
+    "species-root-wild-4233": -0.6785371428571427,
+    "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a": -0.8063733333333333,
+    "species-root-lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": -0.8311999999999999,
+    "species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": -0.8111733333333333,
+    "species-root-lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": -0.8223999999999999,
+    "species-root-lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": -0.8221333333333333,
+    "species-root-lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": -0.8311999999999999,
+    "species-root-mirrored": -0.81944,
+    "species-root-lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": -0.8239733333333332,
+    "species-root-lineage-78621b02-9635-3285-a88c-048c91ea3001": -0.8191999999999999,
+    "species-root-lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": -0.826,
+    "species-root-lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": -0.8205333333333333,
+    "species-root-lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": -0.8208,
+    "species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": -0.8140333333333333,
+    "species-root-lineage-8c765107-856c-3879-a914-08c4c40e8684": -0.8174999999999999,
+    "species-root-lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": -0.8185333333333333,
+    "species-root-gilded": -0.7538552380952379,
+    "species-root-lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": -0.8168,
+    "species-root-lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": -0.8243999999999999,
+    "species-root-lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": -0.816,
+    "species-root-lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": -0.8223999999999999,
+    "species-root-lineage-cd40524b-b534-3733-bf57-e54661e9fe25": -0.8193333333333332
   },
-  "dominantAttractorConcentration": 0.1375,
-  "speciesDiversity": 3.7260646656625913,
-  "coOccurrenceNetworkSize": 3081
+  "dominantAttractorConcentration": 0.125,
+  "speciesDiversity": 3.0456489995354814,
+  "coOccurrenceNetworkSize": 325
 }

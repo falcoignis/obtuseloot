@@ -22,7 +22,7 @@ Classification snapshot:
 ## 3) Key findings
 - Classification: **designer-controlled**
 - NSER (World A latest): 1.0000
-- PNNC (World A latest): 1.0000
+- PNNC (World A latest): 0.0000
 - Generator-only diversity remains balanced; ecosystem divergence appears only with active subsystem interactions.
 
 ## 4) Dominant families / branches / lineages / mechanics

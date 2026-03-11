@@ -6,12 +6,12 @@
 ## Persistence criteria
 [minimum persistence seasons >= 3, minimum occupancy share >= 0.05, minimum species support >= 2]
 
-- PNNC current: 1
-- PNNC trend over time: [0, 0, 1]
-- Candidate-but-failed novel niches: [unassigned(short_lived=1 seasons)]
-- Persistent novel niche examples: [niche-1]
+- PNNC current: 0
+- PNNC trend over time: [0]
+- Candidate-but-failed novel niches: [niche-1(short_lived=1 seasons), niche-2(short_lived=1 seasons)]
+- Persistent novel niche examples: []
 - Retired novel niches: []
-- Persistent lifespan distribution: [3]
+- Persistent lifespan distribution: []
 
 ## Interpretation summary
-PNNC=1-2: weak bounded novelty with limited durable ecological expansion.
+PNNC=0: ecosystem is generating temporary novelty but no durable novel niches.

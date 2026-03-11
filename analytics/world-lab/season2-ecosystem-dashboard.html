@@ -19,7 +19,7 @@
 </head>
 <body>
   <h1>ObtuseLoot Ecosystem Dashboard</h1>
-  <p class="small">Dominance=0.1736, BranchEntropy=2.8888, TraitVariance=534.9600, LineageConcentration=0.1670, CollapseRisk=LOW, END=1.0000, TNT=0.0000, NSER=1.0000, PNNC=1, EcosystemStatus=STAGNANT, EcologyDiagnostic=STAGNANT_ATTRACTOR, DiagnosticConfidence=0.9000, WarningFlags=[stagnation] | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json</p>
+  <p class="small">Dominance=0.1736, BranchEntropy=2.8888, TraitVariance=534.9600, LineageConcentration=0.1670, CollapseRisk=LOW, END=1.0000, TNT=0.0000, NSER=0.0000, PNNC=0, EcosystemStatus=STAGNANT, EcologyDiagnostic=COLLAPSED_MONOCULTURE, DiagnosticConfidence=0.9000, WarningFlags=[stagnation] | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json</p>
   <div class="strip">
     <div class="metric"><div class="small">Dominance Index</div><b>0.1736</b></div>
     <div class="metric"><div class="small">Branch Entropy</div><b>2.8888</b></div>
@@ -28,9 +28,9 @@
     <div class="metric"><div class="small">Collapse Risk</div><b>LOW</b></div>
     <div class="metric"><div class="small">Effective Niches (END)</div><b>1.0000</b></div>
     <div class="metric"><div class="small">Temporal Niche Turnover (TNT)</div><b>0.0000</b></div>
-    <div class="metric"><div class="small">Novel Strategy Emergence Rate (NSER)</div><b>1.0000</b></div>
-    <div class="metric"><div class="small">Diagnostic Status Light</div><b>1</b></div>
-    <div class="metric"><div class="small">Ecosystem Status</div><b><span class="badge red">STAGNANT_ATTRACTOR</span></b></div>
+    <div class="metric"><div class="small">Novel Strategy Emergence Rate (NSER)</div><b>0.0000</b></div>
+    <div class="metric"><div class="small">Diagnostic Status Light</div><b>0</b></div>
+    <div class="metric"><div class="small">Ecosystem Status</div><b><span class="badge red">COLLAPSED_MONOCULTURE</span></b></div>
   </div>
   <div class="grid">
     <div class="panel"><h3>Rank-Abundance Curve</h3><pre><span class="badge yellow">STAGNANT</span></pre></div>
@@ -75,28 +75,31 @@ chaos: 881
 brutality: 864
 consistency: 814
 </pre></div>
-    <div class="panel"><h3>Co-Evolution Context</h3><pre>activeSpecies=76.0
+    <div class="panel"><h3>Co-Evolution Context</h3><pre>activeSpecies=78.0
 dominantSpeciesShare=0.1375
 nicheCount=1
-speciesPerNiche={niche-1=76}
+speciesPerNiche={niche-1=78}
 nicheTurnover=0
 dominantNicheShare=1.0
-overcrowdedNicheCount=1.0</pre></div>
-    <div class="panel"><h3>Ecosystem Health Gauge</h3><pre>averageCompetitionPressure=0.9693268528633125
-averageSupportPressure=0.7602796956646005
-nicheMigrationPressure=0.8045277771734539
-competitivePairings=[species-root-graveborn<->species-root-lineage-256800eb-f793-3ab5-b077-d4fe258c610d, species-root-graveborn<->species-root-wild-65015, species-root-graveborn<->species-root-lineage-534ff99a-7bb9-323b-9a85-f549b45afa6a, species-root-graveborn<->species-root-ashen, species-root-graveborn<->species-root-lineage-b5dbc48d-cbf1-3965-8b09-22e3b5b3dbfc]
-supportivePairings=[species-root-graveborn<->species-root-gilded, species-root-wild-65015<->species-root-gilded, species-root-lineage-534ff99a-7bb9-323b-9a85-f549b45afa6a<->species-root-gilded, species-root-ashen<->species-root-gilded, species-root-lineage-b5dbc48d-cbf1-3965-8b09-22e3b5b3dbfc<->species-root-gilded]</pre></div>
+overcrowdedNicheCount=1.0
+fitnessSharingActive=true
+fitnessSharingMode=niche
+averageSharingLoad=1.073944766061241</pre></div>
+    <div class="panel"><h3>Ecosystem Health Gauge</h3><pre>averageCompetitionPressure=0.9627482750238061
+averageSupportPressure=0.7459781976981866
+nicheMigrationPressure=0.7581309692507696
+competitivePairings=[species-root-graveborn<->species-root-lineage-9fa57bd0-b357-38e0-8db9-3db5a15bd7e1, species-root-graveborn<->species-root-wild-65015, species-root-graveborn<->species-root-lineage-7192c5f9-0ea8-378d-9b6b-2a6d6072788a, species-root-graveborn<->species-root-ashen, species-root-graveborn<->species-root-lineage-b999a920-bf7c-330a-b55a-0cf573adaa9b]
+supportivePairings=[species-root-wild-65015<->species-root-gilded, species-root-ashen<->species-root-gilded, species-root-gilded<->species-root-lineage-20a2f957-a400-30fa-a7d4-e9c55569bbaf, species-root-gilded<->species-root-stormbound, species-root-gilded<->species-root-lineage-d0e53850-0c8e-36c3-b072-648da3323411]</pre></div>
     <div class="panel"><h3>Ecology Diagnostic (END+TNT+NSER+PNNC)</h3><pre>END_artifacts=1.0000
 END_species=1.0000
 TNT_latest=0.0000
-NSER_latest=1.0000
-PNNC_latest=1
-END_trend=[1.0, 1.0, 1.0]
-TNT_trend=[0.0, 0.0]
-NSER_trend=[0.0, 0.0, 1.0]
-PNNC_trend=[0, 0, 1]
-NSER_note=Low END with low TNT indicates monoculture stagnation. Novelty signal is very high and may reflect over-fragmentation.
+NSER_latest=0.0000
+PNNC_latest=0
+END_trend=[1.0, 1.0]
+TNT_trend=[0.0]
+NSER_trend=[0.0, 0.0]
+PNNC_trend=[0, 0]
+NSER_note=Low END with low TNT indicates monoculture stagnation. Novelty signal indicates mostly strategy reshuffling.
 status=STAGNANT</pre></div>
   </div>
 </body>

@@ -1,9 +1,16 @@
 {
   "niche-1": {
-    "prototype": [D@3c913e32,
-    "observations": 12279,
-    "successRate": 0.9742650052935907,
-    "dominantBranch": "survival.guardian",
+    "prototype": [D@171dfaeb,
+    "observations": 464,
+    "successRate": 0.7068965517241379,
+    "dominantBranch": "chaos.sprawl",
+    "dominantFamily": "survival"
+  },
+  "niche-2": {
+    "prototype": [D@548e1b81,
+    "observations": 19,
+    "successRate": 0.9473684210526315,
+    "dominantBranch": "chaos.sprawl",
     "dominantFamily": "chaos"
   }
 }

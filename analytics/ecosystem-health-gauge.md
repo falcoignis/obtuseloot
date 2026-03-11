@@ -1,15 +1,15 @@
 # Ecosystem Health Gauge
 
-- END_artifacts: 1.0
-- END_species: 1.0
-- TNT per season: [season-1→2:0.0062, season-2→3:0.0]
-- NSER trend: [0.0, 0.0, 1.0]
-- PNNC trend: [0, 0, 1]
-- PNNC current: 1
-- PNNC trend: [0, 0, 1]
-- END trend: [1.0387, 1.0, 1.0]
-- TNT trend: [0.0062, 0.0]
+- END_artifacts: 1.124
+- END_species: 1.1716
+- TNT per season: []
+- NSER trend: [0.0]
+- PNNC trend: [0]
+- PNNC current: 0
+- PNNC trend: [0]
+- END trend: [1.124]
+- TNT trend: []
 - ecosystem status: STAGNANT
 
 ## Interpretation
-Low END with low TNT indicates monoculture stagnation. Novelty signal is very high and may reflect over-fragmentation.
+Low END with low TNT indicates monoculture stagnation. Novelty signal indicates mostly strategy reshuffling.

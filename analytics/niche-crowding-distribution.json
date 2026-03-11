@@ -1,18 +1,37 @@
 {
   "occupancyByNiche": {
-    "niche-1": 1.0
+    "niche-1": 0.975,
+    "niche-2": 0.025
   },
   "speciesFractionByNiche": {
-    "niche-1": 1.0
+    "niche-1": 1.0,
+    "niche-2": 0.038461538461538464
   },
   "successFractionByNiche": {
-    "niche-1": 1.0
+    "niche-1": 0.975,
+    "niche-2": 0.025
   },
   "speciesPerNiche": {
-    "niche-1": 79
+    "niche-1": 26,
+    "niche-2": 1
   },
-  "penaltyActivationFrequency": 0.9808035714285714,
+  "penaltyActivationFrequency": 0.7696428571428572,
   "overcrowdedNicheCount": 1,
   "targetOccupancy": 0.18,
-  "beta": 0.4
+  "beta": 0.4,
+  "fitnessSharingEnabled": true,
+  "fitnessSharingMode": "niche",
+  "fitnessSharingAlpha": 0.1,
+  "fitnessSharingMaxPenalty": 0.15,
+  "fitnessSharingTargetOccupancy": 0.18,
+  "averageSharingLoad": 1.0735422997423552,
+  "averageSharingFactor": 0.9315720597978875,
+  "nicheSharingLoad": {
+    "niche-1": 456.6547311889551,
+    "unassigned": 6.041999999999999
+  },
+  "nicheSharingFactor": {
+    "niche-1": 395.5485455647474,
+    "unassigned": 5.959012208141855
+  }
 }
