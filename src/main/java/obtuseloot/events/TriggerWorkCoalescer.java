@@ -26,4 +26,17 @@ public final class TriggerWorkCoalescer {
         }, Math.max(1L, delayTicks));
         scheduled.put(key, task);
     }
+
+    public void cancelByPrefix(String prefix) {
+        scheduled.entrySet().removeIf(entry -> {
+            if (!entry.getKey().startsWith(prefix)) {
+                return false;
+            }
+            BukkitTask task = entry.getValue();
+            if (task != null) {
+                task.cancel();
+            }
+            return true;
+        });
+    }
 }

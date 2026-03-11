@@ -34,6 +34,7 @@ import obtuseloot.persistence.PlayerStateStore;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.reputation.ReputationManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 public class ObtuseLoot extends JavaPlugin {
     private static ObtuseLoot instance;
@@ -60,6 +61,7 @@ public class ObtuseLoot extends JavaPlugin {
     private DashboardService dashboardService;
     private DashboardWebServer dashboardWebServer;
     private EcosystemMapRenderer ecosystemMapRenderer;
+    private BukkitTask environmentalPressureTask;
     private final EnvironmentalPressureReporter environmentalPressureReporter = new EnvironmentalPressureReporter();
     private final TriggerSubscriptionIndexReporter triggerSubscriptionIndexReporter = new TriggerSubscriptionIndexReporter();
 
@@ -135,7 +137,7 @@ public class ObtuseLoot extends JavaPlugin {
         }
 
 
-        getServer().getScheduler().runTaskTimer(this, () -> {
+        environmentalPressureTask = getServer().getScheduler().runTaskTimer(this, () -> {
             try {
                 experienceEvolutionEngine.pressureEngine().advanceSeason();
                 environmentalPressureReporter.writeReport(java.nio.file.Path.of("analytics/environment-pressure-report.md"),
@@ -154,6 +156,10 @@ public class ObtuseLoot extends JavaPlugin {
     public void onDisable() {
         if (engineScheduler != null) {
             engineScheduler.stopAll();
+        }
+        if (environmentalPressureTask != null) {
+            environmentalPressureTask.cancel();
+            environmentalPressureTask = null;
         }
         if (artifactManager != null) {
             artifactManager.saveAll();

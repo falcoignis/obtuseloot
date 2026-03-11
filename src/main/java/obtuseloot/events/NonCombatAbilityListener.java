@@ -21,6 +21,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -126,6 +127,14 @@ public class NonCombatAbilityListener implements Listener {
         if (hasGentleHarvest) {
             Bukkit.getScheduler().runTaskLater(ObtuseLoot.get(), () -> block.getWorld().getBlockAt(block.getLocation()).setType(block.getType()), 1L);
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        lastChunkKey.remove(playerId);
+        lastStructureSense.remove(playerId);
+        coalescer.cancelByPrefix("sense:" + playerId + ":");
     }
 
     private boolean allowProbe(Player player, AbilityTrigger trigger, String source, double cost, boolean intentional) {
