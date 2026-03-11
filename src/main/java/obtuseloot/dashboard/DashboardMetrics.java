@@ -22,7 +22,10 @@ public record DashboardMetrics(
         EcosystemStatus ecosystemStatus,
         EcologyDiagnosticState diagnosticState,
         double diagnosticConfidence,
-        List<String> diagnosticWarningFlags
+        List<String> diagnosticWarningFlags,
+        boolean ecologicalMemoryActive,
+        double dominantAttractorDuration,
+        double memoryPressureMagnitude
 ) {
     public enum CollapseRisk {
         LOW,

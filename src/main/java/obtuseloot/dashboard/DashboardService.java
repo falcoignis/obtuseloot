@@ -56,6 +56,7 @@ public class DashboardService {
                 lineage.concentration());
 
         EcosystemGaugeData gaugeData = loadEcosystemGaugeData();
+        EcologicalMemoryData ecologicalMemory = loadEcologicalMemoryData();
 
         return new DashboardMetrics(
                 ecosystem.dominanceRatio(),
@@ -74,7 +75,10 @@ public class DashboardService {
                 gaugeData.status(),
                 gaugeData.diagnosticState(),
                 gaugeData.diagnosticConfidence(),
-                gaugeData.warningFlags());
+                gaugeData.warningFlags(),
+                ecologicalMemory.active(),
+                ecologicalMemory.attractorDuration(),
+                ecologicalMemory.memoryPressure());
     }
 
     public Path regenerateDashboard() throws IOException {
@@ -166,6 +170,24 @@ public class DashboardService {
                 interpretation == null ? "NSER not available." : interpretation, status, diagnosticState, confidence, warnings);
     }
 
+
+    private EcologicalMemoryData loadEcologicalMemoryData() throws IOException {
+        Path path = analyticsRoot.resolve("world-lab").resolve("world-sim-data.json");
+        if (!Files.exists(path)) {
+            return new EcologicalMemoryData(false, 0.0D, 0.0D);
+        }
+        String content = Files.readString(path);
+        Matcher section = Pattern.compile("\"ecological_memory\"\\s*:\\s*\\{([^}]*)}", Pattern.DOTALL).matcher(content);
+        if (!section.find()) {
+            return new EcologicalMemoryData(false, 0.0D, 0.0D);
+        }
+        String block = section.group(1);
+        boolean active = extractBoolean(block, "active");
+        double attractorDuration = extractNumber(block, "attractorDuration");
+        double pressure = extractNumber(block, "memoryPressure");
+        return new EcologicalMemoryData(active, attractorDuration, pressure);
+    }
+
     private EcologyDiagnosticState loadDiagnosticState() throws IOException {
         Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
         if (!Files.exists(path)) {
@@ -208,6 +230,11 @@ public class DashboardService {
         return "null".equals(matcher.group(1)) ? null : Double.parseDouble(matcher.group(1));
     }
 
+    private boolean extractBoolean(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*(true|false)").matcher(content);
+        return matcher.find() && Boolean.parseBoolean(matcher.group(1));
+    }
+
     private String extractString(String content, String key) {
         Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]+)\"").matcher(content);
         return matcher.find() ? matcher.group(1) : null;
@@ -245,6 +272,8 @@ public class DashboardService {
         }
         return out;
     }
+
+    private record EcologicalMemoryData(boolean active, double attractorDuration, double memoryPressure) {}
 
     private record EcosystemGaugeData(double endArtifacts,
                                       Double endSpecies,
