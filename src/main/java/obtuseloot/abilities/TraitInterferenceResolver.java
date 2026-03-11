@@ -19,6 +19,7 @@ public class TraitInterferenceResolver {
     private final TraitProjectionMatrix projectionMatrix = new TraitProjectionMatrix();
     private final InteractionProjectionMatrix interactionMatrix = new InteractionProjectionMatrix();
     private final ProjectionCache projectionCache;
+    private final TraitInterferenceFieldMatrix fieldMatrix = new TraitInterferenceFieldMatrix();
     private final AtomicLong scoringCalls = new AtomicLong();
     private final AtomicLong totalScoringNanos = new AtomicLong();
     private volatile ScoringMode scoringMode = ScoringMode.PROJECTION_WITH_CACHE;
@@ -64,7 +65,7 @@ public class TraitInterferenceResolver {
                                                                   double shortlistThreshold,
                                                                   int shortlistCap) {
         long start = System.nanoTime();
-        Map<String, Double> scoreByAbility = scoresByMode(genome, scoringMode);
+        Map<String, Double> scoreByAbility = fieldAdjustedScores(templates, genome, scoringMode);
         scoringCalls.incrementAndGet();
         totalScoringNanos.addAndGet(System.nanoTime() - start);
 
@@ -130,6 +131,28 @@ public class TraitInterferenceResolver {
             case PROJECTION_NO_CACHE -> computeProjectionWithoutCache(genomeVector);
             case PROJECTION_WITH_CACHE -> computeProjectionWithCache(genomeVector);
         };
+    }
+
+    public Map<String, Double> fieldAdjustedScores(List<AbilityTemplate> templates, ArtifactGenome genome, ScoringMode mode) {
+        Map<String, Double> base = scoresByMode(genome, mode);
+        Map<String, Double> adjusted = new HashMap<>(base.size());
+        for (AbilityTemplate template : templates) {
+            TraitInterferenceSnapshot snapshot = fieldMatrix.evaluate(template, genome);
+            double value = base.getOrDefault(template.id(), 0.0D);
+            adjusted.put(template.id(), value * (1.0D + snapshot.averageModifier()));
+        }
+        return adjusted;
+    }
+
+    public TraitInterferenceSnapshot summarizeInterference(List<AbilityTemplate> templates, ArtifactGenome genome, ScoringMode mode) {
+        if (templates.isEmpty()) {
+            return new TraitInterferenceSnapshot(0.0D, 0.5D, 0.5D, List.of());
+        }
+        Map<String, Double> adjusted = fieldAdjustedScores(templates, genome, mode);
+        AbilityTemplate best = templates.stream()
+                .max(Comparator.comparingDouble(t -> adjusted.getOrDefault(t.id(), 0.0D)))
+                .orElse(templates.get(0));
+        return fieldMatrix.evaluate(best, genome);
     }
 
     public void setScoringMode(ScoringMode scoringMode) {

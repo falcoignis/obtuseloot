@@ -30,6 +30,7 @@ public class ProceduralAbilityGenerator {
     private final boolean traitInteractionsEnabled;
     private final RegulatoryGateResolver regulatoryGateResolver;
     private final RegulatoryEligibilityFilter regulatoryEligibilityFilter;
+    private final LatentTraitActivationResolver latentTraitActivationResolver;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -95,6 +96,7 @@ public class ProceduralAbilityGenerator {
         this.traitInteractionsEnabled = traitInteractionsEnabled;
         this.regulatoryGateResolver = new RegulatoryGateResolver();
         this.regulatoryEligibilityFilter = new RegulatoryEligibilityFilter();
+        this.latentTraitActivationResolver = new LatentTraitActivationResolver();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -106,9 +108,18 @@ public class ProceduralAbilityGenerator {
         ArtifactGenome lineageGenome = (lineage == null)
                 ? baseGenome
                 : lineageGenomeInheritance.inherit(lineage, baseGenome, artifact.getArtifactSeed());
-        ArtifactGenome genome = experienceEvolutionEngine == null
+        ArtifactGenome evolvedGenome = experienceEvolutionEngine == null
                 ? lineageGenome
                 : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed());
+        TraitInterferenceSnapshot preActivationInterference = traitInterferenceResolver.summarizeInterference(registry.templates(), evolvedGenome, traitInterferenceResolver.scoringMode());
+        LatentActivationContext activationContext = LatentActivationContext.bounded(
+                memoryProfile.survivalWeight() / 4.0D,
+                preActivationInterference.latentActivationBias(),
+                evolutionStage / 6.0D,
+                Math.min(1.0D, artifact.getDriftLevel() / 8.0D),
+                Math.min(1.0D, memoryProfile.pressure() / 12.0D));
+        LatentActivationResult latentActivationResult = latentTraitActivationResolver.resolve(evolvedGenome, activationContext);
+        ArtifactGenome genome = latentActivationResult.genome();
         int picks = evolutionStage >= 4 ? 3 : 2;
         AbilityRegulatoryProfile regulatoryProfile = regulatoryGateResolver.resolve(
                 artifact,
@@ -119,6 +130,7 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> allCandidates = registry.templates();
         List<AbilityTemplate> gatedCandidates = regulatoryEligibilityFilter.filter(allCandidates, regulatoryProfile);
         List<AbilityTemplate> scoringPool = gatedCandidates.isEmpty() ? allCandidates : gatedCandidates;
+        TraitInterferenceSnapshot activeInterference = traitInterferenceResolver.summarizeInterference(scoringPool, genome, traitInterferenceResolver.scoringMode());
 
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
@@ -134,6 +146,9 @@ public class ProceduralAbilityGenerator {
         artifact.setLastRegulatoryProfile(regulatoryProfile.profileKey());
         artifact.setLastOpenRegulatoryGates(regulatoryProfile.openGatesCsv());
         artifact.setLastGateCandidatePool(allCandidates.size() + "->" + scoringPool.size());
+        artifact.setLastInterferenceEffects(activeInterference.activeEffects().isEmpty() ? "none" : String.join(";", activeInterference.activeEffects().stream().limit(3).toList()));
+        artifact.setLastLatentActivationRate(latentActivationResult.activationRate());
+        artifact.setLastActivatedLatentTraits(latentActivationResult.activatedTraits().toString());
         for (AbilityTemplate template : selected) {
             picked.add(fromTemplate(template, template.family(), evolutionStage));
         }

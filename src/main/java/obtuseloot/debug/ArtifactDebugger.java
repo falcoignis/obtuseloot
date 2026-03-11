@@ -43,6 +43,8 @@ public final class ArtifactDebugger {
         lines.add("branchPath=" + artifact.getLastAbilityBranchPath() + ", mutationHistory=" + artifact.getLastMutationHistory());
         lines.add("regulatoryProfile=" + artifact.getLastRegulatoryProfile() + ", openGates=" + artifact.getLastOpenRegulatoryGates()
                 + ", gatedPool=" + artifact.getLastGateCandidatePool());
+        lines.add("interference=" + artifact.getLastInterferenceEffects() + ", latentRate=" + artifact.getLastLatentActivationRate()
+                + ", activatedLatents=" + artifact.getLastActivatedLatentTraits());
         lines.add("memoryInfluence=" + artifact.getLastMemoryInfluence() + ", memoryEvents=" + artifact.getMemory().snapshot());
         lines.add("awakeningTraits=" + artifact.getAwakeningTraits());
         lines.add("recentLore=" + tail(artifact.getLoreHistory(), 3) + ", recentEvents=" + tail(artifact.getNotableEvents(), 3));

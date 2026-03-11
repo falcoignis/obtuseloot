@@ -29,6 +29,9 @@ public class SimulationMetricsCollector {
     private final List<Double> dominantFamilyTimeline = new ArrayList<>();
     private final Map<String, Integer> lineageCounts = new HashMap<>();
     private final Map<String, Integer> lineageDepth = new HashMap<>();
+    private final Map<String, Integer> interferenceEffects = new HashMap<>();
+    private final List<Double> latentActivationTimeline = new ArrayList<>();
+    private final List<String> latentActivationExamples = new ArrayList<>();
     private int lineageExtinctions;
 
     private int bossEncounters;
@@ -55,6 +58,20 @@ public class SimulationMetricsCollector {
         bump(gateCandidatePoolSizes, artifact.getLastGateCandidatePool());
         bump(lineageCounts, artifact.getLatentLineage());
         lineageDepth.merge(artifact.getLatentLineage(), 1, Integer::sum);
+        if (artifact.getLastInterferenceEffects() != null && !artifact.getLastInterferenceEffects().isBlank() && !"none".equalsIgnoreCase(artifact.getLastInterferenceEffects())) {
+            for (String effect : artifact.getLastInterferenceEffects().split(";")) {
+                if (!effect.isBlank()) {
+                    bump(interferenceEffects, effect.trim());
+                }
+            }
+        }
+        latentActivationTimeline.add(artifact.getLastLatentActivationRate());
+        if (artifact.getLastActivatedLatentTraits() != null
+                && !artifact.getLastActivatedLatentTraits().isBlank()
+                && !"[]".equals(artifact.getLastActivatedLatentTraits())
+                && latentActivationExamples.size() < 12) {
+            latentActivationExamples.add(artifact.getLastActivatedLatentTraits());
+        }
         for (ArtifactMemoryEvent event : ArtifactMemoryEvent.values()) {
             if (artifact.getMemory().count(event) > 0) {
                 bump(memoryProfiles, event.name().toLowerCase());
@@ -108,16 +125,19 @@ public class SimulationMetricsCollector {
                 "mutation_counts", mutationCounts,
                 "memory_profile_summaries", memoryProfiles
         ));
-        root.put("ability", Map.of(
-                "family_distribution", abilityFamilies,
-                "trigger_distribution", triggers,
-                "mechanic_distribution", mechanics,
-                "regulatory_profile_distribution", regulatoryProfiles,
-                "open_gate_distribution", openGateCounts,
-                "gate_candidate_pool_distribution", gateCandidatePoolSizes,
-                "branch_diversity", shannon(branchPaths),
-                "memory_driven_ability_frequency", triggers.getOrDefault("on_memory_event", 0)
-        ));
+        Map<String, Object> ability = new LinkedHashMap<>();
+        ability.put("family_distribution", abilityFamilies);
+        ability.put("trigger_distribution", triggers);
+        ability.put("mechanic_distribution", mechanics);
+        ability.put("regulatory_profile_distribution", regulatoryProfiles);
+        ability.put("open_gate_distribution", openGateCounts);
+        ability.put("gate_candidate_pool_distribution", gateCandidatePoolSizes);
+        ability.put("branch_diversity", shannon(branchPaths));
+        ability.put("memory_driven_ability_frequency", triggers.getOrDefault("on_memory_event", 0));
+        ability.put("interference_effect_distribution", interferenceEffects);
+        ability.put("latent_activation_rate", average(latentActivationTimeline));
+        ability.put("latent_activation_examples", latentActivationExamples);
+        root.put("ability", ability);
         root.put("player", Map.of(
                 "playstyle_cluster_distribution", playstyleClusters,
                 "session_length_distribution", sessionLengths,
@@ -154,6 +174,9 @@ public class SimulationMetricsCollector {
     public List<Double> diversityTimeline() { return diversityTimeline; }
     public List<Double> dominantFamilyTimeline() { return dominantFamilyTimeline; }
     public Map<String, Integer> lineageCounts() { return lineageCounts; }
+    public double latentActivationRate() { return average(latentActivationTimeline); }
+    public Map<String, Integer> interferenceEffects() { return interferenceEffects; }
+    public List<String> latentActivationExamples() { return latentActivationExamples; }
 
     private int sumValue(Map<String, Integer> map) {
         return map.values().stream().mapToInt(Integer::intValue).sum();
@@ -191,6 +214,13 @@ public class SimulationMetricsCollector {
     private double rate(int numerator, int denominator) {
         if (denominator <= 0) return 0.0D;
         return numerator / (double) denominator;
+    }
+
+    private double average(List<Double> values) {
+        if (values.isEmpty()) {
+            return 0.0D;
+        }
+        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D);
     }
 
     private void bump(Map<String, Integer> map, String key) {

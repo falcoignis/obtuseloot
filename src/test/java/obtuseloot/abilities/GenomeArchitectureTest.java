@@ -21,6 +21,21 @@ class GenomeArchitectureTest {
         ArtifactGenome a = resolver.resolve(123456789L);
         ArtifactGenome b = resolver.resolve(123456789L);
         assertEquals(a.traits(), b.traits());
+        assertEquals(a.latentTraits(), b.latentTraits());
+    }
+
+    @Test
+    void latentTraitsActivateDeterministicallyFromContext() {
+        GenomeResolver resolver = new GenomeResolver();
+        LatentTraitActivationResolver activationResolver = new LatentTraitActivationResolver();
+        ArtifactGenome genome = resolver.resolve(2025L);
+        LatentActivationContext context = LatentActivationContext.bounded(0.95D, 0.95D, 0.95D, 0.75D, 1.0D);
+
+        LatentActivationResult first = activationResolver.resolve(genome, context);
+        LatentActivationResult second = activationResolver.resolve(genome, context);
+
+        assertEquals(first.activatedTraits(), second.activatedTraits());
+        assertEquals(first.activationRate(), second.activationRate(), 1.0E-9D);
     }
 
     @Test

@@ -14,6 +14,7 @@ public class LineageGenomeInheritance {
 
     public ArtifactGenome inherit(ArtifactLineage lineage, ArtifactGenome parentGenome, long childSeed) {
         EnumMap<GenomeTrait, Double> childTraits = new EnumMap<>(GenomeTrait.class);
+        EnumMap<GenomeTrait, Double> childLatentTraits = new EnumMap<>(GenomeTrait.class);
         Random random = new Random(childSeed ^ parentGenome.seed() ^ lineage.lineageId().hashCode());
         Map<GenomeTrait, Double> lineageTraits = lineage.genomeTraits();
         boolean hasLineageGenome = lineage.generationIndex() > 0;
@@ -26,9 +27,12 @@ public class LineageGenomeInheritance {
             double mutationRange = random.nextDouble() < RARE_MUTATION_CHANCE ? RARE_MUTATION_RANGE : NORMAL_MUTATION_RANGE;
             double mutation = ((random.nextDouble() * 2.0D) - 1.0D) * mutationRange;
             childTraits.put(trait, clamp01(parentTrait + mutation));
+            double latentBase = parentGenome.latentTrait(trait);
+            double latentMutation = ((random.nextDouble() * 2.0D) - 1.0D) * (mutationRange * 0.4D);
+            childLatentTraits.put(trait, clamp01(latentBase + latentMutation));
         }
 
-        ArtifactGenome childGenome = new ArtifactGenome(childSeed, childTraits);
+        ArtifactGenome childGenome = new ArtifactGenome(childSeed, childTraits, childLatentTraits, parentGenome.activatedLatentTraits());
         lineage.registerGenome(childSeed, childGenome);
         return childGenome;
     }

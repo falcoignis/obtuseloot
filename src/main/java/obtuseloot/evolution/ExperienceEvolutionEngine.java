@@ -37,12 +37,14 @@ public class ExperienceEvolutionEngine {
         double normalized = normalizeFitness(effectiveFitness);
 
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
+        EnumMap<GenomeTrait, Double> latentAdjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
             double multiplier = traitMultiplier(entry.getKey(), normalized);
             double environmental = pressureEngine.multiplierFor(entry.getKey());
             adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier * environmental));
+            latentAdjusted.put(entry.getKey(), clamp01(genome.latentTrait(entry.getKey()) * (1.0D + ((multiplier - 1.0D) * 0.35D))));
         }
-        return new ArtifactGenome(genome.seed(), adjusted);
+        return new ArtifactGenome(genome.seed(), adjusted, latentAdjusted, genome.activatedLatentTraits());
     }
 
     public EnvironmentPressureEngine pressureEngine() {
