@@ -81,7 +81,7 @@ public class WorldSimulationHarness {
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
-        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.roleBasedRepulsion(), config.adaptiveNicheCapacity());
+        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.roleBasedRepulsion(), config.minimumRoleSeparation(), config.adaptiveNicheCapacity());
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -325,6 +325,7 @@ public class WorldSimulationHarness {
         Map<String, Object> nichePrototypeDistribution = speciesNicheEngine.buildNichePrototypeDistribution();
         Map<String, Object> roleAxisDistribution = speciesNicheEngine.roleAxisDistribution(allArtifacts);
         Map<String, Object> roleRepulsionSummary = speciesNicheEngine.roleRepulsionSummary();
+        Map<String, Object> minimumRoleSeparationSummary = speciesNicheEngine.roleSeparationSummary();
         data.put("speciation", speciationSummary);
         data.put("niches", speciesNicheMap);
         data.put("ecological_memory", ecologicalMemoryEngine.diagnostics());
@@ -363,7 +364,8 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
         Files.writeString(Path.of("analytics/role-axis-distribution.json"), toJson(roleAxisDistribution, 0));
-        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, roleRepulsionSummary, cleanupResult, nserResult);
+        writeRoleAxisValidityReport(roleAxisDistribution);
+        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, roleRepulsionSummary, minimumRoleSeparationSummary, cleanupResult, nserResult);
         PersistentNovelNicheAnalyzer.PnncResult pnncResult = writePersistentNovelNicheReports(seasonalSnapshots);
         writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
         writeTraitFieldLatentReports(nserResult);
@@ -1368,6 +1370,24 @@ public class WorldSimulationHarness {
         return flattenArtifacts(latestPlayers);
     }
 
+    @SuppressWarnings("unchecked")
+    private void writeRoleAxisValidityReport(Map<String, Object> roleAxisDistribution) throws IOException {
+        Map<String, Double> variances = (Map<String, Double>) roleAxisDistribution.getOrDefault("axisVariances", Map.of());
+        Map<String, Double> ranges = (Map<String, Double>) roleAxisDistribution.getOrDefault("axisRanges", Map.of());
+        Map<String, Boolean> informative = (Map<String, Boolean>) roleAxisDistribution.getOrDefault("axisInformative", Map.of());
+        List<String> deadAxes = (List<String>) roleAxisDistribution.getOrDefault("deadAxes", List.of());
+        String report = "# Role Axis Validity Report\n\n"
+                + "- Sample count: " + roleAxisDistribution.getOrDefault("count", 0) + "\n"
+                + "- Axis means: " + roleAxisDistribution.getOrDefault("axisMeans", Map.of()) + "\n"
+                + "- Axis variances: " + variances + "\n"
+                + "- Axis ranges: " + ranges + "\n"
+                + "- Axis informative flags: " + informative + "\n"
+                + "- Dead/non-informative axes: " + deadAxes + "\n"
+                + "- Axis computation: support/damage, burst/persistence, mobility/stationary, environment dependent/agnostic, memory/direct-trigger, interaction/solo; each bounded to [0,1].\n"
+                + "- Interpretation: axes with variance >= 0.0025 or range >= 0.10 are treated as meaningful differentiators.\n";
+        Files.writeString(Path.of("analytics/role-axis-validity-report.md"), report);
+    }
+
     private void writeSpeciesAndNicheReports(Map<String, Object> speciationSummary,
                                              Map<String, Object> speciesNicheMap,
                                              Map<String, Object> crowdingDistribution,
@@ -1376,6 +1396,7 @@ public class WorldSimulationHarness {
                                              Map<String, Object> nicheStabilityMetrics,
                                              Map<String, Object> nichePrototypeDistribution,
                                              Map<String, Object> roleRepulsionSummary,
+                                             Map<String, Object> minimumRoleSeparationSummary,
                                              SpeciesNicheAnalyticsEngine.SpeciesCleanupResult cleanupResult,
                                              NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
         Path analytics = Path.of("analytics");
@@ -1441,6 +1462,11 @@ public class WorldSimulationHarness {
                 + "- Projection dominance: " + nicheQualityDiagnostics.get("projectionDominance") + "\n"
                 + "- Role-based repulsion enabled: " + nicheQualityDiagnostics.get("roleBasedRepulsionEnabled") + "\n"
                 + "- Role repulsion beta: " + nicheQualityDiagnostics.get("roleRepulsionBeta") + "\n"
+                + "- Minimum role separation enabled: " + nicheQualityDiagnostics.get("minimumRoleSeparationEnabled") + "\n"
+                + "- Role split threshold: " + nicheQualityDiagnostics.get("roleSplitThreshold") + "\n"
+                + "- Minimum role separation mode: " + nicheQualityDiagnostics.get("minimumRoleSeparationMode") + "\n"
+                + "- Hard role gate rejections: " + nicheQualityDiagnostics.get("hardRoleGateRejections") + "\n"
+                + "- Niche separation source: " + nicheQualityDiagnostics.get("nicheSeparationSource") + "\n"
                 + "- Role repulsion dominance: " + nicheQualityDiagnostics.get("roleRepulsionDominance") + "\n"
                 + "- Role axis set: " + nicheQualityDiagnostics.get("roleAxes") + "\n"
                 + "- Top behavioral separation dimensions: " + nicheQualityDiagnostics.get("topSeparationDimensions") + "\n";
@@ -1453,11 +1479,14 @@ public class WorldSimulationHarness {
                 + "- Niche retire events: " + nicheStabilityMetrics.get("nicheRetireEvents") + "\n"
                 + "- Niche stability over time: " + nicheStabilityMetrics.get("nicheStabilityTimeline") + "\n"
                 + "- Role repulsion over time: " + nicheStabilityMetrics.get("roleRepulsionTimeline") + "\n"
+                + "- Hard role gate rejections: " + nicheStabilityMetrics.get("roleGateRejectionCount") + "\n"
+                + "- Hard role gate penalties: " + nicheStabilityMetrics.get("roleGatePenaltyCount") + "\n"
                 + "- Niche lifetimes: " + nicheStabilityMetrics.get("nicheLifetimes") + "\n"
-                + "- Species migration across niches: " + nicheStabilityMetrics.get("nicheMigrationBySpecies") + "\n";
+                + "- Species migration across niches: " + nicheStabilityMetrics.get("nicheMigrationBySpecies") + "\n"
+                + "- Fragmentation remained controlled: " + nicheQualityDiagnostics.get("fragmentationWarning") + "\n";
         Files.writeString(analytics.resolve("niche-stability-report.md"), nicheStabilityReport);
 
-        String roleRepulsionReport = "# Role-Based Repulsion Report\n\n"
+        String roleRepulsionReport = "# Minimum Role Separation Gating Report\n\n"
                 + "## Role axes used\n"
                 + "- Axes: " + roleRepulsionSummary.get("axes") + "\n"
                 + "- Axis definitions:\n"
@@ -1467,15 +1496,19 @@ public class WorldSimulationHarness {
                 + "  - environment_dependent_vs_agnostic: environment-linked gate/trigger usage share.\n"
                 + "  - memory_driven_vs_direct_trigger: memory influence ratio against direct trigger tendency.\n"
                 + "  - interaction_heavy_vs_solo: interaction diversity + ally/chain/shared markers.\n\n"
-                + "## Repulsion formula\n"
-                + "- roleDifference = weightedL1(roleA, roleB) normalized to [0,1].\n"
-                + "- roleRepulsion = beta * roleDifference, bounded to [0,beta].\n"
-                + "- finalNicheDistance = traitBehaviorDistance + roleRepulsion - coEvolutionBias.\n\n"
-                + "## Weights and parameters\n"
+                + "## Role-distance + gating formula\n"
+                + "- roleDistance = weightedL1(roleA, roleB) normalized to [0,1].\n"
+                + "- roleRepulsion = beta * roleDistance, bounded to [0,beta].\n"
+                + "- gate condition: roleDistance >= roleSplitThreshold => incompatible in hard_reject mode.\n"
+                + "- finalNicheDistance = traitBehaviorDistance + roleRepulsion - coEvolutionBias (plus hard penalty only in hard_penalty mode).\n\n"
+                + "## Weights, thresholds, and mode\n"
                 + "- beta: " + roleRepulsionSummary.get("beta") + "\n"
                 + "- axis weights: " + roleRepulsionSummary.get("weights") + "\n"
-                + "- average repulsion applied: " + roleRepulsionSummary.get("averageRepulsion") + "\n\n"
-                + "## Examples of previously merged strategies now separated\n"
+                + "- average repulsion applied: " + roleRepulsionSummary.get("averageRepulsion") + "\n"
+                + "- roleSplitThreshold: " + minimumRoleSeparationSummary.get("roleSplitThreshold") + "\n"
+                + "- minimumRoleSeparationMode: " + minimumRoleSeparationSummary.get("mode") + "\n"
+                + "- hardGateRejections: " + minimumRoleSeparationSummary.get("hardRejections") + "\n\n"
+                + "## Examples of strategies previously merged now forced apart\n"
                 + "- High-burst/low-persistence versus high-persistence/low-burst behaviors now receive role-distance separation.\n"
                 + "- High-memory/high-environment strategies versus direct-trigger environment-agnostic strategies no longer cluster by family alone.\n"
                 + "- Interaction-heavy support signatures versus solo damage signatures now repel when trait distance alone was ambiguous.\n\n"
@@ -1483,8 +1516,7 @@ public class WorldSimulationHarness {
                 + "- Bounded beta keeps role repulsion subordinate to trait/behavior distance.\n"
                 + "- Existing margin, hysteresis, candidate promotion, merge, and prune controls remain unchanged.\n"
                 + "- Fragmentation remains monitored via niche stability and fragmentation warnings in diagnostics.\n";
-        Files.writeString(analytics.resolve("role-based-repulsion-report.md"), roleRepulsionReport);
-
+        Files.writeString(analytics.resolve("minimum-role-separation-gating-report.md"), roleRepulsionReport);
 
         Map<String, Object> projectionSummary = speciesNicheEngine.behavioralProjectionSummary();
         Map<String, Object> behavioralDistribution = speciesNicheEngine.behavioralSignatureDistribution(allArtifacts());
@@ -1557,6 +1589,7 @@ public class WorldSimulationHarness {
                 + "7. did co-evolution become more contextual? competition/support=" + coEvolutionRelationships.get("averageCompetitionPressure") + "/" + coEvolutionRelationships.get("averageSupportPressure") + ".\n"
                 + "8. did ecology move away from STAGNANT_ATTRACTOR / collapsed behavior? collapseWarning=" + nicheQualityDiagnostics.get("nicheCollapseWarning") + ", roleMode=" + roleRepulsionSummary.get("mode") + ".\n";
         Files.writeString(worldLab.resolve("role-based-repulsion-impact-review.md"), roleRepulsionImpactReview);
+        Files.writeString(worldLab.resolve("minimum-role-separation-impact-review.md"), roleRepulsionImpactReview);
 
         String behavioralSeparationRepairReview = "# Behavioral Separation Repair Review\n\n"
                 + "1. did effective niche count increase? value=" + nicheQualityDiagnostics.get("nicheCount") + ".\n"
@@ -1761,6 +1794,7 @@ public class WorldSimulationHarness {
                 + "- Multiple attractors emerging: nicheCount=" + nicheQualityDiagnostics.get("nicheCount") + ", dominantShare=" + dominantNicheShare + "\n"
                 + "- Role-based repulsion impact on partitioning: enabled=" + roleRepulsionSummary.get("enabled") + ", beta=" + roleRepulsionSummary.get("beta") + ", dominantAxes=" + roleRepulsionSummary.get("dominantAxes") + "\n";
         Files.writeString(openEnded.resolve("role-based-repulsion-open-endedness-review.md"), roleOpenEndedness);
+        Files.writeString(openEnded.resolve("minimum-role-separation-open-endedness-review.md"), roleOpenEndedness);
     }
 
 

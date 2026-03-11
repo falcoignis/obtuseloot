@@ -25,6 +25,7 @@ public record WorldSimulationConfig(
         FitnessSharingConfig fitnessSharing,
         SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig behavioralProjection,
         SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig roleBasedRepulsion,
+        SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig minimumRoleSeparation,
         AdaptiveNicheCapacityConfig adaptiveNicheCapacity,
         ScoringMode scoringMode
 ) {
@@ -52,6 +53,7 @@ public record WorldSimulationConfig(
                 FitnessSharingConfig.defaults(),
                 SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig.defaults(),
                 SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig.defaults(),
                 AdaptiveNicheCapacityConfig.defaults(),
                 ScoringMode.PROJECTION_WITH_CACHE
         );

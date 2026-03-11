@@ -44,6 +44,30 @@ public class SpeciesNicheAnalyticsEngine {
             return new BehavioralProjectionConfig(true, 0.25D, 0.75D);
         }
     }
+    public record MinimumRoleSeparationConfig(boolean enabled,
+                                              double roleSplitThreshold,
+                                              String mode,
+                                              double hardPenaltyMultiplier) {
+        public static MinimumRoleSeparationConfig defaults() {
+            return new MinimumRoleSeparationConfig(true, 0.40D, "hard_reject", 4.0D).bounded();
+        }
+
+        public MinimumRoleSeparationConfig bounded() {
+            String normalizedMode = (mode == null ? "hard_reject" : mode.trim().toLowerCase(Locale.ROOT));
+            if (!"hard_reject".equals(normalizedMode) && !"hard_penalty".equals(normalizedMode)) {
+                normalizedMode = "hard_reject";
+            }
+            return new MinimumRoleSeparationConfig(
+                    enabled,
+                    clampValue(roleSplitThreshold, 0.25D, 0.80D),
+                    normalizedMode,
+                    clampValue(hardPenaltyMultiplier, 2.0D, 10.0D));
+        }
+
+        private static double clampValue(double value, double min, double max) {
+            return Math.max(min, Math.min(max, value));
+        }
+    }
     public record PenaltyResult(double effectiveScore,
                                 double crowdingPenalty,
                                 String nicheId,
@@ -102,6 +126,7 @@ public class SpeciesNicheAnalyticsEngine {
     private final FitnessSharingConfig fitnessSharing;
     private final BehavioralProjectionConfig projectionConfig;
     private final RoleBasedRepulsionConfig roleRepulsionConfig;
+    private final MinimumRoleSeparationConfig minimumRoleSeparationConfig;
     private final AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
@@ -151,34 +176,39 @@ public class SpeciesNicheAnalyticsEngine {
     private int coEvolutionEvaluationCount;
     private int nicheAssignmentEvaluations;
     private double roleRepulsionTotal;
+    private int hardRoleRejectionCount;
+    private int hardRolePenaltyCount;
+    private double hardRolePenaltyTotal;
     private double coEvolutionCompetitionTotal;
     private double coEvolutionSupportTotal;
     private double coEvolutionModifierTotal;
     private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
-        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
+        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), MinimumRoleSeparationConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed, FitnessSharingConfig fitnessSharing) {
-        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
+        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), MinimumRoleSeparationConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed,
                                        FitnessSharingConfig fitnessSharing,
                                        BehavioralProjectionConfig projectionConfig) {
-        this(seed, fitnessSharing, projectionConfig, RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
+        this(seed, fitnessSharing, projectionConfig, RoleBasedRepulsionConfig.defaults(), MinimumRoleSeparationConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed,
                                        FitnessSharingConfig fitnessSharing,
                                        BehavioralProjectionConfig projectionConfig,
                                        RoleBasedRepulsionConfig roleRepulsionConfig,
+                                       MinimumRoleSeparationConfig minimumRoleSeparationConfig,
                                        AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
         this.fitnessSharing = (fitnessSharing == null ? FitnessSharingConfig.defaults() : fitnessSharing).bounded();
         this.projectionConfig = projectionConfig == null ? BehavioralProjectionConfig.defaults() : projectionConfig;
         this.roleRepulsionConfig = (roleRepulsionConfig == null ? RoleBasedRepulsionConfig.defaults() : roleRepulsionConfig).bounded();
+        this.minimumRoleSeparationConfig = (minimumRoleSeparationConfig == null ? MinimumRoleSeparationConfig.defaults() : minimumRoleSeparationConfig).bounded();
         this.adaptiveNicheCapacityConfig = (adaptiveNicheCapacityConfig == null ? AdaptiveNicheCapacityConfig.defaults() : adaptiveNicheCapacityConfig).bounded();
     }
 
@@ -534,9 +564,15 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("roleBasedRepulsionEnabled", roleRepulsionConfig.enabled());
         out.put("roleRepulsionBeta", roleRepulsionConfig.beta());
         out.put("averageRoleRepulsion", avg(roleRepulsionTotal, nicheAssignmentEvaluations));
+        out.put("minimumRoleSeparationEnabled", minimumRoleSeparationConfig.enabled());
+        out.put("roleSplitThreshold", minimumRoleSeparationConfig.roleSplitThreshold());
+        out.put("minimumRoleSeparationMode", minimumRoleSeparationConfig.mode());
+        out.put("hardRoleGateRejections", hardRoleRejectionCount);
         out.put("roleAxes", ROLE_AXIS_LABELS);
         out.put("roleRepulsionDominance", roleRepulsionDominance());
+        out.put("nicheSeparationSource", nicheSeparationSource());
         out.put("topSeparationDimensions", topSeparationDimensions());
+        out.put("topRoleVarianceAxes", topRoleVarianceAxes());
         return out;
     }
 
@@ -552,6 +588,8 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("nicheMergeEvents", new LinkedHashMap<>(nicheMergeEvents));
         out.put("nicheRetireEvents", new LinkedHashMap<>(nicheRetireEvents));
         out.put("roleRepulsionTimeline", roleRepulsionTimeline);
+        out.put("roleGateRejectionCount", hardRoleRejectionCount);
+        out.put("roleGatePenaltyCount", hardRolePenaltyCount);
         return out;
     }
 
@@ -924,6 +962,7 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("roleAxes", ROLE_AXIS_LABELS);
         out.put("dimensions", NICHE_DIMENSION_LABELS);
         out.put("topSeparationDimensions", topSeparationDimensions());
+        out.put("topRoleVarianceAxes", topRoleVarianceAxes());
         return out;
     }
 
@@ -966,6 +1005,11 @@ public class SpeciesNicheAnalyticsEngine {
         Map<String, Object> out = new LinkedHashMap<>();
         List<Map<String, Object>> samples = new ArrayList<>();
         double[] sums = new double[ROLE_VECTOR_DIMENSIONS];
+        double[] sumSquares = new double[ROLE_VECTOR_DIMENSIONS];
+        double[] mins = new double[ROLE_VECTOR_DIMENSIONS];
+        double[] maxs = new double[ROLE_VECTOR_DIMENSIONS];
+        Arrays.fill(mins, 1.0D);
+        Arrays.fill(maxs, 0.0D);
         int count = 0;
         for (Artifact artifact : artifacts) {
             ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
@@ -974,7 +1018,11 @@ public class SpeciesNicheAnalyticsEngine {
             }
             count++;
             for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
-                sums[i] += membership.roleVector()[i];
+                double value = clamp(membership.roleVector()[i], 0.0D, 1.0D);
+                sums[i] += value;
+                sumSquares[i] += value * value;
+                mins[i] = Math.min(mins[i], value);
+                maxs[i] = Math.max(maxs[i], value);
             }
             if (samples.size() < 8) {
                 Map<String, Object> item = new LinkedHashMap<>();
@@ -986,14 +1034,29 @@ public class SpeciesNicheAnalyticsEngine {
             }
         }
         Map<String, Double> means = new LinkedHashMap<>();
+        Map<String, Double> variances = new LinkedHashMap<>();
+        Map<String, Double> ranges = new LinkedHashMap<>();
+        Map<String, Boolean> informative = new LinkedHashMap<>();
         for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
-            means.put(ROLE_AXIS_LABELS.get(i), count == 0 ? 0.0D : clamp(sums[i] / count, 0.0D, 1.0D));
+            double mean = count == 0 ? 0.0D : clamp(sums[i] / count, 0.0D, 1.0D);
+            double variance = count == 0 ? 0.0D : Math.max(0.0D, (sumSquares[i] / count) - (mean * mean));
+            double range = count == 0 ? 0.0D : Math.max(0.0D, maxs[i] - mins[i]);
+            boolean meaningful = variance >= 0.0025D || range >= 0.10D;
+            means.put(ROLE_AXIS_LABELS.get(i), mean);
+            variances.put(ROLE_AXIS_LABELS.get(i), variance);
+            ranges.put(ROLE_AXIS_LABELS.get(i), range);
+            informative.put(ROLE_AXIS_LABELS.get(i), meaningful);
         }
         out.put("count", count);
         out.put("axes", ROLE_AXIS_LABELS);
         out.put("axisMeans", means);
+        out.put("axisVariances", variances);
+        out.put("axisRanges", ranges);
+        out.put("axisInformative", informative);
+        out.put("deadAxes", informative.entrySet().stream().filter(e -> !Boolean.TRUE.equals(e.getValue())).map(Map.Entry::getKey).toList());
         out.put("sampledArtifacts", samples);
         out.put("repulsion", roleRepulsionSummary());
+        out.put("minimumRoleSeparation", roleSeparationSummary());
         return out;
     }
 
@@ -1010,6 +1073,21 @@ public class SpeciesNicheAnalyticsEngine {
                 .toList());
         out.put("averageRepulsion", avg(roleRepulsionTotal, nicheAssignmentEvaluations));
         out.put("mode", roleRepulsionDominance());
+        out.put("minimumRoleSeparation", roleSeparationSummary());
+        return out;
+    }
+
+    public Map<String, Object> roleSeparationSummary() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("enabled", minimumRoleSeparationConfig.enabled());
+        out.put("roleSplitThreshold", minimumRoleSeparationConfig.roleSplitThreshold());
+        out.put("mode", minimumRoleSeparationConfig.mode());
+        out.put("hardPenaltyMultiplier", minimumRoleSeparationConfig.hardPenaltyMultiplier());
+        out.put("hardRejections", hardRoleRejectionCount);
+        out.put("hardPenalties", hardRolePenaltyCount);
+        out.put("averagePenalty", avg(hardRolePenaltyTotal, hardRolePenaltyCount));
+        out.put("axes", ROLE_AXIS_LABELS);
+        out.put("distanceFormula", "weightedL1(roleA, roleB)/sum(weights), bounded to [0,1]");
         return out;
     }
 
@@ -1023,10 +1101,22 @@ public class SpeciesNicheAnalyticsEngine {
         double bestDistance = Double.MAX_VALUE;
         double secondDistance = Double.MAX_VALUE;
         for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
+            double roleDistance = roleDifference(roleVector, entry.getValue().roleCentroid());
+            if (roleIncompatible(roleDistance)) {
+                hardRoleRejectionCount++;
+                continue;
+            }
             double roleRepulsion = roleRepulsion(roleVector, entry.getValue().roleCentroid());
             double distance = weightedDistance(vector, entry.getValue().centroid())
                     - nicheCoEvolutionBias(speciesId, entry.getValue())
                     + roleRepulsion;
+            if (minimumRoleSeparationConfig.enabled() && "hard_penalty".equals(minimumRoleSeparationConfig.mode())
+                    && roleDistance >= minimumRoleSeparationConfig.roleSplitThreshold()) {
+                double penalty = minimumRoleSeparationConfig.hardPenaltyMultiplier() * (roleDistance - minimumRoleSeparationConfig.roleSplitThreshold() + 1.0D);
+                distance += penalty;
+                hardRolePenaltyTotal += penalty;
+                hardRolePenaltyCount++;
+            }
             nicheAssignmentEvaluations++;
             roleRepulsionTotal += roleRepulsion;
             if (distance < bestDistance) {
@@ -1047,13 +1137,17 @@ public class SpeciesNicheAnalyticsEngine {
             if (promoted != null) {
                 return promoted;
             }
-            if (previousNiche != null && niches.containsKey(previousNiche)) {
+            if (previousNiche != null && niches.containsKey(previousNiche)
+                    && !roleIncompatible(roleDifference(roleVector, niches.get(previousNiche).roleCentroid()))) {
                 return previousNiche;
             }
             return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.80D) ? bestNiche : "unassigned";
         }
 
         if (previousNiche != null && niches.containsKey(previousNiche) && !previousNiche.equals(bestNiche)) {
+            if (roleIncompatible(roleDifference(roleVector, niches.get(previousNiche).roleCentroid()))) {
+                return bestNiche == null ? secondBestNiche : bestNiche;
+            }
             double previousDistance = weightedDistance(vector, niches.get(previousNiche).centroid())
                     + roleRepulsion(roleVector, niches.get(previousNiche).roleCentroid());
             if ((previousDistance - bestDistance) < HYSTERESIS_MARGIN) {
@@ -1440,7 +1534,8 @@ public class SpeciesNicheAnalyticsEngine {
                         continue;
                     }
                     double distance = weightedDistance(a.centroid(), b.centroid());
-            if (distance <= NICHE_MERGE_DISTANCE
+                    if (distance <= NICHE_MERGE_DISTANCE
+                    && !roleIncompatible(roleDifference(a.roleCentroid(), b.roleCentroid()))
                     && a.topFamilyShare() > 0.90D
                     && b.topFamilyShare() > 0.90D
                     && Objects.equals(a.topToken(a.familyUse), b.topToken(b.familyUse))) {
@@ -1464,14 +1559,21 @@ public class SpeciesNicheAnalyticsEngine {
         }
         nicheRetireEvents.merge(season, 1, Integer::sum);
         nicheDeathSeason.put(nicheId, season);
-        String fallback = nearestNiche(removed.centroid());
+        String fallback = nearestNiche(removed.centroid(), removed.roleCentroid());
         remapMembership(nicheId, fallback);
     }
 
     private String nearestNiche(double[] vector) {
+        return nearestNiche(vector, null);
+    }
+
+    private String nearestNiche(double[] vector, double[] roleVector) {
         String best = null;
         double bestDistance = Double.MAX_VALUE;
         for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
+            if (roleIncompatible(roleDifference(roleVector, entry.getValue().roleCentroid()))) {
+                continue;
+            }
             double distance = weightedDistance(vector, entry.getValue().centroid());
             if (distance < bestDistance) {
                 bestDistance = distance;
@@ -1890,6 +1992,9 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double roleDifference(double[] roleA, double[] roleB) {
+        if (roleA == null || roleB == null) {
+            return 0.0D;
+        }
         double[] weights = {
                 roleRepulsionConfig.supportDamageWeight(),
                 roleRepulsionConfig.burstPersistenceWeight(),
@@ -1919,6 +2024,55 @@ public class SpeciesNicheAnalyticsEngine {
             return "role-driven";
         }
         return "hybrid-role-behavior";
+    }
+
+    private boolean roleIncompatible(double roleDistance) {
+        if (!minimumRoleSeparationConfig.enabled()) {
+            return false;
+        }
+        return "hard_reject".equals(minimumRoleSeparationConfig.mode())
+                && roleDistance >= minimumRoleSeparationConfig.roleSplitThreshold();
+    }
+
+    private String nicheSeparationSource() {
+        if (!minimumRoleSeparationConfig.enabled()) {
+            return "traits+behavior+soft-role-repulsion";
+        }
+        return "hard_reject".equals(minimumRoleSeparationConfig.mode())
+                ? "traits+behavior+soft-role-repulsion+hard-role-gating"
+                : "traits+behavior+soft-role-repulsion+hard-role-penalty";
+    }
+
+
+    private List<String> topRoleVarianceAxes() {
+        if (artifactMembership.isEmpty()) {
+            return ROLE_AXIS_LABELS;
+        }
+        double[] sums = new double[ROLE_VECTOR_DIMENSIONS];
+        double[] sq = new double[ROLE_VECTOR_DIMENSIONS];
+        int count = 0;
+        for (ArtifactNicheMembership membership : artifactMembership.values()) {
+            if (membership == null || membership.roleVector() == null) {
+                continue;
+            }
+            count++;
+            for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
+                double v = clamp(membership.roleVector()[i], 0.0D, 1.0D);
+                sums[i] += v;
+                sq[i] += v * v;
+            }
+        }
+        if (count == 0) {
+            return ROLE_AXIS_LABELS;
+        }
+        List<Map.Entry<String, Double>> vars = new ArrayList<>();
+        for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
+            double mean = sums[i] / count;
+            double variance = Math.max(0.0D, (sq[i] / count) - (mean * mean));
+            vars.add(Map.entry(ROLE_AXIS_LABELS.get(i), variance));
+        }
+        vars.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+        return vars.stream().limit(3).map(Map.Entry::getKey).toList();
     }
 
     private Map<String, Double> roleWeightMap() {

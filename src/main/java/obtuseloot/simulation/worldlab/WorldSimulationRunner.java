@@ -51,6 +51,12 @@ public final class WorldSimulationRunner {
                         doubleProp("world.roleBasedRepulsion.memoryWeight", defaults.roleBasedRepulsion().memoryWeight()),
                         doubleProp("world.roleBasedRepulsion.interactionWeight", defaults.roleBasedRepulsion().interactionWeight())
                 ).bounded(),
+                new SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig(
+                        boolProp("world.minimumRoleSeparation.enabled", defaults.minimumRoleSeparation().enabled()),
+                        doubleProp("world.minimumRoleSeparation.roleSplitThreshold", defaults.minimumRoleSeparation().roleSplitThreshold()),
+                        System.getProperty("world.minimumRoleSeparation.mode", defaults.minimumRoleSeparation().mode()),
+                        doubleProp("world.minimumRoleSeparation.hardPenaltyMultiplier", defaults.minimumRoleSeparation().hardPenaltyMultiplier())
+                ).bounded(),
                 new AdaptiveNicheCapacityConfig(
                         boolProp("world.adaptiveNicheCapacity.enabled", defaults.adaptiveNicheCapacity().enabled()),
                         doubleProp("world.adaptiveNicheCapacity.minCapacity", defaults.adaptiveNicheCapacity().minCapacity()),
