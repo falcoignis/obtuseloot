@@ -37,7 +37,7 @@ class AbilityExecutionArchitectureTest {
 
         assertEquals(1L, manager.executionStatusCounts().get(AbilityExecutionStatus.TRIGGER_SEEN));
         assertEquals(1L, manager.executionStatusCounts().get(AbilityExecutionStatus.SUCCESS));
-        assertEquals(1L, manager.meaningfulOutcomeByAbilityTrigger().get("survival.gentle_harvest@ON_BLOCK_HARVEST"));
+        assertEquals(1L, manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
     }
 
     @Test
@@ -82,7 +82,7 @@ class AbilityExecutionArchitectureTest {
         assertEquals(1, dispatchResult.executions().size());
         assertEquals("mobility.compass_stories", dispatchResult.executions().getFirst().abilityId());
         assertEquals(AbilityExecutionStatus.SUCCESS, dispatchResult.executions().getFirst().status());
-        assertEquals(1L, manager.executionStatusByAbilityTrigger().get("mobility.compass_stories@ON_MEMORY_EVENT#SUCCESS"));
+        assertEquals(1L, manager.executionStatusByMechanicTrigger().get("NAVIGATION_ANCHOR@ON_MEMORY_EVENT#SUCCESS"));
     }
 
     @Test
@@ -102,6 +102,59 @@ class AbilityExecutionArchitectureTest {
         Map<AbilityExecutionStatus, Long> counts = manager.executionStatusCounts();
         assertEquals(1L, counts.get(AbilityExecutionStatus.TRIGGER_SEEN));
         assertEquals(0L, counts.get(AbilityExecutionStatus.SUCCESS));
+    }
+
+
+    @Test
+    void attemptedSuppressedAndTriggerSeenAreDistinct() {
+        ItemAbilityManager manager = new ItemAbilityManager((artifact, rep) -> profileWith(memoryAbility()));
+        manager.setTriggerSubscriptionIndexingEnabled(false);
+
+        Artifact artifact = artifact(44L);
+        AbilityDispatchResult first = manager.resolveDispatch(new AbilityEventContext(
+                AbilityTrigger.ON_MEMORY_EVENT,
+                artifact,
+                new ArtifactReputation(),
+                1.0D,
+                "memory-repeat"
+        ));
+        AbilityDispatchResult second = manager.resolveDispatch(new AbilityEventContext(
+                AbilityTrigger.ON_MEMORY_EVENT,
+                artifact,
+                new ArtifactReputation(),
+                1.0D,
+                "memory-repeat"
+        ));
+
+        assertEquals(1, first.executions().size());
+        assertEquals(1, second.executions().size());
+        assertEquals(AbilityExecutionStatus.SUCCESS, first.executions().getFirst().status());
+        assertEquals(AbilityExecutionStatus.SUPPRESSED, second.executions().getFirst().status());
+
+        Map<AbilityExecutionStatus, Long> counts = manager.executionStatusCounts();
+        assertEquals(2L, counts.get(AbilityExecutionStatus.TRIGGER_SEEN));
+        assertEquals(2L, counts.get(AbilityExecutionStatus.ATTEMPTED));
+        assertEquals(1L, counts.get(AbilityExecutionStatus.SUCCESS));
+        assertEquals(1L, counts.get(AbilityExecutionStatus.SUPPRESSED));
+    }
+
+    @Test
+    void noOpAndMeaningfulOutcomesAreSeparatedAnalytically() {
+        ItemAbilityManager manager = new ItemAbilityManager((artifact, rep) -> new AbilityProfile("mix", List.of(harvestAbility("Harvest"), flavorAbility())));
+        manager.setTriggerSubscriptionIndexingEnabled(false);
+
+        manager.resolveDispatch(new AbilityEventContext(
+                AbilityTrigger.ON_BLOCK_HARVEST,
+                artifact(55L),
+                new ArtifactReputation(),
+                1.0D,
+                "harvest"
+        ));
+
+        assertEquals(1L, manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
+        assertEquals(1L, manager.noOpByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST"));
+        assertEquals(1L, manager.executionStatusByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST#NO_OP"));
+        assertNull(manager.meaningfulOutcomeByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST"));
     }
 
     private AbilityProfile profileWith(AbilityDefinition definition) {
@@ -125,6 +178,27 @@ class AbilityExecutionArchitectureTest {
                 List.of(),
                 new AbilityMetadata(java.util.Set.of("harvest"), java.util.Set.of("farm"), java.util.Set.of("survival"), 1.0D, 1.0D, 1.0D, 0.4D, 0.0D, 0.0D),
                 "s1", "s2", "s3", "s4", "s5"
+        );
+    }
+
+
+    private AbilityDefinition flavorAbility() {
+        return new AbilityDefinition(
+                "support.ward_pulse",
+                "Ward Pulse",
+                AbilityFamily.SURVIVAL,
+                AbilityTrigger.ON_BLOCK_HARVEST,
+                AbilityMechanic.PULSE,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                List.of(),
+                List.of(),
+                new AbilityMetadata(java.util.Set.of("flavor"), java.util.Set.of("farm"), java.util.Set.of("support"), 0.1D, 0.1D, 0.1D, 0.1D, 0.1D, 0.1D),
+                "f1", "f2", "f3", "f4", "f5"
         );
     }
 

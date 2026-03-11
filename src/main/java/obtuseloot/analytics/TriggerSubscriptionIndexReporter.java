@@ -53,7 +53,10 @@ public final class TriggerSubscriptionIndexReporter {
         out.append("## 6) Trigger budget pressure\n");
         out.append("- Suppression reasons (aggregate): ").append(manager.suppressionReasonCounts()).append("\n");
         out.append("- Budget consumption by trigger (x100 units): ").append(manager.triggerBudgetConsumptionByTrigger()).append("\n");
-        out.append("- Budget consumption by ability (x100 units): ").append(manager.triggerBudgetConsumptionByAbility()).append("\n\n");
+        out.append("- Budget consumption by mechanic-id (x100 units): ").append(manager.triggerBudgetConsumptionByAbility()).append("\n");
+        out.append("- Execution status by mechanic@trigger: ").append(manager.executionStatusByMechanicTrigger()).append("\n");
+        out.append("- Meaningful outcomes by mechanic@trigger: ").append(manager.meaningfulOutcomeByMechanicTrigger()).append("\n");
+        out.append("- No-op outcomes by mechanic@trigger: ").append(manager.noOpByMechanicTrigger()).append("\n\n");
 
         out.append("## 7) Remaining hot-path concerns\n");
         out.append("- Ensure subscription rebuild hooks are triggered after state-changing debug, evolution, drift, awakening, and fusion flows.\n");

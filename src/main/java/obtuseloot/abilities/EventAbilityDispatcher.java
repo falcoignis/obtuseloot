@@ -13,6 +13,7 @@ public final class EventAbilityDispatcher {
         List<AbilityExecutionResult> executions = new ArrayList<>(bindings.size());
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (ArtifactTriggerBinding binding : bindings) {
+            manager.recordExecution(attempted(binding.definition(), context));
             AbilityExecutionResult result = executeWithBudget(binding.definition(), context, stage, manager);
             executions.add(result);
             manager.recordExecution(result);
@@ -27,12 +28,30 @@ public final class EventAbilityDispatcher {
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (AbilityDefinition def : profile.abilities()) {
             if (def.trigger() == context.trigger()) {
+                manager.recordExecution(attempted(def, context));
                 AbilityExecutionResult result = executeWithBudget(def, context, stage, manager);
                 executions.add(result);
                 manager.recordExecution(result);
             }
         }
         return new AbilityDispatchResult(context, List.copyOf(executions));
+    }
+
+
+    private AbilityExecutionResult attempted(AbilityDefinition definition,
+                                             AbilityEventContext context) {
+        return new AbilityExecutionResult(
+                definition.id(),
+                definition.mechanic(),
+                context.trigger(),
+                context.artifact().getArtifactStorageKey(),
+                context.artifact().getOwnerId(),
+                AbilityExecutionStatus.ATTEMPTED,
+                AbilityOutcomeType.FLAVOR_ONLY,
+                false,
+                null,
+                null
+        );
     }
 
     private AbilityExecutionResult executeWithBudget(AbilityDefinition definition,

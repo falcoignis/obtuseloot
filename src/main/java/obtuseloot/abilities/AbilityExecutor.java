@@ -35,13 +35,14 @@ public final class AbilityExecutor {
 
         AbilityOutcomeType outcomeType = resolveOutcomeType(definition.mechanic());
         boolean meaningful = outcomeType != AbilityOutcomeType.FLAVOR_ONLY;
+        AbilityExecutionStatus status = meaningful ? AbilityExecutionStatus.SUCCESS : AbilityExecutionStatus.NO_OP;
         return new AbilityExecutionResult(
                 definition.id(),
                 definition.mechanic(),
                 context.trigger(),
                 context.artifact().getArtifactStorageKey(),
                 context.artifact().getOwnerId(),
-                AbilityExecutionStatus.SUCCESS,
+                status,
                 outcomeType,
                 meaningful,
                 null,
