@@ -16,6 +16,7 @@ public record AbilityDefinition(
         String memoryVariant,
         List<AbilityModifier> supportModifiers,
         List<AbilityEffect> effects,
+        AbilityMetadata metadata,
         String stage1,
         String stage2,
         String stage3,

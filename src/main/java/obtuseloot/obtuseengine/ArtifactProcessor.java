@@ -15,6 +15,7 @@ import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ArtifactProcessor {
@@ -91,6 +92,21 @@ public final class ArtifactProcessor {
         applyCombatContextBonuses(player, context, rep, artifact);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
         plugin.getArtifactManager().markDirty(player.getUniqueId());
+    }
+
+    public static void processAbilityTrigger(Player player, AbilityTrigger trigger, double value, String source) {
+        processAbilityTriggerWithResult(player, trigger, value, source);
+    }
+
+    public static List<String> processAbilityTriggerWithResult(Player player, AbilityTrigger trigger, double value, String source) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        plugin.getArtifactUsageTracker().trackUse(artifact);
+        List<String> activated = triggerAbility(plugin, artifact, rep, trigger, value, source);
+        plugin.getLoreEngine().refreshLore(player, artifact, rep);
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
+        return activated;
     }
 
     public static void processSimulatedCombat(Player player, double damage) {
@@ -174,11 +190,11 @@ public final class ArtifactProcessor {
     }
 
 
-    private static void triggerAbility(ObtuseLoot plugin, Artifact artifact, ArtifactReputation rep, AbilityTrigger trigger, double value, String source) {
+    private static List<String> triggerAbility(ObtuseLoot plugin, Artifact artifact, ArtifactReputation rep, AbilityTrigger trigger, double value, String source) {
         if (!ArtifactEligibility.isAbilityEligible(artifact) || plugin.getItemAbilityManager() == null) {
-            return;
+            return List.of();
         }
-        plugin.getItemAbilityManager().resolveEffects(new AbilityEventContext(trigger, artifact, rep, value, source));
+        return plugin.getItemAbilityManager().resolveEffects(new AbilityEventContext(trigger, artifact, rep, value, source));
     }
 
     private static void incrementRep(ArtifactReputation rep, String statKey) {

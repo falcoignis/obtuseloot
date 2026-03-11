@@ -2,79 +2,66 @@ package obtuseloot.abilities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class AbilityRegistry {
     private final List<AbilityTemplate> templates;
 
     public AbilityRegistry() {
         this.templates = List.of(
-                // Precision
-                template("precision.sigil", "Sigil of Delay", AbilityFamily.PRECISION, AbilityTrigger.ON_HIT, AbilityMechanic.MARK,
-                        "Marks on cadence then ruptures during reposition windows", "extended mark chain", "volatile puncture", "timed exposed window", "mark persistence through swaps", "echo mark from memory"),
-                template("precision.gambit", "Gambit Needle", AbilityFamily.PRECISION, AbilityTrigger.ON_MULTI_KILL, AbilityMechanic.CHAIN_ESCALATION,
-                        "Successive precision hits tighten a crescendo finisher", "combo stabilizer", "drift injects false tells", "awakening keeps combo in downtime", "fusion adds allied follow-through", "precision history preserves stacks"),
-                template("precision.refractor", "Refractor Lattice", AbilityFamily.PRECISION, AbilityTrigger.ON_REPOSITION, AbilityMechanic.PULSE,
-                        "Reposition refracts prior trajectory into delayed pulse cuts", "additional prism nodes", "drift skews pulse timing", "awakening doubles refracted lane", "fusion links prism endpoints", "memory replays best lane"),
-                template("precision.vow", "Vow of Exposed Truth", AbilityFamily.PRECISION, AbilityTrigger.ON_BOSS_KILL, AbilityMechanic.GUARDIAN_PULSE,
-                        "Boss pressure builds truth-seal windows for precision punish", "boss aperture extension", "drift inverts weakpoint windows", "awakening adds truth overguard", "fusion propagates truth-seal", "boss memory sharpens exposure"),
+                template("precision.echo_locator", "Echo Locator", AbilityFamily.PRECISION, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.SENSE_PING,
+                        "Resonant pulses reveal nearby hollows when crossing new terrain", "deeper echo strata", "drift introduces phantom echoes", "awakening stabilizes pulse geometry", "fusion shares cave cues", "memory records hollow corridors",
+                        metadata(Set.of("environmental-sensing", "information"), Set.of("movement-throttled"), Set.of("watchful", "exploration", "memory"), 0.72D, 0.81D, 0.78D, 0.22D, 0.20D, 0.41D)),
+                template("precision.vein_whisper", "Vein Whisper", AbilityFamily.PRECISION, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.INSIGHT_REVEAL,
+                        "Interprets chunk composition into soft ore-likelihood hints", "better material confidence", "drift shifts probabilities", "awakening filters false positives", "fusion triangulates material drift", "memory stores productive seams",
+                        metadata(Set.of("informational-interpretation", "environmental-sensing"), Set.of("chunk-change"), Set.of("watchful", "exploration"), 0.68D, 0.76D, 0.84D, 0.15D, 0.18D, 0.46D)),
+                template("precision.material_insight", "Material Insight", AbilityFamily.PRECISION, AbilityTrigger.ON_BLOCK_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
+                        "Inspected blocks whisper practical context and odd utility lore", "broader material lexicon", "drift adds cryptic readings", "awakening clarifies odd traits", "fusion links shared interpretations", "memory curates known materials",
+                        metadata(Set.of("information", "world-interpretation"), Set.of("intentional-interact"), Set.of("watchful", "curious"), 0.61D, 0.44D, 0.90D, 0.25D, 0.24D, 0.51D)),
 
-                // Brutality
-                template("brutality.howl", "Howl of Pursuit", AbilityFamily.BRUTALITY, AbilityTrigger.ON_KILL, AbilityMechanic.BURST_STATE,
-                        "Kills open frenzy state with chase pulses", "frenzy overlap", "detonation on drift", "awakening extends frenzy", "fusion converts frenzy to shockfront", "memory chain heat"),
-                template("brutality.maul", "Ravenous Maul", AbilityFamily.BRUTALITY, AbilityTrigger.ON_MULTI_KILL, AbilityMechanic.RETALIATION,
-                        "Chain takedowns arm retaliatory maul arcs", "wider retaliation window", "drift may overcommit arc", "awakening hardens maul cadence", "fusion shares retaliation mark", "memory of overkill adds bite"),
-                template("brutality.quarry", "Quarry Breaker", AbilityFamily.BRUTALITY, AbilityTrigger.ON_BOSS_KILL, AbilityMechanic.BATTLEFIELD_FIELD,
-                        "Boss finish fractures zone into hunt lanes", "more fracture lanes", "drift causes lane collapse", "awakening adds predation anchor", "fusion enables lane chaining", "boss hunts sustain zone"),
-                template("brutality.bleedrush", "Bleedrush Overrun", AbilityFamily.BRUTALITY, AbilityTrigger.ON_CHAIN_COMBAT, AbilityMechanic.CHAIN_ESCALATION,
-                        "Prolonged pressure overdrives momentum into impact rushes", "rush stack retention", "drift causes reckless surges", "awakening converts stacks to armor shred", "fusion syncs rush with allies", "memory keeps fury tempo"),
+                template("mobility.footprint_memory", "Footprint Memory", AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.NAVIGATION_ANCHOR,
+                        "Sneak-use marks a location and later points back to it", "longer recall range", "drift can misalign memory", "awakening anchors dimension-safe recall", "fusion broadcasts anchor to allies", "memory persists trusted waypoints",
+                        metadata(Set.of("navigation", "memory-history"), Set.of("gesture-based"), Set.of("memory", "exploration", "worldkeeper"), 0.79D, 0.88D, 0.52D, 0.35D, 0.22D, 0.55D)),
+                template("mobility.compass_stories", "Compass of Stories", AbilityFamily.MOBILITY, AbilityTrigger.ON_MEMORY_EVENT, AbilityMechanic.NAVIGATION_ANCHOR,
+                        "Points toward recorded notable events and lineage residues", "locks stronger event traces", "drift surfaces contradictory trails", "awakening resolves ancestral signatures", "fusion blends shared story maps", "memory prioritizes meaningful landmarks",
+                        metadata(Set.of("navigation", "memory-history", "structure-awareness"), Set.of("memory-driven"), Set.of("memory", "lineage", "ritual"), 0.86D, 0.82D, 0.63D, 0.48D, 0.26D, 0.39D)),
+                template("mobility.quiet_passage", "Quiet Passage", AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.SOCIAL_ATTUNEMENT,
+                        "Doors, gates, and trapdoors respond with muted passage behavior", "longer hush duration", "drift can over-silence", "awakening extends to nearby hinges", "fusion synchronizes passage fields", "memory recognizes familiar thresholds",
+                        metadata(Set.of("world-interaction", "social-flavor"), Set.of("block-interact"), Set.of("worldkeeper", "support"), 0.42D, 0.54D, 0.36D, 0.40D, 0.78D, 0.67D)),
 
-                // Survival
-                template("survival.ward", "Ward of Last Breath", AbilityFamily.SURVIVAL, AbilityTrigger.ON_LOW_HEALTH, AbilityMechanic.DEFENSIVE_THRESHOLD,
-                        "Low health raises threshold ward and retaliatory pulse", "ward echo", "hollow rebuke", "awakening recovery latch", "fusion projects ward", "memory survival lock"),
-                template("survival.embankment", "Embankment Loop", AbilityFamily.SURVIVAL, AbilityTrigger.ON_CHAIN_COMBAT, AbilityMechanic.RECOVERY_WINDOW,
-                        "Long engagements open recurring sustain windows", "extra restoration loops", "drift leaks sustain into spikes", "awakening banks unused restoration", "fusion emits team embankment", "long battle memory extends loop"),
-                template("survival.eidolon", "Eidolon Shelter", AbilityFamily.SURVIVAL, AbilityTrigger.ON_MEMORY_EVENT, AbilityMechanic.MEMORY_ECHO,
-                        "Near-failure memories summon protective eidolon echoes", "echo shelter duplication", "drift causes shelter flicker", "awakening grants adaptive shell", "fusion turns shell communal", "trauma memory hardens shell"),
-                template("survival.remnant", "Remnant Bastion", AbilityFamily.SURVIVAL, AbilityTrigger.ON_AWAKENING, AbilityMechanic.GUARDIAN_PULSE,
-                        "Awakening anchors defensive remnant that retaliates", "remnant pulse interval", "drift destabilizes remnant spacing", "awakening overclocks remnant", "fusion nests second remnant", "memory binds remnant to rescues"),
+                template("survival.gentle_harvest", "Gentle Harvest", AbilityFamily.SURVIVAL, AbilityTrigger.ON_BLOCK_HARVEST, AbilityMechanic.HARVEST_RELAY,
+                        "Mature crops are replanted with respectful timing", "more crop families supported", "drift occasionally skips replant", "awakening stabilizes replant certainty", "fusion helps nearby harvested rows", "memory tracks fertile habits",
+                        metadata(Set.of("farming-building", "world-interaction"), Set.of("block-break-filtered"), Set.of("worldkeeper", "support"), 0.57D, 0.38D, 0.34D, 0.20D, 0.59D, 0.91D)),
+                template("survival.ember_keeper", "Ember Keeper", AbilityFamily.SURVIVAL, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.RITUAL_CHANNEL,
+                        "Campfires retain gentle utility states when tended by hand", "longer ember memory", "drift causes flicker moods", "awakening steadies flame intent", "fusion shares ember calm", "memory ties warmth to safe sites",
+                        metadata(Set.of("ritual-utility", "world-interaction"), Set.of("campfire-interact"), Set.of("reverent", "support", "ritual"), 0.46D, 0.41D, 0.31D, 0.88D, 0.52D, 0.74D)),
 
-                // Mobility
-                template("mobility.wake", "Wake Spiral", AbilityFamily.MOBILITY, AbilityTrigger.ON_REPOSITION, AbilityMechanic.MOVEMENT_ECHO,
-                        "Movement stores wake that loops into next engagement", "wake forks", "chaotic wake jitter", "awakening leaves sustained lane", "fusion adds pull field", "memory lane recall"),
-                template("mobility.skimmer", "Skimmer's Draft", AbilityFamily.MOBILITY, AbilityTrigger.ON_MOVEMENT, AbilityMechanic.PULSE,
-                        "Continuous motion sheds draft pulses that curve around targets", "draft persistence", "drift bends pulse vectors", "awakening stores vector debt", "fusion crossfeeds draft lines", "memory recovers best movement arcs"),
-                template("mobility.latch", "Latchstep Relay", AbilityFamily.MOBILITY, AbilityTrigger.ON_HIT, AbilityMechanic.MARK,
-                        "Hits place relay marks consumed by rapid reposition", "relay chain depth", "drift randomizes latch destination", "awakening enables instant relay reuse", "fusion shares relay lattice", "memory favors safe latches"),
-                template("mobility.escape", "Escape Velocity", AbilityFamily.MOBILITY, AbilityTrigger.ON_LOW_HEALTH, AbilityMechanic.RECOVERY_WINDOW,
-                        "Danger thresholds convert evasive bursts into recover windows", "longer evasive frame", "drift can overshoot escape vector", "awakening adds controlled rollback", "fusion pulls ally into corridor", "survival memory stabilizes exits"),
+                template("chaos.dust_memory", "Dust Memory", AbilityFamily.CHAOS, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityMechanic.MEMORY_ECHO,
+                        "Ancient spaces stir residue hints and subtle direction", "more residue vocabularies", "drift intensifies strange omens", "awakening clarifies true residue", "fusion harmonizes residue signatures", "memory binds old places to lineage",
+                        metadata(Set.of("memory-history", "structure-awareness", "ritual-utility"), Set.of("chunk-structure-entry"), Set.of("ritual", "memory", "exploration"), 0.83D, 0.74D, 0.67D, 0.79D, 0.33D, 0.44D)),
+                template("chaos.witness", "Witness", AbilityFamily.CHAOS, AbilityTrigger.ON_WITNESS_EVENT, AbilityMechanic.REVENANT_TRIGGER,
+                        "Artifacts react to historically significant places and events", "deeper witness recall", "drift surfaces fractured testimony", "awakening anchors true chronicle", "fusion merges witness threads", "memory archives personal saga",
+                        metadata(Set.of("memory-history", "information", "social-flavor"), Set.of("history-event"), Set.of("memory", "lineage", "watchful"), 0.91D, 0.66D, 0.71D, 0.74D, 0.64D, 0.40D)),
 
-                // Chaos
-                template("chaos.spore", "Spore of Divergence", AbilityFamily.CHAOS, AbilityTrigger.ON_DRIFT_MUTATION, AbilityMechanic.UNSTABLE_DETONATION,
-                        "Drift erupts anomaly spores that alter local combat", "anomaly split", "instability bloom", "awakening reroll", "fusion chain reaction", "memory scar resonance"),
-                template("chaos.fracture", "Fracture Psalm", AbilityFamily.CHAOS, AbilityTrigger.ON_MEMORY_EVENT, AbilityMechanic.BATTLEFIELD_FIELD,
-                        "Contradictory memories fracture the arena into shifting psalms", "additional psalm nodes", "drift warps hymn cadence", "awakening inverts one psalm", "fusion overlays psalms", "trauma memory feeds dissonance"),
-                template("chaos.paradox", "Paradox Lantern", AbilityFamily.CHAOS, AbilityTrigger.ON_FUSION, AbilityMechanic.REVENANT_TRIGGER,
-                        "Fusion awakens paradox revenant that rewrites trigger order", "extra paradox checkpoints", "drift shuffles checkpoint rewards", "awakening freezes one paradox branch", "fusion doubles revenant span", "memory pressure deepens paradox"),
-                template("chaos.gale", "Entropy Gale", AbilityFamily.CHAOS, AbilityTrigger.ON_CHAIN_COMBAT, AbilityMechanic.UNSTABLE_DETONATION,
-                        "Sustained combat births entropy gales with nonlinear detonations", "gale persistence", "drift introduces singular spikes", "awakening pins one safe corridor", "fusion chains gales", "memory of rampages expands gales"),
-
-                // Consistency
-                template("consistency.rhythm", "Rhythm Bastion", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_CHAIN_COMBAT, AbilityMechanic.CHAIN_ESCALATION,
-                        "Sustained combat opens rhythm gates and fallback beats", "longer rhythm", "drift converts miss to pulse", "awakening carryover", "fusion team sync", "memory cadence"),
-                template("consistency.clock", "Clockwork Covenant", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_HIT, AbilityMechanic.RECOVERY_WINDOW,
-                        "Reliable hit cadence grants predictable recovery slices", "covenant cadence extension", "drift offsets cadence by one beat", "awakening stores unused slices", "fusion shares covenant beat", "discipline memory fixes cadence"),
-                template("consistency.anchor", "Anchor Thesis", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_BOSS_KILL, AbilityMechanic.DEFENSIVE_THRESHOLD,
-                        "Boss victories forge stable anchors for future engagements", "anchor stack depth", "drift adds temporary anchor decay", "awakening hard-locks primary anchor", "fusion creates linked anchors", "boss memory strengthens locks"),
-                template("consistency.refrain", "Refrain Protocol", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_MEMORY_EVENT, AbilityMechanic.MEMORY_ECHO,
-                        "Memory events replay proven patterns to avoid collapse", "refrain queue depth", "drift injects dissonant refrain", "awakening filters dissonance", "fusion shares pattern library", "memory confirms safe recursion")
+                template("consistency.buried_memory", "Buried Memory", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityMechanic.SENSE_PING,
+                        "Nearby notable structures become faint directional impressions", "greater structure palette", "drift can blur exact type", "awakening refines structure identity", "fusion broadens sensed region", "memory preserves discovered sites",
+                        metadata(Set.of("structure-awareness", "navigation"), Set.of("region-cache"), Set.of("exploration", "memory"), 0.87D, 0.85D, 0.66D, 0.43D, 0.28D, 0.47D)),
+                template("consistency.bestiary_insight", "Bestiary Insight", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_ENTITY_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
+                        "Intentional creature inspection reveals behavior and habitat notes", "more species lore", "drift adds uncanny annotations", "awakening improves behavior certainty", "fusion shares creature notes", "memory stores observed creatures",
+                        metadata(Set.of("information", "social-world-behavior"), Set.of("entity-interact"), Set.of("watchful", "curious", "support"), 0.64D, 0.53D, 0.89D, 0.36D, 0.69D, 0.33D))
         );
     }
 
     private AbilityTemplate template(String id, String name, AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,
-                                    String effectPattern, String evolutionVariant, String driftVariant, String awakeningVariant, String fusionVariant,
-                                    String memoryVariant) {
+                                     String effectPattern, String evolutionVariant, String driftVariant, String awakeningVariant, String fusionVariant,
+                                     String memoryVariant, AbilityMetadata metadata) {
         return new AbilityTemplate(id, name, family, trigger, mechanic, effectPattern, evolutionVariant, driftVariant, awakeningVariant, fusionVariant,
-                memoryVariant, List.of(new AbilityModifier("support.signature", "secondary tuning hook", 0.04, false)));
+                memoryVariant, List.of(new AbilityModifier("support.signature", "non-combat tuning hook", 0.04, false)), metadata);
+    }
+
+    private AbilityMetadata metadata(Set<String> domains, Set<String> triggers, Set<String> affinities,
+                                     double discovery, double exploration, double information, double ritual, double social, double world) {
+        return AbilityMetadata.of(domains, triggers, affinities, discovery, exploration, information, ritual, social, world);
     }
 
     public List<AbilityTemplate> templates() { return templates; }

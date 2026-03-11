@@ -249,14 +249,12 @@ public class TraitInterferenceResolver {
             abilityWeights.put(template.id(), inferByFamily(template.family()));
         }
 
-        abilityWeights.put("precision.sigil", weights(GenomeTrait.PRECISION_AFFINITY, 0.70D, GenomeTrait.RESONANCE, 0.40D, GenomeTrait.VOLATILITY, -0.20D));
-        abilityWeights.put("precision.gambit", weights(GenomeTrait.PRECISION_AFFINITY, 0.64D, GenomeTrait.KINETIC_BIAS, 0.30D, GenomeTrait.STABILITY, 0.18D));
-        abilityWeights.put("precision.refractor", weights(GenomeTrait.PRECISION_AFFINITY, 0.58D, GenomeTrait.RESONANCE, 0.52D, GenomeTrait.VOLATILITY, -0.16D));
-
-        abilityWeights.put("mobility.wake", weights(GenomeTrait.MOBILITY_AFFINITY, 0.65D, GenomeTrait.KINETIC_BIAS, 0.45D, GenomeTrait.STABILITY, -0.10D));
-        abilityWeights.put("survival.ward", weights(GenomeTrait.SURVIVAL_INSTINCT, 0.72D, GenomeTrait.STABILITY, 0.36D, GenomeTrait.VOLATILITY, -0.22D));
-        abilityWeights.put("chaos.spore", weights(GenomeTrait.CHAOS_AFFINITY, 0.80D, GenomeTrait.VOLATILITY, 0.46D, GenomeTrait.STABILITY, -0.40D));
-        abilityWeights.put("chaos.paradox", weights(GenomeTrait.CHAOS_AFFINITY, 0.88D, GenomeTrait.RESONANCE, 0.30D, GenomeTrait.STABILITY, -0.30D));
+        abilityWeights.put("precision.echo_locator", weights(GenomeTrait.PRECISION_AFFINITY, 0.62D, GenomeTrait.RESONANCE, 0.33D, GenomeTrait.STABILITY, 0.10D));
+        abilityWeights.put("precision.vein_whisper", weights(GenomeTrait.PRECISION_AFFINITY, 0.58D, GenomeTrait.RESONANCE, 0.41D, GenomeTrait.CHAOS_AFFINITY, -0.10D));
+        abilityWeights.put("mobility.footprint_memory", weights(GenomeTrait.MOBILITY_AFFINITY, 0.61D, GenomeTrait.RESONANCE, 0.35D, GenomeTrait.STABILITY, 0.22D));
+        abilityWeights.put("survival.gentle_harvest", weights(GenomeTrait.SURVIVAL_INSTINCT, 0.60D, GenomeTrait.STABILITY, 0.40D, GenomeTrait.VOLATILITY, -0.15D));
+        abilityWeights.put("chaos.witness", weights(GenomeTrait.CHAOS_AFFINITY, 0.62D, GenomeTrait.RESONANCE, 0.42D, GenomeTrait.STABILITY, 0.06D));
+        abilityWeights.put("consistency.buried_memory", weights(GenomeTrait.STABILITY, 0.58D, GenomeTrait.RESONANCE, 0.36D, GenomeTrait.MOBILITY_AFFINITY, 0.14D));
 
         Map<String, EnumMap<GenomeTrait, Double>> filtered = new HashMap<>();
         for (AbilityTemplate template : templates) {

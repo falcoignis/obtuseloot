@@ -42,12 +42,12 @@ class GenomeArchitectureTest {
     void abilityScoringUsesTraitInterferenceWeights() {
         AbilityRegistry registry = new AbilityRegistry();
         TraitInterferenceResolver resolver = new TraitInterferenceResolver(registry.templates());
-        AbilityTemplate precisionSigil = registry.templates().stream().filter(t -> t.id().equals("precision.sigil")).findFirst().orElseThrow();
+        AbilityTemplate precisionSigil = registry.templates().stream().filter(t -> t.id().equals("precision.echo_locator")).findFirst().orElseThrow();
 
         ArtifactGenome genome = new GenomeResolver().resolve(42L);
-        double expected = genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY) * 0.70D
-                + genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.RESONANCE) * 0.40D
-                + genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.VOLATILITY) * -0.20D;
+        double expected = genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY) * 0.62D
+                + genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.RESONANCE) * 0.33D
+                + genome.traits().get(obtuseloot.abilities.genome.GenomeTrait.STABILITY) * 0.10D;
 
         assertEquals(expected, resolver.score(precisionSigil, genome), 1.0E-9D);
     }
@@ -71,7 +71,7 @@ class GenomeArchitectureTest {
     void traitScoringUsesDotProductProjection() {
         AbilityRegistry registry = new AbilityRegistry();
         TraitInterferenceResolver resolver = new TraitInterferenceResolver(registry.templates());
-        AbilityTemplate precisionSigil = registry.templates().stream().filter(t -> t.id().equals("precision.sigil")).findFirst().orElseThrow();
+        AbilityTemplate precisionSigil = registry.templates().stream().filter(t -> t.id().equals("precision.echo_locator")).findFirst().orElseThrow();
 
         ArtifactGenome genome = new GenomeResolver().resolve(42L);
         GenomeProjection genomeProjection = GenomeProjection.fromGenome(genome);

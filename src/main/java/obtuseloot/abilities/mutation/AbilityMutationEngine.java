@@ -67,6 +67,7 @@ public class AbilityMutationEngine {
                     definition.memoryVariant() + (memoryPressure ? " + memory echo" : ""),
                     support,
                     List.of(new AbilityEffect(effectPattern, AbilityEffectType.TRIGGERED_BEHAVIOR, 0.02D + (mutationCount * 0.001D))),
+                    definition.metadata(),
                     definition.stage1(),
                     definition.stage2() + " [mutation=" + mutationCount + "]",
                     definition.stage3() + " [flavor=" + (chaosGrowth ? "volatile" : "disciplined") + "]",
@@ -77,19 +78,19 @@ public class AbilityMutationEngine {
     }
 
     private AbilityTrigger mutateTrigger(AbilityTrigger current, AbilityMechanic mechanic, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {
-        if (chaosGrowth && mechanic == AbilityMechanic.UNSTABLE_DETONATION) {
-            return AbilityTrigger.ON_DRIFT_MUTATION;
+        if (chaosGrowth && mechanic == AbilityMechanic.REVENANT_TRIGGER) {
+            return AbilityTrigger.ON_WITNESS_EVENT;
         }
-        if (memoryProfile.disciplineWeight() > memoryProfile.chaosWeight() && mechanic == AbilityMechanic.MARK) {
-            return AbilityTrigger.ON_HIT;
+        if (memoryProfile.disciplineWeight() > memoryProfile.chaosWeight() && mechanic == AbilityMechanic.INSIGHT_REVEAL) {
+            return AbilityTrigger.ON_BLOCK_INSPECT;
         }
-        if (memoryProfile.survivalWeight() > 1.2D && (mechanic == AbilityMechanic.DEFENSIVE_THRESHOLD || mechanic == AbilityMechanic.RECOVERY_WINDOW)) {
-            return AbilityTrigger.ON_LOW_HEALTH;
+        if (memoryProfile.survivalWeight() > 1.2D && mechanic == AbilityMechanic.HARVEST_RELAY) {
+            return AbilityTrigger.ON_BLOCK_HARVEST;
         }
-        if (memoryProfile.mobilityWeight() > 0.8D && mechanic == AbilityMechanic.MOVEMENT_ECHO) {
-            return AbilityTrigger.ON_REPOSITION;
+        if (memoryProfile.mobilityWeight() > 0.8D && mechanic == AbilityMechanic.NAVIGATION_ANCHOR) {
+            return AbilityTrigger.ON_WORLD_SCAN;
         }
-        return random.nextDouble() < 0.2D ? AbilityTrigger.ON_CHAIN_COMBAT : current;
+        return random.nextDouble() < 0.2D ? AbilityTrigger.ON_MEMORY_EVENT : current;
     }
 
     private AbilityMechanic mutateMechanic(AbilityMechanic current, AbilityFamily family, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {

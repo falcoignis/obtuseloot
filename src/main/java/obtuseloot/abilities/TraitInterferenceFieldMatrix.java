@@ -20,11 +20,11 @@ public final class TraitInterferenceFieldMatrix {
         modifier += mechanicEnvironment;
         append(effects, "mechanic×environment", mechanicEnvironment);
 
-        double gateTrigger = (template.trigger() == AbilityTrigger.ON_LOW_HEALTH || template.trigger() == AbilityTrigger.ON_MEMORY_EVENT) ? (genome.trait(GenomeTrait.STABILITY) - 0.5D) * 0.10D : 0.0D;
+        double gateTrigger = (template.trigger() == AbilityTrigger.ON_MEMORY_EVENT || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT) ? (genome.trait(GenomeTrait.STABILITY) - 0.5D) * 0.10D : 0.0D;
         modifier += gateTrigger;
         append(effects, "gate×trigger", gateTrigger);
 
-        double memoryMechanic = template.mechanic() == AbilityMechanic.MEMORY_ECHO ? centered(genome.trait(GenomeTrait.RESONANCE)) * 0.12D : 0.0D;
+        double memoryMechanic = (template.mechanic() == AbilityMechanic.MEMORY_ECHO || template.mechanic() == AbilityMechanic.NAVIGATION_ANCHOR) ? centered(genome.trait(GenomeTrait.RESONANCE)) * 0.12D : 0.0D;
         modifier += memoryMechanic;
         append(effects, "memory×mechanic", memoryMechanic);
 
@@ -44,16 +44,16 @@ public final class TraitInterferenceFieldMatrix {
     }
 
     private double triggerMechanicModifier(AbilityTrigger trigger, AbilityMechanic mechanic) {
-        if ((trigger == AbilityTrigger.ON_MEMORY_EVENT || trigger == AbilityTrigger.ON_AWAKENING)
+        if ((trigger == AbilityTrigger.ON_MEMORY_EVENT || trigger == AbilityTrigger.ON_WITNESS_EVENT)
                 && (mechanic == AbilityMechanic.MEMORY_ECHO || mechanic == AbilityMechanic.REVENANT_TRIGGER)) {
             return 0.10D;
         }
-        if ((trigger == AbilityTrigger.ON_MOVEMENT || trigger == AbilityTrigger.ON_REPOSITION)
-                && mechanic == AbilityMechanic.MOVEMENT_ECHO) {
+        if ((trigger == AbilityTrigger.ON_MOVEMENT || trigger == AbilityTrigger.ON_REPOSITION || trigger == AbilityTrigger.ON_WORLD_SCAN)
+                && (mechanic == AbilityMechanic.MOVEMENT_ECHO || mechanic == AbilityMechanic.NAVIGATION_ANCHOR)) {
             return 0.08D;
         }
-        if (trigger == AbilityTrigger.ON_LOW_HEALTH && mechanic == AbilityMechanic.UNSTABLE_DETONATION) {
-            return -0.06D;
+        if (trigger == AbilityTrigger.ON_BLOCK_HARVEST && mechanic == AbilityMechanic.HARVEST_RELAY) {
+            return 0.06D;
         }
         return 0.0D;
     }

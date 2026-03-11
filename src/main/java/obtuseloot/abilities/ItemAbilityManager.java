@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class ItemAbilityManager {
     private final AbilityResolver resolver;
     private final Map<String, Integer> triggerCounts = new HashMap<>();
+    private final Map<String, Integer> triggerSourceCounts = new HashMap<>();
     private final TriggerSubscriptionIndex subscriptionIndex = new TriggerSubscriptionIndex();
     private final EventAbilityDispatcher dispatcher = new EventAbilityDispatcher();
 
@@ -53,6 +54,7 @@ public class ItemAbilityManager {
     public List<String> resolveEffects(AbilityEventContext context) {
         dispatchCalls.increment();
         dispatchByTrigger.get(context.trigger()).increment();
+        triggerSourceCounts.merge(context.trigger()+"#"+context.source(), 1, Integer::sum);
 
         UUID ownerId = context.artifact().getOwnerId();
         if (triggerSubscriptionIndexingEnabled && ownerId != null) {
@@ -151,6 +153,10 @@ public class ItemAbilityManager {
 
     public Map<String, Integer> triggerCounts() {
         return Map.copyOf(triggerCounts);
+    }
+
+    public Map<String, Integer> triggerSourceCounts() {
+        return Map.copyOf(triggerSourceCounts);
     }
 
     public TraitProjectionStats traitProjectionStats() {
