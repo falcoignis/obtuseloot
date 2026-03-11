@@ -49,11 +49,21 @@ jobs:
           ./scripts/run-world-lab-validation.sh
           ./scripts/run-meta-analysis.sh
 
+      - name: Ecology summary
+        run: |
+          test -f analytics/ecology-alerts-report.md && cat analytics/ecology-alerts-report.md || true
+          test -f analytics/world-lab/ecology-regression-gate-review.md && cat analytics/world-lab/ecology-regression-gate-review.md || true
+
       - name: Upload world-lab results
         uses: actions/upload-artifact@v4
         with:
           name: world-lab-results
-          path: analytics/world-lab/
+          path: |
+            analytics/world-lab/
+            analytics/persistent-novel-niche-report.md
+            analytics/persistent-novel-niche.json
+            analytics/ecology-alerts-report.md
+            analytics/ecology-alerts.json
           if-no-files-found: ignore
 
       - name: Upload dashboard results

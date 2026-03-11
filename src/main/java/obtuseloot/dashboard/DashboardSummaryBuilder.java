@@ -12,6 +12,7 @@ public class DashboardSummaryBuilder {
                 + ", END=" + fmt(metrics.endArtifacts())
                 + ", TNT=" + fmt(metrics.latestTnt())
                 + ", NSER=" + fmt(metrics.latestNser())
+                + ", PNNC=" + metrics.latestPnnc()
                 + ", EcosystemStatus=" + metrics.ecosystemStatus().name()
                 + ", EcologyDiagnostic=" + metrics.diagnosticState().name()
                 + ", DiagnosticConfidence=" + fmt(metrics.diagnosticConfidence())

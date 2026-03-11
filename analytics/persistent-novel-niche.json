@@ -1,0 +1,28 @@
+{
+  "noveltyCriteria": ["Novel niche signatures are compared to previously accepted niche signatures via normalized signature distance.","Signature dimensions: trigger profile, mechanic profile, regulatory gate profile, environmental affinity, persistence style, support-vs-combat role, memory/environment role, branch tendency, occupancy share, species support.","A niche is treated as novel only when minimum signature distance exceeds the novelty threshold; tiny label churn is filtered out."],
+  "persistenceCriteria": ["minimum persistence seasons >= 3","minimum occupancy share >= 0.05","minimum species support >= 2"],
+  "currentPNNC": 1,
+  "PNNCTrend": [0,0,1],
+  "bySeason": [{
+      "season": 1,
+      "pnnc": 0,
+      "novelCandidates": 1,
+      "persistentNovelNiches": [],
+      "failedNovelCandidates": []
+    },{
+      "season": 2,
+      "pnnc": 0,
+      "novelCandidates": 0,
+      "persistentNovelNiches": [],
+      "failedNovelCandidates": []
+    },{
+      "season": 3,
+      "pnnc": 1,
+      "novelCandidates": 0,
+      "persistentNovelNiches": ["niche-1"],
+      "failedNovelCandidates": []
+    }],
+  "failedCandidates": [],
+  "persistentExamples": ["niche-1"],
+  "interpretation": "PNNC=1-2: weak bounded novelty with limited durable ecological expansion."
+}

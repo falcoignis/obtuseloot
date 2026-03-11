@@ -41,6 +41,8 @@ jobs:
         run: |
           mkdir -p /tmp/open-endedness/${{ matrix.mode }}
           cp -R analytics/world-lab/open-endedness/. /tmp/open-endedness/${{ matrix.mode }}/ || true
+          cp analytics/persistent-novel-niche-report.md /tmp/open-endedness/${{ matrix.mode }}/ || true
+          cp analytics/persistent-novel-niche.json /tmp/open-endedness/${{ matrix.mode }}/ || true
 
       - name: Upload open-endedness results for mode
         uses: actions/upload-artifact@v4
