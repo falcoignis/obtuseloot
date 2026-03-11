@@ -36,6 +36,11 @@ public final class WorldSimulationRunner {
                         doubleProp("world.fitnessSharing.targetOccupancy", defaults.fitnessSharing().targetOccupancy()),
                         doubleProp("world.fitnessSharing.similarityRadius", defaults.fitnessSharing().similarityRadius())
                 ).bounded(),
+                new SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig(
+                        boolProp("world.behavioralProjection.enabled", defaults.behavioralProjection().enabled()),
+                        doubleProp("world.behavioralProjection.traitEcologyWeight", defaults.behavioralProjection().traitEcologyWeight()),
+                        doubleProp("world.behavioralProjection.behaviorWeight", defaults.behavioralProjection().behaviorWeight())
+                ),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();

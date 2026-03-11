@@ -1,0 +1,27 @@
+{
+  "dimensions": [
+    "trigger_activation_mix",
+    "mechanic_activation_mix",
+    "support_action_ratio",
+    "damage_action_ratio",
+    "persistence_action_ratio",
+    "mobility_usage_ratio",
+    "environment_dependent_activation_ratio",
+    "memory_driven_activation_ratio",
+    "latent_activation_rate",
+    "persistence_window_usage",
+    "interaction_diversity",
+    "activation_burstiness"
+  ],
+  "projection": {
+    "enabled": true,
+    "traitEcologyWeight": 0.35,
+    "behaviorWeight": 0.65,
+    "mode": "behavior-dominated"
+  },
+  "nicheCount": 1,
+  "nicheOccupancy": {
+    "niche-1": 160
+  },
+  "topSeparationDimensions": []
+}
