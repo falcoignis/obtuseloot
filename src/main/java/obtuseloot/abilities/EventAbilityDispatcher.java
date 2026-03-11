@@ -4,31 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class EventAbilityDispatcher {
+    private final AbilityExecutor executor = new AbilityExecutor();
 
-    public List<String> dispatchIndexed(AbilityEventContext context,
-                                        List<ArtifactTriggerBinding> bindings,
-                                        ItemAbilityManager manager) {
-        List<String> activated = new ArrayList<>(bindings.size());
+    public AbilityDispatchResult dispatchIndexed(AbilityEventContext context,
+                                                 List<ArtifactTriggerBinding> bindings,
+                                                 ItemAbilityManager manager) {
+        List<AbilityExecutionResult> executions = new ArrayList<>(bindings.size());
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (ArtifactTriggerBinding binding : bindings) {
             AbilityDefinition def = binding.definition();
-            activated.add(def.name() + " -> " + def.stageDescription(stage));
-            manager.recordTriggerDispatch(def, context.trigger());
+            AbilityExecutionResult result = executor.execute(def, context, stage);
+            executions.add(result);
+            manager.recordExecution(result);
         }
-        return activated;
+        return new AbilityDispatchResult(context, List.copyOf(executions));
     }
 
-    public List<String> dispatchFullScan(AbilityEventContext context,
-                                         AbilityProfile profile,
-                                         ItemAbilityManager manager) {
-        List<String> activated = new ArrayList<>();
+    public AbilityDispatchResult dispatchFullScan(AbilityEventContext context,
+                                                  AbilityProfile profile,
+                                                  ItemAbilityManager manager) {
+        List<AbilityExecutionResult> executions = new ArrayList<>();
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (AbilityDefinition def : profile.abilities()) {
             if (def.trigger() == context.trigger()) {
-                activated.add(def.name() + " -> " + def.stageDescription(stage));
-                manager.recordTriggerDispatch(def, context.trigger());
+                AbilityExecutionResult result = executor.execute(def, context, stage);
+                executions.add(result);
+                manager.recordExecution(result);
             }
         }
-        return activated;
+        return new AbilityDispatchResult(context, List.copyOf(executions));
     }
 }
