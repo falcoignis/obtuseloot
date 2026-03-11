@@ -1,5 +1,6 @@
 package obtuseloot.events;
 
+import obtuseloot.abilities.AbilityMechanic;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.obtuseengine.ArtifactProcessor;
 import org.bukkit.Chunk;
@@ -99,8 +100,7 @@ public class NonCombatAbilityListener implements Listener {
         Block block = event.getBlock();
         if (!CROPS.contains(block.getType())) return;
         boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, "crop-harvest")
-                .stream()
-                .anyMatch(effect -> effect.contains("Gentle Harvest"));
+                .hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY);
         if (hasGentleHarvest) {
             block.getWorld().getBlockAt(block.getLocation()).setType(block.getType());
         }

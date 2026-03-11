@@ -2,6 +2,7 @@ package obtuseloot.obtuseengine;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.AbilityEventContext;
+import obtuseloot.abilities.AbilityDispatchResult;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
@@ -39,7 +40,7 @@ public final class ArtifactProcessor {
 
         rep.recordKill();
         plugin.getArtifactUsageTracker().trackKillParticipation(artifact);
-        if (rep.getKills() == 1) { plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FIRST_KILL); }
+        if (rep.getKills() == 1) { recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.FIRST_KILL, "first-kill"); }
         applyContextKillBonuses(player, context, rep, artifact);
 
         plugin.getEvolutionEngine().evaluate(player, artifact, rep);
@@ -54,12 +55,12 @@ public final class ArtifactProcessor {
 
         if (plugin.getAwakeningEngine().evaluate(player, artifact, rep)) {
             plugin.getArtifactUsageTracker().trackAwakening(artifact);
-            plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.AWAKENING);
+            recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.AWAKENING, "awakening");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
         if (FUSION_ENGINE.evaluate(player, artifact, rep)) {
             plugin.getArtifactUsageTracker().trackFusionParticipation(artifact);
-            plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FUSION);
+            recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.FUSION, "fusion");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_FUSION, 1D, artifact.getFusionPath());
         }
 
@@ -98,12 +99,12 @@ public final class ArtifactProcessor {
         processAbilityTriggerWithResult(player, trigger, value, source);
     }
 
-    public static List<String> processAbilityTriggerWithResult(Player player, AbilityTrigger trigger, double value, String source) {
+    public static AbilityDispatchResult processAbilityTriggerWithResult(Player player, AbilityTrigger trigger, double value, String source) {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         plugin.getArtifactUsageTracker().trackUse(artifact);
-        List<String> activated = triggerAbility(plugin, artifact, rep, trigger, value, source);
+        AbilityDispatchResult activated = triggerAbility(plugin, artifact, rep, trigger, value, source);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
         plugin.getArtifactManager().markDirty(player.getUniqueId());
         return activated;
@@ -142,7 +143,7 @@ public final class ArtifactProcessor {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_MULTI_KILL, count, "multi-kill");
-        plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.MULTIKILL_CHAIN);
+        recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.MULTIKILL_CHAIN, "multi-kill");
         for (int i = 0; i < count; i++) {
             processKill(player);
         }
@@ -153,7 +154,7 @@ public final class ArtifactProcessor {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         rep.recordBossKill();
-        if (rep.getBossKills() == 1) { plugin.getArtifactMemoryEngine().recordAndProfile(artifact, ArtifactMemoryEvent.FIRST_BOSS_KILL); }
+        if (rep.getBossKills() == 1) { recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.FIRST_BOSS_KILL, "boss-kill"); }
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_BOSS_KILL, rep.getBossKills(), "boss-kill");
         processKill(player);
     }
@@ -190,11 +191,23 @@ public final class ArtifactProcessor {
     }
 
 
-    private static List<String> triggerAbility(ObtuseLoot plugin, Artifact artifact, ArtifactReputation rep, AbilityTrigger trigger, double value, String source) {
+    private static AbilityDispatchResult triggerAbility(ObtuseLoot plugin, Artifact artifact, ArtifactReputation rep, AbilityTrigger trigger, double value, String source) {
         if (!ArtifactEligibility.isAbilityEligible(artifact) || plugin.getItemAbilityManager() == null) {
-            return List.of();
+            return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source), List.of());
         }
-        return plugin.getItemAbilityManager().resolveEffects(new AbilityEventContext(trigger, artifact, rep, value, source));
+        return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source));
+    }
+
+    private static void recordMemoryEvent(ObtuseLoot plugin,
+                                          Artifact artifact,
+                                          ArtifactReputation rep,
+                                          ArtifactMemoryEvent event,
+                                          String source) {
+        plugin.getArtifactMemoryEngine().recordAndProfile(artifact, event);
+        long now = System.currentTimeMillis();
+        if (plugin.getArtifactMemoryEngine().shouldEmitMemoryTrigger(artifact, event, now)) {
+            triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_MEMORY_EVENT, artifact.getMemory().pressure(), "memory-event:" + source + ":" + event.name().toLowerCase());
+        }
     }
 
     private static void incrementRep(ArtifactReputation rep, String statKey) {

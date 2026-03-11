@@ -23,6 +23,11 @@ public class ItemAbilityManager {
     private final LongAdder indexedDispatchCalls = new LongAdder();
     private final LongAdder fullScanDispatchCalls = new LongAdder();
     private final LongAdder totalIndexedSubscribers = new LongAdder();
+    private final EnumMap<AbilityExecutionStatus, LongAdder> executionStatusCounts = new EnumMap<>(AbilityExecutionStatus.class);
+    private final Map<String, LongAdder> executionStatusByAbilityTrigger = new HashMap<>();
+    private final Map<String, LongAdder> meaningfulOutcomeByAbilityTrigger = new HashMap<>();
+    private final Map<String, LongAdder> suppressionReasonCounts = new HashMap<>();
+    private final Map<String, LongAdder> outcomeTypeCounts = new HashMap<>();
     private final EnumMap<AbilityTrigger, LongAdder> dispatchByTrigger = new EnumMap<>(AbilityTrigger.class);
     private final EnumMap<AbilityTrigger, LongAdder> subscriberByTrigger = new EnumMap<>(AbilityTrigger.class);
 
@@ -33,6 +38,9 @@ public class ItemAbilityManager {
         for (AbilityTrigger trigger : AbilityTrigger.values()) {
             dispatchByTrigger.put(trigger, new LongAdder());
             subscriberByTrigger.put(trigger, new LongAdder());
+        }
+        for (AbilityExecutionStatus status : AbilityExecutionStatus.values()) {
+            executionStatusCounts.put(status, new LongAdder());
         }
     }
 
@@ -51,10 +59,11 @@ public class ItemAbilityManager {
         return resolver.resolve(artifact, rep);
     }
 
-    public List<String> resolveEffects(AbilityEventContext context) {
+    public AbilityDispatchResult resolveDispatch(AbilityEventContext context) {
         dispatchCalls.increment();
         dispatchByTrigger.get(context.trigger()).increment();
         triggerSourceCounts.merge(context.trigger()+"#"+context.source(), 1, Integer::sum);
+        executionStatusCounts.get(AbilityExecutionStatus.TRIGGER_SEEN).increment();
 
         UUID ownerId = context.artifact().getOwnerId();
         if (triggerSubscriptionIndexingEnabled && ownerId != null) {
@@ -63,26 +72,41 @@ public class ItemAbilityManager {
             indexedDispatchCalls.increment();
             totalIndexedSubscribers.add(bindings.size());
             subscriberByTrigger.get(context.trigger()).add(bindings.size());
-            java.util.List<String> effects = dispatcher.dispatchIndexed(context, bindings, this);
+            AbilityDispatchResult dispatchResult = dispatcher.dispatchIndexed(context, bindings, this);
             ObtuseLoot plugin = ObtuseLoot.get();
             if (plugin != null) {
                 plugin.getArtifactManager().markDirty(context.artifact());
             }
-            return effects;
+            return dispatchResult;
         }
 
         fullScanDispatchCalls.increment();
         AbilityProfile profile = profileFor(context.artifact(), context.reputation());
-        java.util.List<String> effects = dispatcher.dispatchFullScan(context, profile, this);
+        AbilityDispatchResult dispatchResult = dispatcher.dispatchFullScan(context, profile, this);
         ObtuseLoot plugin = ObtuseLoot.get();
         if (plugin != null) {
             plugin.getArtifactManager().markDirty(context.artifact());
         }
-        return effects;
+        return dispatchResult;
     }
 
-    void recordTriggerDispatch(AbilityDefinition def, AbilityTrigger trigger) {
-        triggerCounts.merge(def.id() + "@" + trigger, 1, Integer::sum);
+    public List<String> resolveEffects(AbilityEventContext context) {
+        return resolveDispatch(context).presentationEffects();
+    }
+
+    void recordExecution(AbilityExecutionResult result) {
+        executionStatusCounts.get(result.status()).increment();
+        executionStatusByAbilityTrigger.computeIfAbsent(result.abilityId() + "@" + result.trigger() + "#" + result.status(), ignored -> new LongAdder()).increment();
+        outcomeTypeCounts.computeIfAbsent(result.abilityId() + "@" + result.trigger() + "#" + result.outcomeType(), ignored -> new LongAdder()).increment();
+        if (result.meaningfulOutcome()) {
+            meaningfulOutcomeByAbilityTrigger.computeIfAbsent(result.abilityId() + "@" + result.trigger(), ignored -> new LongAdder()).increment();
+        }
+        if (result.suppressionReason() != null && !result.suppressionReason().isBlank()) {
+            suppressionReasonCounts.computeIfAbsent(result.suppressionReason(), ignored -> new LongAdder()).increment();
+        }
+        if (result.status() == AbilityExecutionStatus.SUCCESS) {
+            triggerCounts.merge(result.abilityId() + "@" + result.trigger(), 1, Integer::sum);
+        }
     }
 
     public void rebuildSubscriptions(UUID playerId, Artifact artifact, ArtifactReputation reputation, String reason) {
@@ -157,6 +181,36 @@ public class ItemAbilityManager {
 
     public Map<String, Integer> triggerSourceCounts() {
         return Map.copyOf(triggerSourceCounts);
+    }
+
+    public Map<AbilityExecutionStatus, Long> executionStatusCounts() {
+        EnumMap<AbilityExecutionStatus, Long> snapshot = new EnumMap<>(AbilityExecutionStatus.class);
+        for (Map.Entry<AbilityExecutionStatus, LongAdder> entry : executionStatusCounts.entrySet()) {
+            snapshot.put(entry.getKey(), entry.getValue().sum());
+        }
+        return Map.copyOf(snapshot);
+    }
+
+    public Map<String, Long> executionStatusByAbilityTrigger() {
+        return snapshotLongAdders(executionStatusByAbilityTrigger);
+    }
+
+    public Map<String, Long> meaningfulOutcomeByAbilityTrigger() {
+        return snapshotLongAdders(meaningfulOutcomeByAbilityTrigger);
+    }
+
+    public Map<String, Long> suppressionReasonCounts() {
+        return snapshotLongAdders(suppressionReasonCounts);
+    }
+
+    public Map<String, Long> outcomeTypeCounts() {
+        return snapshotLongAdders(outcomeTypeCounts);
+    }
+
+    private Map<String, Long> snapshotLongAdders(Map<String, LongAdder> source) {
+        Map<String, Long> snapshot = new HashMap<>();
+        source.forEach((key, value) -> snapshot.put(key, value.sum()));
+        return Map.copyOf(snapshot);
     }
 
     public TraitProjectionStats traitProjectionStats() {
