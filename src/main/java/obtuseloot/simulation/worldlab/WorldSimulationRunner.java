@@ -41,6 +41,16 @@ public final class WorldSimulationRunner {
                         doubleProp("world.behavioralProjection.traitEcologyWeight", defaults.behavioralProjection().traitEcologyWeight()),
                         doubleProp("world.behavioralProjection.behaviorWeight", defaults.behavioralProjection().behaviorWeight())
                 ),
+                new SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig(
+                        boolProp("world.roleBasedRepulsion.enabled", defaults.roleBasedRepulsion().enabled()),
+                        doubleProp("world.roleBasedRepulsion.beta", defaults.roleBasedRepulsion().beta()),
+                        doubleProp("world.roleBasedRepulsion.supportDamageWeight", defaults.roleBasedRepulsion().supportDamageWeight()),
+                        doubleProp("world.roleBasedRepulsion.burstPersistenceWeight", defaults.roleBasedRepulsion().burstPersistenceWeight()),
+                        doubleProp("world.roleBasedRepulsion.mobilityStationaryWeight", defaults.roleBasedRepulsion().mobilityStationaryWeight()),
+                        doubleProp("world.roleBasedRepulsion.environmentWeight", defaults.roleBasedRepulsion().environmentWeight()),
+                        doubleProp("world.roleBasedRepulsion.memoryWeight", defaults.roleBasedRepulsion().memoryWeight()),
+                        doubleProp("world.roleBasedRepulsion.interactionWeight", defaults.roleBasedRepulsion().interactionWeight())
+                ).bounded(),
                 new AdaptiveNicheCapacityConfig(
                         boolProp("world.adaptiveNicheCapacity.enabled", defaults.adaptiveNicheCapacity().enabled()),
                         doubleProp("world.adaptiveNicheCapacity.minCapacity", defaults.adaptiveNicheCapacity().minCapacity()),

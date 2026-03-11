@@ -104,6 +104,13 @@ public class DashboardDataAssembler {
             out.put("adaptiveNicheCapacityEnabled", extractBoolean(content, "enabled"));
             out.put("adaptiveNicheCapacityAverage", averageMapValues(parseDoubleMap(content, "nicheCapacity")));
         }
+        Path nicheQuality = analyticsRoot.resolve("niche-quality-diagnostics.json");
+        if (Files.exists(nicheQuality)) {
+            String content = Files.readString(nicheQuality);
+            out.put("roleBasedRepulsionEnabled", extractBoolean(content, "roleBasedRepulsionEnabled"));
+            out.put("roleRepulsionBeta", extractNumber(content, "roleRepulsionBeta"));
+            out.put("nicheSeparationMode", extractString(content, "roleRepulsionDominance"));
+        }
         return out;
     }
 

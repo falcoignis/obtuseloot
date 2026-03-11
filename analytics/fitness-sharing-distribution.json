@@ -4,19 +4,18 @@
   "alpha": 0.1,
   "maxPenalty": 0.15,
   "targetOccupancy": 0.18,
-  "averageSharingLoad": 1.058400467393458,
-  "averageSharingFactor": 0.9452833457668824,
+  "averageSharingLoad": 1.0619537351002675,
+  "averageSharingFactor": 0.9418920940260338,
   "occupancyByNiche": {
-    "niche-1": 0.9375,
-    "unassigned": 0.0625
+    "niche-1": 1.0
   },
   "nicheSharingLoad": {
-    "niche-1": 97.11826984126978,
-    "unassigned": 16.130580169830168
+    "niche-1": 11784.474795943432,
+    "unassigned": 141.26564923240818
   },
   "nicheSharingFactor": {
-    "niche-1": 85.27451495869681,
-    "unassigned": 15.870803038359568
+    "niche-1": 10438.694626063954,
+    "unassigned": 138.7535898483757
   },
-  "penaltyActivationFrequency": 0.8359375
+  "penaltyActivationFrequency": 0.9748263888888888
 }

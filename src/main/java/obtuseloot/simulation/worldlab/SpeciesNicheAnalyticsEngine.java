@@ -8,6 +8,35 @@ import obtuseloot.species.ArtifactSpecies;
 import java.util.*;
 
 public class SpeciesNicheAnalyticsEngine {
+    public record RoleBasedRepulsionConfig(boolean enabled,
+                                           double beta,
+                                           double supportDamageWeight,
+                                           double burstPersistenceWeight,
+                                           double mobilityStationaryWeight,
+                                           double environmentWeight,
+                                           double memoryWeight,
+                                           double interactionWeight) {
+        public static RoleBasedRepulsionConfig defaults() {
+            return new RoleBasedRepulsionConfig(true, 0.15D, 1.0D, 0.9D, 0.85D, 0.8D, 0.95D, 0.85D).bounded();
+        }
+
+        public RoleBasedRepulsionConfig bounded() {
+            return new RoleBasedRepulsionConfig(
+                    enabled,
+                    clampValue(beta, 0.0D, 0.25D),
+                    clampValue(supportDamageWeight, 0.3D, 1.5D),
+                    clampValue(burstPersistenceWeight, 0.3D, 1.5D),
+                    clampValue(mobilityStationaryWeight, 0.3D, 1.5D),
+                    clampValue(environmentWeight, 0.3D, 1.5D),
+                    clampValue(memoryWeight, 0.3D, 1.5D),
+                    clampValue(interactionWeight, 0.3D, 1.5D));
+        }
+
+        private static double clampValue(double value, double min, double max) {
+            return Math.max(min, Math.min(max, value));
+        }
+    }
+
     public record BehavioralProjectionConfig(boolean enabled,
                                              double traitEcologyWeight,
                                              double behaviorWeight) {
@@ -47,6 +76,7 @@ public class SpeciesNicheAnalyticsEngine {
     private static final double NICHE_MERGE_DISTANCE = 0.05D;
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
     private static final int NICHE_VECTOR_DIMENSIONS = 12;
+    private static final int ROLE_VECTOR_DIMENSIONS = 6;
     private static final List<String> NICHE_DIMENSION_LABELS = List.of(
             "trigger_class_activation_distribution",
             "mechanic_usage_distribution",
@@ -60,10 +90,18 @@ public class SpeciesNicheAnalyticsEngine {
             "activation_temporal_density",
             "encounter_persistence_behavior",
             "interaction_diversity");
+    private static final List<String> ROLE_AXIS_LABELS = List.of(
+            "support_vs_damage",
+            "burst_vs_persistence",
+            "mobility_vs_stationary",
+            "environment_dependent_vs_agnostic",
+            "memory_driven_vs_direct_trigger",
+            "interaction_heavy_vs_solo");
 
     private final Random random;
     private final FitnessSharingConfig fitnessSharing;
     private final BehavioralProjectionConfig projectionConfig;
+    private final RoleBasedRepulsionConfig roleRepulsionConfig;
     private final AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
@@ -92,6 +130,7 @@ public class SpeciesNicheAnalyticsEngine {
     private final Map<Long, ArtifactDynamics> artifactDynamics = new HashMap<>();
     private final List<Double> nicheSeparationTimeline = new ArrayList<>();
     private final List<Double> nicheStabilityTimeline = new ArrayList<>();
+    private final List<Double> roleRepulsionTimeline = new ArrayList<>();
     private Set<String> previousActiveNiches = new LinkedHashSet<>();
     private final List<Double> dominantNicheShareTimeline = new ArrayList<>();
     private final List<Double> penaltyActivationTimeline = new ArrayList<>();
@@ -110,32 +149,36 @@ public class SpeciesNicheAnalyticsEngine {
     private int activePenaltyCount;
     private int penaltyEvaluationCount;
     private int coEvolutionEvaluationCount;
+    private int nicheAssignmentEvaluations;
+    private double roleRepulsionTotal;
     private double coEvolutionCompetitionTotal;
     private double coEvolutionSupportTotal;
     private double coEvolutionModifierTotal;
     private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
-        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
+        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed, FitnessSharingConfig fitnessSharing) {
-        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
+        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults(), RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed,
                                        FitnessSharingConfig fitnessSharing,
                                        BehavioralProjectionConfig projectionConfig) {
-        this(seed, fitnessSharing, projectionConfig, AdaptiveNicheCapacityConfig.defaults());
+        this(seed, fitnessSharing, projectionConfig, RoleBasedRepulsionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed,
                                        FitnessSharingConfig fitnessSharing,
                                        BehavioralProjectionConfig projectionConfig,
+                                       RoleBasedRepulsionConfig roleRepulsionConfig,
                                        AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
         this.fitnessSharing = (fitnessSharing == null ? FitnessSharingConfig.defaults() : fitnessSharing).bounded();
         this.projectionConfig = projectionConfig == null ? BehavioralProjectionConfig.defaults() : projectionConfig;
+        this.roleRepulsionConfig = (roleRepulsionConfig == null ? RoleBasedRepulsionConfig.defaults() : roleRepulsionConfig).bounded();
         this.adaptiveNicheCapacityConfig = (adaptiveNicheCapacityConfig == null ? AdaptiveNicheCapacityConfig.defaults() : adaptiveNicheCapacityConfig).bounded();
     }
 
@@ -220,13 +263,14 @@ public class SpeciesNicheAnalyticsEngine {
                                 double crowdingPenalty) {
         String speciesId = species.speciesId();
         double[] vector = featureVector(artifact, profile, successful, crowdingPenalty);
+        double[] roleVector = roleVector(artifact, profile, successful);
         String previousNiche = Optional.ofNullable(artifactMembership.get(artifact.getArtifactSeed())).map(ArtifactNicheMembership::nicheId).orElse(null);
-        String nicheId = assignNiche(vector, season, speciesId, previousNiche);
+        String nicheId = assignNiche(vector, roleVector, season, speciesId, previousNiche);
         updatePairSignals(speciesId, nicheId, successful);
-        artifactMembership.put(artifact.getArtifactSeed(), new ArtifactNicheMembership(nicheId, vector, successful));
+        artifactMembership.put(artifact.getArtifactSeed(), new ArtifactNicheMembership(nicheId, vector, roleVector, successful));
         NicheProfile niche = niches.get(nicheId);
         if (niche != null) {
-            niche.observe(vector, successful, speciesId, profile, artifact, season);
+            niche.observe(vector, roleVector, successful, speciesId, profile, artifact, season);
         }
         observeSpeciesSignal(speciesId, artifact, successful, nicheId);
         speciesBirthSeason.putIfAbsent(speciesId, season);
@@ -326,6 +370,7 @@ public class SpeciesNicheAnalyticsEngine {
         previousActiveNiches = activeNiches;
         dominantNicheShareTimeline.add(dominantShare(occupancy));
         nicheSeparationTimeline.add(nicheSeparationScore());
+        roleRepulsionTimeline.add(avg(roleRepulsionTotal, nicheAssignmentEvaluations));
         nicheStabilityTimeline.add(1.0D - dominantShare(occupancy));
         penaltyActivationTimeline.add(activePenaltyRate());
         fitnessSharingLoadTimeline.add(avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
@@ -348,6 +393,9 @@ public class SpeciesNicheAnalyticsEngine {
         snapshot.put("coEvolutionModifier", avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
         snapshot.put("coEvolutionMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
         snapshot.put("nicheSeparationScore", nicheSeparationScore());
+        snapshot.put("averageRoleRepulsion", avg(roleRepulsionTotal, nicheAssignmentEvaluations));
+        snapshot.put("roleBasedRepulsionEnabled", roleRepulsionConfig.enabled());
+        snapshot.put("roleRepulsionBeta", roleRepulsionConfig.beta());
         snapshot.put("fitnessSharingEnabled", fitnessSharing.enabled());
         snapshot.put("fitnessSharingMode", fitnessSharing.normalizedMode());
         snapshot.put("fitnessSharingAvgLoad", avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
@@ -483,6 +531,11 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("traitEcologyWeight", projectionConfig.traitEcologyWeight());
         out.put("behaviorWeight", projectionConfig.behaviorWeight());
         out.put("projectionDominance", projectionConfig.behaviorWeight() >= projectionConfig.traitEcologyWeight() ? "behavior-dominated" : "trait-dominated");
+        out.put("roleBasedRepulsionEnabled", roleRepulsionConfig.enabled());
+        out.put("roleRepulsionBeta", roleRepulsionConfig.beta());
+        out.put("averageRoleRepulsion", avg(roleRepulsionTotal, nicheAssignmentEvaluations));
+        out.put("roleAxes", ROLE_AXIS_LABELS);
+        out.put("roleRepulsionDominance", roleRepulsionDominance());
         out.put("topSeparationDimensions", topSeparationDimensions());
         return out;
     }
@@ -498,6 +551,7 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("nicheMigrationBySpecies", new LinkedHashMap<>(speciesDominantNicheShifts));
         out.put("nicheMergeEvents", new LinkedHashMap<>(nicheMergeEvents));
         out.put("nicheRetireEvents", new LinkedHashMap<>(nicheRetireEvents));
+        out.put("roleRepulsionTimeline", roleRepulsionTimeline);
         return out;
     }
 
@@ -867,6 +921,7 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("traitEcologyWeight", projectionConfig.traitEcologyWeight());
         out.put("behaviorWeight", projectionConfig.behaviorWeight());
         out.put("mode", projectionConfig.behaviorWeight() >= projectionConfig.traitEcologyWeight() ? "behavior-dominated" : "trait-dominated");
+        out.put("roleAxes", ROLE_AXIS_LABELS);
         out.put("dimensions", NICHE_DIMENSION_LABELS);
         out.put("topSeparationDimensions", topSeparationDimensions());
         return out;
@@ -907,7 +962,58 @@ public class SpeciesNicheAnalyticsEngine {
         return out;
     }
 
-    private String assignNiche(double[] vector, int season, String speciesId, String previousNiche) {
+    public Map<String, Object> roleAxisDistribution(List<Artifact> artifacts) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        List<Map<String, Object>> samples = new ArrayList<>();
+        double[] sums = new double[ROLE_VECTOR_DIMENSIONS];
+        int count = 0;
+        for (Artifact artifact : artifacts) {
+            ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
+            if (membership == null || membership.roleVector() == null) {
+                continue;
+            }
+            count++;
+            for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
+                sums[i] += membership.roleVector()[i];
+            }
+            if (samples.size() < 8) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("artifactSeed", artifact.getArtifactSeed());
+                item.put("speciesId", artifact.getSpeciesId());
+                item.put("nicheId", membership.nicheId());
+                item.put("roleVector", membership.roleVector());
+                samples.add(item);
+            }
+        }
+        Map<String, Double> means = new LinkedHashMap<>();
+        for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
+            means.put(ROLE_AXIS_LABELS.get(i), count == 0 ? 0.0D : clamp(sums[i] / count, 0.0D, 1.0D));
+        }
+        out.put("count", count);
+        out.put("axes", ROLE_AXIS_LABELS);
+        out.put("axisMeans", means);
+        out.put("sampledArtifacts", samples);
+        out.put("repulsion", roleRepulsionSummary());
+        return out;
+    }
+
+    public Map<String, Object> roleRepulsionSummary() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("enabled", roleRepulsionConfig.enabled());
+        out.put("beta", roleRepulsionConfig.beta());
+        out.put("weights", roleWeightMap());
+        out.put("axes", ROLE_AXIS_LABELS);
+        out.put("dominantAxes", roleWeightMap().entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .toList());
+        out.put("averageRepulsion", avg(roleRepulsionTotal, nicheAssignmentEvaluations));
+        out.put("mode", roleRepulsionDominance());
+        return out;
+    }
+
+    private String assignNiche(double[] vector, double[] roleVector, int season, String speciesId, String previousNiche) {
         if (niches.isEmpty()) {
             return createNiche(vector, season);
         }
@@ -917,7 +1023,12 @@ public class SpeciesNicheAnalyticsEngine {
         double bestDistance = Double.MAX_VALUE;
         double secondDistance = Double.MAX_VALUE;
         for (Map.Entry<String, NicheProfile> entry : niches.entrySet()) {
-            double distance = weightedDistance(vector, entry.getValue().centroid()) - nicheCoEvolutionBias(speciesId, entry.getValue());
+            double roleRepulsion = roleRepulsion(roleVector, entry.getValue().roleCentroid());
+            double distance = weightedDistance(vector, entry.getValue().centroid())
+                    - nicheCoEvolutionBias(speciesId, entry.getValue())
+                    + roleRepulsion;
+            nicheAssignmentEvaluations++;
+            roleRepulsionTotal += roleRepulsion;
             if (distance < bestDistance) {
                 secondDistance = bestDistance;
                 secondBestNiche = bestNiche;
@@ -943,7 +1054,8 @@ public class SpeciesNicheAnalyticsEngine {
         }
 
         if (previousNiche != null && niches.containsKey(previousNiche) && !previousNiche.equals(bestNiche)) {
-            double previousDistance = weightedDistance(vector, niches.get(previousNiche).centroid());
+            double previousDistance = weightedDistance(vector, niches.get(previousNiche).centroid())
+                    + roleRepulsion(roleVector, niches.get(previousNiche).roleCentroid());
             if ((previousDistance - bestDistance) < HYSTERESIS_MARGIN) {
                 return previousNiche;
             }
@@ -1373,7 +1485,7 @@ public class SpeciesNicheAnalyticsEngine {
         for (Map.Entry<Long, ArtifactNicheMembership> entry : new ArrayList<>(artifactMembership.entrySet())) {
             ArtifactNicheMembership membership = entry.getValue();
             if (fromNiche.equals(membership.nicheId())) {
-                artifactMembership.put(entry.getKey(), new ArtifactNicheMembership(toNiche, membership.vector(), membership.successful()));
+                artifactMembership.put(entry.getKey(), new ArtifactNicheMembership(toNiche, membership.vector(), membership.roleVector(), membership.successful()));
             }
         }
     }
@@ -1478,6 +1590,35 @@ public class SpeciesNicheAnalyticsEngine {
         vector[10] = encounterPersistenceBehavior(successful, triggerCsv, mechanicCsv, gateTokens);
         vector[11] = interactionDiversitySignal(profile, triggerTokens, mechanicTokens);
         return vector;
+    }
+
+    private double[] roleVector(Artifact artifact, AbilityProfile profile, boolean successful) {
+        Map<String, Integer> triggerTokens = tokens(artifact.getLastTriggerProfile());
+        Map<String, Integer> mechanicTokens = tokens(artifact.getLastMechanicProfile());
+        Map<String, Integer> gateTokens = tokens(artifact.getLastOpenRegulatoryGates());
+        Map<String, Integer> branchTokens = tokens(artifact.getLastAbilityBranchPath());
+        String memory = Optional.ofNullable(artifact.getLastMemoryInfluence()).orElse("").toLowerCase(Locale.ROOT);
+        String triggerCsv = Optional.ofNullable(artifact.getLastTriggerProfile()).orElse("").toLowerCase(Locale.ROOT);
+        String mechanicCsv = Optional.ofNullable(artifact.getLastMechanicProfile()).orElse("").toLowerCase(Locale.ROOT);
+
+        double support = supportActionRatio(triggerCsv, mechanicCsv);
+        double damage = damageActionRatio(triggerCsv, mechanicCsv);
+        double burst = activationTemporalDensity(triggerTokens, mechanicTokens, triggerCsv, mechanicCsv);
+        double persistence = persistenceActionRatio(triggerCsv, mechanicCsv);
+        double mobility = mobilityUsageRatio(triggerCsv, mechanicCsv, branchTokens, profile);
+        double environmentDependent = environmentDependentActivationRatio(gateTokens, triggerCsv, mechanicCsv);
+        double memoryDriven = memoryDrivenActivationRatio(memory, triggerCsv, mechanicCsv, gateTokens);
+        double interaction = interactionDiversitySignal(profile, triggerTokens, mechanicTokens);
+        double directTriggerDriven = clamp(1.0D - memoryDriven, 0.0D, 1.0D);
+
+        double[] role = new double[ROLE_VECTOR_DIMENSIONS];
+        role[0] = clamp((support * 0.6D) + ((1.0D - damage) * 0.4D), 0.0D, 1.0D);
+        role[1] = clamp((burst * 0.65D) + ((1.0D - persistence) * 0.35D), 0.0D, 1.0D);
+        role[2] = clamp(mobility, 0.0D, 1.0D);
+        role[3] = clamp(environmentDependent, 0.0D, 1.0D);
+        role[4] = clamp((memoryDriven * 0.75D) + ((1.0D - directTriggerDriven) * 0.25D) + (successful ? 0.04D : 0.0D), 0.0D, 1.0D);
+        role[5] = clamp((interaction * 0.7D) + (markerShare(triggerCsv + "," + mechanicCsv, "ally", "party", "chain", "shared", "aura") * 0.3D), 0.0D, 1.0D);
+        return role;
     }
 
     private double[] projectNicheVector(double[] traitEcology, double[] behavioral) {
@@ -1741,6 +1882,56 @@ public class SpeciesNicheAnalyticsEngine {
         return weightSum == 0.0D ? 1.0D : clamp(distance / weightSum, 0.0D, 1.0D);
     }
 
+    private double roleRepulsion(double[] roleA, double[] roleB) {
+        if (!roleRepulsionConfig.enabled() || roleA == null || roleB == null) {
+            return 0.0D;
+        }
+        return clamp(roleRepulsionConfig.beta() * roleDifference(roleA, roleB), 0.0D, roleRepulsionConfig.beta());
+    }
+
+    private double roleDifference(double[] roleA, double[] roleB) {
+        double[] weights = {
+                roleRepulsionConfig.supportDamageWeight(),
+                roleRepulsionConfig.burstPersistenceWeight(),
+                roleRepulsionConfig.mobilityStationaryWeight(),
+                roleRepulsionConfig.environmentWeight(),
+                roleRepulsionConfig.memoryWeight(),
+                roleRepulsionConfig.interactionWeight()
+        };
+        double distance = 0.0D;
+        double weightSum = 0.0D;
+        for (int i = 0; i < ROLE_VECTOR_DIMENSIONS; i++) {
+            distance += weights[i] * Math.abs(clamp(roleA[i], 0.0D, 1.0D) - clamp(roleB[i], 0.0D, 1.0D));
+            weightSum += weights[i];
+        }
+        return weightSum <= 0.0D ? 0.0D : clamp(distance / weightSum, 0.0D, 1.0D);
+    }
+
+    private String roleRepulsionDominance() {
+        if (!roleRepulsionConfig.enabled()) {
+            return "disabled";
+        }
+        double average = avg(roleRepulsionTotal, nicheAssignmentEvaluations);
+        if (average < 0.015D) {
+            return "trait-behavior-driven";
+        }
+        if (average > 0.06D) {
+            return "role-driven";
+        }
+        return "hybrid-role-behavior";
+    }
+
+    private Map<String, Double> roleWeightMap() {
+        Map<String, Double> out = new LinkedHashMap<>();
+        out.put("support_vs_damage", roleRepulsionConfig.supportDamageWeight());
+        out.put("burst_vs_persistence", roleRepulsionConfig.burstPersistenceWeight());
+        out.put("mobility_vs_stationary", roleRepulsionConfig.mobilityStationaryWeight());
+        out.put("environment_dependent_vs_agnostic", roleRepulsionConfig.environmentWeight());
+        out.put("memory_driven_vs_direct_trigger", roleRepulsionConfig.memoryWeight());
+        out.put("interaction_heavy_vs_solo", roleRepulsionConfig.interactionWeight());
+        return out;
+    }
+
     private double weightedCosine(double[] a, double[] b) {
         double[] w = {1.25D, 1.2D, 1.3D, 1.3D, 1.2D, 1.1D, 1.1D, 1.1D, 1.05D, 1.05D, 1.15D, 1.1D};
         double dot = 0.0D;
@@ -1813,7 +2004,7 @@ public class SpeciesNicheAnalyticsEngine {
         return lifetimes;
     }
 
-    private record ArtifactNicheMembership(String nicheId, double[] vector, boolean successful) {}
+    private record ArtifactNicheMembership(String nicheId, double[] vector, double[] roleVector, boolean successful) {}
     private static final class PairSignal {
         private final String speciesA;
         private final String speciesB;
@@ -1846,6 +2037,7 @@ public class SpeciesNicheAnalyticsEngine {
     private static final class NicheProfile {
         private final String nicheId;
         private final double[] centroid;
+        private final double[] roleCentroid;
         private int observations;
         private int successes;
         private final Map<String, Integer> speciesUse = new LinkedHashMap<>();
@@ -1855,9 +2047,10 @@ public class SpeciesNicheAnalyticsEngine {
         private NicheProfile(String nicheId, double[] initial) {
             this.nicheId = nicheId;
             this.centroid = Arrays.copyOf(initial, initial.length);
+            this.roleCentroid = new double[ROLE_VECTOR_DIMENSIONS];
         }
 
-        private void observe(double[] vector, boolean successful, String speciesId, AbilityProfile profile, Artifact artifact, int season) {
+        private void observe(double[] vector, double[] roleVector, boolean successful, String speciesId, AbilityProfile profile, Artifact artifact, int season) {
             observations++;
             if (successful) {
                 successes++;
@@ -1873,6 +2066,9 @@ public class SpeciesNicheAnalyticsEngine {
             for (int i = 0; i < centroid.length; i++) {
                 centroid[i] = centroid[i] * (1.0D - alpha) + vector[i] * alpha;
             }
+            for (int i = 0; i < roleCentroid.length; i++) {
+                roleCentroid[i] = roleCentroid[i] * (1.0D - alpha) + roleVector[i] * alpha;
+            }
         }
 
         private void absorb(NicheProfile other) {
@@ -1881,6 +2077,9 @@ public class SpeciesNicheAnalyticsEngine {
             double otherWeight = other.observations / (double) total;
             for (int i = 0; i < centroid.length; i++) {
                 centroid[i] = (centroid[i] * ownWeight) + (other.centroid[i] * otherWeight);
+            }
+            for (int i = 0; i < roleCentroid.length; i++) {
+                roleCentroid[i] = (roleCentroid[i] * ownWeight) + (other.roleCentroid[i] * otherWeight);
             }
             observations += other.observations;
             successes += other.successes;
@@ -1897,6 +2096,10 @@ public class SpeciesNicheAnalyticsEngine {
 
         private double[] centroid() {
             return centroid;
+        }
+
+        private double[] roleCentroid() {
+            return roleCentroid;
         }
 
         private double successRate() {

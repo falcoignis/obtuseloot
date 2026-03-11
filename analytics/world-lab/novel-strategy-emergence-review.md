@@ -1,13 +1,13 @@
 # Novel Strategy Emergence Review
 
 ## NSER by season
-[- season 1: NSER=0.0 (novel=0, total=0), - season 2: NSER=0.0 (novel=0, total=0)]
+[- season 1: NSER=0.0 (novel=0, total=0), - season 2: NSER=1.0 (novel=8, total=8)]
 
 ## Representative novel strategies
-[- season 1: [], - season 2: []]
+[- season 1: [], - season 2: [ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.guardian|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.focus|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.awakened-discipline|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=chaos|branch=chaos.sprawl|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.shelter|tendency=COMPETITIVE]]
 
 ## Persistence analysis
-[- season 1: persistent novel signatures=[], - season 2: persistent novel signatures=[]]
+[- season 1: persistent novel signatures=[], - season 2: persistent novel signatures=[ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.guardian|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.focus|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.awakened-discipline|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=chaos|branch=chaos.sprawl|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.shelter|tendency=COMPETITIVE]]
 
 ## Divergence impact
-Ecosystem is largely recycling old strategies.
+Ecosystem novelty is very high; monitor for over-fragmentation/noise.
