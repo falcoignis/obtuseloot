@@ -21,7 +21,7 @@ class TriggerBudgetManagerTest {
             manager.resolveDispatch(new AbilityEventContext(AbilityTrigger.ON_WORLD_SCAN, artifact, new ArtifactReputation(), 1.0D, "move-chunk"));
         }
 
-        assertTrue(manager.triggerBudgetConsumptionByAbility().containsKey("precision.echo_locator"));
+        assertTrue(manager.triggerBudgetConsumptionByAbility().containsKey("SENSE_PING"));
         assertTrue(manager.executionStatusCounts().get(AbilityExecutionStatus.SUPPRESSED) >= 0L);
     }
 

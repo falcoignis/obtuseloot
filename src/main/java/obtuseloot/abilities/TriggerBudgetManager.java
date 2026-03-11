@@ -104,7 +104,7 @@ public final class TriggerBudgetManager {
         abilityPool(abilityKey).consume(triggerCost * 0.7D, now);
 
         antiSpamBySourceKey.put(abilityKey + "#" + context.source(), now);
-        consumptionByAbility.computeIfAbsent(ability.id(), ignored -> new LongAdder()).add((long) Math.ceil(triggerCost * 100));
+        consumptionByAbility.computeIfAbsent(ability.mechanic().name(), ignored -> new LongAdder()).add((long) Math.ceil(triggerCost * 100));
         consumptionByTrigger.computeIfAbsent(context.trigger().name(), ignored -> new LongAdder()).add((long) Math.ceil(triggerCost * 100));
         return TriggerBudgetDecision.allowed(triggerCost, holderPool(holderId).pressure(now));
     }

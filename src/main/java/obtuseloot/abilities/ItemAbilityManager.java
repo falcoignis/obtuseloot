@@ -25,8 +25,9 @@ public class ItemAbilityManager {
     private final LongAdder fullScanDispatchCalls = new LongAdder();
     private final LongAdder totalIndexedSubscribers = new LongAdder();
     private final EnumMap<AbilityExecutionStatus, LongAdder> executionStatusCounts = new EnumMap<>(AbilityExecutionStatus.class);
-    private final Map<String, LongAdder> executionStatusByAbilityTrigger = new HashMap<>();
-    private final Map<String, LongAdder> meaningfulOutcomeByAbilityTrigger = new HashMap<>();
+    private final Map<String, LongAdder> executionStatusByMechanicTrigger = new HashMap<>();
+    private final Map<String, LongAdder> meaningfulOutcomeByMechanicTrigger = new HashMap<>();
+    private final Map<String, LongAdder> noOpByMechanicTrigger = new HashMap<>();
     private final Map<String, LongAdder> suppressionReasonCounts = new HashMap<>();
     private final Map<String, LongAdder> outcomeTypeCounts = new HashMap<>();
     private final EnumMap<AbilityTrigger, LongAdder> dispatchByTrigger = new EnumMap<>(AbilityTrigger.class);
@@ -97,16 +98,20 @@ public class ItemAbilityManager {
 
     void recordExecution(AbilityExecutionResult result) {
         executionStatusCounts.get(result.status()).increment();
-        executionStatusByAbilityTrigger.computeIfAbsent(result.abilityId() + "@" + result.trigger() + "#" + result.status(), ignored -> new LongAdder()).increment();
-        outcomeTypeCounts.computeIfAbsent(result.abilityId() + "@" + result.trigger() + "#" + result.outcomeType(), ignored -> new LongAdder()).increment();
+        String mechanicTriggerKey = result.mechanic().name() + "@" + result.trigger();
+        executionStatusByMechanicTrigger.computeIfAbsent(mechanicTriggerKey + "#" + result.status(), ignored -> new LongAdder()).increment();
+        outcomeTypeCounts.computeIfAbsent(result.mechanic().name() + "@" + result.trigger() + "#" + result.outcomeType(), ignored -> new LongAdder()).increment();
         if (result.meaningfulOutcome()) {
-            meaningfulOutcomeByAbilityTrigger.computeIfAbsent(result.abilityId() + "@" + result.trigger(), ignored -> new LongAdder()).increment();
+            meaningfulOutcomeByMechanicTrigger.computeIfAbsent(mechanicTriggerKey, ignored -> new LongAdder()).increment();
+        }
+        if (result.status() == AbilityExecutionStatus.NO_OP) {
+            noOpByMechanicTrigger.computeIfAbsent(mechanicTriggerKey, ignored -> new LongAdder()).increment();
         }
         if (result.suppressionReason() != null && !result.suppressionReason().isBlank()) {
             suppressionReasonCounts.computeIfAbsent(result.suppressionReason(), ignored -> new LongAdder()).increment();
         }
         if (result.status() == AbilityExecutionStatus.SUCCESS) {
-            triggerCounts.merge(result.abilityId() + "@" + result.trigger(), 1, Integer::sum);
+            triggerCounts.merge(result.mechanic().name() + "@" + result.trigger(), 1, Integer::sum);
         }
     }
 
@@ -193,11 +198,23 @@ public class ItemAbilityManager {
     }
 
     public Map<String, Long> executionStatusByAbilityTrigger() {
-        return snapshotLongAdders(executionStatusByAbilityTrigger);
+        return executionStatusByMechanicTrigger();
     }
 
     public Map<String, Long> meaningfulOutcomeByAbilityTrigger() {
-        return snapshotLongAdders(meaningfulOutcomeByAbilityTrigger);
+        return meaningfulOutcomeByMechanicTrigger();
+    }
+
+    public Map<String, Long> executionStatusByMechanicTrigger() {
+        return snapshotLongAdders(executionStatusByMechanicTrigger);
+    }
+
+    public Map<String, Long> meaningfulOutcomeByMechanicTrigger() {
+        return snapshotLongAdders(meaningfulOutcomeByMechanicTrigger);
+    }
+
+    public Map<String, Long> noOpByMechanicTrigger() {
+        return snapshotLongAdders(noOpByMechanicTrigger);
     }
 
     public Map<String, Long> suppressionReasonCounts() {
