@@ -11,6 +11,7 @@ public class GenomeMutationEngine {
         }
 
         EnumMap<GenomeTrait, Double> mutated = new EnumMap<>(GenomeTrait.class);
+        EnumMap<GenomeTrait, Double> latentMutated = new EnumMap<>(GenomeTrait.class);
         Random random = new Random(baseGenome.seed() ^ ((long) evolutionStage * 0x9E3779B97F4A7C15L));
         double sensitivity = baseGenome.trait(GenomeTrait.MUTATION_SENSITIVITY);
         double volatility = baseGenome.trait(GenomeTrait.VOLATILITY);
@@ -19,8 +20,11 @@ public class GenomeMutationEngine {
         for (Map.Entry<GenomeTrait, Double> entry : baseGenome.traits().entrySet()) {
             double delta = (random.nextDouble() - 0.5D) * 2.0D * amplitude;
             mutated.put(entry.getKey(), clamp01(entry.getValue() + delta));
+
+            double latentDelta = (random.nextDouble() - 0.5D) * 2.0D * amplitude * 0.35D;
+            latentMutated.put(entry.getKey(), clamp01(baseGenome.latentTrait(entry.getKey()) + latentDelta));
         }
-        return new ArtifactGenome(baseGenome.seed(), mutated);
+        return new ArtifactGenome(baseGenome.seed(), mutated, latentMutated, baseGenome.activatedLatentTraits());
     }
 
     private static double clamp01(double value) {

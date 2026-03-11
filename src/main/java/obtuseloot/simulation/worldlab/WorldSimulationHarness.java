@@ -321,7 +321,63 @@ public class WorldSimulationHarness {
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, cleanupResult);
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
         writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
+        writeTraitFieldLatentReports(nserResult);
         writeTraitProjectionPerformanceReport();
+    }
+
+    private void writeTraitFieldLatentReports(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Files.createDirectories(Path.of("analytics/world-lab"));
+        String interferenceReport = "# Trait Interference Fields Report\n\n"
+                + "## Trait-pair categories\n"
+                + "- trigger × mechanic\n"
+                + "- mechanic × environment\n"
+                + "- gate × trigger\n"
+                + "- memory × mechanic\n"
+                + "- branch tendency × environment affinity\n"
+                + "- persistence style × support/combat role\n\n"
+                + "## Amplification and dampening rules\n"
+                + "- bounded per-ability modifier range: [-0.18, +0.18]\n"
+                + "- high-synergy trigger/mechanic pairs receive light amplification\n"
+                + "- unstable low-health burst chains are lightly dampened\n"
+                + "- environment-aligned mobility/survival mechanics receive contextual bias\n"
+                + "- memory-resonance mechanics amplify only when resonance pressure is present\n\n"
+                + "## Emergent ability combination examples\n"
+                + "- memory-event triggers + memory-echo mechanics produce delayed combo loops\n"
+                + "- movement/reposition triggers + movement-echo create reposition pressure archetypes\n"
+                + "- support modifiers + stable persistence increase utility-leaning loadouts\n\n"
+                + "## Strategy diversity impact\n"
+                + "- observed active interference effects: " + metrics.interferenceEffects() + "\n"
+                + "- branch diversity timeline: " + metrics.diversityTimeline() + "\n";
+        Files.writeString(Path.of("analytics/trait-interference-fields-report.md"), interferenceReport);
+
+        String latentReport = "# Latent Trait Activation Report\n\n"
+                + "## Activation pathways\n"
+                + "- environmental exposure\n"
+                + "- trait-interference threshold signal\n"
+                + "- experience-driven progression\n"
+                + "- lineage drift pressure\n"
+                + "- repeated niche exposure\n\n"
+                + "## Activation frequency\n"
+                + "- average latent activation rate: " + metrics.latentActivationRate() + "\n\n"
+                + "## Latent → expressed examples\n"
+                + metrics.latentActivationExamples() + "\n\n"
+                + "## Novelty impact\n"
+                + "- NSER trend reference: " + nserResult.trend() + "\n";
+        Files.writeString(Path.of("analytics/latent-trait-activation-report.md"), latentReport);
+
+        boolean diversityIncreased = metrics.interferenceEffects().size() >= 2;
+        boolean latentUnlocked = metrics.latentActivationRate() > 0.0D;
+        boolean nserIncreased = !nserResult.trend().isEmpty() && nserResult.trend().get(nserResult.trend().size() - 1) >= nserResult.trend().get(0);
+        boolean nichesFormed = seasonalSnapshots.stream().mapToInt(s -> ((Number) s.getOrDefault("nicheCount", 0)).intValue()).max().orElse(0) >= 3;
+        String worldLabReview = "# Trait Field + Latent Impact Review\n\n"
+                + "1. Did trait interference increase ability diversity? " + diversityIncreased + "\n"
+                + "2. Did latent traits unlock new strategies? " + latentUnlocked + "\n"
+                + "3. Did NSER increase? " + nserIncreased + "\n"
+                + "4. Did new niches begin to form? " + nichesFormed + "\n\n"
+                + "- interference effects: " + metrics.interferenceEffects() + "\n"
+                + "- latent activation rate: " + metrics.latentActivationRate() + "\n"
+                + "- NSER trend: " + nserResult.trend() + "\n";
+        Files.writeString(Path.of("analytics/world-lab/trait-field-latent-impact-review.md"), worldLabReview);
     }
 
     @SuppressWarnings("unchecked")

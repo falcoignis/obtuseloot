@@ -58,6 +58,9 @@ public class Artifact {
     private String lastGateCandidatePool;
     private String lastTriggerProfile;
     private String lastMechanicProfile;
+    private String lastInterferenceEffects;
+    private double lastLatentActivationRate;
+    private String lastActivatedLatentTraits;
 
     public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
@@ -91,6 +94,9 @@ public class Artifact {
         this.lastGateCandidatePool = "0->0";
         this.lastTriggerProfile = "";
         this.lastMechanicProfile = "";
+        this.lastInterferenceEffects = "none";
+        this.lastLatentActivationRate = 0.0D;
+        this.lastActivatedLatentTraits = "[]";
     }
 
     public void resetMutableState() {
@@ -122,6 +128,9 @@ public class Artifact {
         lastGateCandidatePool = "0->0";
         lastTriggerProfile = "";
         lastMechanicProfile = "";
+        lastInterferenceEffects = "none";
+        lastLatentActivationRate = 0.0D;
+        lastActivatedLatentTraits = "[]";
     }
 
     public ArtifactRank getRank() { return ArtifactRankResolver.resolve(this); }
@@ -228,6 +237,12 @@ public class Artifact {
     public void setLastTriggerProfile(String lastTriggerProfile) { this.lastTriggerProfile = lastTriggerProfile; }
     public String getLastMechanicProfile() { return lastMechanicProfile; }
     public void setLastMechanicProfile(String lastMechanicProfile) { this.lastMechanicProfile = lastMechanicProfile; }
+    public String getLastInterferenceEffects() { return lastInterferenceEffects; }
+    public void setLastInterferenceEffects(String lastInterferenceEffects) { this.lastInterferenceEffects = lastInterferenceEffects; }
+    public double getLastLatentActivationRate() { return lastLatentActivationRate; }
+    public void setLastLatentActivationRate(double lastLatentActivationRate) { this.lastLatentActivationRate = lastLatentActivationRate; }
+    public String getLastActivatedLatentTraits() { return lastActivatedLatentTraits; }
+    public void setLastActivatedLatentTraits(String lastActivatedLatentTraits) { this.lastActivatedLatentTraits = lastActivatedLatentTraits; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {
