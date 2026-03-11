@@ -9,6 +9,8 @@ import obtuseloot.analytics.EcologyDiagnosticEngine;
 import obtuseloot.analytics.EcologyDiagnosticSnapshot;
 import obtuseloot.analytics.EcologyDiagnosticState;
 import obtuseloot.analytics.EcosystemHealthGaugeAnalyzer;
+import obtuseloot.analytics.EcologyAlertEngine;
+import obtuseloot.analytics.PersistentNovelNicheAnalyzer;
 import obtuseloot.analytics.EcosystemHealthReport;
 import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.NovelStrategyEmergenceAnalyzer;
@@ -365,7 +367,8 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, cleanupResult);
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
-        writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
+        PersistentNovelNicheAnalyzer.PnncResult pnncResult = writePersistentNovelNicheReports(seasonalSnapshots);
+        writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
         writeTraitFieldLatentReports(nserResult);
         writeEcologicalMemoryImpactReview(nserResult);
         writeTraitProjectionPerformanceReport();
@@ -428,7 +431,8 @@ public class WorldSimulationHarness {
 
     @SuppressWarnings("unchecked")
     private void writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots,
-                                           NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+                                           NovelStrategyEmergenceAnalyzer.NserResult nserResult,
+                                           PersistentNovelNicheAnalyzer.PnncResult pnncResult) throws IOException {
         EcosystemHealthGaugeAnalyzer gaugeAnalyzer = new EcosystemHealthGaugeAnalyzer();
         List<Map<String, Integer>> artifactOccupancy = new ArrayList<>();
         List<Map<String, Integer>> speciesOccupancy = new ArrayList<>();
@@ -458,6 +462,9 @@ public class WorldSimulationHarness {
                 + "- END_species: " + (result.endSpecies() == null ? "N/A" : result.endSpecies()) + "\n"
                 + "- TNT per season: " + tntPairs + "\n"
                 + "- NSER trend: " + result.nserTrend() + "\n"
+                + "- PNNC trend: " + pnncResult.trend() + "\n"
+                + "- PNNC current: " + pnncResult.currentPnnc() + "\n"
+                + "- PNNC trend: " + pnncResult.trend() + "\n"
                 + "- END trend: " + result.endTrend() + "\n"
                 + "- TNT trend: " + result.tntTrend() + "\n"
                 + "- ecosystem status: " + result.status() + "\n\n"
@@ -473,6 +480,8 @@ public class WorldSimulationHarness {
                 + "  \"END_trend\": " + toJsonArray(result.endTrend()) + ",\n"
                 + "  \"TNT_trend\": " + toJsonArray(result.tntTrend()) + ",\n"
                 + "  \"NSER_trend\": " + toJsonArray(result.nserTrend()) + ",\n"
+                + "  \"PNNC_current\": " + pnncResult.currentPnnc() + ",\n"
+                + "  \"PNNC_trend\": " + toJson(pnncResult.trend(), 0) + ",\n"
                 + "  \"ecosystem_status\": \"" + result.status().name() + "\",\n"
                 + "  \"interpretation\": \"" + result.interpretation().replace("\"", "\\\"") + "\"\n"
                 + "}\n";
@@ -483,6 +492,8 @@ public class WorldSimulationHarness {
                 + "- END trend: " + result.endTrend() + "\n"
                 + "- TNT across seasons: " + result.tntTrend() + "\n"
                 + "- NSER trend: " + result.nserTrend() + "\n"
+                + "- PNNC current: " + pnncResult.currentPnnc() + "\n"
+                + "- PNNC trend: " + pnncResult.trend() + "\n"
                 + "- Ecosystem status: " + result.status() + "\n"
                 + "- Trajectory: " + result.interpretation() + "\n";
         Files.writeString(Path.of("analytics/world-lab/ecosystem-health-gauge-review.md"), worldLabReview);
@@ -500,12 +511,14 @@ public class WorldSimulationHarness {
                 result.endSpecies(),
                 result.tntTrend().isEmpty() ? 0.0D : result.tntTrend().get(result.tntTrend().size() - 1),
                 result.latestNser(),
+                pnncResult.currentPnnc(),
                 dominantNicheShare,
                 dominantSpeciesShare,
                 dominantAttractorShare,
                 nicheCount,
                 speciesCount,
                 result.nserTrend(),
+                pnncResult.trend(),
                 noveltyPersistenceWeak,
                 relabelingEvents);
 
@@ -514,6 +527,7 @@ public class WorldSimulationHarness {
                 + "- END_species: " + (diagnostic.endSpecies() == null ? "N/A" : diagnostic.endSpecies()) + "\n"
                 + "- TNT_latest: " + diagnostic.latestTnt() + "\n"
                 + "- NSER_latest: " + diagnostic.latestNser() + "\n"
+                + "- PNNC_latest: " + diagnostic.latestPnnc() + "\n"
                 + "- Diagnostic state: " + diagnostic.state() + "\n"
                 + "- Confidence: " + diagnostic.confidence() + "\n"
                 + "- Warning flags: " + diagnostic.warningFlags() + "\n"
@@ -531,6 +545,7 @@ public class WorldSimulationHarness {
                 + "  \"END_species\": " + (diagnostic.endSpecies() == null ? "null" : diagnostic.endSpecies()) + ",\n"
                 + "  \"TNT\": " + diagnostic.latestTnt() + ",\n"
                 + "  \"NSER\": " + diagnostic.latestNser() + ",\n"
+                + "  \"PNNC\": " + diagnostic.latestPnnc() + ",\n"
                 + "  \"diagnostic_state\": \"" + diagnostic.state().name() + "\",\n"
                 + "  \"confidence\": " + diagnostic.confidence() + ",\n"
                 + "  \"warning_flags\": " + toJson(diagnostic.warningFlags(), 0) + ",\n"
@@ -545,6 +560,7 @@ public class WorldSimulationHarness {
                 + "- high species count with weak divergence: " + (diagnostic.speciesCount() >= 6 && diagnostic.dominantSpeciesShare() >= 0.55D) + "\n"
                 + "- high niche count with weak END: " + (diagnostic.nicheCount() >= 4 && diagnostic.endArtifacts() < 2.5D) + "\n"
                 + "- high TNT with low NSER: " + (diagnostic.latestTnt() >= 0.45D && diagnostic.latestNser() < 0.15D) + "\n"
+                + "- PNNC remains zero: " + (diagnostic.latestPnnc() == 0) + "\n"
                 + "- relabeling/migration noise: " + (diagnostic.relabelingEvents() >= 4) + "\n"
                 + "- novelty persistence weak: " + diagnostic.noveltyPersistenceWeak() + "\n"
                 + "- dominant attractor remains sticky: " + (diagnostic.dominantAttractorShare() >= 0.60D) + "\n\n"
@@ -559,6 +575,7 @@ public class WorldSimulationHarness {
                 + "- END across runs: " + result.endTrend() + "\n"
                 + "- TNT across seasons: " + result.tntTrend() + "\n"
                 + "- NSER across seasons: " + result.nserTrend() + "\n"
+                + "- PNNC across seasons: " + pnncResult.trend() + "\n"
                 + "- false-divergence flags: " + diagnostic.warningFlags() + "\n"
                 + "- final diagnostic state: " + diagnostic.state() + "\n"
                 + "- attractor weakening vs relabeling: "
@@ -569,7 +586,7 @@ public class WorldSimulationHarness {
         String openEndednessReview = "# Ecology Diagnostic Open-Endedness Review\n\n"
                 + "1. is the ecosystem genuinely diverging? " + (diagnostic.state() == EcologyDiagnosticState.EMERGENT_ECOLOGY || diagnostic.state() == EcologyDiagnosticState.HEALTHY_MULTI_ATTRACTOR) + "\n"
                 + "2. is it only reshuffling existing structures? " + (diagnostic.state() == EcologyDiagnosticState.FALSE_DIVERGENCE || diagnostic.state() == EcologyDiagnosticState.STAGNANT_ATTRACTOR) + "\n"
-                + "3. are new strategies appearing and persisting? " + (!diagnostic.noveltyPersistenceWeak() && diagnostic.latestNser() >= 0.15D) + "\n"
+                + "3. are new strategies appearing and persisting? " + (!diagnostic.noveltyPersistenceWeak() && diagnostic.latestNser() >= 0.15D && diagnostic.latestPnnc() > 0) + "\n"
                 + "4. ecosystem description: "
                 + switch (diagnostic.state()) {
                     case COLLAPSED_MONOCULTURE, STAGNANT_ATTRACTOR -> "bounded";
@@ -581,6 +598,42 @@ public class WorldSimulationHarness {
                 + "\n\n"
                 + "State=" + diagnostic.state() + ", confidence=" + diagnostic.confidence() + ", warnings=" + diagnostic.warningFlags() + ".\n";
         Files.writeString(Path.of("analytics/world-lab/open-endedness/ecology-diagnostic-open-endedness-review.md"), openEndednessReview);
+
+        EcologyAlertEngine.AlertThresholds alertThresholds = ecologyAlertThresholdsFromProperties();
+        Integer baselinePnnc = loadBaselinePnnc(Path.of("analytics/ecology-alerts.json"));
+        EcologyAlertEngine alertEngine = new EcologyAlertEngine();
+        EcologyAlertEngine.AlertResult alertResult = alertEngine.evaluate(diagnostic, pnncResult, alertThresholds, baselinePnnc);
+        Map<String, Object> alertsJson = alertEngine.asJson(diagnostic, pnncResult, alertResult);
+        Files.writeString(Path.of("analytics/ecology-alerts.json"), toJson(alertsJson, 0));
+
+        String alertsReport = "# Ecology Alerts Report\n\n"
+                + "- Ecology State: " + diagnostic.state() + "\n"
+                + "- END: " + diagnostic.endArtifacts() + "\n"
+                + "- TNT: " + diagnostic.latestTnt() + "\n"
+                + "- NSER: " + diagnostic.latestNser() + "\n"
+                + "- PNNC: " + diagnostic.latestPnnc() + "\n"
+                + "- Regression Gate: " + alertResult.regressionGate() + "\n"
+                + "- Alerts: " + alertResult.alerts() + "\n"
+                + "- Thresholds: " + alertThresholds + "\n";
+        Files.writeString(Path.of("analytics/ecology-alerts-report.md"), alertsReport);
+
+        String gateReview = "# Ecology Regression Gate Review\n\n"
+                + "- Gate status: " + alertResult.regressionGate() + "\n"
+                + "- END/TNT/NSER/PNNC: " + diagnostic.endArtifacts() + "/" + diagnostic.latestTnt() + "/" + diagnostic.latestNser() + "/" + diagnostic.latestPnnc() + "\n"
+                + "- Triggered alerts: " + alertResult.alerts() + "\n"
+                + "- Workflow should fail: " + alertResult.shouldFail() + "\n";
+        Files.writeString(Path.of("analytics/world-lab/ecology-regression-gate-review.md"), gateReview);
+
+        System.out.println("Ecology State: " + diagnostic.state());
+        System.out.println("END: " + diagnostic.endArtifacts());
+        System.out.println("TNT: " + diagnostic.latestTnt());
+        System.out.println("NSER: " + diagnostic.latestNser());
+        System.out.println("PNNC: " + diagnostic.latestPnnc());
+        System.out.println("Regression Gate: " + alertResult.regressionGate());
+
+        if (alertResult.shouldFail()) {
+            throw new IllegalStateException("Ecology regression gate failed due to ERROR-level alerts.");
+        }
     }
 
     private double extractLastSeasonDouble(List<Map<String, Object>> snapshots, String key) {
@@ -609,6 +662,33 @@ public class WorldSimulationHarness {
             }
         }
         return events;
+    }
+
+
+    private EcologyAlertEngine.AlertThresholds ecologyAlertThresholdsFromProperties() {
+        EcologyAlertEngine.AlertThresholds defaults = EcologyAlertEngine.AlertThresholds.defaults();
+        return new EcologyAlertEngine.AlertThresholds(
+                Boolean.parseBoolean(System.getProperty("analytics.ecologyAlerts.enabled", String.valueOf(defaults.enabled()))),
+                Boolean.parseBoolean(System.getProperty("analytics.ecologyAlerts.failOnError", String.valueOf(defaults.failOnError()))),
+                Double.parseDouble(System.getProperty("analytics.ecologyAlerts.minEND", String.valueOf(defaults.minEND()))),
+                Double.parseDouble(System.getProperty("analytics.ecologyAlerts.maxTNT", String.valueOf(defaults.maxTNT()))),
+                Double.parseDouble(System.getProperty("analytics.ecologyAlerts.minNSER", String.valueOf(defaults.minNSER()))),
+                Integer.parseInt(System.getProperty("analytics.ecologyAlerts.minPNNC", String.valueOf(defaults.minPNNC()))),
+                Boolean.parseBoolean(System.getProperty("analytics.ecologyAlerts.warnIfFalseDivergence", String.valueOf(defaults.warnIfFalseDivergence()))),
+                Boolean.parseBoolean(System.getProperty("analytics.ecologyAlerts.failIfNoveltyRegresses", String.valueOf(defaults.failIfNoveltyRegresses())))
+        );
+    }
+
+    private Integer loadBaselinePnnc(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return null;
+        }
+        String content = Files.readString(path);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"PNNC\"\s*:\s*([0-9]+)").matcher(content);
+        if (!matcher.find()) {
+            return null;
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     private NovelStrategyEmergenceAnalyzer.NserResult writeNovelStrategyEmergenceReports(List<Map<String, Object>> seasonalSnapshots) throws IOException {
@@ -693,27 +773,86 @@ public class WorldSimulationHarness {
                 + "- END/TNT are read from ecosystem-health-gauge outputs.\n"
                 + "- NSER trend: " + result.trend() + "\n"
                 + "- NSER interpretation: " + result.interpretation() + "\n\n"
-                + "## Open-endedness judgment using END + TNT + NSER\n"
-                + classifyOpenEndednessWithNovelty(result.trend()) + "\n";
+                + "## Open-endedness judgment using END + TNT + NSER + PNNC\n"
+                + classifyOpenEndednessWithNovelty(result.trend(), List.of()) + "\n";
         Files.writeString(Path.of("analytics/world-lab/open-endedness/novelty-open-endedness-review.md"), openEndednessReview);
         return result;
     }
 
-    private String classifyOpenEndednessWithNovelty(List<Double> nserTrend) {
+
+    @SuppressWarnings("unchecked")
+    private PersistentNovelNicheAnalyzer.PnncResult writePersistentNovelNicheReports(List<Map<String, Object>> seasonalSnapshots) throws IOException {
+        PersistentNovelNicheAnalyzer analyzer = new PersistentNovelNicheAnalyzer();
+        PersistentNovelNicheAnalyzer.PnncResult result = analyzer.analyze(seasonalSnapshots);
+
+        String report = "# Persistent Novel Niche Report\n\n"
+                + "## Novelty criteria\n" + result.noveltyCriteria() + "\n\n"
+                + "## Persistence criteria\n" + result.persistenceCriteria() + "\n\n"
+                + "- PNNC current: " + result.currentPnnc() + "\n"
+                + "- PNNC trend over time: " + result.trend() + "\n"
+                + "- Candidate-but-failed novel niches: " + result.failedCandidates() + "\n"
+                + "- Persistent novel niche examples: " + result.persistentNovelExamples() + "\n"
+                + "- Retired novel niches: " + result.retiredPersistentNiches() + "\n"
+                + "- Persistent lifespan distribution: " + result.persistentLifespanDistribution() + "\n\n"
+                + "## Interpretation summary\n" + result.interpretation() + "\n";
+        Files.writeString(Path.of("analytics/persistent-novel-niche-report.md"), report);
+
+        List<Map<String, Object>> bySeasonRows = new ArrayList<>();
+        for (PersistentNovelNicheAnalyzer.SeasonPnnc season : result.bySeason()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("season", season.season());
+            row.put("pnnc", season.pnnc());
+            row.put("novelCandidates", season.novelCandidates());
+            row.put("persistentNovelNiches", season.persistentNovelNiches());
+            row.put("failedNovelCandidates", season.failedNovelCandidates());
+            bySeasonRows.add(row);
+        }
+
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("noveltyCriteria", result.noveltyCriteria());
+        json.put("persistenceCriteria", result.persistenceCriteria());
+        json.put("currentPNNC", result.currentPnnc());
+        json.put("PNNCTrend", result.trend());
+        json.put("bySeason", bySeasonRows);
+        json.put("failedCandidates", result.failedCandidates());
+        json.put("persistentExamples", result.persistentNovelExamples());
+        json.put("interpretation", result.interpretation());
+        Files.writeString(Path.of("analytics/persistent-novel-niche.json"), toJson(json, 0));
+
+        Files.writeString(Path.of("analytics/world-lab/persistent-novel-niche-review.md"),
+                "# Persistent Novel Niche Review\n\n"
+                        + "- PNNC by run: run-1=" + result.currentPnnc() + "\n"
+                        + "- PNNC by season: " + result.trend() + "\n"
+                        + "- examples of durable novel niches: " + result.persistentNovelExamples() + "\n"
+                        + "- collapsed/failed candidates: " + result.failedCandidates() + "\n"
+                        + "- ecosystem interpretation: " + result.interpretation() + "\n");
+
+        Files.writeString(Path.of("analytics/world-lab/open-endedness/pnnc-open-endedness-review.md"),
+                "# PNNC Open-Endedness Review\n\n"
+                        + "1. are new niches appearing? " + (!result.bySeason().isEmpty()) + "\n"
+                        + "2. are they surviving long enough to matter? " + (result.currentPnnc() > 0) + "\n"
+                        + "3. is the system only reshuffling old niches? " + (result.currentPnnc() == 0) + "\n"
+                        + "4. has the ecosystem crossed into durable ecological expansion? " + (result.currentPnnc() >= 3) + "\n\n"
+                        + "END + TNT + NSER + PNNC interpretation: " + result.interpretation() + "\n");
+        return result;
+    }
+
+    private String classifyOpenEndednessWithNovelty(List<Double> nserTrend, List<Integer> pnncTrend) {
         if (nserTrend.isEmpty()) {
-            return "Insufficient NSER data.";
+            return "Insufficient NSER/PNNC data.";
         }
         double latest = nserTrend.get(nserTrend.size() - 1);
-        if (latest < 0.05D) {
-            return "Ecosystem is mostly reshuffling existing forms.";
+        int latestPnnc = pnncTrend == null || pnncTrend.isEmpty() ? 0 : pnncTrend.get(pnncTrend.size() - 1);
+        if (latestPnnc <= 0) {
+            return "Ecosystem is mostly reshuffling existing forms (PNNC=0).";
         }
-        if (latest < 0.30D) {
-            return "Ecosystem is producing bounded novelty.";
+        if (latest < 0.30D || latestPnnc <= 2) {
+            return "Ecosystem is producing bounded but durable novelty.";
         }
-        if (latest < 0.50D) {
-            return "Ecosystem is producing sustained new strategies.";
+        if (latest < 0.50D || latestPnnc <= 5) {
+            return "Ecosystem is producing sustained and durable ecological expansion.";
         }
-        return "Ecosystem may be over-fragmenting into noise despite high novelty.";
+        return "Ecosystem shows strong persistent novelty; monitor for over-fragmentation.";
     }
 
     private Map<String, Integer> toIntegerMap(Map<?, ?> source) {

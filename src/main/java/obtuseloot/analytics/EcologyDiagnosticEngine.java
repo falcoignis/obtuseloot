@@ -9,12 +9,14 @@ public class EcologyDiagnosticEngine {
                                               Double endSpecies,
                                               double latestTnt,
                                               double latestNser,
+                                              int latestPnnc,
                                               double dominantNicheShare,
                                               double dominantSpeciesShare,
                                               double dominantAttractorShare,
                                               int nicheCount,
                                               int speciesCount,
                                               List<Double> nserTrend,
+                                              List<Integer> pnncTrend,
                                               boolean noveltyPersistenceWeak,
                                               int relabelingEvents) {
         List<String> warnings = new ArrayList<>();
@@ -31,16 +33,17 @@ public class EcologyDiagnosticEngine {
         boolean lowNser = latestNser < 0.10D;
         boolean moderateNser = latestNser >= 0.10D && latestNser < 0.30D;
         boolean healthyNser = latestNser >= 0.30D && latestNser < 0.50D;
+        boolean noPersistentNovelNiches = latestPnnc <= 0;
 
         boolean highSpeciesWeakDivergence = speciesCount >= 6 && dominantSpeciesShare >= 0.55D;
         boolean highNicheWeakEnd = nicheCount >= 4 && endArtifacts < 2.5D;
-        boolean turnoverWithoutNovelty = latestTnt >= 0.45D && latestNser < 0.15D;
+        boolean turnoverWithoutNovelty = latestTnt >= 0.45D && (latestNser < 0.15D || noPersistentNovelNiches);
         boolean dominantAttractorSticky = dominantAttractorShare >= 0.60D || dominantSpeciesShare >= 0.60D;
         boolean relabelingNoise = relabelingEvents >= 4;
 
         boolean falseDivergence = (highSpeciesWeakDivergence || highNicheWeakEnd)
                 && turnoverWithoutNovelty
-                && (noveltyPersistenceWeak || relabelingNoise || dominantAttractorSticky);
+                && (noveltyPersistenceWeak || relabelingNoise || dominantAttractorSticky || noPersistentNovelNiches);
 
         EcologyDiagnosticState state;
         if (lowEnd && lowTnt && lowNser) {
@@ -58,11 +61,14 @@ public class EcologyDiagnosticEngine {
         } else if (lowEnd) {
             state = EcologyDiagnosticState.STAGNANT_ATTRACTOR;
             warnings.add("stagnation");
-        } else if (healthyEnd && moderateTnt && healthyNser && !noveltyPersistenceWeak) {
+        } else if (healthyEnd && moderateTnt && (moderateNser || healthyNser) && latestPnnc > 0 && !noveltyPersistenceWeak) {
             state = EcologyDiagnosticState.EMERGENT_ECOLOGY;
             warnings.add("healthy_multi_attractor");
         } else {
             state = EcologyDiagnosticState.HEALTHY_MULTI_ATTRACTOR;
+            if (noPersistentNovelNiches) {
+                warnings.add("bounded_reshuffling");
+            }
             if (!moderateNser && !healthyNser) {
                 warnings.add("monitor_novelty");
             }
@@ -77,12 +83,13 @@ public class EcologyDiagnosticEngine {
         }
 
         double confidence = confidenceFor(state, falseDivergence, noveltyPersistenceWeak, relabelingNoise, dominantAttractorSticky);
-        String explanation = explanationFor(state, endArtifacts, latestTnt, latestNser, noveltyPersistenceWeak,
+        String explanation = explanationFor(state, endArtifacts, latestTnt, latestNser, latestPnnc, noveltyPersistenceWeak,
                 highSpeciesWeakDivergence, highNicheWeakEnd, turnoverWithoutNovelty, dominantAttractorSticky, relabelingNoise);
         String nextAction = nextActionFor(state);
-        return new EcologyDiagnosticSnapshot(endArtifacts, endSpecies, latestTnt, latestNser,
+        return new EcologyDiagnosticSnapshot(endArtifacts, endSpecies, latestTnt, latestNser, latestPnnc,
                 dominantNicheShare, dominantSpeciesShare, dominantAttractorShare, nicheCount, speciesCount,
-                nserTrend == null ? List.of() : List.copyOf(nserTrend), noveltyPersistenceWeak, relabelingEvents,
+                nserTrend == null ? List.of() : List.copyOf(nserTrend), pnncTrend == null ? List.of() : List.copyOf(pnncTrend),
+                noveltyPersistenceWeak, relabelingEvents,
                 state, confidence, List.copyOf(warnings), explanation, nextAction);
     }
 
@@ -108,6 +115,7 @@ public class EcologyDiagnosticEngine {
                                   double end,
                                   double tnt,
                                   double nser,
+                                  int pnnc,
                                   boolean noveltyPersistenceWeak,
                                   boolean highSpeciesWeakDivergence,
                                   boolean highNicheWeakEnd,
@@ -118,7 +126,7 @@ public class EcologyDiagnosticEngine {
             case COLLAPSED_MONOCULTURE -> "END/TNT/NSER are all low, indicating collapse into a monoculture attractor.";
             case STAGNANT_ATTRACTOR -> "Turnover is near zero with weak novelty, indicating a stagnant ecological basin.";
             case FALSE_DIVERGENCE -> "Apparent diversity is not producing durable novelty: END=" + end
-                    + ", TNT=" + tnt + ", NSER=" + nser
+                    + ", TNT=" + tnt + ", NSER=" + nser + ", PNNC=" + pnnc
                     + ", speciesWeakDivergence=" + highSpeciesWeakDivergence
                     + ", nicheWeakEND=" + highNicheWeakEnd
                     + ", turnoverWithoutNovelty=" + turnoverWithoutNovelty
@@ -126,8 +134,8 @@ public class EcologyDiagnosticEngine {
                     + ", relabelingNoise=" + relabelingNoise
                     + ", noveltyPersistenceWeak=" + noveltyPersistenceWeak + ".";
             case TURBULENT_THRASH -> "Turnover is very high relative to stable novelty, indicating ecological thrashing.";
-            case HEALTHY_MULTI_ATTRACTOR -> "END is healthy with moderate TNT and bounded NSER, indicating stable multiple attractors.";
-            case EMERGENT_ECOLOGY -> "END is high, TNT is moderate, and NSER is persistently healthy, indicating genuine emergent ecology.";
+            case HEALTHY_MULTI_ATTRACTOR -> "END is healthy with moderate TNT and bounded NSER, but PNNC indicates limited durable expansion.";
+            case EMERGENT_ECOLOGY -> "END is high, TNT is moderate, NSER is healthy, and PNNC>0 indicates genuine durable ecological expansion.";
         };
     }
 
@@ -136,7 +144,7 @@ public class EcologyDiagnosticEngine {
             case COLLAPSED_MONOCULTURE, STAGNANT_ATTRACTOR -> "Investigate ecological bottlenecks and validate niche detector sensitivity.";
             case FALSE_DIVERGENCE -> "Prioritize persistence audits and reduce label churn in species/niche assignment.";
             case TURBULENT_THRASH -> "Monitor stability windows and check whether turnover settles over additional seasons.";
-            case HEALTHY_MULTI_ATTRACTOR -> "Continue monitoring for sustained novelty persistence across additional runs.";
+            case HEALTHY_MULTI_ATTRACTOR -> "Continue monitoring PNNC to verify whether novelty becomes durable.";
             case EMERGENT_ECOLOGY -> "Preserve current calibration and run longer horizon validation for strategy persistence.";
         };
     }

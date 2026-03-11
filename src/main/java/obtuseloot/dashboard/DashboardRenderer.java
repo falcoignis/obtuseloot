@@ -24,6 +24,7 @@ public class DashboardRenderer {
                 fmt(metrics.endArtifacts()),
                 fmt(metrics.latestTnt()),
                 fmt(metrics.latestNser()),
+                String.valueOf(metrics.latestPnnc()),
                 statusBadgeForDiagnostic(metrics.diagnosticState()),
                 statusBadge(metrics.ecosystemStatus()),
                 renderMap((Map<String, Integer>) data.get("archetypes")),
@@ -51,7 +52,7 @@ public class DashboardRenderer {
                     body{font-family:Arial;background:#0f1524;color:#eaf0ff;margin:20px}
                     .grid{display:grid;grid-template-columns:repeat(2,minmax(360px,1fr));gap:14px}
                     .panel{background:#1a243b;border-radius:10px;padding:12px}
-                    .strip{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+                    .strip{display:grid;grid-template-columns:repeat(11,1fr);gap:8px}
                     .metric{background:#25304d;padding:10px;border-radius:8px}
                     .small{color:#9bb1de;font-size:12px}
                     pre{white-space:pre-wrap}
@@ -84,7 +85,7 @@ public class DashboardRenderer {
                     <div class=\"panel\"><h3>Species & Niche Health</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Co-Evolution Context</h3><pre>%s</pre></div>
                     <div class=\"panel\"><h3>Ecosystem Health Gauge</h3><pre>%s</pre></div>
-                    <div class=\"panel\"><h3>Ecology Diagnostic (END+TNT+NSER)</h3><pre>%s</pre></div>
+                    <div class=\"panel\"><h3>Ecology Diagnostic (END+TNT+NSER+PNNC)</h3><pre>%s</pre></div>
                   </div>
                 </body>
                 </html>
@@ -132,9 +133,11 @@ public class DashboardRenderer {
                 + "\nEND_species=" + (metrics.endSpecies() == null ? "N/A" : fmt(metrics.endSpecies()))
                 + "\nTNT_latest=" + fmt(metrics.latestTnt())
                 + "\nNSER_latest=" + fmt(metrics.latestNser())
+                + "\nPNNC_latest=" + metrics.latestPnnc()
                 + "\nEND_trend=" + metrics.endTrend()
                 + "\nTNT_trend=" + metrics.tntTrend()
                 + "\nNSER_trend=" + metrics.nserTrend()
+                + "\nPNNC_trend=" + metrics.pnncTrend()
                 + "\nNSER_note=" + metrics.nserInterpretation()
                 + "\nstatus=" + metrics.ecosystemStatus();
     }
@@ -146,6 +149,7 @@ public class DashboardRenderer {
                 + "\nEND=" + fmt(metrics.endArtifacts())
                 + "\nTNT=" + fmt(metrics.latestTnt())
                 + "\nNSER=" + fmt(metrics.latestNser())
+                + "\nPNNC=" + metrics.latestPnnc()
                 + "\nEcologicalMemory=" + (metrics.ecologicalMemoryActive() ? "active" : "inactive")
                 + "\nAttractorDuration=" + fmt(metrics.dominantAttractorDuration())
                 + "\nMemoryPressure=" + fmt(metrics.memoryPressureMagnitude());

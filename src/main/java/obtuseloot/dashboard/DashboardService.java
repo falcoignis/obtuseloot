@@ -68,9 +68,11 @@ public class DashboardService {
                 gaugeData.endSpecies(),
                 gaugeData.latestTnt(),
                 gaugeData.latestNser(),
+                gaugeData.latestPnnc(),
                 gaugeData.endTrend(),
                 gaugeData.tntTrend(),
                 gaugeData.nserTrend(),
+                gaugeData.pnncTrend(),
                 gaugeData.nserInterpretation(),
                 gaugeData.status(),
                 gaugeData.diagnosticState(),
@@ -145,7 +147,7 @@ public class DashboardService {
     private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
         Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
         if (!Files.exists(path)) {
-            return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT, EcologyDiagnosticState.STAGNANT_ATTRACTOR, 0.0D, List.of("stagnation"));
+            return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, 0, List.of(), List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT, EcologyDiagnosticState.STAGNANT_ATTRACTOR, 0.0D, List.of("stagnation"));
         }
         String content = Files.readString(path);
         double endArtifacts = extractNumber(content, "END_artifacts");
@@ -163,10 +165,18 @@ public class DashboardService {
             status = EcosystemStatus.STAGNANT;
         }
         double latestTnt = tntTrend.isEmpty() ? 0.0D : tntTrend.get(tntTrend.size() - 1);
+        int latestPnnc = (int) Math.round(extractNumber(content, "PNNC_current"));
+        java.util.List<Integer> pnncTrend = extractIntArray(content, "PNNC_trend");
+        if (latestPnnc <= 0) {
+            latestPnnc = loadCurrentPnncFromReport();
+            if (pnncTrend.isEmpty() && latestPnnc > 0) {
+                pnncTrend = java.util.List.of(latestPnnc);
+            }
+        }
         EcologyDiagnosticState diagnosticState = loadDiagnosticState();
         double confidence = loadDiagnosticConfidence();
         List<String> warnings = loadDiagnosticWarnings();
-        return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, endTrend, tntTrend, nserTrend,
+        return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, latestPnnc, endTrend, tntTrend, nserTrend, pnncTrend,
                 interpretation == null ? "NSER not available." : interpretation, status, diagnosticState, confidence, warnings);
     }
 
@@ -260,6 +270,35 @@ public class DashboardService {
         return out;
     }
 
+
+    private int loadCurrentPnncFromReport() throws IOException {
+        Path pnncPath = analyticsRoot.resolve("persistent-novel-niche.json");
+        if (!Files.exists(pnncPath)) {
+            return 0;
+        }
+        return (int) Math.round(extractNumber(Files.readString(pnncPath), "currentPNNC"));
+    }
+
+    private List<Integer> extractIntArray(String content, String key) {
+        Matcher matcher = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL).matcher(content);
+        if (!matcher.find()) {
+            return List.of();
+        }
+        String body = matcher.group(1).trim();
+        if (body.isEmpty()) {
+            return List.of();
+        }
+        String[] parts = body.split(",");
+        List<Integer> out = new java.util.ArrayList<>();
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                out.add((int) Math.round(Double.parseDouble(trimmed)));
+            }
+        }
+        return out;
+    }
+
     private List<String> extractStringArray(String content, String key) {
         Matcher matcher = Pattern.compile("\\\"" + Pattern.quote(key) + "\\\"\\s*:\\s*\\[([^]]*)]", Pattern.DOTALL).matcher(content);
         if (!matcher.find()) {
@@ -279,9 +318,11 @@ public class DashboardService {
                                       Double endSpecies,
                                       double latestTnt,
                                       double latestNser,
+                                      int latestPnnc,
                                       List<Double> endTrend,
                                       List<Double> tntTrend,
                                       List<Double> nserTrend,
+                                      List<Integer> pnncTrend,
                                       String nserInterpretation,
                                       EcosystemStatus status,
                                       EcologyDiagnosticState diagnosticState,
