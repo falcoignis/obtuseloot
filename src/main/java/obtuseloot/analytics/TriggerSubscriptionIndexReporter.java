@@ -50,7 +50,12 @@ public final class TriggerSubscriptionIndexReporter {
                 .append("\n");
         out.append("- Estimated savings are highest when ability profiles are large and event triggers are sparse per profile.\n\n");
 
-        out.append("## 6) Remaining hot-path concerns\n");
+        out.append("## 6) Trigger budget pressure\n");
+        out.append("- Suppression reasons (aggregate): ").append(manager.suppressionReasonCounts()).append("\n");
+        out.append("- Budget consumption by trigger (x100 units): ").append(manager.triggerBudgetConsumptionByTrigger()).append("\n");
+        out.append("- Budget consumption by ability (x100 units): ").append(manager.triggerBudgetConsumptionByAbility()).append("\n\n");
+
+        out.append("## 7) Remaining hot-path concerns\n");
         out.append("- Ensure subscription rebuild hooks are triggered after state-changing debug, evolution, drift, awakening, and fusion flows.\n");
         out.append("- Keep fallback scans disabled in production by keeping runtime.triggerSubscriptionIndexing=true.\n");
 

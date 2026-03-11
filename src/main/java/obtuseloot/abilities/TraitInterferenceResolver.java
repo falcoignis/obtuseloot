@@ -17,6 +17,7 @@ public class TraitInterferenceResolver {
 
     private final Map<String, EnumMap<GenomeTrait, Double>> abilityWeights = new HashMap<>();
     private final TraitProjectionMatrix projectionMatrix = new TraitProjectionMatrix();
+    private final Map<String, Double> triggerEfficiencyByAbility = new HashMap<>();
     private final InteractionProjectionMatrix interactionMatrix = new InteractionProjectionMatrix();
     private final ProjectionCache projectionCache;
     private final TraitInterferenceFieldMatrix fieldMatrix = new TraitInterferenceFieldMatrix();
@@ -45,7 +46,7 @@ public class TraitInterferenceResolver {
 
         List<ScoredTemplate> scored = new ArrayList<>(templates.size());
         for (AbilityTemplate template : templates) {
-            double score = scoreByAbility.getOrDefault(template.id(), 0.0D);
+            double score = scoreByAbility.getOrDefault(template.id(), 0.0D) * triggerEfficiencyByAbility.getOrDefault(template.id(), 1.0D);
             scored.add(new ScoredTemplate(template, score));
         }
 
@@ -71,7 +72,7 @@ public class TraitInterferenceResolver {
 
         List<ScoredTemplate> scored = new ArrayList<>(templates.size());
         for (AbilityTemplate template : templates) {
-            scored.add(new ScoredTemplate(template, scoreByAbility.getOrDefault(template.id(), 0.0D)));
+            scored.add(new ScoredTemplate(template, scoreByAbility.getOrDefault(template.id(), 0.0D) * triggerEfficiencyByAbility.getOrDefault(template.id(), 1.0D)));
         }
         scored.sort(Comparator.comparingDouble((ScoredTemplate v) -> -v.score)
                 .thenComparing(v -> v.template.id()));
@@ -260,10 +261,20 @@ public class TraitInterferenceResolver {
         for (AbilityTemplate template : templates) {
             EnumMap<GenomeTrait, Double> templateWeights = abilityWeights.getOrDefault(template.id(), inferByFamily(template.family()));
             filtered.put(template.id(), templateWeights);
+            triggerEfficiencyByAbility.put(template.id(), efficiencyWeight(template.metadata()));
             projectionMatrix.register(template.id(), AbilityTraitVector.fromWeights(template.id(), templateWeights));
         }
         abilityWeights.clear();
         abilityWeights.putAll(filtered);
+    }
+
+
+    private double efficiencyWeight(AbilityMetadata metadata) {
+        if (metadata == null) {
+            return 1.0D;
+        }
+        double efficiency = metadata.triggerEfficiency();
+        return Math.max(0.82D, Math.min(1.22D, 0.9D + (efficiency * 0.08D)));
     }
 
     private EnumMap<GenomeTrait, Double> inferByFamily(AbilityFamily family) {

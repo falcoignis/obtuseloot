@@ -162,6 +162,7 @@ public class DebugCommand {
                 + " §7abilityProfile=§f" + abilityProfile.profileId());
         sender.sendMessage("§7abilityTriggers=§f" + abilityProfile.abilities().stream().map(a -> a.trigger().name()).toList());
         sender.sendMessage("§7abilityEffects=§f" + abilityProfile.abilities().stream().map(a -> a.name() + ":" + a.effects().stream().map(e -> e.type().name()).toList()).toList());
+        sender.sendMessage("§7triggerBudget=§f" + plugin.getItemAbilityManager().triggerBudgetManager().debugSummary(target.getUniqueId(), artifact.getArtifactStorageKey(), AbilityTrigger.ON_WORLD_SCAN));
         sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7fusion influence=§f" + artifact.getFusionPath());
         sender.sendMessage("§7branchPath=§f" + artifact.getLastAbilityBranchPath() + " §7mutationHistory=§f" + artifact.getLastMutationHistory());
         sender.sendMessage("§7speciesId=§f" + artifact.getSpeciesId() + " §7parentSpecies=§f" + artifact.getParentSpeciesId()
