@@ -32,11 +32,36 @@ class TriggerBudgetManagerTest {
         AbilityDefinition active = activeInspect().abilities().getFirst();
         Artifact artifact = artifact(2L);
 
-        TriggerBudgetProfile passiveProfile = resolver.resolve(passive, new AbilityEventContext(AbilityTrigger.ON_WORLD_SCAN, artifact, new ArtifactReputation(), 1.0D, "move-chunk"));
-        TriggerBudgetProfile activeProfile = resolver.resolve(active, new AbilityEventContext(AbilityTrigger.ON_BLOCK_INSPECT, artifact, new ArtifactReputation(), 1.0D, "inspect-block"));
+        TriggerBudgetProfile passiveProfile = resolver.resolve(passive,
+                new AbilityEventContext(AbilityTrigger.ON_WORLD_SCAN, artifact, new ArtifactReputation(), 1.0D, "move-chunk",
+                        AbilityRuntimeContext.passive(AbilitySource.CHUNK_WORLD_SCAN)));
+        TriggerBudgetProfile activeProfile = resolver.resolve(active,
+                new AbilityEventContext(AbilityTrigger.ON_BLOCK_INSPECT, artifact, new ArtifactReputation(), 1.0D, "inspect-block",
+                        AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT)));
 
         assertTrue(activeProfile.priority() > passiveProfile.priority());
         assertTrue(activeProfile.intentionalPreferred());
+    }
+
+    @Test
+    void sourceTextNoLongerEscalatesIntentWithoutRuntimeFlag() {
+        TriggerBudgetResolver resolver = new TriggerBudgetResolver();
+        AbilityDefinition passive = singlePassiveWorldScan().abilities().getFirst();
+        Artifact artifact = artifact(5L);
+
+        TriggerBudgetProfile profile = resolver.resolve(
+                passive,
+                new AbilityEventContext(
+                        AbilityTrigger.ON_WORLD_SCAN,
+                        artifact,
+                        new ArtifactReputation(),
+                        1.0D,
+                        "inspect-harvest-interact",
+                        AbilityRuntimeContext.passive(AbilitySource.CHUNK_WORLD_SCAN)
+                )
+        );
+        assertFalse(profile.intentionalPreferred());
+        assertTrue(profile.priority() < 80);
     }
 
 

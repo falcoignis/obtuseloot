@@ -3,6 +3,7 @@ package obtuseloot.obtuseengine;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.AbilityEventContext;
 import obtuseloot.abilities.AbilityDispatchResult;
+import obtuseloot.abilities.AbilityRuntimeContext;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
@@ -96,15 +97,23 @@ public final class ArtifactProcessor {
     }
 
     public static void processAbilityTrigger(Player player, AbilityTrigger trigger, double value, String source) {
-        processAbilityTriggerWithResult(player, trigger, value, source);
+        processAbilityTriggerWithResult(player, trigger, value, source, AbilityRuntimeContext.passive(obtuseloot.abilities.AbilitySource.OTHER));
     }
 
     public static AbilityDispatchResult processAbilityTriggerWithResult(Player player, AbilityTrigger trigger, double value, String source) {
+        return processAbilityTriggerWithResult(player, trigger, value, source, AbilityRuntimeContext.passive(obtuseloot.abilities.AbilitySource.OTHER));
+    }
+
+    public static AbilityDispatchResult processAbilityTriggerWithResult(Player player,
+                                                                        AbilityTrigger trigger,
+                                                                        double value,
+                                                                        String source,
+                                                                        AbilityRuntimeContext runtimeContext) {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         plugin.getArtifactUsageTracker().trackUse(artifact);
-        AbilityDispatchResult activated = triggerAbility(plugin, artifact, rep, trigger, value, source);
+        AbilityDispatchResult activated = triggerAbility(plugin, artifact, rep, trigger, value, source, runtimeContext);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
         plugin.getArtifactManager().markDirty(player.getUniqueId());
         return activated;
@@ -192,10 +201,20 @@ public final class ArtifactProcessor {
 
 
     private static AbilityDispatchResult triggerAbility(ObtuseLoot plugin, Artifact artifact, ArtifactReputation rep, AbilityTrigger trigger, double value, String source) {
+        return triggerAbility(plugin, artifact, rep, trigger, value, source, AbilityRuntimeContext.passive(obtuseloot.abilities.AbilitySource.OTHER));
+    }
+
+    private static AbilityDispatchResult triggerAbility(ObtuseLoot plugin,
+                                                        Artifact artifact,
+                                                        ArtifactReputation rep,
+                                                        AbilityTrigger trigger,
+                                                        double value,
+                                                        String source,
+                                                        AbilityRuntimeContext runtimeContext) {
         if (!ArtifactEligibility.isAbilityEligible(artifact) || plugin.getItemAbilityManager() == null) {
-            return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source), List.of());
+            return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext), List.of());
         }
-        return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source));
+        return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext));
     }
 
     private static void recordMemoryEvent(ObtuseLoot plugin,

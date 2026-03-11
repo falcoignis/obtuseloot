@@ -1,7 +1,6 @@
 package obtuseloot.artifacts;
 
 import obtuseloot.ObtuseLoot;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -12,20 +11,14 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class ArtifactItemStorage {
-    private static final int STORAGE_VERSION = 2;
-
     private final ObtuseLoot plugin;
-    private final NamespacedKey artifactStorageKey;
-    private final NamespacedKey artifactOwnerKey;
-    private final NamespacedKey artifactVersionKey;
-    private final NamespacedKey legacyBlobKey;
+    private final ArtifactPdcKeys keys;
+    private final ArtifactStateCodec codec;
 
     public ArtifactItemStorage(ObtuseLoot plugin) {
         this.plugin = plugin;
-        this.artifactStorageKey = new NamespacedKey(plugin, "artifact-storage-key");
-        this.artifactOwnerKey = new NamespacedKey(plugin, "artifact-owner-id");
-        this.artifactVersionKey = new NamespacedKey(plugin, "artifact-storage-version");
-        this.legacyBlobKey = new NamespacedKey(plugin, "artifact-state");
+        this.keys = new ArtifactPdcKeys(plugin);
+        this.codec = new ArtifactStateCodec(keys);
     }
 
     public boolean isArtifactItem(ItemStack item) {
@@ -37,8 +30,7 @@ public final class ArtifactItemStorage {
             return null;
         }
         ItemMeta meta = item.getItemMeta();
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        return pdc.get(artifactStorageKey, PersistentDataType.STRING);
+        return codec.readStorageKey(meta);
     }
 
     public void stampMinimalIdentity(ItemStack item, Artifact artifact) {
@@ -49,11 +41,7 @@ public final class ArtifactItemStorage {
         if (meta == null) {
             return;
         }
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(artifactStorageKey, PersistentDataType.STRING, artifact.getArtifactStorageKey());
-        pdc.set(artifactOwnerKey, PersistentDataType.STRING, artifact.getOwnerId().toString());
-        pdc.set(artifactVersionKey, PersistentDataType.INTEGER, STORAGE_VERSION);
-        pdc.remove(legacyBlobKey);
+        codec.write(meta, artifact);
         item.setItemMeta(meta);
     }
 
@@ -80,7 +68,7 @@ public final class ArtifactItemStorage {
             return false;
         }
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        if (!pdc.has(legacyBlobKey, PersistentDataType.STRING) && !pdc.has(artifactStorageKey, PersistentDataType.STRING)) {
+        if (!pdc.has(keys.legacyBlobKey(), PersistentDataType.STRING) && !pdc.has(keys.artifactStorageKey(), PersistentDataType.STRING)) {
             return false;
         }
 
@@ -124,8 +112,8 @@ public final class ArtifactItemStorage {
             return "untracked";
         }
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        Integer version = pdc.get(artifactVersionKey, PersistentDataType.INTEGER);
-        String owner = pdc.get(artifactOwnerKey, PersistentDataType.STRING);
+        Integer version = pdc.get(keys.artifactVersionKey(), PersistentDataType.INTEGER);
+        String owner = pdc.get(keys.artifactOwnerKey(), PersistentDataType.STRING);
         return "key=" + key + ", owner=" + Objects.toString(owner, "unknown") + ", version=" + Objects.toString(version, "?");
     }
 }
