@@ -23,6 +23,7 @@ public record WorldSimulationConfig(
         boolean enableTraitInteractions,
         boolean enableCoEvolution,
         FitnessSharingConfig fitnessSharing,
+        SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig behavioralProjection,
         ScoringMode scoringMode
 ) {
     public static WorldSimulationConfig defaults() {
@@ -47,6 +48,7 @@ public record WorldSimulationConfig(
                 true,
                 true,
                 FitnessSharingConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig.defaults(),
                 ScoringMode.PROJECTION_WITH_CACHE
         );
     }

@@ -8,6 +8,13 @@ import obtuseloot.species.ArtifactSpecies;
 import java.util.*;
 
 public class SpeciesNicheAnalyticsEngine {
+    public record BehavioralProjectionConfig(boolean enabled,
+                                             double traitEcologyWeight,
+                                             double behaviorWeight) {
+        public static BehavioralProjectionConfig defaults() {
+            return new BehavioralProjectionConfig(true, 0.35D, 0.65D);
+        }
+    }
     public record PenaltyResult(double effectiveScore,
                                 double crowdingPenalty,
                                 String nicheId,
@@ -39,9 +46,24 @@ public class SpeciesNicheAnalyticsEngine {
     private static final int CANDIDATE_MIN_PERSISTENCE = 3;
     private static final double NICHE_MERGE_DISTANCE = 0.08D;
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
+    private static final int NICHE_VECTOR_DIMENSIONS = 12;
+    private static final List<String> NICHE_DIMENSION_LABELS = List.of(
+            "trigger_activation_mix",
+            "mechanic_activation_mix",
+            "support_action_ratio",
+            "damage_action_ratio",
+            "persistence_action_ratio",
+            "mobility_usage_ratio",
+            "environment_dependent_activation_ratio",
+            "memory_driven_activation_ratio",
+            "latent_activation_rate",
+            "persistence_window_usage",
+            "interaction_diversity",
+            "activation_burstiness");
 
     private final Random random;
     private final FitnessSharingConfig fitnessSharing;
+    private final BehavioralProjectionConfig projectionConfig;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
     private final Map<String, CandidateNiche> candidateNiches = new LinkedHashMap<>();
@@ -90,12 +112,19 @@ public class SpeciesNicheAnalyticsEngine {
     private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
-        this(seed, FitnessSharingConfig.defaults());
+        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed, FitnessSharingConfig fitnessSharing) {
+        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults());
+    }
+
+    public SpeciesNicheAnalyticsEngine(long seed,
+                                       FitnessSharingConfig fitnessSharing,
+                                       BehavioralProjectionConfig projectionConfig) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
         this.fitnessSharing = (fitnessSharing == null ? FitnessSharingConfig.defaults() : fitnessSharing).bounded();
+        this.projectionConfig = projectionConfig == null ? BehavioralProjectionConfig.defaults() : projectionConfig;
     }
 
     public PenaltyResult applyCrowdingPenalty(Artifact artifact, double rawScore) {
@@ -432,6 +461,11 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("mirrorsBranches", mirrorsBranches);
         out.put("mirrorsFamilies", mirrorsFamilies);
         out.put("fragmentationWarning", occupancy.size() > MAX_NICHES ? "warning: niche fragmentation detected" : "none");
+        out.put("behavioralProjectionEnabled", projectionConfig.enabled());
+        out.put("traitEcologyWeight", projectionConfig.traitEcologyWeight());
+        out.put("behaviorWeight", projectionConfig.behaviorWeight());
+        out.put("projectionDominance", projectionConfig.behaviorWeight() >= projectionConfig.traitEcologyWeight() ? "behavior-dominated" : "trait-dominated");
+        out.put("topSeparationDimensions", topSeparationDimensions());
         return out;
     }
 
@@ -734,6 +768,52 @@ public class SpeciesNicheAnalyticsEngine {
             return 0.0D;
         }
         return activePenaltyCount / (double) penaltyEvaluationCount;
+    }
+
+    public Map<String, Object> behavioralProjectionSummary() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("enabled", projectionConfig.enabled());
+        out.put("traitEcologyWeight", projectionConfig.traitEcologyWeight());
+        out.put("behaviorWeight", projectionConfig.behaviorWeight());
+        out.put("mode", projectionConfig.behaviorWeight() >= projectionConfig.traitEcologyWeight() ? "behavior-dominated" : "trait-dominated");
+        out.put("dimensions", NICHE_DIMENSION_LABELS);
+        out.put("topSeparationDimensions", topSeparationDimensions());
+        return out;
+    }
+
+    public Map<String, Object> behavioralSignatureDistribution(List<Artifact> artifacts) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        List<Map<String, Object>> samples = new ArrayList<>();
+        double[] sums = new double[NICHE_VECTOR_DIMENSIONS];
+        int count = 0;
+        for (Artifact artifact : artifacts) {
+            ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
+            if (membership == null || membership.vector() == null) {
+                continue;
+            }
+            count++;
+            for (int i = 0; i < NICHE_VECTOR_DIMENSIONS; i++) {
+                sums[i] += membership.vector()[i];
+            }
+            if (samples.size() < 8) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("artifactSeed", artifact.getArtifactSeed());
+                item.put("speciesId", artifact.getSpeciesId());
+                item.put("nicheId", membership.nicheId());
+                item.put("vector", membership.vector());
+                samples.add(item);
+            }
+        }
+        Map<String, Double> means = new LinkedHashMap<>();
+        for (int i = 0; i < NICHE_VECTOR_DIMENSIONS; i++) {
+            means.put(NICHE_DIMENSION_LABELS.get(i), count == 0 ? 0.0D : clamp(sums[i] / count, 0.0D, 1.0D));
+        }
+        out.put("dimensions", NICHE_DIMENSION_LABELS);
+        out.put("count", count);
+        out.put("dimensionMeans", means);
+        out.put("sampledArtifacts", samples);
+        out.put("projection", behavioralProjectionSummary());
+        return out;
     }
 
     private String assignNiche(double[] vector, int season, String speciesId, String previousNiche) {
@@ -1248,12 +1328,18 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double[] featureVector(Artifact artifact, AbilityProfile profile, boolean successful, double crowdingPenalty) {
+        double[] traitEcology = traitEcologyVector(artifact, profile, successful, crowdingPenalty);
+        double[] behavioral = behavioralSignatureVector(artifact, profile, successful);
+        return projectNicheVector(traitEcology, behavioral);
+    }
+
+    private double[] traitEcologyVector(Artifact artifact, AbilityProfile profile, boolean successful, double crowdingPenalty) {
         Map<String, Integer> triggerTokens = tokens(artifact.getLastTriggerProfile());
         Map<String, Integer> mechanicTokens = tokens(artifact.getLastMechanicProfile());
         Map<String, Integer> gateTokens = tokens(artifact.getLastOpenRegulatoryGates());
         Map<String, Integer> branchTokens = tokens(artifact.getLastAbilityBranchPath());
 
-        double[] vector = new double[16];
+        double[] vector = new double[NICHE_VECTOR_DIMENSIONS];
         vector[0] = normalizedEntropy(triggerTokens);
         vector[1] = topShare(triggerTokens);
         vector[2] = normalizedEntropy(mechanicTokens);
@@ -1263,17 +1349,60 @@ public class SpeciesNicheAnalyticsEngine {
         vector[6] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "chaos", "volatile", "mutation");
         vector[7] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "stable", "precision", "discipline");
         vector[8] = survivalStyleSignal(artifact, profile, successful, "support");
-        vector[9] = roleCombatSignal(artifact, successful);
-        vector[10] = survivalStyleSignal(artifact, profile, successful, "persistence");
-        vector[11] = memoryEnvironmentSignal(artifact);
-        vector[12] = topShare(branchTokens);
-        vector[13] = affinitySignal(artifact.getDriftAlignment(), artifact.getEvolutionPath(), "mobility", "movement", "reposition");
-        vector[14] = regulatoryPressureSignal(gateTokens);
+        vector[9] = survivalStyleSignal(artifact, profile, successful, "persistence");
+        vector[10] = topShare(branchTokens);
         ArtifactDynamics dynamics = artifactDynamics.computeIfAbsent(artifact.getArtifactSeed(), ignored -> new ArtifactDynamics());
         dynamics.observations++;
         if (successful) dynamics.successes++;
-        vector[15] = clamp((dynamics.successes / (double) Math.max(1, dynamics.observations)) * (1.0D / Math.max(1.0D, crowdingPenalty)), 0.0D, 1.0D);
+        vector[11] = clamp((dynamics.successes / (double) Math.max(1, dynamics.observations)) * (1.0D / Math.max(1.0D, crowdingPenalty)), 0.0D, 1.0D);
         return vector;
+    }
+
+    private double[] behavioralSignatureVector(Artifact artifact, AbilityProfile profile, boolean successful) {
+        Map<String, Integer> triggerTokens = tokens(artifact.getLastTriggerProfile());
+        Map<String, Integer> mechanicTokens = tokens(artifact.getLastMechanicProfile());
+        Map<String, Integer> gateTokens = tokens(artifact.getLastOpenRegulatoryGates());
+        Map<String, Integer> branchTokens = tokens(artifact.getLastAbilityBranchPath());
+        String memory = Optional.ofNullable(artifact.getLastMemoryInfluence()).orElse("").toLowerCase(Locale.ROOT);
+        String activatedLatent = Optional.ofNullable(artifact.getLastActivatedLatentTraits()).orElse("").toLowerCase(Locale.ROOT);
+        String triggerCsv = Optional.ofNullable(artifact.getLastTriggerProfile()).orElse("").toLowerCase(Locale.ROOT);
+        String mechanicCsv = Optional.ofNullable(artifact.getLastMechanicProfile()).orElse("").toLowerCase(Locale.ROOT);
+
+        double[] vector = new double[NICHE_VECTOR_DIMENSIONS];
+        vector[0] = normalizedEntropy(triggerTokens); // trigger activation mix
+        vector[1] = normalizedEntropy(mechanicTokens); // mechanic activation mix
+        vector[2] = supportActionRatio(triggerCsv, mechanicCsv); // support vs damage vs persistence ratio (support axis)
+        vector[3] = damageActionRatio(triggerCsv, mechanicCsv); // damage axis
+        vector[4] = persistenceActionRatio(triggerCsv, mechanicCsv); // persistence axis
+        vector[5] = clamp(markerShare(triggerCsv + "," + mechanicCsv + "," + String.join(",", branchTokens.keySet()), "move", "mobility", "dash", "reposition", "teleport"), 0.0D, 1.0D); // mobility usage ratio
+        vector[6] = environmentDependentActivationRatio(gateTokens, triggerCsv, mechanicCsv); // environment dependent activation ratio
+        vector[7] = memoryDrivenActivationRatio(memory, triggerCsv, mechanicCsv, gateTokens); // memory driven activation ratio
+        vector[8] = clamp(artifact.getLastLatentActivationRate(), 0.0D, 1.0D); // latent activation rate
+        vector[9] = persistenceWindowUsage(successful, triggerCsv, mechanicCsv); // average persistence / survival window usage
+        vector[10] = interactionDiversitySignal(profile, triggerTokens, mechanicTokens); // interaction diversity and encounter participation style
+        vector[11] = activationBurstiness(triggerTokens, mechanicTokens); // activation density / burstiness
+        return vector;
+    }
+
+    private double[] projectNicheVector(double[] traitEcology, double[] behavioral) {
+        if (!projectionConfig.enabled()) {
+            return Arrays.copyOf(traitEcology, traitEcology.length);
+        }
+        double[] projected = new double[NICHE_VECTOR_DIMENSIONS];
+        double traitWeight = clamp(projectionConfig.traitEcologyWeight(), 0.0D, 1.0D);
+        double behaviorWeight = clamp(projectionConfig.behaviorWeight(), 0.0D, 1.0D);
+        double sum = traitWeight + behaviorWeight;
+        if (sum <= 0.0001D) {
+            traitWeight = 0.35D;
+            behaviorWeight = 0.65D;
+            sum = 1.0D;
+        }
+        traitWeight /= sum;
+        behaviorWeight /= sum;
+        for (int i = 0; i < projected.length; i++) {
+            projected[i] = clamp((traitEcology[i] * traitWeight) + (behavioral[i] * behaviorWeight), 0.0D, 1.0D);
+        }
+        return projected;
     }
 
     private double topShare(Map<String, Integer> values) {
@@ -1374,6 +1503,66 @@ public class SpeciesNicheAnalyticsEngine {
         return clamp(memorySignal + envSignal, 0.0D, 1.0D);
     }
 
+
+    private double supportActionRatio(String triggers, String mechanics) {
+        return markerShare(triggers + "," + mechanics, "guard", "assist", "field", "aura", "shield", "support", "heal");
+    }
+
+    private double damageActionRatio(String triggers, String mechanics) {
+        return markerShare(triggers + "," + mechanics, "kill", "burst", "detonation", "strike", "retaliation", "damage", "hit");
+    }
+
+    private double persistenceActionRatio(String triggers, String mechanics) {
+        return markerShare(triggers + "," + mechanics, "survival", "recovery", "sustain", "defensive", "window", "persistence", "stabilize");
+    }
+
+    private double environmentDependentActivationRatio(Map<String, Integer> gateTokens, String triggers, String mechanics) {
+        if (gateTokens.isEmpty()) {
+            return markerShare(triggers + "," + mechanics, "terrain", "weather", "environment", "biome");
+        }
+        int environmentHits = 0;
+        for (String gate : gateTokens.keySet()) {
+            String token = gate.toLowerCase(Locale.ROOT);
+            if (token.contains("environment") || token.contains("weather") || token.contains("terrain") || token.contains("biome")) {
+                environmentHits++;
+            }
+        }
+        return clamp(environmentHits / (double) Math.max(1, gateTokens.size()), 0.0D, 1.0D);
+    }
+
+    private double memoryDrivenActivationRatio(String memory, String triggers, String mechanics, Map<String, Integer> gateTokens) {
+        double memorySignal = memory.isBlank() ? 0.0D : 0.6D;
+        double triggerSignal = markerShare(triggers + "," + mechanics, "memory", "recall", "replay", "echo", "history") * 0.25D;
+        double gateSignal = gateTokens.keySet().stream().map(String::toLowerCase).anyMatch(g -> g.contains("memory") || g.contains("history")) ? 0.15D : 0.0D;
+        return clamp(memorySignal + triggerSignal + gateSignal, 0.0D, 1.0D);
+    }
+
+    private double persistenceWindowUsage(boolean successful, String triggers, String mechanics) {
+        double base = markerShare(triggers + "," + mechanics, "on_low_health", "recovery_window", "defensive_threshold", "survival", "shield_window");
+        return successful ? clamp(base + 0.05D, 0.0D, 1.0D) : base;
+    }
+
+    private double interactionDiversitySignal(AbilityProfile profile,
+                                              Map<String, Integer> triggerTokens,
+                                              Map<String, Integer> mechanicTokens) {
+        double triggerDiversity = normalizedEntropy(triggerTokens);
+        double mechanicDiversity = normalizedEntropy(mechanicTokens);
+        double abilityBreadth = 0.0D;
+        if (profile != null && profile.abilities() != null && !profile.abilities().isEmpty()) {
+            abilityBreadth = clamp(profile.abilities().size() / 8.0D, 0.0D, 1.0D);
+        }
+        return clamp((triggerDiversity * 0.35D) + (mechanicDiversity * 0.35D) + (abilityBreadth * 0.30D), 0.0D, 1.0D);
+    }
+
+    private double activationBurstiness(Map<String, Integer> triggerTokens, Map<String, Integer> mechanicTokens) {
+        double triggerTop = topShare(triggerTokens);
+        double mechanicTop = topShare(mechanicTokens);
+        double triggerEntropy = normalizedEntropy(triggerTokens);
+        double mechanicEntropy = normalizedEntropy(mechanicTokens);
+        double concentration = (triggerTop + mechanicTop) / 2.0D;
+        double spread = (triggerEntropy + mechanicEntropy) / 2.0D;
+        return clamp((concentration * 0.7D) + ((1.0D - spread) * 0.3D), 0.0D, 1.0D);
+    }
     private int hashTokens(String value) {
         if (value == null || value.isBlank()) {
             return 0;
@@ -1401,7 +1590,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedDistance(double[] a, double[] b) {
-        double[] w = {1.4D, 1.25D, 1.35D, 1.2D, 1.25D, 1.1D, 1.1D, 1.05D, 1.25D, 1.2D, 1.2D, 1.1D, 0.7D, 1.0D, 1.15D, 1.2D};
+        double[] w = {1.25D, 1.25D, 1.35D, 1.35D, 1.25D, 1.20D, 1.15D, 1.15D, 1.10D, 1.10D, 1.20D, 1.15D};
         double distance = 0.0D;
         double weightSum = 0.0D;
         for (int i = 0; i < a.length; i++) {
@@ -1413,7 +1602,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedCosine(double[] a, double[] b) {
-        double[] w = {1.35D, 1.2D, 1.35D, 1.15D, 1.2D, 1.05D, 1.0D, 0.95D, 1.2D, 1.15D, 1.1D, 1.05D, 0.7D, 0.95D, 1.1D, 1.2D};
+        double[] w = {1.25D, 1.2D, 1.3D, 1.3D, 1.2D, 1.1D, 1.1D, 1.1D, 1.05D, 1.05D, 1.15D, 1.1D};
         double dot = 0.0D;
         double na = 0.0D;
         double nb = 0.0D;
@@ -1442,6 +1631,36 @@ public class SpeciesNicheAnalyticsEngine {
             }
         }
         return pairs == 0 ? 0.0D : total / pairs;
+    }
+
+
+    private List<String> topSeparationDimensions() {
+        if (niches.isEmpty()) {
+            return List.of();
+        }
+        double[] mean = new double[NICHE_VECTOR_DIMENSIONS];
+        for (NicheProfile niche : niches.values()) {
+            for (int i = 0; i < NICHE_VECTOR_DIMENSIONS; i++) {
+                mean[i] += niche.centroid()[i];
+            }
+        }
+        for (int i = 0; i < NICHE_VECTOR_DIMENSIONS; i++) {
+            mean[i] /= Math.max(1, niches.size());
+        }
+        Map<String, Double> varianceByDim = new LinkedHashMap<>();
+        for (int i = 0; i < NICHE_VECTOR_DIMENSIONS; i++) {
+            double variance = 0.0D;
+            for (NicheProfile niche : niches.values()) {
+                double d = niche.centroid()[i] - mean[i];
+                variance += d * d;
+            }
+            varianceByDim.put(NICHE_DIMENSION_LABELS.get(i), variance / Math.max(1, niches.size()));
+        }
+        return varianceByDim.entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     private Map<String, Integer> nicheLifetimes() {

@@ -81,7 +81,7 @@ public class WorldSimulationHarness {
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
-        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing());
+        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection());
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -911,6 +911,15 @@ public class WorldSimulationHarness {
         return "Ecosystem shows strong persistent novelty; monitor for over-fragmentation.";
     }
 
+    private double dominantShare(Map<String, Integer> map) {
+        int total = map.values().stream().mapToInt(Integer::intValue).sum();
+        if (total == 0 || map.isEmpty()) {
+            return 0.0D;
+        }
+        int max = map.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        return max / (double) total;
+    }
+
     private Map<String, Integer> toIntegerMap(Map<?, ?> source) {
         Map<String, Integer> out = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : source.entrySet()) {
@@ -1196,7 +1205,11 @@ public class WorldSimulationHarness {
                 + "- Mirrors branches/families: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
                 + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n"
                 + "- Whether niches are aliases for existing labels: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
-                + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n";
+                + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n"
+                + "- Behavioral projection enabled: " + nicheQualityDiagnostics.get("behavioralProjectionEnabled") + "\n"
+                + "- Trait vs behavior weighting: " + nicheQualityDiagnostics.get("traitEcologyWeight") + "/" + nicheQualityDiagnostics.get("behaviorWeight") + "\n"
+                + "- Projection dominance: " + nicheQualityDiagnostics.get("projectionDominance") + "\n"
+                + "- Top behavioral separation dimensions: " + nicheQualityDiagnostics.get("topSeparationDimensions") + "\n";
         Files.writeString(analytics.resolve("niche-detection-quality-report.md"), nicheQualityReport);
 
         String nicheStabilityReport = "# Niche Stability Report\n\n"
@@ -1208,6 +1221,61 @@ public class WorldSimulationHarness {
                 + "- Niche lifetimes: " + nicheStabilityMetrics.get("nicheLifetimes") + "\n"
                 + "- Species migration across niches: " + nicheStabilityMetrics.get("nicheMigrationBySpecies") + "\n";
         Files.writeString(analytics.resolve("niche-stability-report.md"), nicheStabilityReport);
+
+
+        Map<String, Object> projectionSummary = speciesNicheEngine.behavioralProjectionSummary();
+        Map<String, Object> behavioralDistribution = speciesNicheEngine.behavioralSignatureDistribution(allArtifacts());
+        Files.writeString(analytics.resolve("behavioral-signature-distribution.json"), toJson(behavioralDistribution, 0));
+
+        String behavioralProjectionReport = "# Behavioral Signature Projection Report\n\n"
+                + "## Behavioral features used\n"
+                + "- Dimensions: " + projectionSummary.get("dimensions") + "\n"
+                + "- Top separation contributors: " + projectionSummary.get("topSeparationDimensions") + "\n"
+                + "- Strategy-level signatures combine trigger/mechanic mixes, action ratios, mobility, environment/memory dependency, latent activation, persistence windows, interaction diversity, and burstiness.\n\n"
+                + "## Normalization strategy\n"
+                + "- All dimensions are normalized to [0,1] using entropy, marker shares, bounded rates, or capped proportions.\n"
+                + "- Raw population counts are avoided; ratios and bounded signals dominate the signature.\n\n"
+                + "## Trait vs behavior weighting\n"
+                + "- Enabled: " + projectionSummary.get("enabled") + "\n"
+                + "- traitEcologyWeight: " + projectionSummary.get("traitEcologyWeight") + "\n"
+                + "- behaviorWeight: " + projectionSummary.get("behaviorWeight") + "\n"
+                + "- Projection mode: " + projectionSummary.get("mode") + "\n\n"
+                + "## Previously merged strategies now separated\n"
+                + "- Separation dimensions with strongest variance now: " + projectionSummary.get("topSeparationDimensions") + "\n"
+                + "- Niche interpretability map: " + nicheQualityDiagnostics.get("nicheInterpretability") + "\n\n"
+                + "## Impact on niche count and occupancy\n"
+                + "- Niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"
+                + "- Occupancy: " + nicheQualityDiagnostics.get("nicheOccupancy") + "\n"
+                + "- Dominant niche share: " + dominantShare(toIntegerMap((Map<?, ?>) nicheQualityDiagnostics.getOrDefault("nicheOccupancy", Map.of()))) + "\n\n"
+                + "## Risk analysis\n"
+                + "- Fragmentation warning: " + nicheQualityDiagnostics.get("fragmentationWarning") + "\n"
+                + "- Collapse warning: " + nicheQualityDiagnostics.get("nicheCollapseWarning") + "\n"
+                + "- Stability controls preserved: margin/hysteresis/candidate promotion/merge-prune remain active.\n";
+        Files.writeString(analytics.resolve("behavioral-signature-projection-report.md"), behavioralProjectionReport);
+
+        String behavioralImpactReview = "# Behavioral Signature Impact Review\n\n"
+                + "1. did niche detection stop collapsing into one effective niche? "
+                + (!"warning: broad niche collapse risk detected".equals(String.valueOf(nicheQualityDiagnostics.get("nicheCollapseWarning"))))
+                + " (nicheCount=" + nicheQualityDiagnostics.get("nicheCount") + ", dominantShare="
+                + dominantShare(toIntegerMap((Map<?, ?>) nicheQualityDiagnostics.getOrDefault("nicheOccupancy", Map.of()))) + ").\n"
+                + "2. did END improve? latest END=" + extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") + ".\n"
+                + "3. did TNT rise above zero in a healthy range? latest TNT=" + extractLastSeasonDouble(seasonalSnapshots, "turnoverRate") + ".\n"
+                + "4. did NSER increase? latest NSER=" + extractLastSeasonDouble(seasonalSnapshots, "noveltyRate") + ".\n"
+                + "5. did PNNC improve or show stronger growth potential? latest PNNC=" + extractLastSeasonDouble(seasonalSnapshots, "pnnc") + ".\n"
+                + "6. did speciation become more ecologically meaningful? speciesPerNiche=" + speciesNicheMap.get("competingSpeciesPerNiche") + ".\n"
+                + "7. did co-evolution become more contextual? pressure=" + coEvolutionRelationships.get("averageCompetitionPressure")
+                + "/" + coEvolutionRelationships.get("averageSupportPressure") + ".\n";
+        Files.writeString(worldLab.resolve("behavioral-signature-impact-review.md"), behavioralImpactReview);
+
+        String behavioralOpenEndednessReview = "# Behavioral Signature Open-Endedness Review\n\n"
+                + "- Ecosystem status: " + (extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") < 2.0D ? "collapsed/bounded" : "weakly ecological") + "\n"
+                + "- Multiple attractors beginning: " + (extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare") < 0.60D) + "\n"
+                + "- Repaired niche model captures strategy differences: top dimensions=" + projectionSummary.get("topSeparationDimensions") + "\n"
+                + "- END/TNT/NSER/PNNC latest: " + extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") + "/"
+                + extractLastSeasonDouble(seasonalSnapshots, "turnoverRate") + "/"
+                + extractLastSeasonDouble(seasonalSnapshots, "noveltyRate") + "/"
+                + extractLastSeasonDouble(seasonalSnapshots, "pnnc") + "\n";
+        Files.writeString(openEnded.resolve("behavioral-signature-open-endedness-review.md"), behavioralOpenEndednessReview);
 
         String coEvolutionReport = "# Co-Evolution Report\n\n"
                 + "## 1. Scope / sample size\n"
