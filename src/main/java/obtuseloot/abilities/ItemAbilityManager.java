@@ -18,6 +18,7 @@ public class ItemAbilityManager {
     private final Map<String, Integer> triggerSourceCounts = new HashMap<>();
     private final TriggerSubscriptionIndex subscriptionIndex = new TriggerSubscriptionIndex();
     private final EventAbilityDispatcher dispatcher = new EventAbilityDispatcher();
+    private final TriggerBudgetManager triggerBudgetManager = new TriggerBudgetManager();
 
     private final LongAdder dispatchCalls = new LongAdder();
     private final LongAdder indexedDispatchCalls = new LongAdder();
@@ -200,7 +201,9 @@ public class ItemAbilityManager {
     }
 
     public Map<String, Long> suppressionReasonCounts() {
-        return snapshotLongAdders(suppressionReasonCounts);
+        Map<String, Long> merged = new HashMap<>(snapshotLongAdders(suppressionReasonCounts));
+        triggerBudgetManager.suppressionCounts().forEach((k, v) -> merged.merge("budget:" + k, v, Long::sum));
+        return Map.copyOf(merged);
     }
 
     public Map<String, Long> outcomeTypeCounts() {
@@ -211,6 +214,19 @@ public class ItemAbilityManager {
         Map<String, Long> snapshot = new HashMap<>();
         source.forEach((key, value) -> snapshot.put(key, value.sum()));
         return Map.copyOf(snapshot);
+    }
+
+
+    public TriggerBudgetManager triggerBudgetManager() {
+        return triggerBudgetManager;
+    }
+
+    public Map<String, Long> triggerBudgetConsumptionByAbility() {
+        return triggerBudgetManager.consumptionByAbility();
+    }
+
+    public Map<String, Long> triggerBudgetConsumptionByTrigger() {
+        return triggerBudgetManager.consumptionByTrigger();
     }
 
     public TraitProjectionStats traitProjectionStats() {

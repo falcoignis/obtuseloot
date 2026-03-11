@@ -24,6 +24,7 @@ class NonCombatAbilityIntegrationTest {
     void metadataIsPresentForAllAbilities() {
         AbilityRegistry registry = new AbilityRegistry();
         assertTrue(registry.templates().stream().allMatch(t -> t.metadata() != null && !t.metadata().utilityDomains().isEmpty()));
+        assertTrue(registry.templates().stream().allMatch(t -> t.metadata().triggerBudgetProfile() != null));
     }
 
     @Test

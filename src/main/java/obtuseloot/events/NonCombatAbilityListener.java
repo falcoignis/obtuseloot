@@ -27,11 +27,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NonCombatAbilityListener implements Listener {
-    private static final long MOVE_THROTTLE_MS = 1200L;
     private static final long STRUCTURE_THROTTLE_MS = 3500L;
     private static final double MOVE_DISTANCE_SQ = 16.0D;
 
-    private final Map<UUID, Long> lastMoveScan = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastStructureSense = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> lastChunkKey = new ConcurrentHashMap<>();
     private final Map<Long, StructureSenseSnapshot> structureSenseCache = new ConcurrentHashMap<>();
@@ -50,15 +48,15 @@ public class NonCombatAbilityListener implements Listener {
         if (event.getFrom().distanceSquared(event.getTo()) < MOVE_DISTANCE_SQ) return;
         Player player = event.getPlayer();
         long now = System.currentTimeMillis();
-        if (now - lastMoveScan.getOrDefault(player.getUniqueId(), 0L) < MOVE_THROTTLE_MS) return;
-        lastMoveScan.put(player.getUniqueId(), now);
+        if (!allowProbe(player, AbilityTrigger.ON_WORLD_SCAN, "move-world-scan-probe", 0.8D, false)) return;
 
         int chunkKey = (event.getTo().getBlockX() >> 4) * 7340033 ^ (event.getTo().getBlockZ() >> 4);
         int previous = lastChunkKey.getOrDefault(player.getUniqueId(), Integer.MIN_VALUE);
         if (previous != chunkKey) {
             lastChunkKey.put(player.getUniqueId(), chunkKey);
             ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_WORLD_SCAN, 1.0D, "move-chunk");
-            if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS) {
+            if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS
+                    && allowProbe(player, AbilityTrigger.ON_STRUCTURE_SENSE, "move-structure-probe", 1.2D, false)) {
                 lastStructureSense.put(player.getUniqueId(), now);
                 if (shouldSenseStructures(event.getTo().getChunk(), now)) {
                     ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_STRUCTURE_SENSE, 1.0D, "structure-cache-hit");
@@ -128,6 +126,14 @@ public class NonCombatAbilityListener implements Listener {
             }
         }
         return false;
+    }
+
+    private boolean allowProbe(Player player, AbilityTrigger trigger, String source, double cost, boolean intentional) {
+        var plugin = obtuseloot.ObtuseLoot.get();
+        if (plugin == null || plugin.getItemAbilityManager() == null) return true;
+        var artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        return plugin.getItemAbilityManager().triggerBudgetManager()
+                .allowProbe(player.getUniqueId(), artifact.getArtifactStorageKey(), trigger, source, cost, intentional);
     }
 
     private record StructureSenseSnapshot(long timestamp, boolean detected) {

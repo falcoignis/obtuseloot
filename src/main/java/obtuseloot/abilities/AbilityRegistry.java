@@ -55,13 +55,27 @@ public class AbilityRegistry {
     private AbilityTemplate template(String id, String name, AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,
                                      String effectPattern, String evolutionVariant, String driftVariant, String awakeningVariant, String fusionVariant,
                                      String memoryVariant, AbilityMetadata metadata) {
+        AbilityMetadata enriched = metadata.triggerBudgetProfile() == null ? withBudgetDefaults(trigger, metadata) : metadata;
         return new AbilityTemplate(id, name, family, trigger, mechanic, effectPattern, evolutionVariant, driftVariant, awakeningVariant, fusionVariant,
-                memoryVariant, List.of(new AbilityModifier("support.signature", "non-combat tuning hook", 0.04, false)), metadata);
+                memoryVariant, List.of(new AbilityModifier("support.signature", "non-combat tuning hook", 0.04, false)), enriched);
     }
 
     private AbilityMetadata metadata(Set<String> domains, Set<String> triggers, Set<String> affinities,
                                      double discovery, double exploration, double information, double ritual, double social, double world) {
         return AbilityMetadata.of(domains, triggers, affinities, discovery, exploration, information, ritual, social, world);
+    }
+
+
+    private AbilityMetadata withBudgetDefaults(AbilityTrigger trigger, AbilityMetadata metadata) {
+        TriggerBudgetProfile profile = switch (trigger) {
+            case ON_WORLD_SCAN -> new TriggerBudgetProfile(1.4D, 0.9D, 10.0D, 3.0D, 3, 1200L, 35, TriggerBudgetPolicy.PASSIVE_LOW_PRIORITY, false, 280.0D);
+            case ON_STRUCTURE_SENSE -> new TriggerBudgetProfile(2.3D, 1.2D, 8.0D, 2.3D, 2, 2200L, 28, TriggerBudgetPolicy.STRICT, false, 500.0D);
+            case ON_BLOCK_INSPECT, ON_ENTITY_INSPECT, ON_BLOCK_HARVEST, ON_RITUAL_INTERACT, ON_SOCIAL_INTERACT -> new TriggerBudgetProfile(0.7D, 0.2D, 14.0D, 6.4D, 6, 750L, 88, TriggerBudgetPolicy.ACTIVE_INTENTIONAL, true, 75.0D);
+            case ON_MEMORY_EVENT, ON_WITNESS_EVENT -> new TriggerBudgetProfile(1.0D, 0.5D, 11.0D, 3.8D, 3, 1300L, 46, TriggerBudgetPolicy.SOFT, false, 180.0D);
+            default -> TriggerBudgetProfile.defaults();
+        };
+        return AbilityMetadata.of(metadata.utilityDomains(), metadata.triggerClasses(), metadata.affinities(), metadata.discoveryValue(),
+                metadata.explorationValue(), metadata.informationValue(), metadata.ritualValue(), metadata.socialValue(), metadata.worldUtilityValue(), profile);
     }
 
     public List<AbilityTemplate> templates() { return templates; }
