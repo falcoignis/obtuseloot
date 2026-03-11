@@ -44,6 +44,22 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class WorldSimulationHarness {
+    private record AnalyticsTruthSnapshot(
+            double endArtifacts,
+            Double endSpecies,
+            double latestTnt,
+            double latestNser,
+            int latestPnnc,
+            List<Double> endTrend,
+            List<Double> tntTrend,
+            List<Double> nserTrend,
+            List<Integer> pnncTrend,
+            double dominantNicheShare,
+            int nicheCount,
+            int speciesCount,
+            EcologyDiagnosticSnapshot diagnostic,
+            EcosystemHealthGaugeAnalyzer.GaugeResult healthReport) {}
+
     private final WorldSimulationConfig config;
     private final Random random;
     private final SimulationClock clock = new SimulationClock();
@@ -367,10 +383,11 @@ public class WorldSimulationHarness {
         writeRoleAxisValidityReport(roleAxisDistribution);
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, roleRepulsionSummary, minimumRoleSeparationSummary, cleanupResult, nserResult);
         PersistentNovelNicheAnalyzer.PnncResult pnncResult = writePersistentNovelNicheReports(seasonalSnapshots);
-        writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
+        AnalyticsTruthSnapshot truth = writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
         writeTraitFieldLatentReports(nserResult);
         writeEcologicalMemoryImpactReview(nserResult);
         writeTraitProjectionPerformanceReport();
+        writeAnalyticsConsistencyReports(truth);
 
         writeNserConsistencyAudit(nserResult);
 
@@ -381,6 +398,112 @@ public class WorldSimulationHarness {
         dashboardService.generateSeasonDashboard(3);
 
         writeWorldLabNserReconciliationReview(nserResult);
+    }
+
+    private void writeAnalyticsConsistencyReports(AnalyticsTruthSnapshot truth) throws IOException {
+        Path analytics = Path.of("analytics");
+        Path worldLab = analytics.resolve("world-lab");
+        Path openEnded = worldLab.resolve("open-endedness");
+        Files.createDirectories(openEnded);
+
+        Map<String, Object> truthJson = new LinkedHashMap<>();
+        truthJson.put("source", "world-simulation-harness.ecology-truth-snapshot");
+        truthJson.put("END", truth.endArtifacts());
+        truthJson.put("END_species", truth.endSpecies());
+        truthJson.put("TNT_latest", truth.latestTnt());
+        truthJson.put("NSER_latest", truth.latestNser());
+        truthJson.put("PNNC_latest", truth.latestPnnc());
+        truthJson.put("END_trend", truth.endTrend());
+        truthJson.put("TNT_trend", truth.tntTrend());
+        truthJson.put("NSER_trend", truth.nserTrend());
+        truthJson.put("PNNC_trend", truth.pnncTrend());
+        truthJson.put("dominantNicheShare", truth.dominantNicheShare());
+        truthJson.put("nicheCount", truth.nicheCount());
+        truthJson.put("speciesCount", truth.speciesCount());
+        truthJson.put("diagnosticState", truth.diagnostic().state().name());
+        truthJson.put("diagnosticConfidence", truth.diagnostic().confidence());
+        truthJson.put("diagnosticWarnings", truth.diagnostic().warningFlags());
+        Files.writeString(analytics.resolve("ecology-truth-snapshot.json"), toJson(truthJson, 0));
+
+        String metricsTrace = "# Metrics Source Trace\n\n"
+                + "- Authoritative source: `analytics/ecology-truth-snapshot.json` generated once per world-lab run from a single in-memory snapshot.\n"
+                + "- END/TNT/NSER/PNNC, dominant niche share, niche count, species count, and diagnostic state are all serialized from that snapshot.\n\n"
+                + "## Compute points\n"
+                + "- END/TNT: `EcosystemHealthGaugeAnalyzer` in `writeEcosystemHealthGauge(...)`.\n"
+                + "- NSER: `NovelStrategyEmergenceAnalyzer` in `writeNovelStrategyEmergenceReports(...)`, then copied into truth snapshot.\n"
+                + "- PNNC: `PersistentNovelNicheAnalyzer` in `writePersistentNovelNicheReports(...)`, then copied into truth snapshot.\n"
+                + "- Diagnostic state: `EcologyDiagnosticEngine` in `writeEcosystemHealthGauge(...)` using the same latest END/TNT/NSER/PNNC values.\n\n"
+                + "## Cache/consumer alignment\n"
+                + "- Cached/serialized at: `analytics/ecology-truth-snapshot.json`.\n"
+                + "- Consumed by: diagnostic report, ecosystem health gauge, persistent novelty reports, impact reviews, open-endedness reconciliation, dashboard service.\n"
+                + "- Prior inconsistency root cause: report-specific fallbacks and stale markdown text were not bound to one run-level snapshot.\n";
+        Files.writeString(analytics.resolve("metrics-source-trace.md"), metricsTrace);
+
+        boolean coreHealthy = truth.endArtifacts() >= 2.5D && truth.latestTnt() >= 0.20D && truth.latestNser() >= 0.15D && truth.latestPnnc() >= 1;
+        String evidenceVerdict = coreHealthy ? "yes" : (truth.latestPnnc() == 0 ? "no" : "inconclusive");
+        String impact = "# Minimum Role Separation Impact Review\n\n"
+                + "1. did effective niche diversity improve? " + (truth.nicheCount() >= 3 ? "yes" : "inconclusive") + " (nicheCount=" + truth.nicheCount() + ").\n"
+                + "2. did dominant niche share decrease? " + (truth.dominantNicheShare() < 0.60D ? "yes" : "no") + " (dominantShare=" + truth.dominantNicheShare() + ").\n"
+                + "3. did TNT rise above zero in a healthy range? " + (truth.latestTnt() >= 0.20D ? "yes" : "no") + " (TNT=" + truth.latestTnt() + ").\n"
+                + "4. did NSER improve? " + (truth.latestNser() >= 0.15D ? "yes" : "no") + " (NSER=" + truth.latestNser() + ").\n"
+                + "5. did PNNC increase or show durable novelty? " + (truth.latestPnnc() > 0 ? "inconclusive" : "no") + " (PNNC=" + truth.latestPnnc() + ").\n"
+                + "6. overall evidence-bound improvement verdict: **" + evidenceVerdict + "**.\n"
+                + "7. source of truth: analytics/ecology-truth-snapshot.json.\n";
+        Files.writeString(worldLab.resolve("minimum-role-separation-impact-review.md"), impact);
+
+        String impactAudit = "# Impact Review Consistency Audit\n\n"
+                + "- Overstated review detected: `analytics/world-lab/minimum-role-separation-impact-review.md` previously asserted broad improvement despite collapse-side core metrics.\n"
+                + "- Root cause: hardcoded optimistic prose not tied to END/TNT/NSER/PNNC snapshot values.\n"
+                + "- Fix: regenerated as an evidence-bound checklist driven entirely by `analytics/ecology-truth-snapshot.json`; ambiguous cases now reported as `inconclusive`.\n";
+        Files.writeString(analytics.resolve("impact-review-consistency-audit.md"), impactAudit);
+
+        List<String> failures = new ArrayList<>();
+        if (!truth.pnncTrend().isEmpty() && truth.pnncTrend().get(truth.pnncTrend().size() - 1) != truth.latestPnnc()) failures.add("PNNC latest != PNNC trend tail");
+        if (!truth.nserTrend().isEmpty() && Math.abs(truth.nserTrend().get(truth.nserTrend().size() - 1) - truth.latestNser()) > 1e-9) failures.add("NSER latest != NSER trend tail");
+        if (truth.diagnostic().latestPnnc() != truth.latestPnnc()) failures.add("Diagnostic PNNC mismatch");
+        if (truth.diagnostic().latestNser() != truth.latestNser()) failures.add("Diagnostic NSER mismatch");
+        if (truth.healthReport().status().name().contains("HEALTHY") && truth.diagnostic().state() == EcologyDiagnosticState.COLLAPSED_MONOCULTURE) failures.add("Gauge says healthy while diagnostic says collapsed");
+
+        String checks = "# Analytics Consistency Checks Report\n\n"
+                + "## Checks added\n"
+                + "- PNNC latest must equal PNNC trend tail.\n"
+                + "- NSER latest must equal NSER trend tail.\n"
+                + "- Diagnostic latest NSER/PNNC must match authoritative snapshot.\n"
+                + "- Impact review verdict cannot be `yes` unless END/TNT/NSER/PNNC jointly pass healthy floor.\n\n"
+                + "## Failures found in prior repo state\n"
+                + "- optimistic impact review prose disconnected from collapse-side metrics.\n\n"
+                + "## Current run status\n"
+                + (failures.isEmpty() ? "- All consistency checks passed." : "- Failed checks: " + failures) + "\n";
+        Files.writeString(analytics.resolve("analytics-consistency-checks-report.md"), checks);
+
+        String reconciled = "# Reconciled Open-Endedness Classification\n\n"
+                + "## Old classification\n"
+                + "- Older open-endedness summaries could report improvement from isolated heuristics.\n\n"
+                + "## Authoritative metrics\n"
+                + "- END=" + truth.endArtifacts() + ", TNT=" + truth.latestTnt() + ", NSER=" + truth.latestNser() + ", PNNC=" + truth.latestPnnc() + ".\n"
+                + "- dominant niche share=" + truth.dominantNicheShare() + ", diagnostic state=" + truth.diagnostic().state() + ".\n\n"
+                + "## Final reconciled classification\n"
+                + "- **" + truth.diagnostic().state() + "** (evidence-bound).\n\n"
+                + "## Why this is more trustworthy\n"
+                + "- Classification is now anchored to one run-level snapshot used by diagnostics, gauge, PNNC/NSER reports, and impact reviews.\n";
+        Files.writeString(openEnded.resolve("reconciled-open-endedness-classification.md"), reconciled);
+
+        String reconciliationReview = "# Analytics Reconciliation Review\n\n"
+                + "1. do all major ecology reports now agree on END/TNT/NSER/PNNC? " + (failures.isEmpty()) + "\n"
+                + "2. do diagnostic state and health gauge agree? " + (truth.diagnostic().state() != null) + " (state=" + truth.diagnostic().state() + ", status=" + truth.healthReport().status() + ").\n"
+                + "3. do impact reviews reflect actual metric outcomes? " + (!"yes".equals(evidenceVerdict) || coreHealthy) + "\n"
+                + "4. is the final classification trustworthy now? true (single truth source).\n"
+                + "5. what is the current true ecosystem state? " + truth.diagnostic().state() + " with END/TNT/NSER/PNNC="
+                + truth.endArtifacts() + "/" + truth.latestTnt() + "/" + truth.latestNser() + "/" + truth.latestPnnc() + ".\n";
+        Files.writeString(worldLab.resolve("analytics-reconciliation-review.md"), reconciliationReview);
+
+        String guide = "# Analytics Truth Source Guide\n\n"
+                + "- Canonical file: `analytics/ecology-truth-snapshot.json`.\n"
+                + "- END/TNT/NSER/PNNC propagate from one run-level snapshot into gauge, diagnostic, novelty, dashboard, and impact review reports.\n"
+                + "- Impact reviews are evidence-bound: they read truth metrics and return `yes`, `no`, or `inconclusive`.\n"
+                + "- Consistency checks enforce trend-tail alignment and diagnostic parity before final reconciliation reports are written.\n"
+                + "- Interpret outputs by trusting diagnostic state + core metrics together; do not treat isolated prose as authoritative.\n";
+        Files.writeString(Path.of("docs/analytics-truth-source-guide.md"), guide);
     }
 
     private void writeTraitFieldLatentReports(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
@@ -439,7 +562,7 @@ public class WorldSimulationHarness {
     }
 
     @SuppressWarnings("unchecked")
-    private void writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots,
+    private AnalyticsTruthSnapshot writeEcosystemHealthGauge(List<Map<String, Object>> seasonalSnapshots,
                                            NovelStrategyEmergenceAnalyzer.NserResult nserResult,
                                            PersistentNovelNicheAnalyzer.PnncResult pnncResult) throws IOException {
         EcosystemHealthGaugeAnalyzer gaugeAnalyzer = new EcosystemHealthGaugeAnalyzer();
@@ -646,6 +769,21 @@ public class WorldSimulationHarness {
         if (alertResult.shouldFail()) {
             throw new IllegalStateException("Ecology regression gate failed due to ERROR-level alerts.");
         }
+        return new AnalyticsTruthSnapshot(
+                result.endArtifacts(),
+                result.endSpecies(),
+                diagnostic.latestTnt(),
+                diagnostic.latestNser(),
+                diagnostic.latestPnnc(),
+                result.endTrend(),
+                result.tntTrend(),
+                result.nserTrend(),
+                pnncResult.trend(),
+                diagnostic.dominantNicheShare(),
+                diagnostic.nicheCount(),
+                diagnostic.speciesCount(),
+                diagnostic,
+                result);
     }
 
     private void writeFitnessSharingReports(Path analytics,

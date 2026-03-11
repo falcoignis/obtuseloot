@@ -5,9 +5,9 @@
 - Niche merge events: {}
 - Niche retire events: {}
 - Niche stability over time: [0.0, 0.0]
-- Role repulsion over time: [0.01926607780529243, 0.018653486443371368]
+- Role repulsion over time: [0.021031640606635475, 0.02091935539961411]
+- Hard role gate rejections: 0
+- Hard role gate penalties: 0
 - Niche lifetimes: {niche-1=3, niche-2=1}
 - Species migration across niches: {}
-
-- Hard role gate rejections: tracked in diagnostics
-- Fragmentation remained controlled: merge/prune + hysteresis controls active
+- Fragmentation remained controlled: none

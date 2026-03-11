@@ -1,16 +1,16 @@
 {
   "niche-1": {
-    "prototype": [D@6ebe81f0,
-    "observations": 11170,
-    "successRate": 0.9780662488809311,
-    "dominantBranch": "mobility.lane",
+    "prototype": [D@7f7b8c7a,
+    "observations": 17399,
+    "successRate": 0.9721823093281223,
+    "dominantBranch": "precision.awakened",
     "dominantFamily": "chaos"
   },
   "niche-2": {
-    "prototype": [D@4fb9004a,
-    "observations": 185,
-    "successRate": 0.772972972972973,
-    "dominantBranch": "chaos.paradox",
-    "dominantFamily": "survival"
+    "prototype": [D@3bb38a24,
+    "observations": 268,
+    "successRate": 0.664179104477612,
+    "dominantBranch": "chaos.sprawl",
+    "dominantFamily": "chaos"
   }
 }

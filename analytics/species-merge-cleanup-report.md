@@ -2,6 +2,6 @@
 
 - Merged species: {}
 - Retired species: []
-- Post-cleanup species count: 46
+- Post-cleanup species count: 69
 - Criteria used: low persistence, low niche divergence, weak multi-axis divergence.
 - Compatibility note: artifact species IDs were remapped to stable parent lineages before analytics export.

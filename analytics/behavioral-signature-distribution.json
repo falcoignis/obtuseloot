@@ -1,60 +1,60 @@
 {
   "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
-  "count": 80,
+  "count": 160,
   "dimensionMeans": {
-    "trigger_class_activation_distribution": 0.9811757279220789,
-    "mechanic_usage_distribution": 0.8124637984505345,
-    "support_action_ratio": 0.31816749630890834,
-    "damage_action_ratio": 0.18779761904761907,
-    "persistence_action_ratio": 0.2767857142857143,
-    "mobility_usage_ratio": 0.15081101190476193,
-    "environment_dependent_activation_ratio": 0.06612723214285712,
-    "memory_driven_activation_ratio": 0.5882812500000006,
-    "latent_trait_activation_rate": 0.7485937500000006,
-    "activation_temporal_density": 0.258600642920593,
-    "encounter_persistence_behavior": 0.4073146205357143,
-    "interaction_diversity": 0.8493916338113336
+    "trigger_class_activation_distribution": 0.9804756708856402,
+    "mechanic_usage_distribution": 0.8113888606049677,
+    "support_action_ratio": 0.32617351901117947,
+    "damage_action_ratio": 0.1916108630952382,
+    "persistence_action_ratio": 0.27812500000000007,
+    "mobility_usage_ratio": 0.14268973214285724,
+    "environment_dependent_activation_ratio": 0.05301339285714283,
+    "memory_driven_activation_ratio": 0.5932031249999994,
+    "latent_trait_activation_rate": 0.7402343749999987,
+    "activation_temporal_density": 0.2652929070923103,
+    "encounter_persistence_behavior": 0.40928727678571397,
+    "interaction_diversity": 0.8469342818884631
   },
   "sampledArtifacts": [{
-      "artifactSeed": -1480221578442207306,
-      "speciesId": "species-root-lineage-aa8837aa-581f-37c3-a55f-2a89a1cb6557",
+      "artifactSeed": -7844357802289000311,
+      "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "vector": [D@670c65f4
+      "vector": [D@2f606d09
     },{
-      "artifactSeed": -2552200507088696307,
-      "speciesId": "species-root-lineage-392bc6dd-1d93-3d98-90e3-901d6b71cfc5",
+      "artifactSeed": 3811935716758096698,
+      "speciesId": "species-root-lineage-3a8ec100-3a96-32ba-a4a8-a37038945e39",
       "nicheId": "niche-1",
-      "vector": [D@1a334fab
+      "vector": [D@13157bda
     },{
-      "artifactSeed": 4038235171220459446,
-      "speciesId": "species-root-lineage-e461666e-92f8-38e9-a2fc-29a6095a6587",
+      "artifactSeed": -2325901052626333559,
+      "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "vector": [D@a960d
+      "vector": [D@2709ea2c
     },{
-      "artifactSeed": -8070657256751363059,
-      "speciesId": "species-root-lineage-a829b380-dc89-303f-8f67-3cbc7d8f9296",
-      "nicheId": "niche-1",
-      "vector": [D@6793f7a5
-    },{
-      "artifactSeed": -8890052152826425418,
-      "speciesId": "species-root-stormbound",
-      "nicheId": "niche-1",
-      "vector": [D@63340d66
-    },{
-      "artifactSeed": 8484712992236637197,
-      "speciesId": "species-root-lineage-be991b81-d7cd-31a9-ad67-92f56fe0d1fc",
-      "nicheId": "niche-1",
-      "vector": [D@637a58bc
-    },{
-      "artifactSeed": -3371595403163758666,
-      "speciesId": "species-root-stormbound",
-      "nicheId": "niche-1",
-      "vector": [D@37141020
-    },{
-      "artifactSeed": 2966256242573970445,
+      "artifactSeed": -1706521032904570054,
       "speciesId": "species-root-ashen",
       "nicheId": "niche-1",
-      "vector": [D@4f42f7b8
+      "vector": [D@5996c653
+    },{
+      "artifactSeed": 3192555697036333193,
+      "speciesId": "species-root-graveborn",
+      "nicheId": "niche-1",
+      "vector": [D@75b2e04d
+    },{
+      "artifactSeed": -3597894857626121414,
+      "speciesId": "species-root-wild-35642",
+      "nicheId": "niche-1",
+      "vector": [D@4dc18e8a
+    },{
+      "artifactSeed": 8711012446698999945,
+      "speciesId": "species-root-lineage-a46a7208-a593-31a8-9927-f0ebac07596b",
+      "nicheId": "niche-1",
+      "vector": [D@25714594
+    },{
+      "artifactSeed": -9116351607288788166,
+      "speciesId": "species-root-wild-35642",
+      "nicheId": "niche-1",
+      "vector": [D@4a3abb37
     }],
   "projection": {
     "enabled": true,
@@ -63,6 +63,7 @@
     "mode": "behavior-dominated",
     "roleAxes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
     "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
-    "topSeparationDimensions": ["trigger_class_activation_distribution","interaction_diversity","mechanic_usage_distribution"]
+    "topSeparationDimensions": ["trigger_class_activation_distribution","interaction_diversity","latent_trait_activation_rate"],
+    "topRoleVarianceAxes": ["mobility_vs_stationary","support_vs_damage","environment_dependent_vs_agnostic"]
   }
 }

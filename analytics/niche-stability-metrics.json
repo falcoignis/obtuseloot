@@ -9,13 +9,15 @@
     "niche-2": 1
   },
   "nicheStabilityTimeline": [0.0,0.0],
-  "fitnessSharingLoadTimeline": [1.0762831689199945,1.0619537351002675],
-  "fitnessSharingFactorTimeline": [0.9292646567116785,0.9418920940260338],
+  "fitnessSharingLoadTimeline": [1.0774928364710872,1.0626855633410688],
+  "fitnessSharingFactorTimeline": [0.9281760352421726,0.9412292255810196],
   "nicheMigrationBySpecies": {
   },
   "nicheMergeEvents": {
   },
   "nicheRetireEvents": {
   },
-  "roleRepulsionTimeline": [0.01926607780529243,0.018653486443371368]
+  "roleRepulsionTimeline": [0.021031640606635475,0.02091935539961411],
+  "roleGateRejectionCount": 0,
+  "roleGatePenaltyCount": 0
 }

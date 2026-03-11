@@ -1,54 +1,79 @@
 {
-  "count": 80,
+  "count": 160,
   "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
   "axisMeans": {
-    "support_vs_damage": 0.41035714285714275,
-    "burst_vs_persistence": 0.4986518071978477,
-    "mobility_vs_stationary": 0.14754464285714286,
-    "environment_dependent_vs_agnostic": 0.08816964285714293,
-    "memory_driven_vs_direct_trigger": 0.8243750000000011,
-    "interaction_heavy_vs_solo": 0.6231140747236393
+    "support_vs_damage": 0.4155357142857139,
+    "burst_vs_persistence": 0.49637885281333577,
+    "mobility_vs_stationary": 0.1358482142857143,
+    "environment_dependent_vs_agnostic": 0.07068452380952378,
+    "memory_driven_vs_direct_trigger": 0.8309375000000025,
+    "interaction_heavy_vs_solo": 0.6222103379979378
   },
+  "axisVariances": {
+    "support_vs_damage": 0.010580070153061838,
+    "burst_vs_persistence": 0.0031763684227378297,
+    "mobility_vs_stationary": 0.021284101961096896,
+    "environment_dependent_vs_agnostic": 0.005740128082482998,
+    "memory_driven_vs_direct_trigger": 8.39746093746041E-4,
+    "interaction_heavy_vs_solo": 0.0013476334503448317
+  },
+  "axisRanges": {
+    "support_vs_damage": 0.28571428571428564,
+    "burst_vs_persistence": 0.2841666666666667,
+    "mobility_vs_stationary": 0.4178571428571428,
+    "environment_dependent_vs_agnostic": 0.16666666666666666,
+    "memory_driven_vs_direct_trigger": 0.09999999999999998,
+    "interaction_heavy_vs_solo": 0.2712500000000001
+  },
+  "axisInformative": {
+    "support_vs_damage": true,
+    "burst_vs_persistence": true,
+    "mobility_vs_stationary": true,
+    "environment_dependent_vs_agnostic": true,
+    "memory_driven_vs_direct_trigger": false,
+    "interaction_heavy_vs_solo": true
+  },
+  "deadAxes": ["memory_driven_vs_direct_trigger"],
   "sampledArtifacts": [{
-      "artifactSeed": -1480221578442207306,
-      "speciesId": "species-root-lineage-aa8837aa-581f-37c3-a55f-2a89a1cb6557",
+      "artifactSeed": -7844357802289000311,
+      "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "roleVector": [D@7a8656a0
+      "roleVector": [D@8591f06
     },{
-      "artifactSeed": -2552200507088696307,
-      "speciesId": "species-root-lineage-392bc6dd-1d93-3d98-90e3-901d6b71cfc5",
+      "artifactSeed": 3811935716758096698,
+      "speciesId": "species-root-lineage-3a8ec100-3a96-32ba-a4a8-a37038945e39",
       "nicheId": "niche-1",
-      "roleVector": [D@6b5e659f
+      "roleVector": [D@7fa75e8f
     },{
-      "artifactSeed": 4038235171220459446,
-      "speciesId": "species-root-lineage-e461666e-92f8-38e9-a2fc-29a6095a6587",
+      "artifactSeed": -2325901052626333559,
+      "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "roleVector": [D@54d196b4
+      "roleVector": [D@47b3b0f9
     },{
-      "artifactSeed": -8070657256751363059,
-      "speciesId": "species-root-lineage-a829b380-dc89-303f-8f67-3cbc7d8f9296",
-      "nicheId": "niche-1",
-      "roleVector": [D@7521012c
-    },{
-      "artifactSeed": -8890052152826425418,
-      "speciesId": "species-root-stormbound",
-      "nicheId": "niche-1",
-      "roleVector": [D@3dda6a7e
-    },{
-      "artifactSeed": 8484712992236637197,
-      "speciesId": "species-root-lineage-be991b81-d7cd-31a9-ad67-92f56fe0d1fc",
-      "nicheId": "niche-1",
-      "roleVector": [D@25b092c7
-    },{
-      "artifactSeed": -3371595403163758666,
-      "speciesId": "species-root-stormbound",
-      "nicheId": "niche-1",
-      "roleVector": [D@7d0cd4f3
-    },{
-      "artifactSeed": 2966256242573970445,
+      "artifactSeed": -1706521032904570054,
       "speciesId": "species-root-ashen",
       "nicheId": "niche-1",
-      "roleVector": [D@59921f
+      "roleVector": [D@6c5256a8
+    },{
+      "artifactSeed": 3192555697036333193,
+      "speciesId": "species-root-graveborn",
+      "nicheId": "niche-1",
+      "roleVector": [D@2c33c50b
+    },{
+      "artifactSeed": -3597894857626121414,
+      "speciesId": "species-root-wild-35642",
+      "nicheId": "niche-1",
+      "roleVector": [D@6925b524
+    },{
+      "artifactSeed": 8711012446698999945,
+      "speciesId": "species-root-lineage-a46a7208-a593-31a8-9927-f0ebac07596b",
+      "nicheId": "niche-1",
+      "roleVector": [D@334bf481
+    },{
+      "artifactSeed": -9116351607288788166,
+      "speciesId": "species-root-wild-35642",
+      "nicheId": "niche-1",
+      "roleVector": [D@4dd20356
     }],
   "repulsion": {
     "enabled": true,
@@ -63,7 +88,29 @@
     },
     "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
     "dominantAxes": ["support_vs_damage","memory_driven_vs_direct_trigger","burst_vs_persistence"],
-    "averageRepulsion": 0.018653486443371368,
-    "mode": "hybrid-role-behavior"
+    "averageRepulsion": 0.02091935539961411,
+    "mode": "hybrid-role-behavior",
+    "minimumRoleSeparation": {
+      "enabled": true,
+      "roleSplitThreshold": 0.4,
+      "mode": "hard_reject",
+      "hardPenaltyMultiplier": 4.0,
+      "hardRejections": 0,
+      "hardPenalties": 0,
+      "averagePenalty": 0.0,
+      "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
+      "distanceFormula": "weightedL1(roleA, roleB)/sum(weights), bounded to [0,1]"
+    }
+  },
+  "minimumRoleSeparation": {
+    "enabled": true,
+    "roleSplitThreshold": 0.4,
+    "mode": "hard_reject",
+    "hardPenaltyMultiplier": 4.0,
+    "hardRejections": 0,
+    "hardPenalties": 0,
+    "averagePenalty": 0.0,
+    "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
+    "distanceFormula": "weightedL1(roleA, roleB)/sum(weights), bounded to [0,1]"
   }
 }

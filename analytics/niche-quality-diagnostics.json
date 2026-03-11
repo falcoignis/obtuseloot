@@ -1,16 +1,16 @@
 {
   "nicheCount": 1,
   "nicheOccupancy": {
-    "niche-1": 80
+    "niche-1": 160
   },
-  "nicheSeparationScore": 0.2277409537396133,
+  "nicheSeparationScore": 0.3065618472690176,
   "nicheCollapseWarning": "warning: broad niche collapse risk detected",
   "nicheInterpretability": {
-    "niche-1": "stable niche with dominant branch=mobility.lane, dominant family=chaos, successRate=0.98",
-    "niche-2": "stable niche with dominant branch=chaos.paradox, dominant family=survival, successRate=0.77"
+    "niche-1": "stable niche with dominant branch=precision.awakened, dominant family=chaos, successRate=0.97",
+    "niche-2": "stable niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.66"
   },
   "mirrorsBranches": false,
-  "mirrorsFamilies": false,
+  "mirrorsFamilies": true,
   "fragmentationWarning": "none",
   "behavioralProjectionEnabled": true,
   "traitEcologyWeight": 0.25,
@@ -18,8 +18,14 @@
   "projectionDominance": "behavior-dominated",
   "roleBasedRepulsionEnabled": true,
   "roleRepulsionBeta": 0.15,
-  "averageRoleRepulsion": 0.018653486443371368,
+  "averageRoleRepulsion": 0.02091935539961411,
+  "minimumRoleSeparationEnabled": true,
+  "roleSplitThreshold": 0.4,
+  "minimumRoleSeparationMode": "hard_reject",
+  "hardRoleGateRejections": 0,
   "roleAxes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
   "roleRepulsionDominance": "hybrid-role-behavior",
-  "topSeparationDimensions": ["trigger_class_activation_distribution","interaction_diversity","mechanic_usage_distribution"]
+  "nicheSeparationSource": "traits+behavior+soft-role-repulsion+hard-role-gating",
+  "topSeparationDimensions": ["trigger_class_activation_distribution","interaction_diversity","latent_trait_activation_rate"],
+  "topRoleVarianceAxes": ["mobility_vs_stationary","support_vs_damage","environment_dependent_vs_agnostic"]
 }
