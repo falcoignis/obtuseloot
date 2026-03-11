@@ -1,6 +1,6 @@
 # Ecological Memory Impact Review
 
-- Memory diagnostics: {active=false, windowSize=4, persistentDominance=0.3398377154408558, targetDominance=0.52, memoryPressure=0.0, attractorDuration=2, dominantNiche=niche-1, pressureTimeline=[0.0, 0.0], attractorDurationTimeline=[1.0, 2.0]}
+- Memory diagnostics: {active=false, windowSize=4, persistentDominance=0.31337301033372317, targetDominance=0.52, memoryPressure=0.0, attractorDuration=2, dominantNiche=niche-1, pressureTimeline=[0.0, 0.0], attractorDurationTimeline=[1.0, 2.0]}
 - Dominant niche share trend: [1.0, 1.0]
 - NSER trend: [0.0, 1.0]
 

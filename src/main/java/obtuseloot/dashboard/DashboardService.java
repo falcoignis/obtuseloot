@@ -145,6 +145,27 @@ public class DashboardService {
     }
 
     private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
+        Path truthPath = analyticsRoot.resolve("ecology-truth-snapshot.json");
+        if (Files.exists(truthPath)) {
+            String truth = Files.readString(truthPath);
+            double endArtifacts = extractNumber(truth, "END");
+            Double endSpecies = extractNullableNumber(truth, "END_species");
+            List<Double> endTrend = extractDoubleArray(truth, "END_trend");
+            List<Double> tntTrend = extractDoubleArray(truth, "TNT_trend");
+            List<Double> nserTrend = extractDoubleArray(truth, "NSER_trend");
+            List<Integer> pnncTrend = extractIntArray(truth, "PNNC_trend");
+            double latestTnt = extractNumber(truth, "TNT_latest");
+            double latestNser = extractNumber(truth, "NSER_latest");
+            int latestPnnc = (int) Math.round(extractNumber(truth, "PNNC_latest"));
+            EcologyDiagnosticState diagnosticState = loadDiagnosticState();
+            double confidence = loadDiagnosticConfidence();
+            List<String> warnings = loadDiagnosticWarnings();
+            EcosystemStatus status = (diagnosticState == EcologyDiagnosticState.EMERGENT_ECOLOGY
+                    || diagnosticState == EcologyDiagnosticState.HEALTHY_MULTI_ATTRACTOR)
+                    ? EcosystemStatus.HEALTHY_ECOSYSTEM : EcosystemStatus.STAGNANT;
+            return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, latestPnnc, endTrend, tntTrend, nserTrend, pnncTrend,
+                    "Derived from authoritative ecology truth snapshot.", status, diagnosticState, confidence, warnings);
+        }
         Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
         if (!Files.exists(path)) {
             return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, 0, List.of(), List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT, EcologyDiagnosticState.STAGNANT_ATTRACTOR, 0.0D, List.of("stagnation"));

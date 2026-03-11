@@ -8,5 +8,5 @@
 6. did PNNC increase or show stronger durable novelty signals? see analytics/persistent-novel-niche.json and trend outputs.
 7. did the ecosystem move closer to a healthy multi-attractor state? assess alongside ecology diagnostic state and dominant share.
 
-fitnessSharingActive=true, mode=niche, avgSharingLoad=1.0619537351002675.
-adaptiveNicheCapacity=enabled(bounds=0.8..1.25, avgCapacity=1.043)
+fitnessSharingActive=true, mode=niche, avgSharingLoad=1.0626855633410688.
+adaptiveNicheCapacity=enabled(bounds=0.8..1.25, avgCapacity=1.041)
