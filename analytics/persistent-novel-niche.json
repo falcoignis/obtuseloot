@@ -6,7 +6,7 @@
   "bySeason": [{
       "season": 1,
       "pnnc": 0,
-      "novelCandidates": 1,
+      "novelCandidates": 2,
       "persistentNovelNiches": [],
       "failedNovelCandidates": []
     },{
@@ -22,7 +22,7 @@
       "persistentNovelNiches": ["niche-1"],
       "failedNovelCandidates": []
     }],
-  "failedCandidates": [],
+  "failedCandidates": ["unassigned(short_lived=1 seasons)"],
   "persistentExamples": ["niche-1"],
   "interpretation": "PNNC=1-2: weak bounded novelty with limited durable ecological expansion."
 }

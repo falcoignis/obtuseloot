@@ -34,6 +34,9 @@ public class EcologyDiagnosticEngine {
         boolean moderateNser = latestNser >= 0.10D && latestNser < 0.30D;
         boolean healthyNser = latestNser >= 0.30D && latestNser < 0.50D;
         boolean noPersistentNovelNiches = latestPnnc <= 0;
+        boolean weakPersistentNovelNiches = latestPnnc >= 1 && latestPnnc <= 2;
+        boolean realPersistentNovelNiches = latestPnnc >= 3 && latestPnnc <= 5;
+        boolean strongPersistentNovelNiches = latestPnnc > 5;
 
         boolean highSpeciesWeakDivergence = speciesCount >= 6 && dominantSpeciesShare >= 0.55D;
         boolean highNicheWeakEnd = nicheCount >= 4 && endArtifacts < 2.5D;
@@ -61,13 +64,15 @@ public class EcologyDiagnosticEngine {
         } else if (lowEnd) {
             state = EcologyDiagnosticState.STAGNANT_ATTRACTOR;
             warnings.add("stagnation");
-        } else if (healthyEnd && moderateTnt && (moderateNser || healthyNser) && latestPnnc > 0 && !noveltyPersistenceWeak) {
+        } else if (healthyEnd && moderateTnt && (moderateNser || healthyNser) && (realPersistentNovelNiches || strongPersistentNovelNiches) && !noveltyPersistenceWeak) {
             state = EcologyDiagnosticState.EMERGENT_ECOLOGY;
             warnings.add("healthy_multi_attractor");
         } else {
             state = EcologyDiagnosticState.HEALTHY_MULTI_ATTRACTOR;
             if (noPersistentNovelNiches) {
                 warnings.add("bounded_reshuffling");
+            } else if (weakPersistentNovelNiches) {
+                warnings.add("weak_bounded_novelty");
             }
             if (!moderateNser && !healthyNser) {
                 warnings.add("monitor_novelty");
@@ -134,8 +139,8 @@ public class EcologyDiagnosticEngine {
                     + ", relabelingNoise=" + relabelingNoise
                     + ", noveltyPersistenceWeak=" + noveltyPersistenceWeak + ".";
             case TURBULENT_THRASH -> "Turnover is very high relative to stable novelty, indicating ecological thrashing.";
-            case HEALTHY_MULTI_ATTRACTOR -> "END is healthy with moderate TNT and bounded NSER, but PNNC indicates limited durable expansion.";
-            case EMERGENT_ECOLOGY -> "END is high, TNT is moderate, NSER is healthy, and PNNC>0 indicates genuine durable ecological expansion.";
+            case HEALTHY_MULTI_ATTRACTOR -> "END/TNT may look acceptable, but PNNC indicates only bounded novelty (PNNC bands: 0 none, 1-2 weak, 3-5 real, >5 strong).";
+            case EMERGENT_ECOLOGY -> "END is high, TNT is moderate, NSER is healthy, and PNNC is in the durable-expansion range (>=3).";
         };
     }
 

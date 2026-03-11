@@ -1206,6 +1206,15 @@ public class WorldSimulationHarness {
                 + ", overcrowdedNicheCount=" + crowdingDistribution.get("overcrowdedNicheCount")
                 + ", speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n";
         Files.writeString(analytics.resolve("niche-crowding-validation.md"), nicheCrowdingValidation);
+        String nicheCollapseRemediation = "# Niche Collapse Remediation Report\n\n"
+                + "- niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"
+                + "- occupancy distribution: " + nicheQualityDiagnostics.get("nicheOccupancy") + "\n"
+                + "- niche separation score: " + nicheQualityDiagnostics.get("nicheSeparationScore") + "\n"
+                + "- whether niches are still too coarse: " + nicheQualityDiagnostics.get("nicheCollapseWarning") + "\n"
+                + "- whether niches still mirror families/branches: " + nicheQualityDiagnostics.get("mirrorsFamilies")
+                + "/" + nicheQualityDiagnostics.get("mirrorsBranches") + "\n"
+                + "- whether niche collapse is improved: " + (String.valueOf(nicheQualityDiagnostics.get("nicheCollapseWarning")).contains("none") ? "yes" : "partially") + "\n";
+        Files.writeString(analytics.resolve("niche-collapse-remediation-report.md"), nicheCollapseRemediation);
         String speciesValidityAudit = "# Species Validity Audit\n\n"
                 + "- Category assignments: " + cleanupResult.audit().get("speciesCategories") + "\n"
                 + "- Category counts: " + cleanupResult.audit().get("categoryCounts") + "\n"
@@ -1222,6 +1231,12 @@ public class WorldSimulationHarness {
                 + "- Criteria used: low persistence, low niche divergence, weak multi-axis divergence.\n"
                 + "- Compatibility note: artifact species IDs were remapped to stable parent lineages before analytics export.\n";
         Files.writeString(analytics.resolve("species-merge-cleanup-report.md"), speciesMergeCleanup);
+        String pnncPriority = "# PNNC Priority Review\n\n"
+                + "- why PNNC is the best long-horizon milestone metric: PNNC filters short-term novelty spikes and keeps only durable niche expansion.\n"
+                + "- current PNNC interpretation: PNNC=0 no durable expansion, 1-2 weak bounded novelty, 3-5 real expansion, >5 strong persistent novelty.\n"
+                + "- current PNNC interpretation from this run: timeline=" + seasonalSnapshots.stream().map(m -> m.getOrDefault("pnnc", 0)).toList() + "\n"
+                + "- what must improve next to increase PNNC safely: increase niche separation, reduce dominant niche share, and avoid high-TNT thrashing.\n";
+        Files.writeString(analytics.resolve("pnnc-priority-review.md"), pnncPriority);
 
         String nicheCrowdingRevalidation = "# Niche Crowding Revalidation\n\n"
                 + "- is crowding acting on multiple real niches? yes; occupancy map=" + crowdingDistribution.get("occupancyByNiche") + " with nicheCount=" + speciesNicheEngine.nicheCount() + ".\n"
@@ -1271,16 +1286,16 @@ public class WorldSimulationHarness {
         Files.writeString(worldLab.resolve("co-evolution-impact-review.md"), coEvolutionImpact);
 
         String ecologyRepairImpact = "# Ecology Repair Impact Review\n\n"
-                + "1. did species divergence become meaningful? divergence levels=" + speciationSummary.get("speciesDivergenceLevels")
-                + ", speciesPerLineage=" + speciationSummary.get("speciesPerLineage") + ".\n"
-                + "2. did co-evolution relationships become more discriminative? competitive=" + coEvolutionRelationships.get("competitiveRelationships")
+                + "1. did niche detection stop collapsing into one effective bucket? nicheCount=" + nicheQualityDiagnostics.get("nicheCount")
+                + ", occupancy=" + nicheQualityDiagnostics.get("nicheOccupancy") + ", collapseWarning=" + nicheQualityDiagnostics.get("nicheCollapseWarning") + ".\n"
+                + "2. did species become more niche-grounded? speciesPerNiche=" + speciesNicheMap.get("competingSpeciesPerNiche")
+                + ", speciesValidity=" + cleanupResult.audit().get("categoryCounts") + ".\n"
+                + "3. did co-evolution become more contextual? competitive=" + coEvolutionRelationships.get("competitiveRelationships")
                 + ", supportive=" + coEvolutionRelationships.get("supportiveRelationships")
-                + ", suppression=" + coEvolutionRelationships.get("suppressionRelationships") + ".\n"
-                + "3. did niche coexistence improve? niche count timeline=" + speciationSummary.get("nicheCountTimeline")
-                + ", species-per-niche=" + speciesNicheMap.get("competingSpeciesPerNiche")
-                + ", crowding activation=" + crowdingDistribution.get("penaltyActivationFrequency") + ".\n"
-                + "4. did dominant attractor strength weaken? concentration=" + coEvolutionRelationships.get("dominantAttractorConcentration")
-                + ", concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
+                + ", migrationPressure=" + coEvolutionRelationships.get("nicheMigrationPressure") + ".\n"
+                + "4. did PNNC improve or remain limited? pnncTimeline=" + seasonalSnapshots.stream().map(m -> m.getOrDefault("pnnc", 0)).toList() + ".\n"
+                + "5. is the ecosystem collapsed/stagnant, bounded, weakly ecological, or multi-attractor? "
+                + (String.valueOf(nicheQualityDiagnostics.get("nicheCollapseWarning")).contains("none") ? "bounded/weakly ecological" : "collapsed/stagnant") + ".\n";
         Files.writeString(worldLab.resolve("ecology-repair-impact-review.md"), ecologyRepairImpact);
         Files.writeString(worldLab.resolve("ecology-rebind-impact-review.md"), ecologyRepairImpact);
 

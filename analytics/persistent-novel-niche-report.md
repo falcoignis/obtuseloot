@@ -8,7 +8,7 @@
 
 - PNNC current: 1
 - PNNC trend over time: [0, 0, 1]
-- Candidate-but-failed novel niches: []
+- Candidate-but-failed novel niches: [unassigned(short_lived=1 seasons)]
 - Persistent novel niche examples: [niche-1]
 - Retired novel niches: []
 - Persistent lifespan distribution: [3]

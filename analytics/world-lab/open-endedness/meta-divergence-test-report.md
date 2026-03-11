@@ -2,8 +2,8 @@
 
 ## 1) Scope / sample size
 - Worlds: 4
-- Players per world: 20
-- Seasons per world: 2
+- Players per world: 40
+- Seasons per world: 3
 - Sessions per season: 4
 - Shared deterministic seed pool: yes
 
@@ -21,13 +21,13 @@
 - Designer-controlled classification remains: mostly designer-controlled with moderate emergent divergence in full system.
 
 ## 4) Dominant families / branches / lineages / mechanics
-- World A dominant trio: chaos / chaos.awakened-variant / ashen
-- World B dominant trio: chaos / chaos.awakened-variant / ashen
-- World C dominant trio: chaos / survival.guardian / ashen
-- World D dominant trio: chaos / survival.guardian / ashen
+- World A dominant trio: chaos / mobility.lane-dancer / gilded
+- World B dominant trio: chaos / mobility.lane-dancer / gilded
+- World C dominant trio: chaos / mobility.lane-dancer / gilded
+- World D dominant trio: chaos / consistency.boss-ledger / gilded
 
 ## 5) Rare but viable systems
-- Rare lineage persistence A/B/C/D: 38 / 44 / 36 / 37
+- Rare lineage persistence A/B/C/D: 71 / 69 / 67 / 70
 - Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.
 
 ## 6) Dead or suspicious systems

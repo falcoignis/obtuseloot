@@ -24,14 +24,14 @@ public class SpeciesNicheAnalyticsEngine {
     private static final double MAX_PENALTY = 1.15D;
     private static final double MAX_COEVOLUTION_MODIFIER = 0.08D;
     private static final double MAX_NICHE_BIAS = 0.05D;
-    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.24D;
-    private static final double NICHE_ASSIGNMENT_MARGIN = 0.05D;
-    private static final double HYSTERESIS_MARGIN = 0.06D;
+    private static final double NICHE_ASSIGNMENT_DISTANCE_THRESHOLD = 0.20D;
+    private static final double NICHE_ASSIGNMENT_MARGIN = 0.08D;
+    private static final double HYSTERESIS_MARGIN = 0.09D;
     private static final int MAX_NICHES = 8;
     private static final int MIN_NICHE_OBSERVATIONS_FOR_STABILITY = 20;
-    private static final int CANDIDATE_MIN_SUPPORT = 5;
-    private static final int CANDIDATE_MIN_PERSISTENCE = 2;
-    private static final double NICHE_MERGE_DISTANCE = 0.10D;
+    private static final int CANDIDATE_MIN_SUPPORT = 7;
+    private static final int CANDIDATE_MIN_PERSISTENCE = 3;
+    private static final double NICHE_MERGE_DISTANCE = 0.08D;
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
 
     private final Random random;
@@ -326,7 +326,7 @@ public class SpeciesNicheAnalyticsEngine {
         }
         double dominant = dominantShare(occupancy);
         double separation = nicheSeparationScore();
-        boolean collapsed = occupancy.size() <= 1 || dominant > 0.72D || separation < 0.24D;
+        boolean collapsed = occupancy.size() <= 1 || dominant > 0.66D || separation < 0.28D;
 
         Map<String, String> interpretability = new LinkedHashMap<>();
         for (NicheProfile niche : niches.values()) {
@@ -339,8 +339,8 @@ public class SpeciesNicheAnalyticsEngine {
             branchMirror.merge(niche.topToken(niche.branchUse), 1, Integer::sum);
             familyMirror.merge(niche.topToken(niche.familyUse), 1, Integer::sum);
         }
-        boolean mirrorsBranches = dominantShare(branchMirror) > 0.75D;
-        boolean mirrorsFamilies = dominantShare(familyMirror) > 0.75D;
+        boolean mirrorsBranches = dominantShare(branchMirror) > 0.65D;
+        boolean mirrorsFamilies = dominantShare(familyMirror) > 0.65D;
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("nicheCount", occupancy.size());
@@ -634,7 +634,7 @@ public class SpeciesNicheAnalyticsEngine {
         if (niches.isEmpty()) {
             return createNiche(vector, season);
         }
-        int targetNiches = Math.max(3, Math.min(MAX_NICHES, (int) Math.round(Math.sqrt(artifactMembership.size() / 48.0D + 1.0D))));
+        int targetNiches = Math.max(4, Math.min(MAX_NICHES, (int) Math.round(Math.sqrt(artifactMembership.size() / 36.0D + 1.0D))));
         String bestNiche = null;
         String secondBestNiche = null;
         double bestDistance = Double.MAX_VALUE;
@@ -662,7 +662,7 @@ public class SpeciesNicheAnalyticsEngine {
             if (previousNiche != null && niches.containsKey(previousNiche)) {
                 return previousNiche;
             }
-            return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.9D) ? bestNiche : "unassigned";
+            return bestDistance < (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD * 0.85D) ? bestNiche : "unassigned";
         }
 
         if (previousNiche != null && niches.containsKey(previousNiche) && !previousNiche.equals(bestNiche)) {
@@ -685,11 +685,12 @@ public class SpeciesNicheAnalyticsEngine {
         String key = candidateKey(vector);
         CandidateNiche candidate = candidateNiches.computeIfAbsent(key, ignored -> new CandidateNiche(vector, season));
         candidate.observe(vector, season);
-        boolean sufficientlySeparated = nearestDistance(candidate.prototype()) > (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD + 0.03D);
+        boolean sufficientlySeparated = nearestDistance(candidate.prototype()) > (NICHE_ASSIGNMENT_DISTANCE_THRESHOLD + 0.06D);
         boolean promotable = (candidate.support >= CANDIDATE_MIN_SUPPORT
                 || candidate.persistenceSeasons() >= CANDIDATE_MIN_PERSISTENCE)
                 && sufficientlySeparated;
-        if (promotable && niches.size() < targetNiches) {
+        boolean notFamilyAlias = candidate.familyPurity() < 0.92D;
+        if (promotable && sufficientlySeparated && notFamilyAlias && niches.size() < targetNiches) {
             candidateNiches.remove(key);
             return createNiche(candidate.prototype(), season);
         }
@@ -1049,7 +1050,10 @@ public class SpeciesNicheAnalyticsEngine {
                         continue;
                     }
                     double distance = weightedDistance(a.centroid(), b.centroid());
-                    if (distance <= NICHE_MERGE_DISTANCE) {
+            if (distance <= NICHE_MERGE_DISTANCE
+                    && a.topFamilyShare() > 0.90D
+                    && b.topFamilyShare() > 0.90D
+                    && Objects.equals(a.topToken(a.familyUse), b.topToken(b.familyUse))) {
                         a.absorb(b);
                         niches.remove(bId);
                         remapMembership(bId, aId);
@@ -1291,7 +1295,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedDistance(double[] a, double[] b) {
-        double[] w = {1.2D, 1.1D, 1.2D, 1.1D, 1.05D, 1.0D, 0.9D, 0.9D, 1.15D, 1.0D, 1.0D, 0.85D, 0.95D, 0.9D, 1.05D, 1.05D};
+        double[] w = {1.4D, 1.25D, 1.35D, 1.2D, 1.25D, 1.1D, 1.1D, 1.05D, 1.25D, 1.2D, 1.2D, 1.1D, 0.7D, 1.0D, 1.15D, 1.2D};
         double distance = 0.0D;
         double weightSum = 0.0D;
         for (int i = 0; i < a.length; i++) {
@@ -1303,7 +1307,7 @@ public class SpeciesNicheAnalyticsEngine {
     }
 
     private double weightedCosine(double[] a, double[] b) {
-        double[] w = {1.15D, 1.05D, 1.15D, 1.05D, 0.95D, 0.95D, 0.8D, 0.8D, 1.1D, 0.95D, 1.0D, 0.95D, 0.9D, 0.9D, 1.0D, 1.1D};
+        double[] w = {1.35D, 1.2D, 1.35D, 1.15D, 1.2D, 1.05D, 1.0D, 0.95D, 1.2D, 1.15D, 1.1D, 1.05D, 0.7D, 0.95D, 1.1D, 1.2D};
         double dot = 0.0D;
         double na = 0.0D;
         double nb = 0.0D;
@@ -1437,6 +1441,15 @@ public class SpeciesNicheAnalyticsEngine {
                     + ", successRate=" + String.format(Locale.ROOT, "%.2f", successes / (double) Math.max(1, observations));
         }
 
+        private double topFamilyShare() {
+            int total = familyUse.values().stream().mapToInt(Integer::intValue).sum();
+            if (total <= 0) {
+                return 0.0D;
+            }
+            int top = familyUse.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+            return top / (double) total;
+        }
+
         private String topToken(Map<String, Integer> map) {
             return map.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("none");
         }
@@ -1455,12 +1468,14 @@ public class SpeciesNicheAnalyticsEngine {
         private int support;
         private int firstSeason;
         private int lastSeason;
+        private double branchDominance;
 
         private CandidateNiche(double[] vector, int season) {
             this.prototype = Arrays.copyOf(vector, vector.length);
             this.support = 0;
             this.firstSeason = season;
             this.lastSeason = season;
+            this.branchDominance = vector.length > 12 ? clampStatic(vector[12], 0.0D, 1.0D) : 0.5D;
         }
 
         private void observe(double[] vector, int season) {
@@ -1470,14 +1485,25 @@ public class SpeciesNicheAnalyticsEngine {
             for (int i = 0; i < prototype.length; i++) {
                 prototype[i] = prototype[i] * (1.0D - alpha) + vector[i] * alpha;
             }
+            if (vector.length > 12) {
+                branchDominance = (branchDominance * (1.0D - alpha)) + (clampStatic(vector[12], 0.0D, 1.0D) * alpha);
+            }
         }
 
         private int persistenceSeasons() {
             return Math.max(1, lastSeason - firstSeason + 1);
         }
 
+        private double familyPurity() {
+            return branchDominance;
+        }
+
         private double[] prototype() {
             return Arrays.copyOf(prototype, prototype.length);
+        }
+
+        private static double clampStatic(double value, double min, double max) {
+            return Math.max(min, Math.min(max, value));
         }
     }
 

@@ -1,9 +1,9 @@
 # Ecology Alerts Report
 
-- Ecology State: COLLAPSED_MONOCULTURE
+- Ecology State: STAGNANT_ATTRACTOR
 - END: 1.0
 - TNT: 0.0
-- NSER: 0.0
+- NSER: 1.0
 - PNNC: 1
 - Regression Gate: PASS
 - Alerts: []

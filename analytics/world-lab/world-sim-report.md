@@ -1,13 +1,13 @@
 # World Simulation Report
 
-- Players: 80
-- Artifacts per player: 2
-- Seasons: 2
-- Sessions/season: 6
+- Players: 40
+- Artifacts per player: 4
+- Seasons: 3
+- Sessions/season: 4
 
 ## World outcomes
-- Dominant family rate: 0.34965034965034963
-- Branch convergence rate: 0.34435988621229974
-- Dead branch rate: 0.0
-- Fusion adoption: 0.14322916666666666
-- Awakening adoption: 0.6203125
+- Dominant family rate: 0.35501651439111226
+- Branch convergence rate: 0.5126261749070058
+- Dead branch rate: 0.17647058823529413
+- Fusion adoption: 0.246875
+- Awakening adoption: 0.7510416666666667

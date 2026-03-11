@@ -1,5 +1,5 @@
 # Niche Crowding Validation
 
-- are multiple niches being monitored? 2 niches observed.
+- are multiple niches being monitored? 1 niches observed.
 - is crowding dampening acting on real ecological partitions? occupancyByNiche={niche-1=1.0} with target=0.18.
-- does dampening help niche coexistence? activation=0.9615625, overcrowdedNicheCount=1, speciesFractionByNiche={niche-1=1.0}.
+- does dampening help niche coexistence? activation=0.9808035714285714, overcrowdedNicheCount=1, speciesFractionByNiche={niche-1=1.0}.

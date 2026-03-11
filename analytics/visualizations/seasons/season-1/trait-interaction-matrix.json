@@ -1,15 +1,15 @@
 {
-  "sampleSize": 215,
+  "sampleSize": 217,
   "traits": ["chaosaffinity","kineticbias","mobilityaffinity","mutationsensitivity","precisionaffinity","resonance","stability","survivalinstinct","volatility"],
   "matrix": {
-    "chaosaffinity": {"chaosaffinity": 99,"kineticbias": 40,"mobilityaffinity": 48,"mutationsensitivity": 39,"precisionaffinity": 38,"resonance": 36,"stability": 45,"survivalinstinct": 39,"volatility": 44},
-    "kineticbias": {"chaosaffinity": 40,"kineticbias": 96,"mobilityaffinity": 42,"mutationsensitivity": 33,"precisionaffinity": 47,"resonance": 36,"stability": 41,"survivalinstinct": 40,"volatility": 46},
-    "mobilityaffinity": {"chaosaffinity": 48,"kineticbias": 42,"mobilityaffinity": 100,"mutationsensitivity": 40,"precisionaffinity": 42,"resonance": 37,"stability": 41,"survivalinstinct": 40,"volatility": 40},
-    "mutationsensitivity": {"chaosaffinity": 39,"kineticbias": 33,"mobilityaffinity": 40,"mutationsensitivity": 87,"precisionaffinity": 33,"resonance": 36,"stability": 41,"survivalinstinct": 34,"volatility": 46},
-    "precisionaffinity": {"chaosaffinity": 38,"kineticbias": 47,"mobilityaffinity": 42,"mutationsensitivity": 33,"precisionaffinity": 89,"resonance": 37,"stability": 40,"survivalinstinct": 40,"volatility": 34},
-    "resonance": {"chaosaffinity": 36,"kineticbias": 36,"mobilityaffinity": 37,"mutationsensitivity": 36,"precisionaffinity": 37,"resonance": 87,"stability": 34,"survivalinstinct": 32,"volatility": 36},
-    "stability": {"chaosaffinity": 45,"kineticbias": 41,"mobilityaffinity": 41,"mutationsensitivity": 41,"precisionaffinity": 40,"resonance": 34,"stability": 101,"survivalinstinct": 46,"volatility": 43},
-    "survivalinstinct": {"chaosaffinity": 39,"kineticbias": 40,"mobilityaffinity": 40,"mutationsensitivity": 34,"precisionaffinity": 40,"resonance": 32,"stability": 46,"survivalinstinct": 93,"volatility": 36},
-    "volatility": {"chaosaffinity": 44,"kineticbias": 46,"mobilityaffinity": 40,"mutationsensitivity": 46,"precisionaffinity": 34,"resonance": 36,"stability": 43,"survivalinstinct": 36,"volatility": 98}
+    "chaosaffinity": {"chaosaffinity": 103,"kineticbias": 37,"mobilityaffinity": 44,"mutationsensitivity": 47,"precisionaffinity": 45,"resonance": 39,"stability": 48,"survivalinstinct": 50,"volatility": 51},
+    "kineticbias": {"chaosaffinity": 37,"kineticbias": 88,"mobilityaffinity": 35,"mutationsensitivity": 39,"precisionaffinity": 41,"resonance": 38,"stability": 37,"survivalinstinct": 39,"volatility": 44},
+    "mobilityaffinity": {"chaosaffinity": 44,"kineticbias": 35,"mobilityaffinity": 101,"mutationsensitivity": 38,"precisionaffinity": 48,"resonance": 34,"stability": 43,"survivalinstinct": 51,"volatility": 50},
+    "mutationsensitivity": {"chaosaffinity": 47,"kineticbias": 39,"mobilityaffinity": 38,"mutationsensitivity": 101,"precisionaffinity": 48,"resonance": 45,"stability": 53,"survivalinstinct": 47,"volatility": 53},
+    "precisionaffinity": {"chaosaffinity": 45,"kineticbias": 41,"mobilityaffinity": 48,"mutationsensitivity": 48,"precisionaffinity": 97,"resonance": 44,"stability": 44,"survivalinstinct": 46,"volatility": 45},
+    "resonance": {"chaosaffinity": 39,"kineticbias": 38,"mobilityaffinity": 34,"mutationsensitivity": 45,"precisionaffinity": 44,"resonance": 91,"stability": 42,"survivalinstinct": 41,"volatility": 44},
+    "stability": {"chaosaffinity": 48,"kineticbias": 37,"mobilityaffinity": 43,"mutationsensitivity": 53,"precisionaffinity": 44,"resonance": 42,"stability": 107,"survivalinstinct": 46,"volatility": 52},
+    "survivalinstinct": {"chaosaffinity": 50,"kineticbias": 39,"mobilityaffinity": 51,"mutationsensitivity": 47,"precisionaffinity": 46,"resonance": 41,"stability": 46,"survivalinstinct": 106,"volatility": 45},
+    "volatility": {"chaosaffinity": 51,"kineticbias": 44,"mobilityaffinity": 50,"mutationsensitivity": 53,"precisionaffinity": 45,"resonance": 44,"stability": 52,"survivalinstinct": 45,"volatility": 111}
   }
 }

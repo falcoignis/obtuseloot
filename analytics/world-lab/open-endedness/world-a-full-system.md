@@ -1,8 +1,8 @@
 # World A — Full System
 
 ## 1) Scope / sample size
-- Players: 20
-- Seasons: 2
+- Players: 40
+- Seasons: 3
 - Sessions per season: 4
 
 ## 2) Method summary
@@ -12,25 +12,25 @@
 
 ## 3) Key findings
 - Dominant family (final season): `chaos`
-- Dominant branch (final season): `chaos.awakened-variant`
-- Dominant lineage (final season): `ashen`
-- Branch entropy (final): 2.5645
-- Lineage concentration (final): 0.0444
-- Novelty rate per season: [1.0, 0.0667]
+- Dominant branch (final season): `mobility.lane-dancer`
+- Dominant lineage (final season): `gilded`
+- Branch entropy (final): 2.5724
+- Lineage concentration (final): 0.0452
+- Novelty rate per season: [1.0, 0.0588, 0.0556]
 
 ## 4) Dominant families / branches / lineages / mechanics
-- Dominant family by season: [1:chaos, 2:chaos]
-- Dominant branch by season: [1:chaos.paradox, 2:chaos.awakened-variant]
-- Dominant lineage by season: [1:ashen, 2:ashen]
+- Dominant family by season: [1:chaos, 2:chaos, 3:chaos]
+- Dominant branch by season: [1:mobility.lane-dancer, 2:mobility.lane-dancer, 3:mobility.lane-dancer]
+- Dominant lineage by season: [1:gilded, 2:gilded, 3:gilded]
 
 ## 5) Rare but viable systems
-- Rare lineage persistence score: 38
-- Niche count trend: [17.0, 15.0]
+- Rare lineage persistence score: 71
+- Niche count trend: [18.0, 17.0, 18.0]
 
 ## 6) Dead or suspicious systems
-- Top-5 family turnover trend: [0.0]
-- Top-5 branch turnover trend: [0.5714]
-- Top-5 lineage turnover trend: [0.0]
+- Top-5 family turnover trend: [0.0, 0.0]
+- Top-5 branch turnover trend: [0.3333, 0.0]
+- Top-5 lineage turnover trend: [0.0, 0.0]
 - Sustained zero-turnover windows indicate possible lock-in.
 
 ## 7) Confidence / caveats
