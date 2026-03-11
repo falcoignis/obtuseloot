@@ -1,6 +1,6 @@
 # Behavioral Signature Open-Endedness Review
 
-- ecosystem remains collapsed/bounded: True
-- now weakly ecological: False
-- multiple attractors beginning to appear: False
-- repaired niche model captures real strategy differences via: []
+- Ecosystem status: collapsed/bounded
+- Multiple attractors beginning: false
+- Repaired niche model captures strategy differences: top dimensions=[trigger_class_activation_distribution, mechanic_usage_distribution, interaction_diversity]
+- END/TNT/NSER/PNNC latest: 0.0/0.0/0.0/0.0

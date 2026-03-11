@@ -1,27 +1,21 @@
 # Fitness Sharing Report
 
-- model: niche-based fitness sharing (`mode=niche`; distance mode scaffolded for future extension)
-- formula: `sharingFactor = 1 / (1 + alpha * max(0, nicheOccupancy - targetOccupancy))`
-- adjusted viability: `adjustedFitness = baseFitness * sharingFactor`
-- parameters: `alpha=0.10`, `targetOccupancy=0.18`, `maxPenalty=0.15`
-- integration points:
-  - species persistence / viability scoring in world-lab ecology loop
-  - niche crowding adjustment before co-evolution and ecological memory modifiers
-- bounds:
-  - sharing factor is clamped to `[1-maxPenalty, 1.0]`
-  - maximum viability reduction from sharing alone is 15%
+- model: niche
+- formula: sharingFactor = 1 / (1 + alpha * max(0, nicheOccupancy - targetOccupancy))
+- alpha: 0.1
+- maxPenalty: 0.15
+- targetOccupancy: 0.18
+- applied in: species persistence evaluation / world-lab survival scoring (crowding penalty layer)
+- average sharing load: 1.0735422997423552
+- average sharing factor: 0.9315720597978875
+- most crowded niches: {niche-1=0.975, niche-2=0.025}
 
-## Distribution summary
-- average sharing load: see `analytics/fitness-sharing-distribution.json`
-- most crowded niches: see `occupancyByNiche`
-- sharing load by niche: see `nicheSharingLoad`
-
-## Expected ecological impact
-- reduce dominant niche lock-in pressure
-- keep underrepresented niches viable long enough for persistence testing
-- improve END/NSER and increase chance of durable PNNC gains
+## Expected ecological effects
+- dominant niches lose small bounded viability, reducing premature convergence.
+- nearby underrepresented niches avoid immediate extinction due to lower sharing load.
+- effect remains smooth and bounded via maxPenalty cap.
 
 ## Risk analysis
-- low alpha may under-correct monoculture collapse
-- high alpha may over-dampen genuinely adaptive dominant niches
-- conservative defaults selected to avoid hard rubber-band behavior
+- if alpha is too high, viable dominant lineages may be over-dampened.
+- if alpha is too low, monoculture collapse remains sticky.
+- current defaults are conservative and bounded to <=20% viability reduction.

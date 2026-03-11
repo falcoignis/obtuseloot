@@ -1,27 +1,67 @@
 {
-  "dimensions": [
-    "trigger_activation_mix",
-    "mechanic_activation_mix",
-    "support_action_ratio",
-    "damage_action_ratio",
-    "persistence_action_ratio",
-    "mobility_usage_ratio",
-    "environment_dependent_activation_ratio",
-    "memory_driven_activation_ratio",
-    "latent_activation_rate",
-    "persistence_window_usage",
-    "interaction_diversity",
-    "activation_burstiness"
-  ],
+  "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
+  "count": 40,
+  "dimensionMeans": {
+    "trigger_class_activation_distribution": 0.8938721875540867,
+    "mechanic_usage_distribution": 0.7480999479977964,
+    "support_action_ratio": 0.31390037949132904,
+    "damage_action_ratio": 0.19330357142857138,
+    "persistence_action_ratio": 0.33124999999999993,
+    "mobility_usage_ratio": 0.15044642857142856,
+    "environment_dependent_activation_ratio": 0.0640625,
+    "memory_driven_activation_ratio": 0.5756249999999998,
+    "latent_trait_activation_rate": 0.4725,
+    "activation_temporal_density": 0.36197156835024785,
+    "encounter_persistence_behavior": 0.47108124999999984,
+    "interaction_diversity": 0.6737757805627629
+  },
+  "sampledArtifacts": [{
+      "artifactSeed": -7844357802289000311,
+      "speciesId": "species-root-graveborn",
+      "nicheId": "niche-1",
+      "vector": [D@5a1d8478
+    },{
+      "artifactSeed": 3811935716758096698,
+      "speciesId": "species-root-wild-35642",
+      "nicheId": "niche-1",
+      "vector": [D@6c14d3f1
+    },{
+      "artifactSeed": -2325901052626333559,
+      "speciesId": "species-root-graveborn",
+      "nicheId": "niche-1",
+      "vector": [D@264e4b4f
+    },{
+      "artifactSeed": -1706521032904570054,
+      "speciesId": "species-root-ashen",
+      "nicheId": "niche-1",
+      "vector": [D@6d55d8c5
+    },{
+      "artifactSeed": 3192555697036333193,
+      "speciesId": "species-root-graveborn",
+      "nicheId": "niche-1",
+      "vector": [D@5b5daf53
+    },{
+      "artifactSeed": -3597894857626121414,
+      "speciesId": "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7",
+      "nicheId": "niche-1",
+      "vector": [D@119c7492
+    },{
+      "artifactSeed": 8711012446698999945,
+      "speciesId": "species-root-wild-4233",
+      "nicheId": "niche-1",
+      "vector": [D@455c51dd
+    },{
+      "artifactSeed": -9116351607288788166,
+      "speciesId": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "nicheId": "niche-1",
+      "vector": [D@60c2a43
+    }],
   "projection": {
     "enabled": true,
-    "traitEcologyWeight": 0.35,
-    "behaviorWeight": 0.65,
-    "mode": "behavior-dominated"
-  },
-  "nicheCount": 1,
-  "nicheOccupancy": {
-    "niche-1": 160
-  },
-  "topSeparationDimensions": []
+    "traitEcologyWeight": 0.25,
+    "behaviorWeight": 0.75,
+    "mode": "behavior-dominated",
+    "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
+    "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","interaction_diversity"]
+  }
 }

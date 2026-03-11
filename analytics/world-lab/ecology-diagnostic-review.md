@@ -1,12 +1,11 @@
 # World-Lab Ecology Diagnostic Review
 
 ## Run 1
-- END across runs: [1.0387, 1.0, 1.0]
-- TNT across seasons: [0.0062, 0.0]
-- NSER across seasons: [0.0, 0.0, 1.0]
-- PNNC across seasons: [0, 0, 1]
+- END across runs: [1.124]
+- TNT across seasons: []
+- NSER across seasons: [0.0]
+- PNNC across seasons: [0]
 - false-divergence flags: [stagnation]
-- final diagnostic state: STAGNANT_ATTRACTOR
+- final diagnostic state: COLLAPSED_MONOCULTURE
 - attractor weakening vs relabeling: dominant attractor is mostly being relabeled
-
-- Fitness sharing: active=true, mode=niche (bounded viability dampening).
+- fitness sharing active: true, mode=niche, avgLoad=1.0735422997423552

@@ -1,13 +1,16 @@
 {
   "nicheBirthEvents": {
-    "1": 1
+    "1": 2
   },
   "nicheExtinctionEvents": {
   },
   "nicheLifetimes": {
-    "niche-1": 4
+    "niche-1": 2,
+    "niche-2": 2
   },
-  "nicheStabilityTimeline": [0.006249999999999978,0.0,0.0],
+  "nicheStabilityTimeline": [0.025000000000000022],
+  "fitnessSharingLoadTimeline": [1.0735422997423552],
+  "fitnessSharingFactorTimeline": [0.9315720597978875],
   "nicheMigrationBySpecies": {
   },
   "nicheMergeEvents": {

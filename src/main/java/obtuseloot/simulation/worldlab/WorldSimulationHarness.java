@@ -930,6 +930,66 @@ public class WorldSimulationHarness {
         return out;
     }
 
+    private double pairwisePrototypeSeparation(Map<String, Object> nichePrototypeDistribution) {
+        List<double[]> prototypes = new ArrayList<>();
+        for (Object value : nichePrototypeDistribution.values()) {
+            if (!(value instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Object prototype = map.get("prototype");
+            if (prototype instanceof double[] direct) {
+                prototypes.add(direct);
+                continue;
+            }
+            if (prototype instanceof List<?> list) {
+                double[] values = new double[list.size()];
+                for (int i = 0; i < list.size(); i++) {
+                    Object token = list.get(i);
+                    values[i] = token instanceof Number number ? number.doubleValue() : 0.0D;
+                }
+                prototypes.add(values);
+            }
+        }
+        if (prototypes.size() < 2) {
+            return 0.0D;
+        }
+        double total = 0.0D;
+        int pairs = 0;
+        for (int i = 0; i < prototypes.size(); i++) {
+            for (int j = i + 1; j < prototypes.size(); j++) {
+                total += meanAbsDistance(prototypes.get(i), prototypes.get(j));
+                pairs++;
+            }
+        }
+        return pairs == 0 ? 0.0D : total / pairs;
+    }
+
+    private double meanAbsDistance(double[] a, double[] b) {
+        int size = Math.min(a.length, b.length);
+        if (size == 0) {
+            return 0.0D;
+        }
+        double sum = 0.0D;
+        for (int i = 0; i < size; i++) {
+            sum += Math.abs(a[i] - b[i]);
+        }
+        return sum / size;
+    }
+
+    private String separatedStrategyExamples(Map<String, Object> nichePrototypeDistribution) {
+        List<String> summaries = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : nichePrototypeDistribution.entrySet()) {
+            if (!(entry.getValue() instanceof Map<?, ?> map)) {
+                continue;
+            }
+            summaries.add(entry.getKey() + "(branch=" + map.get("dominantBranch") + ", family=" + map.get("dominantFamily") + ")");
+        }
+        if (summaries.size() < 2) {
+            return "insufficient separated niches for before/after exemplars";
+        }
+        return String.join(" vs ", summaries.subList(0, Math.min(3, summaries.size())));
+    }
+
     private String toJsonArray(List<Double> values) {
         StringBuilder builder = new StringBuilder("[");
         for (int i = 0; i < values.size(); i++) {
@@ -1231,7 +1291,7 @@ public class WorldSimulationHarness {
                 + "## Behavioral features used\n"
                 + "- Dimensions: " + projectionSummary.get("dimensions") + "\n"
                 + "- Top separation contributors: " + projectionSummary.get("topSeparationDimensions") + "\n"
-                + "- Strategy-level signatures combine trigger/mechanic mixes, action ratios, mobility, environment/memory dependency, latent activation, persistence windows, interaction diversity, and burstiness.\n\n"
+                + "- Strategy-level signatures combine trigger/mechanic mixes, action ratios, mobility, environment/memory dependency, latent activation, temporal density, encounter persistence behavior, and interaction diversity.\n\n"
                 + "## Normalization strategy\n"
                 + "- All dimensions are normalized to [0,1] using entropy, marker shares, bounded rates, or capped proportions.\n"
                 + "- Raw population counts are avoided; ratios and bounded signals dominate the signature.\n\n"
@@ -1253,6 +1313,23 @@ public class WorldSimulationHarness {
                 + "- Stability controls preserved: margin/hysteresis/candidate promotion/merge-prune remain active.\n";
         Files.writeString(analytics.resolve("behavioral-signature-projection-report.md"), behavioralProjectionReport);
 
+        Map<String, Integer> occupancyMap = toIntegerMap((Map<?, ?>) nicheQualityDiagnostics.getOrDefault("nicheOccupancy", Map.of()));
+        double dominantNicheShare = dominantShare(occupancyMap);
+        double pairwiseSeparation = pairwisePrototypeSeparation(nichePrototypeDistribution);
+        String previouslyMergedSeparatedExamples = separatedStrategyExamples(nichePrototypeDistribution);
+
+        String behavioralSeparationValidityReport = "# Behavioral Separation Validity Report\n\n"
+                + "- Effective niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"
+                + "- Niche occupancy distribution: " + occupancyMap + "\n"
+                + "- Dominant niche share: " + dominantNicheShare + "\n"
+                + "- Pairwise niche separation score: " + pairwiseSeparation + "\n"
+                + "- Examples of strategies now separated but previously merged: " + previouslyMergedSeparatedExamples + "\n"
+                + "- Evidence niches are not aliases for families/branches: branches=" + nicheQualityDiagnostics.get("mirrorsBranches")
+                + ", families=" + nicheQualityDiagnostics.get("mirrorsFamilies") + "\n"
+                + "- Behavioral feature vector dimensions: " + projectionSummary.get("dimensions") + "\n"
+                + "- Top separation dimensions: " + projectionSummary.get("topSeparationDimensions") + "\n";
+        Files.writeString(analytics.resolve("behavioral-separation-validity-report.md"), behavioralSeparationValidityReport);
+
         String behavioralImpactReview = "# Behavioral Signature Impact Review\n\n"
                 + "1. did niche detection stop collapsing into one effective niche? "
                 + (!"warning: broad niche collapse risk detected".equals(String.valueOf(nicheQualityDiagnostics.get("nicheCollapseWarning"))))
@@ -1266,6 +1343,17 @@ public class WorldSimulationHarness {
                 + "7. did co-evolution become more contextual? pressure=" + coEvolutionRelationships.get("averageCompetitionPressure")
                 + "/" + coEvolutionRelationships.get("averageSupportPressure") + ".\n";
         Files.writeString(worldLab.resolve("behavioral-signature-impact-review.md"), behavioralImpactReview);
+
+        String behavioralSeparationRepairReview = "# Behavioral Separation Repair Review\n\n"
+                + "1. did effective niche count increase? value=" + nicheQualityDiagnostics.get("nicheCount") + ".\n"
+                + "2. did dominant niche share decrease? value=" + dominantNicheShare + ".\n"
+                + "3. are niches behaviorally interpretable? " + nicheQualityDiagnostics.get("nicheInterpretability") + ".\n"
+                + "4. did END improve? latest END=" + extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") + ".\n"
+                + "5. did TNT rise above zero? latest TNT=" + extractLastSeasonDouble(seasonalSnapshots, "turnoverRate") + ".\n"
+                + "6. did PNNC show increased potential? latest PNNC=" + extractLastSeasonDouble(seasonalSnapshots, "pnnc") + ".\n"
+                + "- Pairwise niche separation score=" + pairwiseSeparation + ".\n"
+                + "- Separated strategy examples=" + previouslyMergedSeparatedExamples + ".\n";
+        Files.writeString(worldLab.resolve("behavioral-separation-repair-review.md"), behavioralSeparationRepairReview);
 
         String behavioralOpenEndednessReview = "# Behavioral Signature Open-Endedness Review\n\n"
                 + "- Ecosystem status: " + (extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") < 2.0D ? "collapsed/bounded" : "weakly ecological") + "\n"

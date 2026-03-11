@@ -1,7 +1,7 @@
 # Species-Niche Analysis
 
-- Niche count: 1
-- Niche stability: 0.01919642857142856
-- Species per niche: {niche-1=79}
+- Niche count: 2
+- Niche stability: 0.23035714285714282
+- Species per niche: {niche-1=26, niche-2=1}
 - Niche turnover (species migrations): {}
-- Niche emergence events: {1=1}
+- Niche emergence events: {1=2}

@@ -1,11 +1,16 @@
 # Niche Detection Quality Report
 
-- Effective niche count improved: False
-- Dominant niche share dropped: {'niche-1': 160}
-- Niche separation score: 0.0
-- Behavioral projection enabled: True
-- Trait/behavior weighting: 0.35/0.65
-- Mode: behavior-dominated
-- Top behavioral dimensions contributing to separation: []
-- Niches behaviorally interpretable: {'niche-1': 'stable niche with dominant branch=survival.guardian, dominant family=chaos, successRate=0.97'}
-- Fragmentation remained controlled: none
+- Niche count: 2
+- Niche occupancy distribution: {niche-1=39, niche-2=1}
+- Niche separation score: 0.21970789144408046
+- Niche collapse warnings: warning: broad niche collapse risk detected
+- Niche fragmentation warning: none
+- Whether niches are too coarse: warning: broad niche collapse risk detected
+- Whether niches are too fragmented: none
+- Niche interpretability summary: {niche-1=stable niche with dominant branch=chaos.sprawl, dominant family=survival, successRate=0.71, niche-2=emergent niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.95}
+- Mirrors branches/families: branches=true, families=false
+- Whether niches are aliases for existing labels: branches=true, families=false
+- Behavioral projection enabled: true
+- Trait vs behavior weighting: 0.25/0.75
+- Projection dominance: behavior-dominated
+- Top behavioral separation dimensions: [trigger_class_activation_distribution, mechanic_usage_distribution, interaction_diversity]

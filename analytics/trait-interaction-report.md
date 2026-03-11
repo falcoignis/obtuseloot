@@ -1,23 +1,23 @@
 # Trait Interaction Report
 
-1. **Sample size:** 227
+1. **Sample size:** 48
 2. **Most common trait pairings:**
-   - volatility × volatility -> 120
-   - survivalinstinct × survivalinstinct -> 116
-   - stability × stability -> 114
-   - chaosaffinity × chaosaffinity -> 112
-   - mutationsensitivity × mutationsensitivity -> 110
+   - stability × stability -> 27
+   - volatility × volatility -> 23
+   - mutationsensitivity × mutationsensitivity -> 22
+   - precisionaffinity × precisionaffinity -> 22
+   - kineticbias × kineticbias -> 21
 3. **Rare or absent trait pairings:**
-   - mobilityaffinity × resonance -> 39
-   - chaosaffinity × kineticbias -> 41
-   - kineticbias × mobilityaffinity -> 41
-   - kineticbias × resonance -> 42
-   - kineticbias × stability -> 42
+   - resonance × survivalinstinct -> 4
+   - chaosaffinity × kineticbias -> 5
+   - chaosaffinity × resonance -> 5
+   - survivalinstinct × volatility -> 5
+   - chaosaffinity × precisionaffinity -> 6
 
 ## Interpretation
-- Suspiciously dominant pairing: **volatility × volatility** at 120 counts. This may indicate hidden weighting in ability branch resolution or genome trait interpolation.
-- Suppressed pairing: **mobilityaffinity × resonance** at 39 counts. This may indicate missing interaction support in mutation, awakening, or lineage inheritance paths.
-- Likely hidden generator bias appears when one pair exceeds ~70% of observed max intensity (max 120).
+- Suspiciously dominant pairing: **stability × stability** at 27 counts. This may indicate hidden weighting in ability branch resolution or genome trait interpolation.
+- Suppressed pairing: **resonance × survivalinstinct** at 4 counts. This may indicate missing interaction support in mutation, awakening, or lineage inheritance paths.
+- Likely hidden generator bias appears when one pair exceeds ~70% of observed max intensity (max 27).
 - Lineage lock-in risk rises when top pairings repeatedly include stability/precision/resonance without offsetting chaos/mobility variation.
 
 ## Recommended review actions

@@ -1,9 +1,9 @@
 # Niche Stability Report
 
-- Niche birth events: {'1': 1}
+- Niche birth events: {1=2}
 - Niche extinction events: {}
 - Niche merge events: {}
 - Niche retire events: {}
-- Niche stability timeline: [0.006249999999999978, 0.0, 0.0]
-- Niche lifetimes: {'niche-1': 4}
-- Fragmentation remained controlled: none
+- Niche stability over time: [0.025000000000000022]
+- Niche lifetimes: {niche-1=2, niche-2=2}
+- Species migration across niches: {}

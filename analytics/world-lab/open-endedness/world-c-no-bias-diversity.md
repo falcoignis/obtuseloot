@@ -2,7 +2,7 @@
 
 ## 1) Scope / sample size
 - Players: 40
-- Seasons: 3
+- Seasons: 2
 - Sessions per season: 4
 
 ## 2) Method summary
@@ -14,23 +14,23 @@
 - Dominant family (final season): `chaos`
 - Dominant branch (final season): `mobility.lane-dancer`
 - Dominant lineage (final season): `gilded`
-- Branch entropy (final): 2.5901
-- Lineage concentration (final): 0.0497
-- Novelty rate per season: [1.0, 0.0526, 0.0]
+- Branch entropy (final): 2.6451
+- Lineage concentration (final): 0.0444
+- Novelty rate per season: [1.0, 0.0526]
 
 ## 4) Dominant families / branches / lineages / mechanics
-- Dominant family by season: [1:chaos, 2:chaos, 3:chaos]
-- Dominant branch by season: [1:mobility.lane-dancer, 2:mobility.lane-dancer, 3:mobility.lane-dancer]
-- Dominant lineage by season: [1:gilded, 2:gilded, 3:gilded]
+- Dominant family by season: [1:chaos, 2:chaos]
+- Dominant branch by season: [1:mobility.lane-dancer, 2:mobility.lane-dancer]
+- Dominant lineage by season: [1:gilded, 2:gilded]
 
 ## 5) Rare but viable systems
-- Rare lineage persistence score: 67
-- Niche count trend: [19.0, 19.0, 18.0]
+- Rare lineage persistence score: 74
+- Niche count trend: [19.0, 19.0]
 
 ## 6) Dead or suspicious systems
-- Top-5 family turnover trend: [0.0, 0.0]
-- Top-5 branch turnover trend: [0.5714, 0.5714]
-- Top-5 lineage turnover trend: [0.0, 0.0]
+- Top-5 family turnover trend: [0.0]
+- Top-5 branch turnover trend: [0.5714]
+- Top-5 lineage turnover trend: [0.0]
 - Sustained zero-turnover windows indicate possible lock-in.
 
 ## 7) Confidence / caveats
