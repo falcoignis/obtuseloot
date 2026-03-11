@@ -102,3 +102,13 @@ text:
       max-words: 10
     fusion:
       max-words: 14
+
+analytics:
+  ecology:
+    fitnessSharing:
+      enabled: true
+      mode: niche
+      alpha: 0.10
+      maxPenalty: 0.15
+      targetOccupancy: 0.18
+      similarityRadius: 0.20

@@ -114,7 +114,10 @@ public class DashboardRenderer {
                 + "\nspeciesPerNiche=" + speciesNicheMetrics.getOrDefault("speciesPerNiche", Map.of())
                 + "\nnicheTurnover=" + speciesNicheMetrics.getOrDefault("nicheTurnover", 0)
                 + "\ndominantNicheShare=" + speciesNicheMetrics.getOrDefault("dominantNicheShare", 0)
-                + "\novercrowdedNicheCount=" + speciesNicheMetrics.getOrDefault("overcrowdedNicheCount", 0);
+                + "\novercrowdedNicheCount=" + speciesNicheMetrics.getOrDefault("overcrowdedNicheCount", 0)
+                + "\nfitnessSharingActive=" + speciesNicheMetrics.getOrDefault("fitnessSharingActive", false)
+                + "\nfitnessSharingMode=" + speciesNicheMetrics.getOrDefault("fitnessSharingMode", "niche")
+                + "\naverageSharingLoad=" + speciesNicheMetrics.getOrDefault("averageSharingLoad", 1.0D);
     }
 
     private String renderCoEvolution(Map<String, Object> coEvolutionMetrics) {

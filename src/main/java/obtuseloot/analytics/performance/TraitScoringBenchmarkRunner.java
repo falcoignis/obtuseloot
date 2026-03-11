@@ -173,6 +173,7 @@ public class TraitScoringBenchmarkRunner {
                     d.enableEnvironmentalPressure(),
                     d.enableTraitInteractions(),
                     d.enableCoEvolution(),
+                    d.fitnessSharing(),
                     mode
             );
             long start = System.currentTimeMillis();

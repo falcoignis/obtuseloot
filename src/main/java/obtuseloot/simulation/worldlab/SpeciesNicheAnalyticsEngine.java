@@ -8,7 +8,13 @@ import obtuseloot.species.ArtifactSpecies;
 import java.util.*;
 
 public class SpeciesNicheAnalyticsEngine {
-    public record PenaltyResult(double effectiveScore, double crowdingPenalty, String nicheId, boolean applied) {}
+    public record PenaltyResult(double effectiveScore,
+                                double crowdingPenalty,
+                                String nicheId,
+                                boolean applied,
+                                double sharingLoad,
+                                double sharingFactor,
+                                String sharingMode) {}
     public record CoEvolutionPressureResult(double effectiveScore,
                                             double modifier,
                                             double competitionPressure,
@@ -35,6 +41,7 @@ public class SpeciesNicheAnalyticsEngine {
     private static final int NICHE_PRUNE_GRACE_SEASONS = 3;
 
     private final Random random;
+    private final FitnessSharingConfig fitnessSharing;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
     private final Map<String, CandidateNiche> candidateNiches = new LinkedHashMap<>();
@@ -65,6 +72,13 @@ public class SpeciesNicheAnalyticsEngine {
     private Set<String> previousActiveNiches = new LinkedHashSet<>();
     private final List<Double> dominantNicheShareTimeline = new ArrayList<>();
     private final List<Double> penaltyActivationTimeline = new ArrayList<>();
+    private final List<Double> fitnessSharingLoadTimeline = new ArrayList<>();
+    private final List<Double> fitnessSharingFactorTimeline = new ArrayList<>();
+    private final Map<String, Double> nicheSharingLoadByNiche = new LinkedHashMap<>();
+    private final Map<String, Double> nicheSharingFactorByNiche = new LinkedHashMap<>();
+    private double fitnessSharingLoadTotal;
+    private double fitnessSharingFactorTotal;
+    private int fitnessSharingAppliedCount;
     private final List<Integer> speciesCountTimeline = new ArrayList<>();
     private final List<Integer> nicheCountTimeline = new ArrayList<>();
     private int activePenaltyCount;
@@ -76,24 +90,83 @@ public class SpeciesNicheAnalyticsEngine {
     private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
+        this(seed, FitnessSharingConfig.defaults());
+    }
+
+    public SpeciesNicheAnalyticsEngine(long seed, FitnessSharingConfig fitnessSharing) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
+        this.fitnessSharing = (fitnessSharing == null ? FitnessSharingConfig.defaults() : fitnessSharing).bounded();
     }
 
     public PenaltyResult applyCrowdingPenalty(Artifact artifact, double rawScore) {
         penaltyEvaluationCount++;
         ArtifactNicheMembership membership = artifactMembership.get(artifact.getArtifactSeed());
         if (membership == null || membership.nicheId() == null || membership.nicheId().isBlank()) {
-            return new PenaltyResult(rawScore, 1.0D, "unassigned", false);
+            return new PenaltyResult(rawScore, 1.0D, "unassigned", false, 1.0D, 1.0D, fitnessSharing.normalizedMode());
         }
         String nicheId = membership.nicheId();
-        double occupancy = occupancyFor(nicheId);
-        if (occupancy <= TARGET_OCCUPANCY) {
-            return new PenaltyResult(rawScore, 1.0D, nicheId, false);
+        if (!fitnessSharing.enabled()) {
+            return new PenaltyResult(rawScore, 1.0D, nicheId, false, 1.0D, 1.0D, fitnessSharing.normalizedMode());
         }
-        double penalty = 1.0D + BETA * Math.max(0.0D, occupancy - TARGET_OCCUPANCY);
-        penalty = Math.max(MIN_PENALTY, Math.min(MAX_PENALTY, penalty));
+
+        SharingComputation sharing = computeSharing(artifact, nicheId, membership);
+        if (!sharing.applied()) {
+            return new PenaltyResult(rawScore, 1.0D, nicheId, false, sharing.load(), sharing.factor(), sharing.mode());
+        }
         activePenaltyCount++;
-        return new PenaltyResult(rawScore / penalty, penalty, nicheId, true);
+        fitnessSharingAppliedCount++;
+        fitnessSharingLoadTotal += sharing.load();
+        fitnessSharingFactorTotal += sharing.factor();
+        nicheSharingLoadByNiche.merge(nicheId, sharing.load(), Double::sum);
+        nicheSharingFactorByNiche.merge(nicheId, sharing.factor(), Double::sum);
+        return new PenaltyResult(rawScore * sharing.factor(), 1.0D / sharing.factor(), nicheId, true, sharing.load(), sharing.factor(), sharing.mode());
+    }
+
+    private SharingComputation computeSharing(Artifact artifact, String nicheId, ArtifactNicheMembership membership) {
+        String mode = fitnessSharing.normalizedMode();
+        return switch (mode) {
+            case "distance" -> computeDistanceSharing(artifact, nicheId, membership);
+            case "niche" -> computeNicheSharing(nicheId);
+            default -> computeNicheSharing(nicheId);
+        };
+    }
+
+    private SharingComputation computeNicheSharing(String nicheId) {
+        double occupancy = occupancyFor(nicheId);
+        double effectiveOccupancy = Math.max(0.0D, occupancy - fitnessSharing.targetOccupancy());
+        double load = 1.0D + (fitnessSharing.alpha() * effectiveOccupancy);
+        return sharingFromLoad(load, occupancy > fitnessSharing.targetOccupancy(), "niche");
+    }
+
+    private SharingComputation computeDistanceSharing(Artifact artifact, String nicheId, ArtifactNicheMembership membership) {
+        double radius = fitnessSharing.similarityRadius();
+        double load = 1.0D;
+        int neighbors = 0;
+        for (Map.Entry<Long, ArtifactNicheMembership> entry : artifactMembership.entrySet()) {
+            if (entry.getKey() == artifact.getArtifactSeed()) {
+                continue;
+            }
+            ArtifactNicheMembership other = entry.getValue();
+            if (other == null || other.vector() == null) {
+                continue;
+            }
+            double distance = weightedDistance(membership.vector(), other.vector());
+            if (distance <= radius) {
+                double contribution = 1.0D - (distance / Math.max(0.0001D, radius));
+                load += Math.max(0.0D, contribution) * fitnessSharing.alpha() * 0.5D;
+                neighbors++;
+            }
+        }
+        return sharingFromLoad(load, neighbors > 0, "distance");
+    }
+
+    private SharingComputation sharingFromLoad(double load, boolean active, String mode) {
+        double cappedLoad = Math.max(1.0D, load);
+        double rawFactor = 1.0D / cappedLoad;
+        double minFactor = 1.0D - fitnessSharing.maxPenalty();
+        double factor = clamp(rawFactor, minFactor, 1.0D);
+        boolean applied = active && factor < 0.9999D;
+        return new SharingComputation(cappedLoad, factor, mode, applied);
     }
 
     public void observeArtifact(Artifact artifact,
@@ -211,6 +284,8 @@ public class SpeciesNicheAnalyticsEngine {
         nicheSeparationTimeline.add(nicheSeparationScore());
         nicheStabilityTimeline.add(1.0D - dominantShare(occupancy));
         penaltyActivationTimeline.add(activePenaltyRate());
+        fitnessSharingLoadTimeline.add(avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
+        fitnessSharingFactorTimeline.add(avg(fitnessSharingFactorTotal, fitnessSharingAppliedCount));
         coEvolutionCompetitionTimeline.add(avg(coEvolutionCompetitionTotal, coEvolutionEvaluationCount));
         coEvolutionSupportTimeline.add(avg(coEvolutionSupportTotal, coEvolutionEvaluationCount));
         coEvolutionModifierTimeline.add(avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
@@ -229,6 +304,10 @@ public class SpeciesNicheAnalyticsEngine {
         snapshot.put("coEvolutionModifier", avg(coEvolutionModifierTotal, coEvolutionEvaluationCount));
         snapshot.put("coEvolutionMigrationPressure", avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount));
         snapshot.put("nicheSeparationScore", nicheSeparationScore());
+        snapshot.put("fitnessSharingEnabled", fitnessSharing.enabled());
+        snapshot.put("fitnessSharingMode", fitnessSharing.normalizedMode());
+        snapshot.put("fitnessSharingAvgLoad", avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
+        snapshot.put("fitnessSharingAvgFactor", avg(fitnessSharingFactorTotal, fitnessSharingAppliedCount));
         return snapshot;
     }
 
@@ -277,6 +356,8 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("dominantSpeciesConcentrationTimeline", dominantSpeciesConcentrationTimeline);
         out.put("nicheSeparationTimeline", nicheSeparationTimeline);
         out.put("nicheStabilityTimeline", nicheStabilityTimeline);
+        out.put("fitnessSharingLoadTimeline", fitnessSharingLoadTimeline);
+        out.put("fitnessSharingFactorTimeline", fitnessSharingFactorTimeline);
         return out;
     }
 
@@ -360,6 +441,8 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("nicheExtinctionEvents", new LinkedHashMap<>(nicheExtinctionEvents));
         out.put("nicheLifetimes", nicheLifetimes());
         out.put("nicheStabilityTimeline", nicheStabilityTimeline);
+        out.put("fitnessSharingLoadTimeline", fitnessSharingLoadTimeline);
+        out.put("fitnessSharingFactorTimeline", fitnessSharingFactorTimeline);
         out.put("nicheMigrationBySpecies", new LinkedHashMap<>(speciesDominantNicheShifts));
         out.put("nicheMergeEvents", new LinkedHashMap<>(nicheMergeEvents));
         out.put("nicheRetireEvents", new LinkedHashMap<>(nicheRetireEvents));
@@ -544,6 +627,8 @@ public class SpeciesNicheAnalyticsEngine {
         return current;
     }
 
+    private record SharingComputation(double load, double factor, String mode, boolean applied) {}
+
     public record SpeciesCleanupResult(Map<String, Object> audit,
                                        Map<String, String> mergedSpecies,
                                        Set<String> retiredSpecies,
@@ -606,7 +691,7 @@ public class SpeciesNicheAnalyticsEngine {
             speciesByNiche.put(nicheId, species);
         }
 
-        long overcrowded = occupancy.values().stream().filter(v -> v > TARGET_OCCUPANCY).count();
+        long overcrowded = occupancy.values().stream().filter(v -> v > fitnessSharing.targetOccupancy()).count();
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("occupancyByNiche", occupancy);
         out.put("speciesFractionByNiche", speciesFraction);
@@ -614,13 +699,34 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("speciesPerNiche", speciesByNiche);
         out.put("penaltyActivationFrequency", activePenaltyRate());
         out.put("overcrowdedNicheCount", overcrowded);
-        out.put("targetOccupancy", TARGET_OCCUPANCY);
+        out.put("targetOccupancy", fitnessSharing.targetOccupancy());
         out.put("beta", BETA);
+        out.put("fitnessSharingEnabled", fitnessSharing.enabled());
+        out.put("fitnessSharingMode", fitnessSharing.normalizedMode());
+        out.put("fitnessSharingAlpha", fitnessSharing.alpha());
+        out.put("fitnessSharingMaxPenalty", fitnessSharing.maxPenalty());
+        out.put("fitnessSharingTargetOccupancy", fitnessSharing.targetOccupancy());
+        out.put("averageSharingLoad", avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
+        out.put("averageSharingFactor", avg(fitnessSharingFactorTotal, fitnessSharingAppliedCount));
+        out.put("nicheSharingLoad", new LinkedHashMap<>(nicheSharingLoadByNiche));
+        out.put("nicheSharingFactor", new LinkedHashMap<>(nicheSharingFactorByNiche));
         return out;
     }
 
     public int nicheCount() {
         return niches.size();
+    }
+
+    public boolean isFitnessSharingEnabled() {
+        return fitnessSharing.enabled();
+    }
+
+    public String fitnessSharingMode() {
+        return fitnessSharing.normalizedMode();
+    }
+
+    public double averageFitnessSharingLoad() {
+        return avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount);
     }
 
     public double activePenaltyRate() {

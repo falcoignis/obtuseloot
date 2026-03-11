@@ -28,6 +28,14 @@ public final class WorldSimulationRunner {
                 boolProp("world.enableEnvironmentalPressure", defaults.enableEnvironmentalPressure()),
                 boolProp("world.enableTraitInteractions", defaults.enableTraitInteractions()),
                 boolProp("world.enableCoEvolution", defaults.enableCoEvolution()),
+                new FitnessSharingConfig(
+                        boolProp("world.fitnessSharing.enabled", defaults.fitnessSharing().enabled()),
+                        System.getProperty("world.fitnessSharing.mode", defaults.fitnessSharing().mode()),
+                        doubleProp("world.fitnessSharing.alpha", defaults.fitnessSharing().alpha()),
+                        doubleProp("world.fitnessSharing.maxPenalty", defaults.fitnessSharing().maxPenalty()),
+                        doubleProp("world.fitnessSharing.targetOccupancy", defaults.fitnessSharing().targetOccupancy()),
+                        doubleProp("world.fitnessSharing.similarityRadius", defaults.fitnessSharing().similarityRadius())
+                ).bounded(),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();

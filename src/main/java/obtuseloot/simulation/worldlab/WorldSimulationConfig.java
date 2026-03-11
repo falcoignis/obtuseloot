@@ -22,6 +22,7 @@ public record WorldSimulationConfig(
         boolean enableEnvironmentalPressure,
         boolean enableTraitInteractions,
         boolean enableCoEvolution,
+        FitnessSharingConfig fitnessSharing,
         ScoringMode scoringMode
 ) {
     public static WorldSimulationConfig defaults() {
@@ -45,6 +46,7 @@ public record WorldSimulationConfig(
                 true,
                 true,
                 true,
+                FitnessSharingConfig.defaults(),
                 ScoringMode.PROJECTION_WITH_CACHE
         );
     }

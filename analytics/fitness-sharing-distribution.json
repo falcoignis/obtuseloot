@@ -1,0 +1,14 @@
+{
+  "model": "niche",
+  "enabled": true,
+  "alpha": 0.10,
+  "maxPenalty": 0.15,
+  "targetOccupancy": 0.18,
+  "averageSharingLoad": 1.0,
+  "averageSharingFactor": 1.0,
+  "occupancyByNiche": {},
+  "nicheSharingLoad": {},
+  "nicheSharingFactor": {},
+  "penaltyActivationFrequency": 0.0,
+  "notes": "Values are populated by world-lab harness runs."
+}

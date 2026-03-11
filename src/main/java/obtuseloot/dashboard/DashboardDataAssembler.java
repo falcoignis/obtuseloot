@@ -91,6 +91,13 @@ public class DashboardDataAssembler {
         out.put("dominantNicheShare", extractMaxShare(crowdingContent, "occupancyByNiche"));
         out.put("overcrowdedNicheCount", extractNumber(crowdingContent, "overcrowdedNicheCount"));
         out.put("dominantSpeciesShare", extractNumber(speciationContent, "dominantSpeciesConcentration"));
+        Path fitnessSharing = analyticsRoot.resolve("fitness-sharing-distribution.json");
+        if (Files.exists(fitnessSharing)) {
+            String sharingContent = Files.readString(fitnessSharing);
+            out.put("fitnessSharingActive", extractBoolean(sharingContent, "enabled"));
+            out.put("fitnessSharingMode", extractString(sharingContent, "model"));
+            out.put("averageSharingLoad", extractNumber(sharingContent, "averageSharingLoad"));
+        }
         return out;
     }
 
@@ -124,6 +131,18 @@ public class DashboardDataAssembler {
             pairs.add(pairMatcher.group(1));
         }
         return pairs;
+    }
+
+    private String extractString(String content, String key) {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(key) + "\"\s*:\s*\"([^\"]*)\"");
+        Matcher matcher = pattern.matcher(content);
+        return matcher.find() ? matcher.group(1) : "";
+    }
+
+    private boolean extractBoolean(String content, String key) {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(key) + "\"\s*:\s*(true|false)");
+        Matcher matcher = pattern.matcher(content);
+        return matcher.find() && Boolean.parseBoolean(matcher.group(1));
     }
 
     private double extractNumber(String content, String key) {

@@ -8,3 +8,5 @@
 - false-divergence flags: [stagnation]
 - final diagnostic state: STAGNANT_ATTRACTOR
 - attractor weakening vs relabeling: dominant attractor is mostly being relabeled
+
+- Fitness sharing: active=true, mode=niche (bounded viability dampening).
