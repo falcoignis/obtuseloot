@@ -4,6 +4,6 @@
 - Niche extinction events: {}
 - Niche merge events: {}
 - Niche retire events: {}
-- Niche stability over time: [0.0, 0.0]
-- Niche lifetimes: {niche-1=3, niche-2=1}
+- Niche stability over time: [0.006249999999999978, 0.0, 0.0]
+- Niche lifetimes: {niche-1=4}
 - Species migration across niches: {}

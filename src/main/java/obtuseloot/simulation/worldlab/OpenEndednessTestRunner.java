@@ -72,6 +72,8 @@ public final class OpenEndednessTestRunner {
         Files.writeString(outputDir.resolve("ecology-repair-open-endedness-review.md"), ecologyRepairOpenEndednessReview(results));
         Files.writeString(outputDir.resolve("novelty-open-endedness-review.md"), noveltyOpenEndednessReview(results));
         Files.writeString(outputDir.resolve("pnnc-open-endedness-review.md"), noveltyOpenEndednessReview(results));
+        Files.writeString(outputDir.resolve("pnnc-calibrated-open-endedness-review.md"), noveltyOpenEndednessReview(results));
+        Files.writeString(outputDir.resolve("reconciled-open-endedness-classification.md"), reconciledOpenEndednessClassification(results));
 
         renderCharts(outputDir, results);
     }
@@ -141,6 +143,8 @@ public final class OpenEndednessTestRunner {
         summary.put("coEvolutionSupportTrend", simpleSeries(seasonal, "coEvolutionSupportPressure"));
         summary.put("coEvolutionModifierTrend", simpleSeries(seasonal, "coEvolutionModifier"));
         summary.put("coEvolutionMigrationTrend", simpleSeries(seasonal, "coEvolutionMigrationPressure"));
+        summary.put("endTrend", simpleSeries(seasonal, "end"));
+        summary.put("tntTrend", simpleSeries(seasonal, "tnt"));
 
         NovelStrategyEmergenceAnalyzer.NserResult nser = new NovelStrategyEmergenceAnalyzer().analyze(seasonal);
         summary.put("nserTrend", nser.trend());
@@ -148,6 +152,8 @@ public final class OpenEndednessTestRunner {
         PersistentNovelNicheAnalyzer.PnncResult pnnc = new PersistentNovelNicheAnalyzer().analyze(seasonal);
         summary.put("pnncTrend", pnnc.trend());
         summary.put("latestPnnc", pnnc.currentPnnc());
+        summary.put("latestEnd", summary.get("endTrend") instanceof List<?> l && !l.isEmpty() ? ((Number) l.get(l.size() - 1)).doubleValue() : 0.0D);
+        summary.put("latestTnt", summary.get("tntTrend") instanceof List<?> l && !l.isEmpty() ? ((Number) l.get(l.size() - 1)).doubleValue() : 0.0D);
         return summary;
     }
 
@@ -370,19 +376,69 @@ public final class OpenEndednessTestRunner {
         double concentration = average(asDoubles(summary.get("lineageConcentrationTrend")));
         double niches = average(asDoubles(summary.get("adaptiveNicheCountTrend")));
         double modifiers = averageAbs(asDoubles(summary.get("coEvolutionModifierTrend")));
-        if (concentration > 0.55D && niches < 2.0D) {
-            return "designer-controlled";
+        double latestEnd = summary.get("latestEnd") instanceof Number n ? n.doubleValue() : 0.0D;
+        double latestTnt = summary.get("latestTnt") instanceof Number t ? t.doubleValue() : 0.0D;
+        double latestNser = summary.get("latestNser") instanceof Number ns ? ns.doubleValue() : 0.0D;
+        double latestPnnc = summary.get("latestPnnc") instanceof Number pn ? pn.doubleValue() : 0.0D;
+        double dominantNicheShare = asDoubles(summary.get("dominantNicheShareTrend")).isEmpty() ? 1.0D : asDoubles(summary.get("dominantNicheShareTrend")).getLast();
+
+        if (latestEnd < 1.8D && latestTnt < 0.10D && latestNser < 0.10D && dominantNicheShare > 0.70D) {
+            return "collapsed/stagnant";
         }
-        if (concentration > 0.45D && modifiers < 0.02D) {
-            return "adaptive but bounded";
+        if (latestPnnc <= 0 && (latestNser < 0.12D || latestTnt < 0.20D)) {
+            return "bounded reshuffling";
         }
-        if (niches < 3.0D) {
+        if (latestPnnc <= 2) {
             return "weakly ecological";
         }
-        double nser = summary.get("latestNser") instanceof Number n ? n.doubleValue() : 0.0D;
-        double pnnc = summary.get("latestPnnc") instanceof Number pn ? pn.doubleValue() : 0.0D;
-        if (nser >= 0.15D && nser < 0.50D && pnnc > 0) {
-            return "multi-attractor ecosystem with sustained novelty";
+        if (latestPnnc >= 3 && latestNser >= 0.12D && latestTnt < 0.65D) {
+            return "multi-attractor ecosystem";
+        }
+        if (concentration > 0.55D && niches < 2.0D) {
+            return "collapsed/stagnant";
+        }
+        if (concentration > 0.45D && modifiers < 0.02D) {
+            return "bounded reshuffling";
+        }
+        return "weakly ecological";
+    }
+
+    private static String reconciledOpenEndednessClassification(Map<String, Map<String, Object>> results) {
+        Map<String, Object> summary = castMap(results.getOrDefault("A", Map.of()).get("summary"));
+        String oldLabel = legacyClassificationLabel(results);
+        String newLabel = classificationLabel(summary);
+        String finalLabel = newLabel;
+        return "# Reconciled Open-Endedness Classification\n\n"
+                + "1. what the old classifier said\n"
+                + "- Legacy verdict: **" + oldLabel + "**.\n\n"
+                + "2. what the new diagnostic layer said\n"
+                + "- Diagnostic inputs: END=" + fmt(summary.getOrDefault("latestEnd", 0.0D))
+                + ", TNT=" + fmt(summary.getOrDefault("latestTnt", 0.0D))
+                + ", NSER=" + fmt(summary.getOrDefault("latestNser", 0.0D))
+                + ", PNNC=" + fmt(summary.getOrDefault("latestPnnc", 0.0D))
+                + ", dominantNicheShare=" + summary.getOrDefault("dominantNicheShareTrend", List.of())
+                + ", dominantAttractorDuration≈lineageConcentrationTrend=" + summary.getOrDefault("lineageConcentrationTrend", List.of()) + ".\n"
+                + "- Diagnostic verdict: **" + newLabel + "**.\n\n"
+                + "3. what the reconciled final classification is\n"
+                + "- Final reconciled verdict: **" + finalLabel + "**.\n\n"
+                + "4. why that final classification is more trustworthy\n"
+                + "- The final verdict is anchored to END/TNT/NSER/PNNC plus niche dominance and attractor persistence, so optimistic labels are suppressed when durable novelty (PNNC) is weak.\n"
+                + "- Legacy method remains documented in `open-endedness-classification.md`, but top-level truth follows stronger ecology diagnostics.\n";
+    }
+
+    private static String legacyClassificationLabel(Map<String, Map<String, Object>> results) {
+        Map<String, Object> a = castMap(results.get("A").get("summary"));
+        Map<String, Object> c = castMap(results.get("C").get("summary"));
+        double concentrationDelta = ((Number) c.get("lineageConcentration")).doubleValue()
+                - ((Number) a.get("lineageConcentration")).doubleValue();
+        double turnoverDelta = ((Number) a.get("branchTurnover")).doubleValue()
+                - ((Number) c.get("branchTurnover")).doubleValue();
+        if (concentrationDelta < 0.01D && turnoverDelta < 0.02D) {
+            return "designer-controlled";
+        } else if (concentrationDelta < 0.04D) {
+            return "adaptive but bounded";
+        } else if (turnoverDelta < 0.04D) {
+            return "weakly ecological";
         }
         return "multi-attractor ecosystem";
     }

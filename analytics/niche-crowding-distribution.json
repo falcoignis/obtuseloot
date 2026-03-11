@@ -9,9 +9,9 @@
     "niche-1": 1.0
   },
   "speciesPerNiche": {
-    "niche-1": 69
+    "niche-1": 79
   },
-  "penaltyActivationFrequency": 0.9615625,
+  "penaltyActivationFrequency": 0.9808035714285714,
   "overcrowdedNicheCount": 1,
   "targetOccupancy": 0.18,
   "beta": 0.4

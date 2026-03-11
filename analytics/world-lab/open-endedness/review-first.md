@@ -20,7 +20,9 @@ Classification snapshot:
 - Classification combines concentration divergence, turnover divergence, and novelty persistence.
 
 ## 3) Key findings
-- Classification: **Borderline: designer-controlled with weak divergence**
+- Classification: **designer-controlled**
+- NSER (World A latest): 1.0000
+- PNNC (World A latest): 1.0000
 - Generator-only diversity remains balanced; ecosystem divergence appears only with active subsystem interactions.
 
 ## 4) Dominant families / branches / lineages / mechanics

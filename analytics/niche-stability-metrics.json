@@ -5,10 +5,9 @@
   "nicheExtinctionEvents": {
   },
   "nicheLifetimes": {
-    "niche-1": 3,
-    "niche-2": 1
+    "niche-1": 4
   },
-  "nicheStabilityTimeline": [0.0,0.0],
+  "nicheStabilityTimeline": [0.006249999999999978,0.0,0.0],
   "nicheMigrationBySpecies": {
   },
   "nicheMergeEvents": {
