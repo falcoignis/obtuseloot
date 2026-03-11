@@ -1,60 +1,60 @@
 {
   "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
-  "count": 40,
+  "count": 16,
   "dimensionMeans": {
-    "trigger_class_activation_distribution": 0.8938721875540867,
-    "mechanic_usage_distribution": 0.7480999479977964,
-    "support_action_ratio": 0.31390037949132904,
-    "damage_action_ratio": 0.19330357142857138,
-    "persistence_action_ratio": 0.33124999999999993,
-    "mobility_usage_ratio": 0.15044642857142856,
-    "environment_dependent_activation_ratio": 0.0640625,
-    "memory_driven_activation_ratio": 0.5756249999999998,
-    "latent_trait_activation_rate": 0.4725,
-    "activation_temporal_density": 0.36197156835024785,
-    "encounter_persistence_behavior": 0.47108124999999984,
-    "interaction_diversity": 0.6737757805627629
+    "trigger_class_activation_distribution": 0.875,
+    "mechanic_usage_distribution": 0.796875,
+    "support_action_ratio": 0.29910714285714285,
+    "damage_action_ratio": 0.17410714285714285,
+    "persistence_action_ratio": 0.28571428571428575,
+    "mobility_usage_ratio": 0.1702752976190476,
+    "environment_dependent_activation_ratio": 0.05859375,
+    "memory_driven_activation_ratio": 0.49687500000000007,
+    "latent_trait_activation_rate": 0.16640624999999992,
+    "activation_temporal_density": 0.33828125000000003,
+    "encounter_persistence_behavior": 0.4523671875,
+    "interaction_diversity": 0.5868237820996979
   },
   "sampledArtifacts": [{
       "artifactSeed": -7844357802289000311,
       "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "vector": [D@5a1d8478
+      "vector": [D@165d0fdc
     },{
       "artifactSeed": 3811935716758096698,
       "speciesId": "species-root-wild-35642",
       "nicheId": "niche-1",
-      "vector": [D@6c14d3f1
+      "vector": [D@11c301c7
     },{
       "artifactSeed": -2325901052626333559,
       "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "vector": [D@264e4b4f
+      "vector": [D@3821d831
     },{
       "artifactSeed": -1706521032904570054,
       "speciesId": "species-root-ashen",
       "nicheId": "niche-1",
-      "vector": [D@6d55d8c5
+      "vector": [D@2d70f72e
     },{
       "artifactSeed": 3192555697036333193,
       "speciesId": "species-root-graveborn",
       "nicheId": "niche-1",
-      "vector": [D@5b5daf53
+      "vector": [D@53ad2eb3
     },{
       "artifactSeed": -3597894857626121414,
-      "speciesId": "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7",
+      "speciesId": "species-root-lineage-9f66e16c-fd44-308e-8546-d92a908f1d00",
       "nicheId": "niche-1",
-      "vector": [D@119c7492
+      "vector": [D@5a69d038
     },{
       "artifactSeed": 8711012446698999945,
-      "speciesId": "species-root-wild-4233",
+      "speciesId": "species-root-lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84",
       "nicheId": "niche-1",
-      "vector": [D@455c51dd
+      "vector": [D@6c3f6b14
     },{
       "artifactSeed": -9116351607288788166,
-      "speciesId": "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a",
+      "speciesId": "species-root-lineage-1a81e247-43ce-3776-bf69-081eba576d11",
       "nicheId": "niche-1",
-      "vector": [D@60c2a43
+      "vector": [D@46dc383a
     }],
   "projection": {
     "enabled": true,
@@ -62,6 +62,6 @@
     "behaviorWeight": 0.75,
     "mode": "behavior-dominated",
     "dimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio","damage_action_ratio","persistence_action_ratio","mobility_usage_ratio","environment_dependent_activation_ratio","memory_driven_activation_ratio","latent_trait_activation_rate","activation_temporal_density","encounter_persistence_behavior","interaction_diversity"],
-    "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","interaction_diversity"]
+    "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio"]
   }
 }

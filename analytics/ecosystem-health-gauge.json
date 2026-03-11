@@ -1,13 +1,13 @@
 {
-  "END_artifacts": 1.124,
-  "END_species": 1.1716,
-  "TNT_per_season": [],
+  "END_artifacts": 1.2634,
+  "END_species": 1.3561,
+  "TNT_per_season": ["season-1→2:0.125"],
   "NSER_latest": 0.0,
-  "END_trend": [1.124],
-  "TNT_trend": [],
-  "NSER_trend": [0.0],
+  "END_trend": [1.6202,1.2634],
+  "TNT_trend": [0.125],
+  "NSER_trend": [0.0,0.0],
   "PNNC_current": 0,
-  "PNNC_trend": [0],
+  "PNNC_trend": [0,0],
   "ecosystem_status": "STAGNANT",
   "interpretation": "Low END with low TNT indicates monoculture stagnation. Novelty signal indicates mostly strategy reshuffling."
 }

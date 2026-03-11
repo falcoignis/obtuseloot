@@ -1,8 +1,8 @@
 # Ecology Alerts Report
 
 - Ecology State: COLLAPSED_MONOCULTURE
-- END: 1.124
-- TNT: 0.0
+- END: 1.2634
+- TNT: 0.125
 - NSER: 0.0
 - PNNC: 0
 - Regression Gate: PASS
