@@ -175,6 +175,7 @@ public class TraitScoringBenchmarkRunner {
                     d.enableCoEvolution(),
                     d.fitnessSharing(),
                     d.behavioralProjection(),
+                    d.roleBasedRepulsion(),
                     d.adaptiveNicheCapacity(),
                     mode
             );

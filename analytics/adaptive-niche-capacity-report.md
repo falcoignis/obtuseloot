@@ -1,45 +1,21 @@
 # Adaptive Niche Capacity Report
 
 - Enabled: true
-- Bounds: min=0.80, max=1.25
-- Baseline capacity: 1.00
-- Max seasonal delta: 0.05 (bounded, deterministic, conservative)
-
-## Update rule
-
-`capacityDelta = +noveltyWeight*novelty + diversityWeight*interactionDiversity + persistenceWeight*nichePersistence - overcrowdingWeight*chronicOvercrowding - stagnationWeight*prolongedDominanceWithoutNovelty`
-
-Then:
-
-`nicheCapacity = clamp(nicheCapacity + capacityDelta, minCapacity, maxCapacity)`
-
-## Positive contributors
-
-- Durable novelty signal
-- Species/interaction diversity in the niche
-- Multi-season persistence
-
-## Negative contributors
-
-- Chronic overcrowding above target occupancy
-- Prolonged dominance without novelty renewal
+- Bounds (min/max): {max=1.25, min=0.8}
+- Capacity values by niche: {niche-1=1.0521781599577322, niche-2=1.0342772964861249}
+- Capacity changes over time: {niche-1=[1.0, 1.0, 1.0311037444834963, 1.0311037444834963, 1.0521781599577322], niche-2=[1.0, 1.0, 1.0224825865981337, 1.0224825865981337, 1.0342772964861249]}
+- Positive/negative adjustment contributors (seasonal): [{season=1, nicheId=niche-1, before=1.0, after=1.0311037444834963, delta=0.031103744483496287, noveltySignal=0.9818853974121996, interactionDiversity=1.0, nichePersistence=1.0, chronicOvercrowding=1.0, prolongedDominanceWithoutNovelty=0.2784272479623213}, {season=1, nicheId=niche-2, before=1.0, after=1.0224825865981337, delta=0.022482586598133736, noveltySignal=0.32223266745005874, interactionDiversity=0.021739130434782608, nichePersistence=1.0, chronicOvercrowding=0.0, prolongedDominanceWithoutNovelty=0.2539725344687908}, {season=2, nicheId=niche-1, before=1.0311037444834963, after=1.0521781599577322, delta=0.02107441547423594, noveltySignal=0.9912264995523724, interactionDiversity=1.0, nichePersistence=0.5, chronicOvercrowding=1.0, prolongedDominanceWithoutNovelty=0.2887459837445092}, {season=2, nicheId=niche-2, before=1.0224825865981337, after=1.0342772964861249, delta=0.01179470988799114, noveltySignal=0.32223266745005874, interactionDiversity=0.021739130434782608, nichePersistence=0.5, chronicOvercrowding=0.0, prolongedDominanceWithoutNovelty=0.27690175814021195}]
 
 ## Most expanded niches
-
-- Pending next world-lab simulation output (`seasonAdjustments` with positive deltas).
+- Derived from positive seasonal deltas in `seasonAdjustments`.
 
 ## Most constrained niches
-
-- Pending next world-lab simulation output (`seasonAdjustments` with negative deltas).
+- Derived from negative seasonal deltas in `seasonAdjustments`.
 
 ## Expected ecosystem impact
-
-- Durable niches can earn modest carrying-capacity headroom.
-- Overcrowded/stagnant niches lose headroom gradually.
-- Fitness sharing remains the primary crowding mechanism; capacity is a bounded modifier.
+- Durable and diverse niches can slowly earn capacity headroom; chronically overcrowded/stagnant niches lose some room.
+- Fitness sharing remains active; niche capacity only modulates sharing load with bounded influence.
 
 ## Risk analysis
-
-- Overweight novelty can amplify short-lived noise.
-- Underweight stagnation may fail to reduce lock-in.
-- Conservative bounds and maxSeasonDelta limit instability.
+- If novelty signal is noisy, capacity can drift toward neutral; monitor PNNC/END before tightening weights.
+- Bounds and maxSeasonDelta prevent violent swings or runaway advantage.

@@ -1,0 +1,69 @@
+{
+  "count": 80,
+  "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
+  "axisMeans": {
+    "support_vs_damage": 0.41035714285714275,
+    "burst_vs_persistence": 0.4986518071978477,
+    "mobility_vs_stationary": 0.14754464285714286,
+    "environment_dependent_vs_agnostic": 0.08816964285714293,
+    "memory_driven_vs_direct_trigger": 0.8243750000000011,
+    "interaction_heavy_vs_solo": 0.6231140747236393
+  },
+  "sampledArtifacts": [{
+      "artifactSeed": -1480221578442207306,
+      "speciesId": "species-root-lineage-aa8837aa-581f-37c3-a55f-2a89a1cb6557",
+      "nicheId": "niche-1",
+      "roleVector": [D@7a8656a0
+    },{
+      "artifactSeed": -2552200507088696307,
+      "speciesId": "species-root-lineage-392bc6dd-1d93-3d98-90e3-901d6b71cfc5",
+      "nicheId": "niche-1",
+      "roleVector": [D@6b5e659f
+    },{
+      "artifactSeed": 4038235171220459446,
+      "speciesId": "species-root-lineage-e461666e-92f8-38e9-a2fc-29a6095a6587",
+      "nicheId": "niche-1",
+      "roleVector": [D@54d196b4
+    },{
+      "artifactSeed": -8070657256751363059,
+      "speciesId": "species-root-lineage-a829b380-dc89-303f-8f67-3cbc7d8f9296",
+      "nicheId": "niche-1",
+      "roleVector": [D@7521012c
+    },{
+      "artifactSeed": -8890052152826425418,
+      "speciesId": "species-root-stormbound",
+      "nicheId": "niche-1",
+      "roleVector": [D@3dda6a7e
+    },{
+      "artifactSeed": 8484712992236637197,
+      "speciesId": "species-root-lineage-be991b81-d7cd-31a9-ad67-92f56fe0d1fc",
+      "nicheId": "niche-1",
+      "roleVector": [D@25b092c7
+    },{
+      "artifactSeed": -3371595403163758666,
+      "speciesId": "species-root-stormbound",
+      "nicheId": "niche-1",
+      "roleVector": [D@7d0cd4f3
+    },{
+      "artifactSeed": 2966256242573970445,
+      "speciesId": "species-root-ashen",
+      "nicheId": "niche-1",
+      "roleVector": [D@59921f
+    }],
+  "repulsion": {
+    "enabled": true,
+    "beta": 0.15,
+    "weights": {
+      "support_vs_damage": 1.0,
+      "burst_vs_persistence": 0.9,
+      "mobility_vs_stationary": 0.85,
+      "environment_dependent_vs_agnostic": 0.8,
+      "memory_driven_vs_direct_trigger": 0.95,
+      "interaction_heavy_vs_solo": 0.85
+    },
+    "axes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
+    "dominantAxes": ["support_vs_damage","memory_driven_vs_direct_trigger","burst_vs_persistence"],
+    "averageRepulsion": 0.018653486443371368,
+    "mode": "hybrid-role-behavior"
+  }
+}

@@ -15,8 +15,8 @@
 4. Regenerate dashboard only after NSER/gauge/diagnostic artifacts are written.
 
 ## Agreement check
-- Authoritative NSER_latest: 0.0
-- ecosystem-health-gauge.json NSER_latest: 0.0
-- ecology-diagnostic-state.json NSER: 0.0
-- novel-strategy-emergence.json bySeason(last).NSER: 0.0
+- Authoritative NSER_latest: 1.0
+- ecosystem-health-gauge.json NSER_latest: 1.0
+- ecology-diagnostic-state.json NSER: 1.0
+- novel-strategy-emergence.json bySeason(last).NSER: 1.0
 - All values aligned: true

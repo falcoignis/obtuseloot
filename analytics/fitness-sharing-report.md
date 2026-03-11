@@ -6,9 +6,9 @@
 - maxPenalty: 0.15
 - targetOccupancy: 0.18
 - applied in: species persistence evaluation / world-lab survival scoring (crowding penalty layer)
-- average sharing load: 1.058400467393458
-- average sharing factor: 0.9452833457668824
-- most crowded niches: {niche-1=0.9375, unassigned=0.0625}
+- average sharing load: 1.0619537351002675
+- average sharing factor: 0.9418920940260338
+- most crowded niches: {niche-1=1.0}
 
 ## Expected ecological effects
 - dominant niches lose small bounded viability, reducing premature convergence.

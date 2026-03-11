@@ -14,9 +14,9 @@ A signature is significant when observation count >= 3, occupancy share >= 0.05,
 - NSER >= 0.50 => likely over-fragmented/noisy
 
 ## Per-season NSER
-| Season | Novel Significant | Total Significant | NSER | NSER_artifacts | NSER_species | Representative novel strategies |\n|---|---:|---:|---:|---:|---:|---|\n| 1 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n| 2 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n
+| Season | Novel Significant | Total Significant | NSER | NSER_artifacts | NSER_species | Representative novel strategies |\n|---|---:|---:|---:|---:|---:|---|\n| 1 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n| 2 | 8 | 8 | 1.0 | 1.0 | 1.0 | [ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.guardian|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.focus|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=precision|branch=precision.awakened-discipline|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=chaos|branch=chaos.sprawl|tendency=COMPETITIVE, ART|niche=niche-1|gate=(disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate)|trigger=evolution|mechanic=offense|branchRole=survival|branch=survival.shelter|tendency=COMPETITIVE] |\n
 ## NSER trend over time
-[0.0, 0.0]
+[0.0, 1.0]
 
 ## Interpretation summary
-Ecosystem is largely recycling old strategies.
+Ecosystem novelty is very high; monitor for over-fragmentation/noise.

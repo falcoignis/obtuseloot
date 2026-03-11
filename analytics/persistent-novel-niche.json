@@ -6,7 +6,7 @@
   "bySeason": [{
       "season": 1,
       "pnnc": 0,
-      "novelCandidates": 2,
+      "novelCandidates": 1,
       "persistentNovelNiches": [],
       "failedNovelCandidates": []
     },{
@@ -16,7 +16,7 @@
       "persistentNovelNiches": [],
       "failedNovelCandidates": []
     }],
-  "failedCandidates": ["niche-1(short_lived=2 seasons)","unassigned(short_lived=2 seasons)"],
+  "failedCandidates": ["niche-1(short_lived=2 seasons)"],
   "persistentExamples": [],
   "interpretation": "PNNC=0: ecosystem is generating temporary novelty but no durable novel niches."
 }

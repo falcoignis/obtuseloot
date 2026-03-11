@@ -1,21 +1,17 @@
 {
   "occupancyByNiche": {
-    "niche-1": 0.9375,
-    "unassigned": 0.0625
+    "niche-1": 1.0
   },
   "speciesFractionByNiche": {
-    "niche-1": 1.0,
-    "unassigned": 0.1
+    "niche-1": 1.0
   },
   "successFractionByNiche": {
-    "niche-1": 0.9333333333333333,
-    "unassigned": 0.06666666666666667
+    "niche-1": 1.0
   },
   "speciesPerNiche": {
-    "niche-1": 10,
-    "unassigned": 1
+    "niche-1": 46
   },
-  "penaltyActivationFrequency": 0.8359375,
+  "penaltyActivationFrequency": 0.9748263888888888,
   "overcrowdedNicheCount": 1,
   "targetOccupancy": 0.18,
   "beta": 0.4,
@@ -24,14 +20,72 @@
   "fitnessSharingAlpha": 0.1,
   "fitnessSharingMaxPenalty": 0.15,
   "fitnessSharingTargetOccupancy": 0.18,
-  "averageSharingLoad": 1.058400467393458,
-  "averageSharingFactor": 0.9452833457668824,
+  "averageSharingLoad": 1.0619537351002675,
+  "averageSharingFactor": 0.9418920940260338,
   "nicheSharingLoad": {
-    "niche-1": 97.11826984126978,
-    "unassigned": 16.130580169830168
+    "niche-1": 11784.474795943432,
+    "unassigned": 141.26564923240818
   },
   "nicheSharingFactor": {
-    "niche-1": 85.27451495869681,
-    "unassigned": 15.870803038359568
-  }
+    "niche-1": 10438.694626063954,
+    "unassigned": 138.7535898483757
+  },
+  "adaptiveNicheCapacityEnabled": true,
+  "adaptiveNicheCapacityBounds": {
+    "max": 1.25,
+    "min": 0.8
+  },
+  "nicheCapacity": {
+    "niche-1": 1.0521781599577322,
+    "niche-2": 1.0342772964861249
+  },
+  "nicheCapacityTimeline": {
+    "niche-1": [1.0,1.0,1.0311037444834963,1.0311037444834963,1.0521781599577322],
+    "niche-2": [1.0,1.0,1.0224825865981337,1.0224825865981337,1.0342772964861249]
+  },
+  "nicheCapacitySeasonAdjustments": [{
+      "season": 1,
+      "nicheId": "niche-1",
+      "before": 1.0,
+      "after": 1.0311037444834963,
+      "delta": 0.031103744483496287,
+      "noveltySignal": 0.9818853974121996,
+      "interactionDiversity": 1.0,
+      "nichePersistence": 1.0,
+      "chronicOvercrowding": 1.0,
+      "prolongedDominanceWithoutNovelty": 0.2784272479623213
+    },{
+      "season": 1,
+      "nicheId": "niche-2",
+      "before": 1.0,
+      "after": 1.0224825865981337,
+      "delta": 0.022482586598133736,
+      "noveltySignal": 0.32223266745005874,
+      "interactionDiversity": 0.021739130434782608,
+      "nichePersistence": 1.0,
+      "chronicOvercrowding": 0.0,
+      "prolongedDominanceWithoutNovelty": 0.2539725344687908
+    },{
+      "season": 2,
+      "nicheId": "niche-1",
+      "before": 1.0311037444834963,
+      "after": 1.0521781599577322,
+      "delta": 0.02107441547423594,
+      "noveltySignal": 0.9912264995523724,
+      "interactionDiversity": 1.0,
+      "nichePersistence": 0.5,
+      "chronicOvercrowding": 1.0,
+      "prolongedDominanceWithoutNovelty": 0.2887459837445092
+    },{
+      "season": 2,
+      "nicheId": "niche-2",
+      "before": 1.0224825865981337,
+      "after": 1.0342772964861249,
+      "delta": 0.01179470988799114,
+      "noveltySignal": 0.32223266745005874,
+      "interactionDiversity": 0.021739130434782608,
+      "nichePersistence": 0.5,
+      "chronicOvercrowding": 0.0,
+      "prolongedDominanceWithoutNovelty": 0.27690175814021195
+    }]
 }

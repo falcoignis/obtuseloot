@@ -1,20 +1,25 @@
 {
-  "nicheCount": 2,
+  "nicheCount": 1,
   "nicheOccupancy": {
-    "niche-1": 15,
-    "unassigned": 1
+    "niche-1": 80
   },
-  "nicheSeparationScore": 0.0,
+  "nicheSeparationScore": 0.2277409537396133,
   "nicheCollapseWarning": "warning: broad niche collapse risk detected",
   "nicheInterpretability": {
-    "niche-1": "stable niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.37"
+    "niche-1": "stable niche with dominant branch=mobility.lane, dominant family=chaos, successRate=0.98",
+    "niche-2": "stable niche with dominant branch=chaos.paradox, dominant family=survival, successRate=0.77"
   },
-  "mirrorsBranches": true,
-  "mirrorsFamilies": true,
+  "mirrorsBranches": false,
+  "mirrorsFamilies": false,
   "fragmentationWarning": "none",
   "behavioralProjectionEnabled": true,
   "traitEcologyWeight": 0.25,
   "behaviorWeight": 0.75,
   "projectionDominance": "behavior-dominated",
-  "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio"]
+  "roleBasedRepulsionEnabled": true,
+  "roleRepulsionBeta": 0.15,
+  "averageRoleRepulsion": 0.018653486443371368,
+  "roleAxes": ["support_vs_damage","burst_vs_persistence","mobility_vs_stationary","environment_dependent_vs_agnostic","memory_driven_vs_direct_trigger","interaction_heavy_vs_solo"],
+  "roleRepulsionDominance": "hybrid-role-behavior",
+  "topSeparationDimensions": ["trigger_class_activation_distribution","interaction_diversity","mechanic_usage_distribution"]
 }

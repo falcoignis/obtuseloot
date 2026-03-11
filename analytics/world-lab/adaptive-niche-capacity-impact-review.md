@@ -1,25 +1,9 @@
 # Adaptive Niche Capacity Impact Review
 
-## Validation framing
-
-This review evaluates adaptive niche capacity against the same ecology success criteria used for END/TNT/NSER/PNNC diagnostics.
-
-1. did END improve?
-2. did TNT rise into a healthy range rather than chaos?
-3. did NSER improve?
-4. did PNNC increase or show stronger growth potential?
-5. did dominant niche share decrease?
-6. did multiple niches gain enough room to stabilize?
-7. did the ecosystem move closer to healthy multi-attractor behavior?
-
-## Current status
-
-- Adaptive niche capacity is integrated in the simulation layer and fitness-sharing path.
-- Capacity bounds and per-season deltas are conservative and clamped.
-- Capacity memory uses smoothed multi-season persistence/diversity/overcrowding/stagnation signals.
-- Final impact should be read from the generated capacity distribution/timeline alongside END/TNT/NSER/PNNC trend artifacts in subsequent simulation runs.
-
-## Interpretation guidance
-
-- If END/PNNC rise while dominant niche share falls modestly, capacity adaptation is likely helping durable ecological expansion.
-- If TNT spikes with no PNNC gain, adaptation may be adding churn instead of durable novelty and weights should remain conservative.
+1. did END improve? latest END=0.0
+2. did TNT rise into healthy range rather than chaos? latest TNT=0.0
+3. did NSER improve? latest NSER=1.0
+4. did PNNC increase or show stronger growth potential? latest PNNC=0.0
+5. did dominant niche share decrease? final dominant niche share=1.0
+6. did multiple niches gain enough room to stabilize? see adaptive-niche-capacity-distribution.json nicheCapacityTimeline
+7. did ecology move toward healthy multi-attractor behavior? check ecology diagnostic + dominant share trajectory.

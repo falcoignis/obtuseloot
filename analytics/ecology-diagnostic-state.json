@@ -1,12 +1,12 @@
 {
-  "END": 1.2634,
-  "END_species": 1.3561,
-  "TNT": 0.125,
-  "NSER": 0.0,
+  "END": 1.0,
+  "END_species": 1.0,
+  "TNT": 0.0,
+  "NSER": 1.0,
   "PNNC": 0,
-  "diagnostic_state": "COLLAPSED_MONOCULTURE",
+  "diagnostic_state": "STAGNANT_ATTRACTOR",
   "confidence": 0.9,
   "warning_flags": ["stagnation"],
-  "explanation_summary": "END/TNT/NSER are all low, indicating collapse into a monoculture attractor.",
+  "explanation_summary": "Turnover is near zero with weak novelty, indicating a stagnant ecological basin.",
   "recommended_next_action": "Investigate ecological bottlenecks and validate niche detector sensitivity."
 }
