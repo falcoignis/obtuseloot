@@ -116,6 +116,13 @@ public class DashboardDataAssembler {
             out.put("topRoleVarianceAxes", parseStringList(content, "topRoleVarianceAxes"));
             out.put("nicheSeparationMode", extractString(content, "nicheSeparationSource"));
         }
+        Path opportunity = analyticsRoot.resolve("opportunity-weighted-mutation-distribution.json");
+        if (Files.exists(opportunity)) {
+            String content = Files.readString(opportunity);
+            out.put("opportunityWeightedMutationEnabled", extractBoolean(content, "enabled"));
+            out.put("opportunityMutationMaxBias", extractNumber(content, "maxBias"));
+            out.put("opportunityTopRoles", parseRoleLabels(content));
+        }
         return out;
     }
 
@@ -149,6 +156,16 @@ public class DashboardDataAssembler {
             pairs.add(pairMatcher.group(1));
         }
         return pairs;
+    }
+
+
+    private java.util.List<String> parseRoleLabels(String content) {
+        Matcher roleMatcher = Pattern.compile("\"role\"\s*:\s*\"([^\"]+)\"").matcher(content);
+        java.util.List<String> roles = new java.util.ArrayList<>();
+        while (roleMatcher.find() && roles.size() < 5) {
+            roles.add(roleMatcher.group(1));
+        }
+        return roles;
     }
 
     private java.util.List<String> parseStringList(String content, String key) {

@@ -1,0 +1,51 @@
+{
+  "enabled": true,
+  "maxBias": 0.1,
+  "weights": {
+    "occupancyWeight": 0.03,
+    "persistenceWeight": 0.02,
+    "noveltyWeight": 0.02,
+    "capacityWeight": 0.02,
+    "interactionWeight": 0.01
+  },
+  "formula": "score=occScarcity*wOcc + persistScarcity*wPersist + noveltyScarcity*wNovelty + capacityScarcity*wCapacity + interactionScarcity*wInteraction",
+  "bounds": {
+    "scoreMin": 0.0,
+    "scoreMax": 0.1,
+    "mutationBiasMin": 1.0,
+    "mutationBiasMax": 1.1,
+    "latentBiasMin": 1.0,
+    "latentBiasMax": 1.06
+  },
+  "exampleRoles": [
+    {
+      "role": "niche-2",
+      "occupancyScarcity": 0.82,
+      "persistenceScarcity": 0.55,
+      "noveltyScarcity": 0.64,
+      "capacityScarcity": 0.48,
+      "interactionScarcity": 0.51,
+      "score": 0.0642,
+      "normalized": 0.642,
+      "mutationBias": 1.0642,
+      "latentBias": 1.0385
+    },
+    {
+      "role": "niche-3",
+      "occupancyScarcity": 0.79,
+      "persistenceScarcity": 0.58,
+      "noveltyScarcity": 0.69,
+      "capacityScarcity": 0.44,
+      "interactionScarcity": 0.47,
+      "score": 0.0637,
+      "normalized": 0.637,
+      "mutationBias": 1.0637,
+      "latentBias": 1.0382
+    }
+  ],
+  "riskAnalysis": [
+    "Soft bounded tilt only; no hard role exclusion.",
+    "Pressure cap prevents thrash and preserves dominant-role viability.",
+    "Signals are deterministic from seasonal ecology snapshots."
+  ]
+}
