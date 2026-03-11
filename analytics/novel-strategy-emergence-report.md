@@ -14,9 +14,9 @@ A signature is significant when observation count >= 3, occupancy share >= 0.05,
 - NSER >= 0.50 => likely over-fragmented/noisy
 
 ## Per-season NSER
-| Season | Novel Significant | Total Significant | NSER | NSER_artifacts | NSER_species | Representative novel strategies |\n|---|---:|---:|---:|---:|---:|---|\n| 1 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n
+| Season | Novel Significant | Total Significant | NSER | NSER_artifacts | NSER_species | Representative novel strategies |\n|---|---:|---:|---:|---:|---:|---|\n| 1 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n| 2 | 0 | 0 | 0.0 | 0.0 | 0.0 | [] |\n
 ## NSER trend over time
-[0.0]
+[0.0, 0.0]
 
 ## Interpretation summary
 Ecosystem is largely recycling old strategies.

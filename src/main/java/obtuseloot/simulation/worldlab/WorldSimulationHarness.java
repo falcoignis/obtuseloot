@@ -356,22 +356,26 @@ public class WorldSimulationHarness {
                 Path.of("analytics/visualizations/trait-interaction-matrix.json")
         );
         new TraitInteractionReportWriter().write(Path.of("analytics/trait-interaction-report.md"), matrix);
+        Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
+        Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
+        Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
+        NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
+        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, cleanupResult, nserResult);
+        PersistentNovelNicheAnalyzer.PnncResult pnncResult = writePersistentNovelNicheReports(seasonalSnapshots);
+        writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
+        writeTraitFieldLatentReports(nserResult);
+        writeEcologicalMemoryImpactReview(nserResult);
+        writeTraitProjectionPerformanceReport();
+
+        writeNserConsistencyAudit(nserResult);
+
         DashboardService dashboardService = new DashboardService(Path.of("analytics"));
         dashboardService.regenerateDashboard();
         dashboardService.generateSeasonDashboard(1);
         dashboardService.generateSeasonDashboard(2);
         dashboardService.generateSeasonDashboard(3);
 
-        Files.writeString(Path.of("analytics/lineage-report.md"), builder.lineageEvolutionMarkdown(data));
-        Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
-        Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
-        writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, cleanupResult);
-        NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
-        PersistentNovelNicheAnalyzer.PnncResult pnncResult = writePersistentNovelNicheReports(seasonalSnapshots);
-        writeEcosystemHealthGauge(seasonalSnapshots, nserResult, pnncResult);
-        writeTraitFieldLatentReports(nserResult);
-        writeEcologicalMemoryImpactReview(nserResult);
-        writeTraitProjectionPerformanceReport();
+        writeWorldLabNserReconciliationReview(nserResult);
     }
 
     private void writeTraitFieldLatentReports(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
@@ -641,7 +645,8 @@ public class WorldSimulationHarness {
     private void writeFitnessSharingReports(Path analytics,
                                            Path worldLab,
                                            Map<String, Object> speciationSummary,
-                                           Map<String, Object> crowdingDistribution) throws IOException {
+                                           Map<String, Object> crowdingDistribution,
+                                           NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
         Map<String, Object> distribution = new LinkedHashMap<>();
         distribution.put("model", crowdingDistribution.getOrDefault("fitnessSharingMode", "niche"));
         distribution.put("enabled", crowdingDistribution.getOrDefault("fitnessSharingEnabled", false));
@@ -679,7 +684,7 @@ public class WorldSimulationHarness {
         double dominantShare = extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare");
         double end = extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact");
         double tnt = extractLastSeasonDouble(seasonalSnapshots, "turnoverRate");
-        double nser = extractLastSeasonDouble(seasonalSnapshots, "noveltyRate");
+        double nser = latestNser(nserResult);
         String impact = "# Fitness Sharing Impact Review\n\n"
                 + "1. did dominant niche share decrease? dominantShare(final)=" + dominantShare + " and occupancy=" + crowdingDistribution.get("occupancyByNiche") + ".\n"
                 + "2. did underrepresented niches survive longer? speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n"
@@ -698,6 +703,116 @@ public class WorldSimulationHarness {
         }
         Object value = snapshots.get(snapshots.size() - 1).get(key);
         return value instanceof Number number ? number.doubleValue() : 0.0D;
+    }
+
+    private double latestNser(NovelStrategyEmergenceAnalyzer.NserResult nserResult) {
+        if (nserResult == null || nserResult.trend().isEmpty()) {
+            return 0.0D;
+        }
+        return nserResult.trend().get(nserResult.trend().size() - 1);
+    }
+
+    private void writeNserConsistencyAudit(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Path analytics = Path.of("analytics");
+        Files.createDirectories(analytics);
+        double authoritativeLatest = latestNser(nserResult);
+
+        double nserFromGauge = extractDoubleFromFile(analytics.resolve("ecosystem-health-gauge.json"), "NSER_latest");
+        double nserFromDiagnostic = extractDoubleFromFile(analytics.resolve("ecology-diagnostic-state.json"), "NSER");
+        double nserFromNoveltyJson = extractLastNserFromBySeason(analytics.resolve("novel-strategy-emergence.json"));
+
+        String content = "# NSER Consistency Audit\n\n"
+                + "## Previous inconsistency found\n"
+                + "- Several world-lab/open-endedness reviews used `seasonalSnapshots[*].noveltyRate` while canonical NSER analytics used `NovelStrategyEmergenceAnalyzer`, producing conflicting NSER_latest and trend references.\n"
+                + "- Dashboard generation also occurred before NSER-dependent analytics were rewritten, which could expose stale NSER values.\n\n"
+                + "## Root cause\n"
+                + "- Two parallel novelty pipelines were mixed in reporting: legacy `noveltyRate` snapshot fields and NSER analyzer outputs.\n"
+                + "- Report generation order allowed dashboard/diagnostic surfaces to be regenerated before final NSER artifacts were stabilized.\n\n"
+                + "## Corrected NSER pipeline\n"
+                + "1. Compute NSER once via `NovelStrategyEmergenceAnalyzer.analyze(seasonalSnapshots)`.\n"
+                + "2. Treat `nserResult.trend()` and its latest value as authoritative for all analytics/reporting layers.\n"
+                + "3. Feed same NSER into ecosystem gauge, ecology diagnostic, world-lab reviews, open-endedness reviews, and dashboard regeneration.\n"
+                + "4. Regenerate dashboard only after NSER/gauge/diagnostic artifacts are written.\n\n"
+                + "## Agreement check\n"
+                + "- Authoritative NSER_latest: " + authoritativeLatest + "\n"
+                + "- ecosystem-health-gauge.json NSER_latest: " + nserFromGauge + "\n"
+                + "- ecology-diagnostic-state.json NSER: " + nserFromDiagnostic + "\n"
+                + "- novel-strategy-emergence.json bySeason(last).NSER: " + nserFromNoveltyJson + "\n"
+                + "- All values aligned: " + (approximatelyEqual(authoritativeLatest, nserFromGauge)
+                && approximatelyEqual(authoritativeLatest, nserFromDiagnostic)
+                && approximatelyEqual(authoritativeLatest, nserFromNoveltyJson)) + "\n";
+        Files.writeString(analytics.resolve("nser-consistency-audit.md"), content);
+    }
+
+    private void writeWorldLabNserReconciliationReview(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Path review = Path.of("analytics/world-lab/nser-reconciliation-review.md");
+        Files.createDirectories(review.getParent());
+
+        double authoritativeLatest = latestNser(nserResult);
+        double gaugeLatest = extractDoubleFromFile(Path.of("analytics/ecosystem-health-gauge.json"), "NSER_latest");
+        double diagnosticLatest = extractDoubleFromFile(Path.of("analytics/ecology-diagnostic-state.json"), "NSER");
+        double trendTail = nserResult.trend().isEmpty() ? 0.0D : nserResult.trend().get(nserResult.trend().size() - 1);
+        double dashboardNser = extractDashboardNser(Path.of("analytics/dashboard/ecosystem-dashboard.html"));
+
+        String content = "# NSER Reconciliation Review (World-Lab)\n\n"
+                + "## Validation\n"
+                + "- NSER_latest (authoritative): " + authoritativeLatest + "\n"
+                + "- NSER trend tail: " + trendTail + "\n"
+                + "- ecosystem-health-gauge.json NSER_latest: " + gaugeLatest + "\n"
+                + "- ecology-diagnostic-state.json NSER: " + diagnosticLatest + "\n"
+                + "- dashboard NSER: " + dashboardNser + "\n\n"
+                + "## Reconciliation result\n"
+                + "- NSER_latest matches seasonal trend data: " + approximatelyEqual(authoritativeLatest, trendTail) + "\n"
+                + "- Analytics files report identical NSER: " + (approximatelyEqual(authoritativeLatest, gaugeLatest)
+                && approximatelyEqual(authoritativeLatest, diagnosticLatest)) + "\n"
+                + "- Dashboard and diagnostic layers agree: " + approximatelyEqual(dashboardNser, diagnosticLatest) + "\n";
+
+        Files.writeString(review, content);
+    }
+
+    private double extractDashboardNser(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return 0.0D;
+        }
+        String content = Files.readString(path);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("NSER=([0-9]+\\.[0-9]+)").matcher(content);
+        if (matcher.find()) {
+            return Double.parseDouble(matcher.group(1));
+        }
+        java.util.regex.Matcher blockMatcher = java.util.regex.Pattern.compile("Novel Strategy Emergence Rate \\(NSER\\)</div><b>([0-9]+\\.[0-9]+)</b>").matcher(content);
+        if (blockMatcher.find()) {
+            return Double.parseDouble(blockMatcher.group(1));
+        }
+        return 0.0D;
+    }
+
+    private double extractLastNserFromBySeason(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return 0.0D;
+        }
+        String content = Files.readString(path);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"NSER\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)").matcher(content);
+        double last = 0.0D;
+        while (matcher.find()) {
+            last = Double.parseDouble(matcher.group(1));
+        }
+        return last;
+    }
+
+    private double extractDoubleFromFile(Path path, String key) throws IOException {
+        if (!Files.exists(path)) {
+            return 0.0D;
+        }
+        String content = Files.readString(path);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"" + java.util.regex.Pattern.quote(key) + "\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)").matcher(content);
+        if (matcher.find()) {
+            return Double.parseDouble(matcher.group(1));
+        }
+        return 0.0D;
+    }
+
+    private boolean approximatelyEqual(double a, double b) {
+        return Math.abs(a - b) < 0.0001D;
     }
 
     @SuppressWarnings("unchecked")
@@ -1208,7 +1323,8 @@ public class WorldSimulationHarness {
                                              Map<String, Object> nicheQualityDiagnostics,
                                              Map<String, Object> nicheStabilityMetrics,
                                              Map<String, Object> nichePrototypeDistribution,
-                                             SpeciesNicheAnalyticsEngine.SpeciesCleanupResult cleanupResult) throws IOException {
+                                             SpeciesNicheAnalyticsEngine.SpeciesCleanupResult cleanupResult,
+                                             NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
         Path analytics = Path.of("analytics");
         Path worldLab = analytics.resolve("world-lab");
         Path openEnded = worldLab.resolve("open-endedness");
@@ -1251,7 +1367,7 @@ public class WorldSimulationHarness {
                 + "- Expected ecological impact: small dampening to dominant niches without suppressing underrepresented roles.\n"
                 + "- Risk analysis: bounded penalties (<=1.15x) reduce monoculture risk while preserving local adaptation pressure.\n";
         Files.writeString(analytics.resolve("niche-crowding-report.md"), crowdingReport);
-        writeFitnessSharingReports(analytics, worldLab, speciationSummary, crowdingDistribution);
+        writeFitnessSharingReports(analytics, worldLab, speciationSummary, crowdingDistribution, nserResult);
 
         String nicheQualityReport = "# Niche Detection Quality Report\n\n"
                 + "- Niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"
@@ -1337,7 +1453,7 @@ public class WorldSimulationHarness {
                 + dominantShare(toIntegerMap((Map<?, ?>) nicheQualityDiagnostics.getOrDefault("nicheOccupancy", Map.of()))) + ").\n"
                 + "2. did END improve? latest END=" + extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") + ".\n"
                 + "3. did TNT rise above zero in a healthy range? latest TNT=" + extractLastSeasonDouble(seasonalSnapshots, "turnoverRate") + ".\n"
-                + "4. did NSER increase? latest NSER=" + extractLastSeasonDouble(seasonalSnapshots, "noveltyRate") + ".\n"
+                + "4. did NSER increase? latest NSER=" + latestNser(nserResult) + ".\n"
                 + "5. did PNNC improve or show stronger growth potential? latest PNNC=" + extractLastSeasonDouble(seasonalSnapshots, "pnnc") + ".\n"
                 + "6. did speciation become more ecologically meaningful? speciesPerNiche=" + speciesNicheMap.get("competingSpeciesPerNiche") + ".\n"
                 + "7. did co-evolution become more contextual? pressure=" + coEvolutionRelationships.get("averageCompetitionPressure")
@@ -1361,7 +1477,7 @@ public class WorldSimulationHarness {
                 + "- Repaired niche model captures strategy differences: top dimensions=" + projectionSummary.get("topSeparationDimensions") + "\n"
                 + "- END/TNT/NSER/PNNC latest: " + extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact") + "/"
                 + extractLastSeasonDouble(seasonalSnapshots, "turnoverRate") + "/"
-                + extractLastSeasonDouble(seasonalSnapshots, "noveltyRate") + "/"
+                + latestNser(nserResult) + "/"
                 + extractLastSeasonDouble(seasonalSnapshots, "pnnc") + "\n";
         Files.writeString(openEnded.resolve("behavioral-signature-open-endedness-review.md"), behavioralOpenEndednessReview);
 

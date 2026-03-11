@@ -1,21 +1,20 @@
 {
   "nicheCount": 2,
   "nicheOccupancy": {
-    "niche-1": 39,
-    "niche-2": 1
+    "niche-1": 15,
+    "unassigned": 1
   },
-  "nicheSeparationScore": 0.21970789144408046,
+  "nicheSeparationScore": 0.0,
   "nicheCollapseWarning": "warning: broad niche collapse risk detected",
   "nicheInterpretability": {
-    "niche-1": "stable niche with dominant branch=chaos.sprawl, dominant family=survival, successRate=0.71",
-    "niche-2": "emergent niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.95"
+    "niche-1": "stable niche with dominant branch=chaos.sprawl, dominant family=chaos, successRate=0.37"
   },
   "mirrorsBranches": true,
-  "mirrorsFamilies": false,
+  "mirrorsFamilies": true,
   "fragmentationWarning": "none",
   "behavioralProjectionEnabled": true,
   "traitEcologyWeight": 0.25,
   "behaviorWeight": 0.75,
   "projectionDominance": "behavior-dominated",
-  "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","interaction_diversity"]
+  "topSeparationDimensions": ["trigger_class_activation_distribution","mechanic_usage_distribution","support_action_ratio"]
 }

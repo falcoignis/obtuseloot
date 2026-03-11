@@ -1,14 +1,14 @@
 # Ecosystem Health Gauge
 
-- END_artifacts: 1.124
-- END_species: 1.1716
-- TNT per season: []
-- NSER trend: [0.0]
-- PNNC trend: [0]
+- END_artifacts: 1.2634
+- END_species: 1.3561
+- TNT per season: [season-1→2:0.125]
+- NSER trend: [0.0, 0.0]
+- PNNC trend: [0, 0]
 - PNNC current: 0
-- PNNC trend: [0]
-- END trend: [1.124]
-- TNT trend: []
+- PNNC trend: [0, 0]
+- END trend: [1.6202, 1.2634]
+- TNT trend: [0.125]
 - ecosystem status: STAGNANT
 
 ## Interpretation

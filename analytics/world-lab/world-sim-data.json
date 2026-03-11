@@ -1,493 +1,493 @@
 {
   "artifact": {
-    "seed_distribution": {
-      "137": 40,
-      "826": 40
-    },
-    "awakening_rates": {
-      "dormant": 66,
-      "Stormblade": 4,
-      "Executioner's Oath": 4,
-      "Tempest Stride": 6
-    },
-    "memory_profile_summaries": {
-      "fusion": 1,
-      "awakening": 14,
-      "multikill_chain": 80,
-      "first_boss_kill": 76,
-      "chaos_rampage": 53,
-      "low_health_survival": 72
-    },
-    "evolution_stage_distribution": {
-      "deadeye-mythic": 2,
-      "deadeye-void-hybrid": 1,
-      "warden-tempered": 2,
-      "ravager-void-hybrid": 1,
-      "strider-awakened-hybrid": 5,
-      "vanguard-tempered": 4,
-      "strider-equilibrium-hybrid": 5,
-      "harbinger-tempered": 1,
-      "fused-bloodstorm": 1,
-      "deadeye-tempered": 9,
-      "ravager-formed": 1,
-      "strider-tempest-hybrid": 2,
-      "deadeye-awakened-hybrid": 3,
-      "ravager-awakened-hybrid": 2,
-      "ravager-mythic": 6,
-      "ravager-tempered": 6,
-      "strider-tempered": 9,
-      "vanguard-mythic": 2,
-      "deadeye-equilibrium-hybrid": 5,
-      "strider-mythic": 5,
-      "warden-mythic": 1,
-      "ravager-tempest-hybrid": 1,
-      "vanguard-tempest-hybrid": 3,
-      "vanguard-equilibrium-hybrid": 3
+    "mutation_counts": {
+      "0": 18,
+      "1": 12,
+      "2": 18,
+      "3": 13,
+      "4": 3
     },
     "drift_alignment_distribution": {
-      "tempest": 13,
-      "ascetic": 23,
+      "tempest": 14,
+      "ascetic": 32,
       "hollow": 2,
-      "paradox": 6,
-      "volatile": 8,
-      "predatory": 28
+      "paradox": 5,
+      "volatile": 9,
+      "predatory": 2
     },
-    "mutation_counts": {
-      "1": 10,
-      "2": 16,
-      "3": 29,
-      "4": 14,
-      "5": 6,
-      "6": 3,
-      "7": 2
+    "evolution_stage_distribution": {
+      "strider-formed": 8,
+      "warden-tempered": 2,
+      "vanguard-tempered": 2,
+      "harbinger-tempered": 2,
+      "ravager-formed": 1,
+      "deadeye-tempered": 7,
+      "ravager-tempered": 2,
+      "strider-tempered": 11,
+      "warden-formed": 2,
+      "harbinger-formed": 3,
+      "strider-mythic": 7,
+      "deadeye-formed": 5,
+      "harbinger-mythic": 1,
+      "vanguard-formed": 2,
+      "base": 9
     },
-    "branch_path_distribution": {
-      "chaos.paradox": 13,
-      "brutality.quarry": 6,
-      "precision.clock": 8,
-      "mobility.relay": 5,
-      "survival.guardian": 7,
-      "precision.awakened-variant": 1,
-      "consistency.boss-ledger": 1,
-      "precision.focus": 4,
-      "precision.awakened-discipline": 2,
-      "chaos.awakened-entropy": 3,
-      "chaos.sprawl": 18,
-      "survival.shelter": 7,
-      "survival.awakened-variant": 2,
-      "mobility.lane-dancer": 2,
-      "mobility.awakened-variant": 1
+    "memory_profile_summaries": {
+      "multikill_chain": 60,
+      "first_boss_kill": 36,
+      "chaos_rampage": 36,
+      "low_health_survival": 32
     },
-    "fusion_rates": {
-      "none": 79,
-      "bloodstorm": 1
+    "awakening_rates": {
+      "dormant": 64
+    },
+    "seed_distribution": {
+      "137": 32,
+      "826": 32
     },
     "archetype_distribution": {
-      "ravager": 18,
-      "deadeye": 20,
-      "warden": 3,
-      "vanguard": 12,
-      "harbinger": 1,
+      "ravager": 3,
+      "deadeye": 12,
+      "warden": 4,
+      "unformed": 9,
+      "vanguard": 4,
+      "harbinger": 6,
       "strider": 26
+    },
+    "fusion_rates": {
+      "none": 64
+    },
+    "branch_path_distribution": {
+      "chaos.paradox": 16,
+      "chaos.sprawl": 17,
+      "brutality.quarry": 6,
+      "precision.clock": 4,
+      "survival.guardian": 4,
+      "mobility.relay": 5,
+      "survival.shelter": 1,
+      "consistency.discipline": 3,
+      "consistency.anchor": 2,
+      "consistency.boss-ledger": 1,
+      "precision.focus": 3,
+      "mobility.lane-dancer": 2
     }
   },
   "ability": {
     "family_distribution": {
-      "mobility": 105,
-      "chaos": 344,
-      "survival": 287,
-      "precision": 161,
-      "brutality": 64,
-      "consistency": 80
+      "mobility": 22,
+      "chaos": 103,
+      "survival": 19,
+      "precision": 34,
+      "brutality": 16,
+      "consistency": 20
     },
     "trigger_distribution": {
-      "on_movement": 4,
-      "on_chain_combat": 159,
-      "on_drift_mutation": 97,
-      "on_memory_event": 95,
-      "on_awakening": 56,
-      "on_reposition": 65,
-      "on_fusion": 159,
-      "on_hit": 48,
-      "on_boss_kill": 50,
-      "on_kill": 10,
-      "on_low_health": 217,
-      "on_multi_kill": 81
+      "on_movement": 3,
+      "on_chain_combat": 39,
+      "on_drift_mutation": 30,
+      "on_awakening": 5,
+      "on_memory_event": 16,
+      "on_reposition": 18,
+      "on_fusion": 43,
+      "on_hit": 17,
+      "on_boss_kill": 8,
+      "on_kill": 4,
+      "on_low_health": 19,
+      "on_multi_kill": 12
     },
     "mechanic_distribution": {
-      "battlefield_field": 25,
-      "defensive_threshold": 53,
-      "chain_escalation": 131,
-      "burst_state": 53,
-      "recovery_window": 135,
-      "revenant_trigger": 137,
-      "unstable_detonation": 188,
-      "pulse": 28,
-      "memory_echo": 55,
-      "movement_echo": 51,
-      "mark": 64,
-      "guardian_pulse": 121
+      "battlefield_field": 4,
+      "defensive_threshold": 9,
+      "chain_escalation": 17,
+      "recovery_window": 13,
+      "burst_state": 13,
+      "revenant_trigger": 41,
+      "unstable_detonation": 58,
+      "pulse": 10,
+      "memory_echo": 10,
+      "movement_echo": 13,
+      "mark": 20,
+      "guardian_pulse": 6
     },
     "regulatory_profile_distribution": {
-      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 1,
-      "[lineageMilestoneGate+volatilityGate]": 1,
-      "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 2,
+      "[lineageMilestoneGate+volatilityGate]": 2,
       "[disciplineGate+lineageMilestoneGate]": 1,
-      "[lineageMilestoneGate]": 16,
-      "[disciplineGate+environmentGate+lineageMilestoneGate+survivalGate]": 1,
-      "[disciplineGate+lineageMilestoneGate+memoryGate+survivalGate]": 1,
+      "[lineageMilestoneGate]": 19,
+      "[]": 16,
+      "[disciplineGate+lineageMilestoneGate+resonanceGate+survivalGate]": 1,
+      "[disciplineGate+lineageMilestoneGate+survivalGate]": 1,
       "[environmentGate+lineageMilestoneGate]": 4,
-      "[lineageMilestoneGate+memoryGate]": 1,
-      "[disciplineGate+environmentGate+lineageMilestoneGate+resonanceGate+survivalGate]": 1,
+      "[environmentGate]": 1,
+      "[disciplineGate+lineageMilestoneGate+resonanceGate]": 2,
+      "[disciplineGate+environmentGate+lineageMilestoneGate]": 1,
+      "[lineageMilestoneGate+memoryGate+survivalGate+volatilityGate]": 1,
       "[lineageMilestoneGate+survivalGate+volatilityGate]": 1,
-      "[environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 1,
-      "[lineageMilestoneGate+survivalGate]": 12,
-      "[environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 2,
-      "[environmentGate+lineageMilestoneGate+memoryGate+resonanceGate]": 1,
-      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate]": 1,
-      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 4,
-      "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 2,
-      "[disciplineGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 2,
-      "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 5,
-      "[environmentGate+lineageMilestoneGate+survivalGate]": 3,
-      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+survivalGate+volatilityGate]": 2,
+      "[lineageMilestoneGate+survivalGate]": 7,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 1,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 1,
+      "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 2,
+      "[environmentGate+lineageMilestoneGate+survivalGate]": 1,
       "[disciplineGate+environmentGate+lineageMilestoneGate+resonanceGate]": 1,
-      "[lineageMilestoneGate+memoryGate+survivalGate]": 14
+      "[lineageMilestoneGate+mobilityGate+survivalGate+volatilityGate]": 1
     },
     "open_gate_distribution": {
-      "mobilityGate": 10,
-      "memoryGate": 39,
-      "resonanceGate": 6,
-      "lineageMilestoneGate": 80,
-      "volatilityGate": 11,
-      "disciplineGate": 17,
-      "environmentGate": 22,
-      "survivalGate": 54
+      "mobilityGate": 4,
+      "memoryGate": 5,
+      "resonanceGate": 5,
+      "lineageMilestoneGate": 47,
+      "volatilityGate": 8,
+      "disciplineGate": 9,
+      "environmentGate": 8,
+      "survivalGate": 17
     },
     "gate_candidate_pool_distribution": {
-      "24->1": 17,
-      "24->12": 2,
-      "24->23": 2,
-      "24->13": 1,
+      "24->1": 20,
+      "24->12": 1,
+      "24->23": 1,
+      "24->13": 2,
+      "24->24": 16,
       "24->14": 2,
-      "24->15": 1,
-      "24->20": 2,
-      "24->10": 1,
-      "24->11": 3,
+      "24->10": 3,
       "24->3": 4,
-      "24->4": 12,
-      "24->6": 18,
-      "24->16": 9,
-      "24->7": 1,
-      "24->17": 1,
-      "24->9": 4
+      "24->4": 7,
+      "24->6": 2,
+      "24->16": 2,
+      "24->7": 2,
+      "24->8": 1,
+      "24->9": 1
     },
-    "branch_diversity": 2.3689397411648017,
-    "memory_driven_ability_frequency": 95,
+    "branch_diversity": 2.0998454251481316,
+    "memory_driven_ability_frequency": 16,
     "interference_effect_distribution": {
-      "mechanic×environment=0.040": 3,
-      "memory×mechanic=-0.060": 3,
+      "mechanic×environment=-0.038": 2,
+      "memory×mechanic=-0.060": 2,
+      "mechanic×environment=-0.035": 1,
+      "branch tendency×environment affinity=-0.037": 1,
       "trigger×mechanic=0.080": 7,
-      "branch tendency×environment affinity=0.045": 3,
-      "branch tendency×environment affinity=0.035": 1,
-      "branch tendency×environment affinity=0.044": 1,
-      "trigger×mechanic=0.100": 4,
-      "gate×trigger=-0.050": 7
+      "branch tendency×environment affinity=0.045": 1,
+      "branch tendency×environment affinity=-0.042": 1,
+      "mechanic×environment=0.036": 1,
+      "branch tendency×environment affinity=0.039": 1,
+      "trigger×mechanic=0.100": 2,
+      "gate×trigger=0.047": 1,
+      "branch tendency×environment affinity=-0.039": 1,
+      "mechanic×environment=-0.039": 1
     },
-    "latent_activation_rate": 0.19305555555555556,
-    "latent_activation_examples": ["[STABILITY]","[PRECISION_AFFINITY, VOLATILITY, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY]","[PRECISION_AFFINITY, VOLATILITY, MUTATION_SENSITIVITY]","[SURVIVAL_INSTINCT]","[PRECISION_AFFINITY]","[PRECISION_AFFINITY, STABILITY, RESONANCE, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY, CHAOS_AFFINITY, MOBILITY_AFFINITY, STABILITY, VOLATILITY, KINETIC_BIAS, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY, SURVIVAL_INSTINCT, STABILITY]","[VOLATILITY]","[PRECISION_AFFINITY, CHAOS_AFFINITY, MOBILITY_AFFINITY, STABILITY, RESONANCE, MUTATION_SENSITIVITY]","[MOBILITY_AFFINITY, SURVIVAL_INSTINCT, STABILITY, VOLATILITY, RESONANCE]"]
+    "latent_activation_rate": 0.022569444444444444,
+    "latent_activation_examples": ["[STABILITY]","[PRECISION_AFFINITY, STABILITY, RESONANCE, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY, STABILITY, VOLATILITY, MUTATION_SENSITIVITY]","[STABILITY]","[VOLATILITY, RESONANCE, MUTATION_SENSITIVITY]"]
   },
   "player": {
-    "kill_chain_rate": 1.0,
-    "low_health_survival_rate": 0.8142857142857143,
-    "boss_engagement_rate": 0.925,
-    "playstyle_cluster_distribution": {
-      "disciplined": 6,
-      "aggressive-chaotic": 7,
-      "balanced": 2,
-      "survivor": 5
-    },
     "session_length_distribution": {
       "short": 8,
-      "medium": 48,
-      "long": 24
-    }
+      "medium": 24,
+      "long": 32
+    },
+    "playstyle_cluster_distribution": {
+      "disciplined": 3,
+      "aggressive-chaotic": 1,
+      "balanced": 2,
+      "survivor": 2
+    },
+    "boss_engagement_rate": 0.40625,
+    "low_health_survival_rate": 0.6923076923076923,
+    "kill_chain_rate": 0.53125
   },
   "lineage": {
-    "lineage_depth_distribution": {
-      "wild-4233": 10,
-      "gilded": 6,
-      "lineage-cd40524b-b534-3733-bf57-e54661e9fe25": 2,
-      "lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": 2,
-      "lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": 2,
-      "lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": 2,
-      "mirrored": 2,
-      "lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": 2,
-      "lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": 2,
-      "lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": 2,
-      "lineage-13246865-524e-30fe-b15f-0e836fb3756a": 2,
-      "ashen": 8,
-      "lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": 2,
-      "lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": 2,
-      "wild-35642": 6,
-      "lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": 2,
-      "lineage-8c765107-856c-3879-a914-08c4c40e8684": 2,
-      "lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": 2,
-      "graveborn": 8,
-      "lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": 2,
-      "lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": 2,
-      "lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": 2,
-      "lineage-78621b02-9635-3285-a88c-048c91ea3001": 2,
-      "lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": 2,
-      "lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": 2,
-      "lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": 2
-    },
-    "lineage_count": 26,
     "lineage_extinction_rate": 0.0,
+    "lineage_count": 10,
+    "lineage_depth_distribution": {
+      "wild-4233": 8,
+      "lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 4,
+      "ashen": 4,
+      "lineage-1a81e247-43ce-3776-bf69-081eba576d11": 4,
+      "lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 4,
+      "lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 4,
+      "lineage-5c96af8e-948c-3d88-b875-5636d1712192": 4,
+      "lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 4,
+      "graveborn": 16,
+      "wild-35642": 12
+    },
     "lineage_distribution": {
-      "wild-4233": 10,
-      "gilded": 6,
-      "lineage-cd40524b-b534-3733-bf57-e54661e9fe25": 2,
-      "lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": 2,
-      "lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": 2,
-      "lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": 2,
-      "mirrored": 2,
-      "lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": 2,
-      "lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": 2,
-      "lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": 2,
-      "lineage-13246865-524e-30fe-b15f-0e836fb3756a": 2,
-      "ashen": 8,
-      "lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": 2,
-      "lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": 2,
-      "wild-35642": 6,
-      "lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": 2,
-      "lineage-8c765107-856c-3879-a914-08c4c40e8684": 2,
-      "lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": 2,
-      "graveborn": 8,
-      "lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": 2,
-      "lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": 2,
-      "lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": 2,
-      "lineage-78621b02-9635-3285-a88c-048c91ea3001": 2,
-      "lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": 2,
-      "lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": 2,
-      "lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": 2
+      "wild-4233": 8,
+      "lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 4,
+      "ashen": 4,
+      "lineage-1a81e247-43ce-3776-bf69-081eba576d11": 4,
+      "lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 4,
+      "lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 4,
+      "lineage-5c96af8e-948c-3d88-b875-5636d1712192": 4,
+      "lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 4,
+      "graveborn": 16,
+      "wild-35642": 12
     }
   },
   "world": {
-    "late_season_meta_concentration": 0.33045148895292986,
-    "long_run_awakening_adoption": 0.175,
-    "long_run_fusion_adoption": 0.0125,
-    "diversity_index_over_time": [3.97878390517129],
-    "dominant_family_rate": 0.33045148895292986,
-    "branch_convergence_rate": 0.4077650647087996,
-    "dead_branch_rate": 0.2
+    "branch_convergence_rate": 0.4750386437129671,
+    "dominant_family_rate": 0.48130841121495327,
+    "diversity_index_over_time": [3.0715361596146096,3.608360303583237],
+    "long_run_fusion_adoption": 0.0,
+    "long_run_awakening_adoption": 0.0,
+    "late_season_meta_concentration": 0.48130841121495327,
+    "dead_branch_rate": 0.16666666666666666
   },
   "seasonal_snapshots": [{
       "season": 1,
       "families": {
-        "mobility": 21,
-        "chaos": 16,
-        "survival": 34,
-        "precision": 19,
-        "brutality": 2,
-        "consistency": 8
+        "mobility": 4,
+        "chaos": 15,
+        "precision": 2,
+        "brutality": 4,
+        "consistency": 2
       },
       "triggers": {
         "on_movement": 1,
         "on_drift_mutation": 4,
-        "on_chain_combat": 13,
-        "on_awakening": 5,
-        "on_memory_event": 16,
-        "on_reposition": 11,
-        "on_fusion": 6,
-        "on_hit": 4,
+        "on_chain_combat": 6,
+        "on_reposition": 1,
+        "on_memory_event": 1,
+        "on_fusion": 7,
+        "on_hit": 1,
         "on_boss_kill": 2,
-        "on_low_health": 29,
-        "on_multi_kill": 9
+        "on_kill": 1,
+        "on_low_health": 2,
+        "on_multi_kill": 1
       },
       "mechanics": {
-        "battlefield_field": 2,
-        "defensive_threshold": 5,
-        "chain_escalation": 15,
-        "burst_state": 2,
-        "recovery_window": 15,
-        "revenant_trigger": 8,
-        "unstable_detonation": 6,
-        "pulse": 5,
-        "memory_echo": 9,
-        "movement_echo": 8,
-        "mark": 8,
-        "guardian_pulse": 17
+        "chain_escalation": 1,
+        "recovery_window": 2,
+        "burst_state": 4,
+        "revenant_trigger": 6,
+        "unstable_detonation": 9,
+        "pulse": 1,
+        "memory_echo": 1,
+        "movement_echo": 2,
+        "mark": 1
       },
       "branches": {
-        "chaos.paradox": 4,
-        "brutality.quarry": 1,
-        "precision.clock": 6,
-        "survival.guardian": 5,
-        "mobility.relay": 4,
-        "precision.awakened-variant": 1,
-        "consistency.boss-ledger": 1,
-        "precision.focus": 3,
-        "precision.awakened-discipline": 2,
-        "chaos.awakened-entropy": 3,
-        "chaos.sprawl": 4,
-        "survival.shelter": 1,
-        "survival.awakened-variant": 2,
-        "mobility.lane-dancer": 2,
-        "mobility.awakened-variant": 1
+        "chaos.paradox": 6,
+        "chaos.sprawl": 3,
+        "brutality.quarry": 3,
+        "precision.clock": 1,
+        "mobility.relay": 1,
+        "consistency.discipline": 1,
+        "mobility.lane-dancer": 1
       },
       "lineages": {
-        "wild-4233": 5,
-        "gilded": 3,
-        "lineage-cd40524b-b534-3733-bf57-e54661e9fe25": 1,
-        "lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": 1,
-        "lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": 1,
-        "lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": 1,
-        "mirrored": 1,
-        "lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": 1,
-        "lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": 1,
-        "lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": 1,
-        "lineage-13246865-524e-30fe-b15f-0e836fb3756a": 1,
-        "ashen": 4,
-        "lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": 1,
-        "lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": 1,
-        "wild-35642": 3,
-        "lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": 1,
-        "lineage-8c765107-856c-3879-a914-08c4c40e8684": 1,
-        "lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": 1,
+        "wild-4233": 2,
+        "lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 1,
+        "ashen": 1,
+        "lineage-1a81e247-43ce-3776-bf69-081eba576d11": 1,
+        "lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 1,
+        "lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 1,
+        "lineage-5c96af8e-948c-3d88-b875-5636d1712192": 1,
+        "lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 1,
         "graveborn": 4,
-        "lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": 1,
-        "lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": 1,
-        "lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": 1,
-        "lineage-78621b02-9635-3285-a88c-048c91ea3001": 1,
-        "lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": 1,
-        "lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": 1,
-        "lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": 1
+        "wild-35642": 3
       },
       "mutations": {
-        "1": 2,
-        "2": 4,
-        "3": 16,
-        "4": 10,
-        "5": 3,
-        "6": 3,
-        "7": 2
+        "0": 5,
+        "1": 5,
+        "2": 3,
+        "3": 2,
+        "4": 1
       },
       "regulatoryProfiles": {
-        "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 1,
-        "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 2,
-        "[lineageMilestoneGate]": 2,
-        "[disciplineGate+environmentGate+lineageMilestoneGate+survivalGate]": 1,
-        "[disciplineGate+lineageMilestoneGate+memoryGate+survivalGate]": 1,
-        "[lineageMilestoneGate+memoryGate]": 1,
-        "[environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 1,
-        "[lineageMilestoneGate+survivalGate]": 2,
-        "[environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 2,
-        "[environmentGate+lineageMilestoneGate+memoryGate+resonanceGate]": 1,
-        "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 4,
-        "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 2,
-        "[disciplineGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 2,
-        "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 4,
-        "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+survivalGate+volatilityGate]": 2,
-        "[disciplineGate+environmentGate+lineageMilestoneGate+resonanceGate]": 1,
-        "[lineageMilestoneGate+memoryGate+survivalGate]": 11
+        "[lineageMilestoneGate+volatilityGate]": 2,
+        "[lineageMilestoneGate]": 5,
+        "[]": 7,
+        "[environmentGate+lineageMilestoneGate]": 2
       },
       "openGates": {
-        "mobilityGate": 9,
-        "memoryGate": 34,
-        "resonanceGate": 5,
-        "lineageMilestoneGate": 40,
-        "volatilityGate": 8,
-        "disciplineGate": 14,
-        "environmentGate": 13,
-        "survivalGate": 35
+        "lineageMilestoneGate": 9,
+        "volatilityGate": 2,
+        "environmentGate": 2
       },
       "nicheOccupancy": {
-        "niche-1": 39,
-        "niche-2": 1
+        "niche-1": 13,
+        "unassigned": 3
       },
       "speciesPerNiche": {
-        "niche-1": 26,
-        "niche-2": 1
+        "niche-1": 10,
+        "unassigned": 2
       },
-      "nicheCount": 2,
-      "activeSpecies": 26,
-      "dominantNicheShare": 0.975,
-      "crowdingPenaltyActivationRate": 0.7696428571428572,
-      "coEvolutionCompetitionPressure": 0.7533867262361865,
-      "coEvolutionSupportPressure": 0.3836157054471342,
-      "coEvolutionModifier": -0.042245871557090676,
-      "coEvolutionMigrationPressure": 0.41752476824618845,
-      "nicheSeparationScore": 0.21970789144408046,
+      "nicheCount": 1,
+      "activeSpecies": 10,
+      "dominantNicheShare": 0.8125,
+      "crowdingPenaltyActivationRate": 0.75,
+      "coEvolutionCompetitionPressure": 0.5033887744200243,
+      "coEvolutionSupportPressure": 0.23035531254769534,
+      "coEvolutionModifier": -0.02719139592879008,
+      "coEvolutionMigrationPressure": 0.1925166824083364,
+      "nicheSeparationScore": 0.0,
       "fitnessSharingEnabled": true,
       "fitnessSharingMode": "niche",
-      "fitnessSharingAvgLoad": 1.0735422997423552,
-      "fitnessSharingAvgFactor": 0.9315720597978875,
+      "fitnessSharingAvgLoad": 1.0426739585645837,
+      "fitnessSharingAvgFactor": 0.9596100201648182,
       "ecologicalMemory": {
         "active": false,
         "windowSize": 4,
-        "persistentDominance": 0.26543673665431594,
+        "persistentDominance": 0.33304127725856697,
         "targetDominance": 0.52,
         "memoryPressure": 0.0,
         "attractorDuration": 1,
         "dominantNiche": "niche-1",
-        "pressureTimeline": [0.0],
-        "attractorDurationTimeline": [1.0]
+        "pressureTimeline": [0.0,0.0],
+        "attractorDurationTimeline": [1.0,2.0]
+      }
+    },{
+      "season": 2,
+      "families": {
+        "mobility": 4,
+        "chaos": 7,
+        "survival": 11,
+        "precision": 5,
+        "consistency": 3
+      },
+      "triggers": {
+        "on_drift_mutation": 1,
+        "on_chain_combat": 3,
+        "on_awakening": 4,
+        "on_reposition": 5,
+        "on_memory_event": 3,
+        "on_fusion": 4,
+        "on_hit": 3,
+        "on_low_health": 7
+      },
+      "mechanics": {
+        "defensive_threshold": 4,
+        "chain_escalation": 1,
+        "recovery_window": 3,
+        "revenant_trigger": 5,
+        "unstable_detonation": 2,
+        "pulse": 2,
+        "memory_echo": 2,
+        "movement_echo": 3,
+        "mark": 3,
+        "guardian_pulse": 5
+      },
+      "branches": {
+        "chaos.sprawl": 2,
+        "chaos.paradox": 3,
+        "survival.guardian": 3,
+        "mobility.relay": 2,
+        "survival.shelter": 1,
+        "consistency.discipline": 1,
+        "consistency.anchor": 1,
+        "precision.focus": 1,
+        "consistency.boss-ledger": 1,
+        "mobility.lane-dancer": 1
+      },
+      "lineages": {
+        "wild-4233": 2,
+        "lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 1,
+        "ashen": 1,
+        "lineage-1a81e247-43ce-3776-bf69-081eba576d11": 1,
+        "lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 1,
+        "lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 1,
+        "lineage-5c96af8e-948c-3d88-b875-5636d1712192": 1,
+        "lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 1,
+        "graveborn": 4,
+        "wild-35642": 3
+      },
+      "mutations": {
+        "1": 2,
+        "2": 8,
+        "3": 6
+      },
+      "regulatoryProfiles": {
+        "[lineageMilestoneGate]": 2,
+        "[disciplineGate+lineageMilestoneGate+resonanceGate+survivalGate]": 1,
+        "[disciplineGate+lineageMilestoneGate+resonanceGate]": 1,
+        "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 1,
+        "[disciplineGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 1,
+        "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 2,
+        "[environmentGate+lineageMilestoneGate+survivalGate]": 1,
+        "[disciplineGate+environmentGate+lineageMilestoneGate+resonanceGate]": 1,
+        "[lineageMilestoneGate+survivalGate]": 6
+      },
+      "openGates": {
+        "mobilityGate": 3,
+        "memoryGate": 4,
+        "resonanceGate": 4,
+        "lineageMilestoneGate": 16,
+        "volatilityGate": 3,
+        "disciplineGate": 5,
+        "environmentGate": 2,
+        "survivalGate": 12
+      },
+      "nicheOccupancy": {
+        "niche-1": 15,
+        "unassigned": 1
+      },
+      "speciesPerNiche": {
+        "niche-1": 10,
+        "unassigned": 1
+      },
+      "nicheCount": 1,
+      "activeSpecies": 10,
+      "dominantNicheShare": 0.9375,
+      "crowdingPenaltyActivationRate": 0.8359375,
+      "coEvolutionCompetitionPressure": 0.704020444545917,
+      "coEvolutionSupportPressure": 0.3237102768781572,
+      "coEvolutionModifier": -0.0408574597084511,
+      "coEvolutionMigrationPressure": 0.36662150676421124,
+      "nicheSeparationScore": 0.0,
+      "fitnessSharingEnabled": true,
+      "fitnessSharingMode": "niche",
+      "fitnessSharingAvgLoad": 1.058400467393458,
+      "fitnessSharingAvgFactor": 0.9452833457668824,
+      "ecologicalMemory": {
+        "active": false,
+        "windowSize": 4,
+        "persistentDominance": 0.3336010514018692,
+        "targetDominance": 0.52,
+        "memoryPressure": 0.0,
+        "attractorDuration": 2,
+        "dominantNiche": "niche-1",
+        "pressureTimeline": [0.0,0.0],
+        "attractorDurationTimeline": [1.0,2.0]
       }
     }],
-  "initial_seed_pool": [-7844357802289000311,3811935716758096698,-2325901052626333559,-1706521032904570054,3192555697036333193,-3597894857626121414,8711012446698999945,-9116351607288788166,-4217274877347884919,7439018641699212090,1301181872314781833,1920561892036545338,6819638621977448585,29188067314993978,-6108648702069436279,-5489268682347672774,-590191952406769527,-3442230133124134086,4928264797255897225,-8960686882786800838,-8000022526790987639,7594683366201199418,-2481565777128320887,2076226616538532666,3036890972534345865,184852791816981306,8555347722197012617,-5333603957845685446,-4372939601849872247,-7224977782567236806,1145517147812794505,5703309541479648058,6663973897475461257,7750348090703186746,-6264313426571423607,2231891341040519994,-745856676908756855,340517516318968634,4772600072753909897,-5177939233343698118],
+  "initial_seed_pool": [-7844357802289000311,3811935716758096698,-2325901052626333559,-1706521032904570054,3192555697036333193,-3597894857626121414,8711012446698999945,-9116351607288788166,-4217274877347884919,7439018641699212090,1301181872314781833,1920561892036545338,6819638621977448585,29188067314993978,-6108648702069436279,-5489268682347672774],
   "speciation": {
-    "activeSpecies": 26,
-    "registrySpecies": 26,
+    "activeSpecies": 10,
+    "registrySpecies": 10,
     "speciesPerLineage": {
-      "lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": 1,
-      "ashen": 1,
-      "lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": 1,
-      "gilded": 1,
-      "lineage-13246865-524e-30fe-b15f-0e836fb3756a": 1,
-      "lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": 1,
-      "lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": 1,
-      "lineage-cd40524b-b534-3733-bf57-e54661e9fe25": 1,
-      "lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": 1,
-      "lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": 1,
-      "lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": 1,
       "wild-4233": 1,
-      "lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": 1,
-      "lineage-8c765107-856c-3879-a914-08c4c40e8684": 1,
-      "lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": 1,
-      "lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": 1,
-      "lineage-78621b02-9635-3285-a88c-048c91ea3001": 1,
-      "graveborn": 1,
-      "lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": 1,
-      "lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": 1,
-      "lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": 1,
-      "lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": 1,
+      "lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 1,
+      "lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 1,
+      "lineage-5c96af8e-948c-3d88-b875-5636d1712192": 1,
       "wild-35642": 1,
-      "lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": 1,
-      "lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": 1,
-      "mirrored": 1
+      "ashen": 1,
+      "lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 1,
+      "lineage-1a81e247-43ce-3776-bf69-081eba576d11": 1,
+      "graveborn": 1,
+      "lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 1
     },
-    "speciesDivergenceLevels": [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    "speciesBirthRate": 26.0,
+    "speciesDivergenceLevels": [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
+    "speciesBirthRate": 5.0,
     "speciesExtinctionRate": 0.0,
-    "dominantSpeciesConcentration": 0.125,
+    "dominantSpeciesConcentration": 0.25,
     "speciesNicheOccupancy": {
       "season-1": {
-        "niche-1": 26,
-        "niche-2": 1
+        "niche-1": 10,
+        "unassigned": 2
+      },
+      "season-2": {
+        "niche-1": 10,
+        "unassigned": 1
       }
     },
-    "nicheCountTimeline": [2],
-    "speciesCountTimeline": [26],
-    "coEvolutionCompetitionTimeline": [0.7533867262361865],
-    "coEvolutionSupportTimeline": [0.3836157054471342],
-    "coEvolutionModifierTimeline": [-0.042245871557090676],
-    "coEvolutionMigrationPressureTimeline": [0.41752476824618845],
-    "dominantSpeciesConcentrationTimeline": [0.125],
-    "nicheSeparationTimeline": [0.21970789144408046],
-    "nicheStabilityTimeline": [0.025000000000000022],
-    "fitnessSharingLoadTimeline": [1.0735422997423552],
-    "fitnessSharingFactorTimeline": [0.9315720597978875]
+    "nicheCountTimeline": [1,1],
+    "speciesCountTimeline": [10,10],
+    "coEvolutionCompetitionTimeline": [0.5033887744200243,0.704020444545917],
+    "coEvolutionSupportTimeline": [0.23035531254769534,0.3237102768781572],
+    "coEvolutionModifierTimeline": [-0.02719139592879008,-0.0408574597084511],
+    "coEvolutionMigrationPressureTimeline": [0.1925166824083364,0.36662150676421124],
+    "dominantSpeciesConcentrationTimeline": [0.25,0.25],
+    "nicheSeparationTimeline": [0.0,0.0],
+    "nicheStabilityTimeline": [0.1875,0.0625],
+    "fitnessSharingLoadTimeline": [1.0426739585645837,1.058400467393458],
+    "fitnessSharingFactorTimeline": [0.9596100201648182,0.9452833457668824]
   },
   "niches": {
     "speciesNicheCounts": {
@@ -498,122 +498,59 @@
         "niche-1": 3
       },
       "species-root-ashen": {
-        "niche-1": 3,
-        "niche-2": 1
+        "niche-1": 1
       },
-      "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": {
+      "species-root-lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": {
+        "niche-1": 1
+      },
+      "species-root-lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": {
+        "niche-1": 1
+      },
+      "species-root-lineage-1a81e247-43ce-3776-bf69-081eba576d11": {
+        "niche-1": 1
+      },
+      "species-root-lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": {
+        "niche-1": 1
+      },
+      "species-root-lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": {
         "niche-1": 1
       },
       "species-root-wild-4233": {
-        "niche-1": 5
+        "niche-1": 1,
+        "unassigned": 1
       },
-      "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a": {
-        "niche-1": 1
-      },
-      "species-root-lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": {
-        "niche-1": 1
-      },
-      "species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": {
-        "niche-1": 1
-      },
-      "species-root-lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": {
-        "niche-1": 1
-      },
-      "species-root-lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": {
-        "niche-1": 1
-      },
-      "species-root-lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": {
-        "niche-1": 1
-      },
-      "species-root-mirrored": {
-        "niche-1": 1
-      },
-      "species-root-lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": {
-        "niche-1": 1
-      },
-      "species-root-lineage-78621b02-9635-3285-a88c-048c91ea3001": {
-        "niche-1": 1
-      },
-      "species-root-lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": {
-        "niche-1": 1
-      },
-      "species-root-lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": {
-        "niche-1": 1
-      },
-      "species-root-lineage-ad1f2aba-e147-335a-a01d-3ee1093427b0": {
-        "niche-1": 1
-      },
-      "species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": {
-        "niche-1": 1
-      },
-      "species-root-lineage-8c765107-856c-3879-a914-08c4c40e8684": {
-        "niche-1": 1
-      },
-      "species-root-lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": {
-        "niche-1": 1
-      },
-      "species-root-gilded": {
-        "niche-1": 3
-      },
-      "species-root-lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": {
-        "niche-1": 1
-      },
-      "species-root-lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": {
-        "niche-1": 1
-      },
-      "species-root-lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": {
-        "niche-1": 1
-      },
-      "species-root-lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": {
-        "niche-1": 1
-      },
-      "species-root-lineage-cd40524b-b534-3733-bf57-e54661e9fe25": {
+      "species-root-lineage-5c96af8e-948c-3d88-b875-5636d1712192": {
         "niche-1": 1
       }
     },
     "nicheOccupancy": {
-      "niche-1": 39,
-      "niche-2": 1
+      "niche-1": 15,
+      "unassigned": 1
     },
     "dominatingSpeciesByNiche": {
-      "niche-1": 5,
-      "niche-2": 1
+      "niche-1": 4,
+      "unassigned": 1
     },
     "competingSpeciesPerNiche": {
-      "niche-1": 26,
-      "niche-2": 1
+      "niche-1": 10,
+      "unassigned": 1
     },
     "nicheEmergenceEvents": {
-      "1": 2
+      "1": 1
     },
     "speciesMigrationCounts": {
     },
     "coEvolutionMigrationCounts": {
-      "species-root-wild-35642": 22,
-      "species-root-ashen": 22,
-      "species-root-lineage-0093f40c-4a34-3804-9c5a-f75b40d243d7": 13,
-      "species-root-wild-4233": 61,
-      "species-root-lineage-13246865-524e-30fe-b15f-0e836fb3756a": 13,
-      "species-root-lineage-f37f4700-5adf-3ac1-92ec-66ad803c4a86": 13,
-      "species-root-lineage-570f6fe1-fa43-392b-a1a7-719b716d7502": 13,
-      "species-root-graveborn": 34,
-      "species-root-lineage-625c452e-c56d-3dee-a0cb-677d4ccffe85": 13,
-      "species-root-lineage-9b7b65f5-ab72-36b8-a51b-db427f84d4fc": 10,
-      "species-root-lineage-a16d24e6-f506-3036-bf71-7515af1b9a32": 13,
-      "species-root-mirrored": 13,
-      "species-root-lineage-4d0fd3b2-b84d-3a15-94f4-4bdae8153f26": 10,
-      "species-root-lineage-78621b02-9635-3285-a88c-048c91ea3001": 13,
-      "species-root-lineage-a0aa76d7-fbb4-3806-8396-6343ab66f223": 9,
-      "species-root-lineage-ae1098c9-3ab3-3dda-b6a6-9e4ebb499f72": 12,
-      "species-root-lineage-825365cf-6f19-3335-a80f-88400ee3ebbd": 13,
-      "species-root-lineage-8c765107-856c-3879-a914-08c4c40e8684": 13,
-      "species-root-gilded": 27,
-      "species-root-lineage-33a85b87-d45b-314c-952a-2a8d83d5d59a": 13,
-      "species-root-lineage-4aa8f47a-04b1-3a4e-b38f-d484efd6358d": 12,
-      "species-root-lineage-d158b153-1e83-3aaf-9ad8-77bbd4d88cc2": 10,
-      "species-root-lineage-94897bb5-65c2-328d-b8f3-a0a32c0d444b": 13,
-      "species-root-lineage-cd40524b-b534-3733-bf57-e54661e9fe25": 13,
-      "species-root-lineage-af785989-1da9-3f34-93d6-b8437e4d25ed": 3
+      "species-root-ashen": 7,
+      "species-root-lineage-9f66e16c-fd44-308e-8546-d92a908f1d00": 7,
+      "species-root-lineage-236f567a-224a-30b3-bf3f-6bb5d6aeec84": 7,
+      "species-root-lineage-1a81e247-43ce-3776-bf69-081eba576d11": 7,
+      "species-root-lineage-c798fd9c-761c-3973-b3ad-c7723a0b5a64": 7,
+      "species-root-lineage-d72538d8-b7ea-3e3e-9d81-6004227bdc80": 7,
+      "species-root-wild-35642": 18,
+      "species-root-graveborn": 18,
+      "species-root-lineage-5c96af8e-948c-3d88-b875-5636d1712192": 6,
+      "species-root-wild-4233": 4
     },
     "nicheExtinctionEvents": {
     }
@@ -621,12 +558,12 @@
   "ecological_memory": {
     "active": false,
     "windowSize": 4,
-    "persistentDominance": 0.26543673665431594,
+    "persistentDominance": 0.3336010514018692,
     "targetDominance": 0.52,
     "memoryPressure": 0.0,
-    "attractorDuration": 1,
+    "attractorDuration": 2,
     "dominantNiche": "niche-1",
-    "pressureTimeline": [0.0],
-    "attractorDurationTimeline": [1.0]
+    "pressureTimeline": [0.0,0.0],
+    "attractorDurationTimeline": [1.0,2.0]
   }
 }
