@@ -232,6 +232,19 @@ public class SpeciesNicheAnalyticsEngine {
         return snapshot;
     }
 
+
+    public String nicheForArtifact(long artifactSeed) {
+        return Optional.ofNullable(artifactMembership.get(artifactSeed)).map(ArtifactNicheMembership::nicheId).orElse("unassigned");
+    }
+
+    public List<Double> dominantNicheShareTimeline() {
+        return List.copyOf(dominantNicheShareTimeline);
+    }
+
+    public List<Double> nicheStabilityTimeline() {
+        return List.copyOf(nicheStabilityTimeline);
+    }
+
     public Map<String, Object> buildSpeciationSummary(Map<String, ArtifactSpecies> speciesRegistry,
                                                       Map<String, Integer> lineageCounts,
                                                       int seasonCount) {

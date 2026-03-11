@@ -145,7 +145,10 @@ public class DashboardRenderer {
                 + "\nwarningFlags=" + metrics.diagnosticWarningFlags()
                 + "\nEND=" + fmt(metrics.endArtifacts())
                 + "\nTNT=" + fmt(metrics.latestTnt())
-                + "\nNSER=" + fmt(metrics.latestNser());
+                + "\nNSER=" + fmt(metrics.latestNser())
+                + "\nEcologicalMemory=" + (metrics.ecologicalMemoryActive() ? "active" : "inactive")
+                + "\nAttractorDuration=" + fmt(metrics.dominantAttractorDuration())
+                + "\nMemoryPressure=" + fmt(metrics.memoryPressureMagnitude());
     }
 
     private String statusBadge(EcosystemStatus status) {

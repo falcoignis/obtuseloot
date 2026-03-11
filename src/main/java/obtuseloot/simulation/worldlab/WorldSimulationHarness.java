@@ -65,6 +65,13 @@ public class WorldSimulationHarness {
     private final AbilityBranchResolver branchResolver = new AbilityBranchResolver();
     private final ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
     private final SpeciesNicheAnalyticsEngine speciesNicheEngine;
+    private final EcologicalMemoryEngine ecologicalMemoryEngine = new EcologicalMemoryEngine();
+    private final Map<String, Integer> seasonSpeciesCounts = new LinkedHashMap<>();
+    private final Map<String, Integer> seasonNicheCounts = new LinkedHashMap<>();
+    private final Map<String, Integer> seasonBranchCounts = new LinkedHashMap<>();
+    private final Map<String, Integer> seasonTriggerCounts = new LinkedHashMap<>();
+    private final Map<String, Integer> seasonMechanicCounts = new LinkedHashMap<>();
+    private final Map<String, Integer> seasonEnvironmentCounts = new LinkedHashMap<>();
 
     public WorldSimulationHarness(WorldSimulationConfig config) {
         this.config = config;
@@ -96,9 +103,12 @@ public class WorldSimulationHarness {
                 clock.advanceDay();
             }
             metrics.closeSeasonSnapshot();
+            ecologicalMemoryEngine.observeSeason(seasonBranchCounts, seasonNicheCounts, seasonSpeciesCounts, seasonTriggerCounts, seasonMechanicCounts, seasonEnvironmentCounts);
             Map<String, Object> seasonSnapshot = captureSeasonSnapshot(players, season);
             seasonSnapshot.putAll(speciesNicheEngine.closeSeason(season, flattenArtifacts(players)));
+            seasonSnapshot.put("ecologicalMemory", ecologicalMemoryEngine.diagnostics());
             seasonalSnapshots.add(seasonSnapshot);
+            resetSeasonTallies();
             exportSeasonInteractionHeatmap(players, season);
         }
         writeRegulatoryReports();
@@ -221,9 +231,18 @@ public class WorldSimulationHarness {
             SpeciesNicheAnalyticsEngine.CoEvolutionPressureResult coEvolutionResult = speciesNicheEngine.applyCoEvolutionPressure(agent.artifact(), evolvedScore);
             evolvedScore = coEvolutionResult.effectiveScore();
         }
-        int stage = Math.max(1, Math.min(5, (int) Math.round(evolvedScore / 20.0D)));
+        EcologicalMemoryEngine.MemoryFeedback memoryFeedback = ecologicalMemoryEngine.feedbackForArtifact(
+                agent.artifact().getSpeciesId(),
+                penaltyResult.nicheId(),
+                agent.artifact().getLastAbilityBranchPath(),
+                agent.artifact().getLastTriggerProfile(),
+                agent.artifact().getLastMechanicProfile(),
+                agent.artifact().getDriftAlignment() + ":" + agent.artifact().getEvolutionPath());
+        evolvedScore *= memoryFeedback.modifier();
+        int stage = Math.max(1, Math.min(5, (int) Math.round((evolvedScore * memoryFeedback.latentBias()) / 20.0D)));
         AbilityProfile abilityProfile = abilityGenerator.generate(agent.artifact(), stage, memory);
-        AbilityMutationResult mutationResult = mutationEngine.mutate(agent.artifact(), abilityProfile.abilities(), memory, agent.artifact().getDriftLevel() > 0);
+        boolean mutationBiasDrift = agent.artifact().getDriftLevel() > 0 || random.nextDouble() < ((memoryFeedback.mutationBias() - 1.0D) * 0.6D);
+        AbilityMutationResult mutationResult = mutationEngine.mutate(agent.artifact(), abilityProfile.abilities(), memory, mutationBiasDrift);
         List<AbilityDefinition> finalDefinitions = mutationResult.abilities();
         if (!finalDefinitions.isEmpty()) {
             var tree = branchResolver.resolveTree(finalDefinitions.get(0).id(), agent.artifact(), memory, stage, encounter.type().name());
@@ -236,9 +255,34 @@ public class WorldSimulationHarness {
         var resolvedSpecies = lineageRegistry.evaluateSpeciation(agent.artifact());
         boolean successful = rep.getTotalScore() >= 30;
         speciesNicheEngine.observeArtifact(agent.artifact(), resolvedSpecies, agent.abilityProfile(), successful, Math.max(1, seasonalSnapshots.size() + 1), penaltyResult.crowdingPenalty());
+        tallySeasonSignals(agent, resolvedSpecies.speciesId());
         metrics.recordAbilityProfile(agent.abilityProfile());
     }
 
+
+
+    private void tallySeasonSignals(SimulatedArtifactAgent agent, String speciesId) {
+        seasonSpeciesCounts.merge(speciesId == null ? "unknown" : speciesId, 1, Integer::sum);
+        String nicheId = speciesNicheEngine.nicheForArtifact(agent.artifact().getArtifactSeed());
+        seasonNicheCounts.merge(nicheId, 1, Integer::sum);
+        seasonBranchCounts.merge(agent.artifact().getLastAbilityBranchPath(), 1, Integer::sum);
+        for (String trigger : agent.artifact().getLastTriggerProfile().split(",")) {
+            if (!trigger.isBlank()) seasonTriggerCounts.merge(trigger.trim(), 1, Integer::sum);
+        }
+        for (String mechanic : agent.artifact().getLastMechanicProfile().split(",")) {
+            if (!mechanic.isBlank()) seasonMechanicCounts.merge(mechanic.trim(), 1, Integer::sum);
+        }
+        seasonEnvironmentCounts.merge(agent.artifact().getDriftAlignment() + ":" + agent.artifact().getEvolutionPath(), 1, Integer::sum);
+    }
+
+    private void resetSeasonTallies() {
+        seasonSpeciesCounts.clear();
+        seasonNicheCounts.clear();
+        seasonBranchCounts.clear();
+        seasonTriggerCounts.clear();
+        seasonMechanicCounts.clear();
+        seasonEnvironmentCounts.clear();
+    }
 
     private void exportSeasonInteractionHeatmap(List<SimulatedPlayer> players, int season) throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
@@ -279,6 +323,7 @@ public class WorldSimulationHarness {
         Map<String, Object> nichePrototypeDistribution = speciesNicheEngine.buildNichePrototypeDistribution();
         data.put("speciation", speciationSummary);
         data.put("niches", speciesNicheMap);
+        data.put("ecological_memory", ecologicalMemoryEngine.diagnostics());
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
         EcosystemHealthReport report = ai.evaluate(metrics.families(), metrics.branches(), metrics.mutations(), metrics.triggers(), metrics.mechanics(), metrics.memories());
         WorldEcosystemProfile profile = new WorldEcosystemProfile(
@@ -322,6 +367,7 @@ public class WorldSimulationHarness {
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
         writeEcosystemHealthGauge(seasonalSnapshots, nserResult);
         writeTraitFieldLatentReports(nserResult);
+        writeEcologicalMemoryImpactReview(nserResult);
         writeTraitProjectionPerformanceReport();
     }
 
@@ -1127,6 +1173,36 @@ public class WorldSimulationHarness {
                 + "- Dominant attractor trend: concentration timeline=" + speciationSummary.get("dominantSpeciesConcentrationTimeline") + ".\n";
         Files.writeString(openEnded.resolve("ecology-rebind-open-endedness-review.md"), ecologyRebindOpenEndedness);
         Files.writeString(openEnded.resolve("ecology-repair-open-endedness-review.md"), ecologyRebindOpenEndedness);
+    }
+
+
+    private void writeEcologicalMemoryImpactReview(NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Map<String, Object> diagnostics = ecologicalMemoryEngine.diagnostics();
+        @SuppressWarnings("unchecked")
+        List<Double> attractorTimeline = (List<Double>) diagnostics.getOrDefault("attractorDurationTimeline", List.of());
+        @SuppressWarnings("unchecked")
+        List<Double> pressureTimeline = (List<Double>) diagnostics.getOrDefault("pressureTimeline", List.of());
+        List<Double> dominantNicheTrend = speciesNicheEngine.dominantNicheShareTimeline();
+        List<Double> nicheStability = speciesNicheEngine.nicheStabilityTimeline();
+
+        double earlyAttractor = attractorTimeline.isEmpty() ? 0.0D : attractorTimeline.get(0);
+        double lateAttractor = attractorTimeline.isEmpty() ? 0.0D : attractorTimeline.get(attractorTimeline.size() - 1);
+        double earlyNicheStability = nicheStability.isEmpty() ? 0.0D : nicheStability.get(0);
+        double lateNicheStability = nicheStability.isEmpty() ? 0.0D : nicheStability.get(nicheStability.size() - 1);
+        double earlyNser = nserResult.trend().isEmpty() ? 0.0D : nserResult.trend().get(0);
+        double lateNser = nserResult.trend().isEmpty() ? 0.0D : nserResult.trend().get(nserResult.trend().size() - 1);
+        double tnt = seasonalSnapshots.isEmpty() ? 0.0D : ((Number) seasonalSnapshots.get(seasonalSnapshots.size() - 1).getOrDefault("tnt", 0.0D)).doubleValue();
+
+        String review = "# Ecological Memory Impact Review\n\n"
+                + "- Memory diagnostics: " + diagnostics + "\n"
+                + "- Dominant niche share trend: " + dominantNicheTrend + "\n"
+                + "- NSER trend: " + nserResult.trend() + "\n\n"
+                + "1. Did dominant attractor duration decrease? " + (lateAttractor <= earlyAttractor) + " (early=" + earlyAttractor + ", late=" + lateAttractor + ").\n"
+                + "2. Did niche diversity increase? " + (lateNicheStability >= earlyNicheStability) + " (early=" + earlyNicheStability + ", late=" + lateNicheStability + ").\n"
+                + "3. Did underrepresented strategies survive longer? " + (lateNicheStability > 0.20D) + " (niche stability=" + nicheStability + ").\n"
+                + "4. Did NSER increase? " + (lateNser >= earlyNser) + " (early=" + earlyNser + ", late=" + lateNser + ").\n"
+                + "5. Did TNT remain stable instead of chaotic? " + (tnt <= 0.35D) + " (latest TNT=" + tnt + ").\n";
+        Files.writeString(Path.of("analytics/world-lab/ecological-memory-impact-review.md"), review);
     }
 
     public List<Map<String, Object>> seasonalSnapshots() {
