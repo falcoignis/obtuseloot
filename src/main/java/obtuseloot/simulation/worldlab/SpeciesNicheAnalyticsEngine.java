@@ -64,6 +64,7 @@ public class SpeciesNicheAnalyticsEngine {
     private final Random random;
     private final FitnessSharingConfig fitnessSharing;
     private final BehavioralProjectionConfig projectionConfig;
+    private final AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig;
     private final Map<String, NicheProfile> niches = new LinkedHashMap<>();
     private final Map<Long, ArtifactNicheMembership> artifactMembership = new HashMap<>();
     private final Map<String, CandidateNiche> candidateNiches = new LinkedHashMap<>();
@@ -98,6 +99,9 @@ public class SpeciesNicheAnalyticsEngine {
     private final List<Double> fitnessSharingFactorTimeline = new ArrayList<>();
     private final Map<String, Double> nicheSharingLoadByNiche = new LinkedHashMap<>();
     private final Map<String, Double> nicheSharingFactorByNiche = new LinkedHashMap<>();
+    private final Map<String, Double> nicheCapacity = new LinkedHashMap<>();
+    private final Map<String, List<Double>> nicheCapacityTimelineByNiche = new LinkedHashMap<>();
+    private final List<Map<String, Object>> nicheCapacitySeasonAdjustments = new ArrayList<>();
     private double fitnessSharingLoadTotal;
     private double fitnessSharingFactorTotal;
     private int fitnessSharingAppliedCount;
@@ -112,19 +116,27 @@ public class SpeciesNicheAnalyticsEngine {
     private double coEvolutionMigrationPressureTotal;
 
     public SpeciesNicheAnalyticsEngine(long seed) {
-        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults());
+        this(seed, FitnessSharingConfig.defaults(), BehavioralProjectionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed, FitnessSharingConfig fitnessSharing) {
-        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults());
+        this(seed, fitnessSharing, BehavioralProjectionConfig.defaults(), AdaptiveNicheCapacityConfig.defaults());
     }
 
     public SpeciesNicheAnalyticsEngine(long seed,
                                        FitnessSharingConfig fitnessSharing,
                                        BehavioralProjectionConfig projectionConfig) {
+        this(seed, fitnessSharing, projectionConfig, AdaptiveNicheCapacityConfig.defaults());
+    }
+
+    public SpeciesNicheAnalyticsEngine(long seed,
+                                       FitnessSharingConfig fitnessSharing,
+                                       BehavioralProjectionConfig projectionConfig,
+                                       AdaptiveNicheCapacityConfig adaptiveNicheCapacityConfig) {
         this.random = new Random(seed ^ 0xBADC0FFEE0DDF00DL);
         this.fitnessSharing = (fitnessSharing == null ? FitnessSharingConfig.defaults() : fitnessSharing).bounded();
         this.projectionConfig = projectionConfig == null ? BehavioralProjectionConfig.defaults() : projectionConfig;
+        this.adaptiveNicheCapacityConfig = (adaptiveNicheCapacityConfig == null ? AdaptiveNicheCapacityConfig.defaults() : adaptiveNicheCapacityConfig).bounded();
     }
 
     public PenaltyResult applyCrowdingPenalty(Artifact artifact, double rawScore) {
@@ -164,6 +176,7 @@ public class SpeciesNicheAnalyticsEngine {
         double occupancy = occupancyFor(nicheId);
         double effectiveOccupancy = Math.max(0.0D, occupancy - fitnessSharing.targetOccupancy());
         double load = 1.0D + (fitnessSharing.alpha() * effectiveOccupancy);
+        load *= capacityLoadAdjustment(nicheId);
         return sharingFromLoad(load, occupancy > fitnessSharing.targetOccupancy(), "niche");
     }
 
@@ -186,6 +199,7 @@ public class SpeciesNicheAnalyticsEngine {
                 neighbors++;
             }
         }
+        load *= capacityLoadAdjustment(nicheId);
         return sharingFromLoad(load, neighbors > 0, "distance");
     }
 
@@ -280,6 +294,7 @@ public class SpeciesNicheAnalyticsEngine {
         }
 
         performMergeAndPrune(season, occupancy);
+        updateNicheCapacity(season, occupancy, speciesByNiche);
         seasonSpeciesByNiche.put("season-" + season, speciesByNiche);
         speciesCountTimeline.add(activeSpecies.size());
         nicheCountTimeline.add(niches.size());
@@ -337,6 +352,9 @@ public class SpeciesNicheAnalyticsEngine {
         snapshot.put("fitnessSharingMode", fitnessSharing.normalizedMode());
         snapshot.put("fitnessSharingAvgLoad", avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount));
         snapshot.put("fitnessSharingAvgFactor", avg(fitnessSharingFactorTotal, fitnessSharingAppliedCount));
+        snapshot.put("adaptiveNicheCapacityEnabled", adaptiveNicheCapacityConfig.enabled());
+        snapshot.put("nicheCapacity", new LinkedHashMap<>(nicheCapacity));
+        snapshot.put("nicheCapacityAvg", average(nicheCapacity.values()));
         return snapshot;
     }
 
@@ -744,7 +762,72 @@ public class SpeciesNicheAnalyticsEngine {
         out.put("averageSharingFactor", avg(fitnessSharingFactorTotal, fitnessSharingAppliedCount));
         out.put("nicheSharingLoad", new LinkedHashMap<>(nicheSharingLoadByNiche));
         out.put("nicheSharingFactor", new LinkedHashMap<>(nicheSharingFactorByNiche));
+        out.put("adaptiveNicheCapacityEnabled", adaptiveNicheCapacityConfig.enabled());
+        out.put("adaptiveNicheCapacityBounds", Map.of("min", adaptiveNicheCapacityConfig.minCapacity(), "max", adaptiveNicheCapacityConfig.maxCapacity()));
+        out.put("nicheCapacity", new LinkedHashMap<>(nicheCapacity));
+        out.put("nicheCapacityTimeline", new LinkedHashMap<>(nicheCapacityTimelineByNiche));
+        out.put("nicheCapacitySeasonAdjustments", new ArrayList<>(nicheCapacitySeasonAdjustments));
         return out;
+    }
+
+    private double capacityLoadAdjustment(String nicheId) {
+        if (!adaptiveNicheCapacityConfig.enabled()) {
+            return 1.0D;
+        }
+        double capacity = nicheCapacity.getOrDefault(nicheId, adaptiveNicheCapacityConfig.baselineCapacity());
+        double pressure = 1.0D - (capacity - 1.0D);
+        return clamp(pressure, 0.85D, 1.15D);
+    }
+
+    private void initializeNicheCapacity(String nicheId) {
+        nicheCapacity.putIfAbsent(nicheId, adaptiveNicheCapacityConfig.baselineCapacity());
+        nicheCapacityTimelineByNiche.computeIfAbsent(nicheId, ignored -> new ArrayList<>()).add(nicheCapacity.get(nicheId));
+    }
+
+    private void updateNicheCapacity(int season, Map<String, Integer> occupancy, Map<String, Integer> speciesByNiche) {
+        if (!adaptiveNicheCapacityConfig.enabled()) {
+            return;
+        }
+        int totalArtifacts = Math.max(1, occupancy.values().stream().mapToInt(Integer::intValue).sum());
+        int maxObservedSpecies = Math.max(1, speciesByNiche.values().stream().mapToInt(Integer::intValue).max().orElse(1));
+        double memoryPressure = avg(coEvolutionMigrationPressureTotal, coEvolutionEvaluationCount);
+
+        for (String nicheId : niches.keySet()) {
+            initializeNicheCapacity(nicheId);
+            NicheProfile profile = niches.get(nicheId);
+            int nichePop = occupancy.getOrDefault(nicheId, 0);
+            double occupancyShare = nichePop / (double) totalArtifacts;
+            double overcrowding = clamp((occupancyShare - fitnessSharing.targetOccupancy()) / Math.max(0.001D, fitnessSharing.targetOccupancy()), 0.0D, 1.0D);
+            double diversity = clamp(speciesByNiche.getOrDefault(nicheId, 1) / (double) maxObservedSpecies, 0.0D, 1.0D);
+            double persistence = clamp(nicheActiveSeasons.getOrDefault(nicheId, 1) / (double) Math.max(1, season), 0.0D, 1.0D);
+            double novelty = clamp((diversity * 0.6D) + (profile == null ? 0.0D : profile.successRate() * 0.4D), 0.0D, 1.0D);
+            double prolongedDominanceWithoutNovelty = clamp((occupancyShare * 1.35D) * (1.0D - novelty) + (memoryPressure * 0.35D), 0.0D, 1.0D);
+
+            double delta = (adaptiveNicheCapacityConfig.noveltyWeight() * novelty)
+                    + (adaptiveNicheCapacityConfig.diversityWeight() * diversity)
+                    + (adaptiveNicheCapacityConfig.persistenceWeight() * persistence)
+                    - (adaptiveNicheCapacityConfig.overcrowdingWeight() * overcrowding)
+                    - (adaptiveNicheCapacityConfig.stagnationWeight() * prolongedDominanceWithoutNovelty);
+            delta = clamp(delta, -adaptiveNicheCapacityConfig.maxSeasonDelta(), adaptiveNicheCapacityConfig.maxSeasonDelta());
+
+            double before = nicheCapacity.getOrDefault(nicheId, adaptiveNicheCapacityConfig.baselineCapacity());
+            double after = clamp(before + delta, adaptiveNicheCapacityConfig.minCapacity(), adaptiveNicheCapacityConfig.maxCapacity());
+            nicheCapacity.put(nicheId, after);
+            nicheCapacityTimelineByNiche.computeIfAbsent(nicheId, ignored -> new ArrayList<>()).add(after);
+
+            Map<String, Object> contribution = new LinkedHashMap<>();
+            contribution.put("season", season);
+            contribution.put("nicheId", nicheId);
+            contribution.put("before", before);
+            contribution.put("after", after);
+            contribution.put("delta", after - before);
+            contribution.put("noveltySignal", novelty);
+            contribution.put("interactionDiversity", diversity);
+            contribution.put("nichePersistence", persistence);
+            contribution.put("chronicOvercrowding", overcrowding);
+            contribution.put("prolongedDominanceWithoutNovelty", prolongedDominanceWithoutNovelty);
+            nicheCapacitySeasonAdjustments.add(contribution);
+        }
     }
 
     public int nicheCount() {
@@ -761,6 +844,14 @@ public class SpeciesNicheAnalyticsEngine {
 
     public double averageFitnessSharingLoad() {
         return avg(fitnessSharingLoadTotal, fitnessSharingAppliedCount);
+    }
+
+    public String adaptiveNicheCapacitySummary() {
+        if (!adaptiveNicheCapacityConfig.enabled()) {
+            return "disabled";
+        }
+        return "enabled(bounds=" + adaptiveNicheCapacityConfig.minCapacity() + ".." + adaptiveNicheCapacityConfig.maxCapacity()
+                + ", avgCapacity=" + String.format(Locale.ROOT, "%.3f", average(nicheCapacity.values())) + ")";
     }
 
     public double activePenaltyRate() {
@@ -864,6 +955,7 @@ public class SpeciesNicheAnalyticsEngine {
         String nicheId = "niche-" + (niches.size() + 1);
         niches.put(nicheId, new NicheProfile(nicheId, vector));
         nicheBirthSeason.putIfAbsent(nicheId, season);
+        initializeNicheCapacity(nicheId);
         return nicheId;
     }
 
@@ -1288,6 +1380,10 @@ public class SpeciesNicheAnalyticsEngine {
 
     private double avg(double total, int count) {
         return count == 0 ? 0.0D : total / count;
+    }
+
+    private double average(Collection<Double> values) {
+        return values == null || values.isEmpty() ? 0.0D : values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D);
     }
 
     private double clamp(double value, double min, double max) {
@@ -1801,6 +1897,10 @@ public class SpeciesNicheAnalyticsEngine {
 
         private double[] centroid() {
             return centroid;
+        }
+
+        private double successRate() {
+            return successes / (double) Math.max(1, observations);
         }
 
         private String interpretabilitySummary() {

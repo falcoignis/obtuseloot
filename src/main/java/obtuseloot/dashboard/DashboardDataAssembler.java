@@ -98,6 +98,12 @@ public class DashboardDataAssembler {
             out.put("fitnessSharingMode", extractString(sharingContent, "model"));
             out.put("averageSharingLoad", extractNumber(sharingContent, "averageSharingLoad"));
         }
+        Path adaptiveCapacity = analyticsRoot.resolve("adaptive-niche-capacity-distribution.json");
+        if (Files.exists(adaptiveCapacity)) {
+            String content = Files.readString(adaptiveCapacity);
+            out.put("adaptiveNicheCapacityEnabled", extractBoolean(content, "enabled"));
+            out.put("adaptiveNicheCapacityAverage", averageMapValues(parseDoubleMap(content, "nicheCapacity")));
+        }
         return out;
     }
 
@@ -131,6 +137,13 @@ public class DashboardDataAssembler {
             pairs.add(pairMatcher.group(1));
         }
         return pairs;
+    }
+
+    private double averageMapValues(Map<String, Double> map) {
+        if (map == null || map.isEmpty()) {
+            return 0.0D;
+        }
+        return map.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0D);
     }
 
     private String extractString(String content, String key) {
