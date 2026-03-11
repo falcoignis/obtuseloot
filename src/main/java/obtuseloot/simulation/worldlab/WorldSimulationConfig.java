@@ -27,6 +27,7 @@ public record WorldSimulationConfig(
         SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig roleBasedRepulsion,
         SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig minimumRoleSeparation,
         AdaptiveNicheCapacityConfig adaptiveNicheCapacity,
+        OpportunityWeightedMutationConfig opportunityWeightedMutation,
         ScoringMode scoringMode
 ) {
     public static WorldSimulationConfig defaults() {
@@ -55,6 +56,7 @@ public record WorldSimulationConfig(
                 SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig.defaults(),
                 SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig.defaults(),
                 AdaptiveNicheCapacityConfig.defaults(),
+                OpportunityWeightedMutationConfig.defaults(),
                 ScoringMode.PROJECTION_WITH_CACHE
         );
     }

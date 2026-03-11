@@ -135,3 +135,11 @@ analytics:
       overcrowdingWeight: 0.03
       stagnationWeight: 0.03
       maxSeasonDelta: 0.05
+    opportunityWeightedMutation:
+      enabled: true
+      maxBias: 0.10
+      occupancyWeight: 0.03
+      persistenceWeight: 0.02
+      noveltyWeight: 0.02
+      capacityWeight: 0.02
+      interactionWeight: 0.01

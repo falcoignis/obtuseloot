@@ -84,6 +84,7 @@ public class WorldSimulationHarness {
     private final ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
     private final SpeciesNicheAnalyticsEngine speciesNicheEngine;
     private final EcologicalMemoryEngine ecologicalMemoryEngine = new EcologicalMemoryEngine();
+    private final OpportunityWeightedMutationEngine opportunityMutationEngine;
     private final Map<String, Integer> seasonSpeciesCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonNicheCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonBranchCounts = new LinkedHashMap<>();
@@ -98,6 +99,7 @@ public class WorldSimulationHarness {
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
         this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.roleBasedRepulsion(), config.minimumRoleSeparation(), config.adaptiveNicheCapacity());
+        this.opportunityMutationEngine = new OpportunityWeightedMutationEngine(config.opportunityWeightedMutation());
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -122,9 +124,12 @@ public class WorldSimulationHarness {
             }
             metrics.closeSeasonSnapshot();
             ecologicalMemoryEngine.observeSeason(seasonBranchCounts, seasonNicheCounts, seasonSpeciesCounts, seasonTriggerCounts, seasonMechanicCounts, seasonEnvironmentCounts);
+            List<Artifact> seasonArtifacts = flattenArtifacts(players);
             Map<String, Object> seasonSnapshot = captureSeasonSnapshot(players, season);
-            seasonSnapshot.putAll(speciesNicheEngine.closeSeason(season, flattenArtifacts(players)));
+            seasonSnapshot.putAll(speciesNicheEngine.closeSeason(season, seasonArtifacts));
             seasonSnapshot.put("ecologicalMemory", ecologicalMemoryEngine.diagnostics());
+            Map<String, Object> opportunitySummary = refreshOpportunitySignals(seasonArtifacts);
+            seasonSnapshot.put("opportunityWeightedMutation", opportunitySummary);
             seasonalSnapshots.add(seasonSnapshot);
             resetSeasonTallies();
             exportSeasonInteractionHeatmap(players, season);
@@ -227,7 +232,10 @@ public class WorldSimulationHarness {
 
         evolutionEngine.evaluate(null, agent.artifact(), rep);
         ArtifactMemoryProfile memory = memoryEngine.profile(agent.artifact());
-        if (random.nextDouble() < (0.08D * config.mutationPressureMultiplier()) || driftEngine.shouldDrift(rep)) {
+        String currentNicheId = speciesNicheEngine.nicheForArtifact(agent.artifact().getArtifactSeed());
+        OpportunityWeightedMutationEngine.OpportunitySignal opportunitySignal = opportunityMutationEngine.signalForRole(currentNicheId);
+        double mutationPressure = 0.08D * config.mutationPressureMultiplier() * opportunitySignal.mutationBias();
+        if (random.nextDouble() < mutationPressure || driftEngine.shouldDrift(rep)) {
             driftEngine.applyDriftSimulation(agent.artifact(), rep);
         }
         boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
@@ -257,9 +265,10 @@ public class WorldSimulationHarness {
                 agent.artifact().getLastMechanicProfile(),
                 agent.artifact().getDriftAlignment() + ":" + agent.artifact().getEvolutionPath());
         evolvedScore *= memoryFeedback.modifier();
-        int stage = Math.max(1, Math.min(5, (int) Math.round((evolvedScore * memoryFeedback.latentBias()) / 20.0D)));
+        int stage = Math.max(1, Math.min(5, (int) Math.round((evolvedScore * memoryFeedback.latentBias() * opportunitySignal.latentBias()) / 20.0D)));
         AbilityProfile abilityProfile = abilityGenerator.generate(agent.artifact(), stage, memory);
-        boolean mutationBiasDrift = agent.artifact().getDriftLevel() > 0 || random.nextDouble() < ((memoryFeedback.mutationBias() - 1.0D) * 0.6D);
+        double opportunityDriftBias = (opportunitySignal.mutationBias() - 1.0D) * 0.35D;
+        boolean mutationBiasDrift = agent.artifact().getDriftLevel() > 0 || random.nextDouble() < (((memoryFeedback.mutationBias() - 1.0D) * 0.6D) + opportunityDriftBias);
         AbilityMutationResult mutationResult = mutationEngine.mutate(agent.artifact(), abilityProfile.abilities(), memory, mutationBiasDrift);
         List<AbilityDefinition> finalDefinitions = mutationResult.abilities();
         if (!finalDefinitions.isEmpty()) {
@@ -379,6 +388,7 @@ public class WorldSimulationHarness {
         Files.writeString(Path.of("analytics/lineage-distribution.json"), toJson(data.get("lineage"), 0));
         Files.writeString(Path.of("analytics/world-lab/lineage-evolution.md"), builder.lineageEvolutionMarkdown(data));
         NovelStrategyEmergenceAnalyzer.NserResult nserResult = writeNovelStrategyEmergenceReports(seasonalSnapshots);
+        writeOpportunityWeightedMutationReports(roleAxisDistribution, crowdingDistribution, coEvolutionRelationships, nserResult);
         Files.writeString(Path.of("analytics/role-axis-distribution.json"), toJson(roleAxisDistribution, 0));
         writeRoleAxisValidityReport(roleAxisDistribution);
         writeSpeciesAndNicheReports(speciationSummary, speciesNicheMap, crowdingDistribution, coEvolutionRelationships, nicheQualityDiagnostics, nicheStabilityMetrics, nichePrototypeDistribution, roleRepulsionSummary, minimumRoleSeparationSummary, cleanupResult, nserResult);
@@ -843,6 +853,76 @@ public class WorldSimulationHarness {
     }
 
 
+    private void writeOpportunityWeightedMutationReports(Map<String, Object> roleAxisDistribution,
+                                                       Map<String, Object> crowdingDistribution,
+                                                       Map<String, Object> coEvolutionRelationships,
+                                                       NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Path analytics = Path.of("analytics");
+        Path worldLab = analytics.resolve("world-lab");
+        Path openEnded = worldLab.resolve("open-endedness");
+        Files.createDirectories(openEnded);
+
+        Map<String, Object> summary = new LinkedHashMap<>(opportunityMutationEngine.diagnostics());
+        summary.put("signals", seasonalSnapshots.isEmpty() ? Map.of() : seasonalSnapshots.get(seasonalSnapshots.size() - 1).getOrDefault("opportunityWeightedMutation", Map.of()));
+        summary.put("occupancy", crowdingDistribution.getOrDefault("occupancyByNiche", Map.of()));
+        summary.put("coEvolutionPressure", coEvolutionRelationships.getOrDefault("nicheMigrationPressure", 0.0D));
+        summary.put("axisMeans", roleAxisDistribution.getOrDefault("axisMeans", Map.of()));
+        Files.writeString(analytics.resolve("opportunity-weighted-mutation-distribution.json"), toJson(summary, 0));
+
+        String report = "# Opportunity-Weighted Mutation Pressure Report\n\n"
+                + "## Opportunity signals used\n"
+                + "- occupancy scarcity (1 - niche occupancy)\n"
+                + "- persistence scarcity (1 - niche persistence)\n"
+                + "- novelty scarcity (1 - novelty signal blended with NSER trend)\n"
+                + "- capacity scarcity (1 - adaptive niche capacity utilization)\n"
+                + "- interaction scarcity (1 - interaction diversity support)\n\n"
+                + "## Opportunity score formula\n"
+                + "- opportunityScore(role)=occupancyScarcity*w_occ + persistenceScarcity*w_persist + noveltyScarcity*w_nov + capacityScarcity*w_cap + interactionScarcity*w_int\n"
+                + "- Weights: " + opportunityMutationEngine.diagnostics().get("weights") + "\n"
+                + "- maxBias cap: " + opportunityMutationEngine.config().maxBias() + " (bounded <= 0.15)\n"
+                + "- bias shape: mutationBias=1 + maxBias*normalizedScore, latentBias=1 + 0.6*maxBias*normalizedScore\n\n"
+                + "## Bias rules (soft tilt only)\n"
+                + "- mutation pressure baseline is multiplied by mutationBias (bounded, deterministic, niche-aware).\n"
+                + "- latent activation stage uses latentBias multiplier to gently favor underfilled niches.\n"
+                + "- dominant/filled roles remain selectable; no hard rejection is introduced.\n\n"
+                + "## Conservative bounds\n"
+                + "- opportunity layer contributes <= " + opportunityMutationEngine.config().maxBias() + " additional pressure.\n"
+                + "- all scarcity signals are clamped to [0,1].\n"
+                + "- no discontinuous jumps: all updates are smooth weighted sums from season diagnostics.\n\n"
+                + "## Underfilled-role examples\n"
+                + "- Top opportunity roles from latest season: " + opportunityMutationEngine.diagnostics().get("topOpportunityRoles") + "\n\n"
+                + "## Risk analysis\n"
+                + "- If novelty signal becomes noisy, bias weakens naturally because normalization is bounded by configured weights.\n"
+                + "- If occupancy collapses to one niche, pressure rises only softly and cannot exceed configured maxBias.\n"
+                + "- Existing fitness sharing, role repulsion, separation gating, and memory feedback remain authoritative constraints.\n";
+        Files.writeString(analytics.resolve("opportunity-weighted-mutation-report.md"), report);
+
+        double end = extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact");
+        double tnt = extractLastSeasonDouble(seasonalSnapshots, "turnoverRate");
+        double nser = latestNser(nserResult);
+        double pnnc = extractLastSeasonDouble(seasonalSnapshots, "pnnc");
+        double dominantShare = extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare");
+        String impact = "# Opportunity-Weighted Mutation Impact Review\n\n"
+                + "1. did END improve? latest END=" + end + "\n"
+                + "2. did TNT rise above zero in a healthy range? latest TNT=" + tnt + "\n"
+                + "3. did NSER remain meaningful rather than noisy? latest NSER=" + nser + "\n"
+                + "4. did PNNC increase or show stronger durable-novelty potential? latest PNNC=" + pnnc + "\n"
+                + "5. did dominant niche share decrease? dominant niche share=" + dominantShare + "\n"
+                + "6. did more candidates survive outside the dominant basin? stability=" + extractLastSeasonDouble(seasonalSnapshots, "nicheStability") + "\n"
+                + "7. did ecosystem move away from stagnant-attractor behavior? collapseWarning="
+                + seasonalSnapshots.get(seasonalSnapshots.size() - 1).getOrDefault("nicheCollapseWarning", "n/a") + "\n\n"
+                + "opportunityWeightedMutation=" + opportunityMutationEngine.diagnostics() + "\n";
+        Files.writeString(worldLab.resolve("opportunity-weighted-mutation-impact-review.md"), impact);
+
+        String openEndedReview = "# Opportunity-Weighted Mutation Open-Endedness Review\n\n"
+                + "- Ecosystem collapsed/bounded: " + (end < 2.0D) + "\n"
+                + "- Weakly ecological behavior present: " + (end >= 2.0D && dominantShare < 0.85D) + "\n"
+                + "- Multiple attractors beginning to emerge: " + (dominantShare < 0.60D) + "\n"
+                + "- Durable novelty improved: " + (pnnc > 0.0D || nser > 0.05D) + "\n"
+                + "- Diagnostic tuple END/TNT/NSER/PNNC=" + end + "/" + tnt + "/" + nser + "/" + pnnc + "\n";
+        Files.writeString(openEnded.resolve("opportunity-weighted-mutation-open-endedness-review.md"), openEndedReview);
+    }
+
     private void writeAdaptiveNicheCapacityReports(Path analytics,
                                                    Path worldLab,
                                                    Map<String, Object> crowdingDistribution,
@@ -887,6 +967,67 @@ public class WorldSimulationHarness {
                 + "6. did multiple niches gain enough room to stabilize? see adaptive-niche-capacity-distribution.json nicheCapacityTimeline\n"
                 + "7. did ecology move toward healthy multi-attractor behavior? check ecology diagnostic + dominant share trajectory.\n";
         Files.writeString(worldLab.resolve("adaptive-niche-capacity-impact-review.md"), impact);
+    }
+
+
+    private Map<String, Object> refreshOpportunitySignals(List<Artifact> artifacts) {
+        Map<String, Object> crowdingDistribution = speciesNicheEngine.buildCrowdingDistribution(artifacts);
+        Map<String, Object> roleAxisDistribution = speciesNicheEngine.roleAxisDistribution(artifacts);
+        Map<String, Object> coEvolutionRelationships = speciesNicheEngine.buildCoEvolutionRelationships(artifacts);
+
+        Map<String, Object> adaptiveSignals = new LinkedHashMap<>();
+        Map<String, Double> persistenceByNiche = new LinkedHashMap<>();
+        Map<String, Double> noveltyByNiche = new LinkedHashMap<>();
+        Map<String, Double> interactionByNiche = new LinkedHashMap<>();
+        Object adjustmentsObj = crowdingDistribution.getOrDefault("nicheCapacitySeasonAdjustments", List.of());
+        if (adjustmentsObj instanceof List<?> adjustments) {
+            for (Object row : adjustments) {
+                if (!(row instanceof Map<?, ?> map)) {
+                    continue;
+                }
+                String nicheId = String.valueOf(map.containsKey("nicheId") ? map.get("nicheId") : "unassigned").toLowerCase(Locale.ROOT);
+                persistenceByNiche.put(nicheId, toDouble(map.get("nichePersistence")));
+                noveltyByNiche.put(nicheId, toDouble(map.get("noveltySignal")));
+                interactionByNiche.put(nicheId, toDouble(map.get("interactionDiversity")));
+            }
+        }
+        Map<String, Double> capacityUtilization = new LinkedHashMap<>();
+        Object capacityObj = crowdingDistribution.getOrDefault("nicheCapacity", Map.of());
+        Object boundsObj = crowdingDistribution.getOrDefault("adaptiveNicheCapacityBounds", Map.of("min", 0.8D, "max", 1.25D));
+        double minCapacity = 0.8D;
+        double maxCapacity = 1.25D;
+        if (boundsObj instanceof Map<?, ?> bounds) {
+            minCapacity = toDouble(bounds.containsKey("min") ? bounds.get("min") : 0.8D);
+            maxCapacity = toDouble(bounds.containsKey("max") ? bounds.get("max") : 1.25D);
+        }
+        if (capacityObj instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String nicheId = String.valueOf(entry.getKey()).toLowerCase(Locale.ROOT);
+                double capacity = toDouble(entry.getValue());
+                double utilization = (capacity - minCapacity) / Math.max(0.0001D, maxCapacity - minCapacity);
+                capacityUtilization.put(nicheId, Math.max(0.0D, Math.min(1.0D, utilization)));
+            }
+        }
+
+        adaptiveSignals.put("nichePersistence", persistenceByNiche);
+        adaptiveSignals.put("nicheNovelty", noveltyByNiche);
+        adaptiveSignals.put("nicheInteractionDiversity", interactionByNiche);
+        adaptiveSignals.put("nicheCapacityUtilization", capacityUtilization);
+
+        double latestNserSignal = seasonalSnapshots.isEmpty() ? 0.0D : toDouble(seasonalSnapshots.get(seasonalSnapshots.size() - 1).getOrDefault("noveltyRate", 0.0D));
+        Map<String, OpportunityWeightedMutationEngine.OpportunitySignal> signals = opportunityMutationEngine.updateSignals(
+                roleAxisDistribution,
+                crowdingDistribution,
+                coEvolutionRelationships,
+                adaptiveSignals,
+                latestNserSignal);
+        Map<String, Object> summary = new LinkedHashMap<>(opportunityMutationEngine.diagnostics());
+        summary.put("signals", signals);
+        return summary;
+    }
+
+    private double toDouble(Object value) {
+        return value instanceof Number n ? n.doubleValue() : 0.0D;
     }
 
     private double extractLastSeasonDouble(List<Map<String, Object>> snapshots, String key) {

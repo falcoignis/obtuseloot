@@ -178,6 +178,7 @@ public class TraitScoringBenchmarkRunner {
                     d.roleBasedRepulsion(),
                     d.minimumRoleSeparation(),
                     d.adaptiveNicheCapacity(),
+                    d.opportunityWeightedMutation(),
                     mode
             );
             long start = System.currentTimeMillis();

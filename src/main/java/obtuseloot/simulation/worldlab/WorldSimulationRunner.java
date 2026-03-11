@@ -68,6 +68,15 @@ public final class WorldSimulationRunner {
                         doubleProp("world.adaptiveNicheCapacity.stagnationWeight", defaults.adaptiveNicheCapacity().stagnationWeight()),
                         doubleProp("world.adaptiveNicheCapacity.maxSeasonDelta", defaults.adaptiveNicheCapacity().maxSeasonDelta())
                 ).bounded(),
+                new OpportunityWeightedMutationConfig(
+                        boolProp("world.opportunityWeightedMutation.enabled", defaults.opportunityWeightedMutation().enabled()),
+                        doubleProp("world.opportunityWeightedMutation.maxBias", defaults.opportunityWeightedMutation().maxBias()),
+                        doubleProp("world.opportunityWeightedMutation.occupancyWeight", defaults.opportunityWeightedMutation().occupancyWeight()),
+                        doubleProp("world.opportunityWeightedMutation.persistenceWeight", defaults.opportunityWeightedMutation().persistenceWeight()),
+                        doubleProp("world.opportunityWeightedMutation.noveltyWeight", defaults.opportunityWeightedMutation().noveltyWeight()),
+                        doubleProp("world.opportunityWeightedMutation.capacityWeight", defaults.opportunityWeightedMutation().capacityWeight()),
+                        doubleProp("world.opportunityWeightedMutation.interactionWeight", defaults.opportunityWeightedMutation().interactionWeight())
+                ).bounded(),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();
