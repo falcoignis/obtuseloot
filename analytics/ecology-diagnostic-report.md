@@ -16,3 +16,6 @@ END/TNT/NSER are all low, indicating collapse into a monoculture attractor.
 
 ## Recommended next action
 Investigate ecological bottlenecks and validate niche detector sensitivity.
+
+
+- Adaptive niche capacity: active (bounded 0.80..1.25, simulation-layer modifier).

@@ -9,3 +9,6 @@
 - final diagnostic state: COLLAPSED_MONOCULTURE
 - attractor weakening vs relabeling: dominant attractor is mostly being relabeled
 - fitness sharing active: true, mode=niche, avgLoad=1.058400467393458
+
+
+- Adaptive niche capacity: active (bounded 0.80..1.25, simulation-layer modifier).

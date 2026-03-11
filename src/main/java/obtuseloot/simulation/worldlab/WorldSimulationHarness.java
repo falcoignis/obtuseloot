@@ -81,7 +81,7 @@ public class WorldSimulationHarness {
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
-        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection());
+        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.adaptiveNicheCapacity());
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -538,7 +538,8 @@ public class WorldSimulationHarness {
                 + "- Supporting context: nicheCount=" + diagnostic.nicheCount() + ", speciesCount=" + diagnostic.speciesCount()
                 + ", dominantNicheShare=" + diagnostic.dominantNicheShare() + ", dominantSpeciesShare=" + diagnostic.dominantSpeciesShare()
                 + ", dominantAttractorShare=" + diagnostic.dominantAttractorShare() + ", relabelingEvents=" + diagnostic.relabelingEvents() + "\n"
-                + "- Fitness sharing: active=" + speciesNicheEngine.isFitnessSharingEnabled() + ", mode=" + speciesNicheEngine.fitnessSharingMode() + ", avgLoad=" + speciesNicheEngine.averageFitnessSharingLoad() + "\n\n"
+                + "- Fitness sharing: active=" + speciesNicheEngine.isFitnessSharingEnabled() + ", mode=" + speciesNicheEngine.fitnessSharingMode() + ", avgLoad=" + speciesNicheEngine.averageFitnessSharingLoad() + "\n"
+                + "- Adaptive niche capacity: " + speciesNicheEngine.adaptiveNicheCapacitySummary() + "\n\n"
                 + "## Explanation summary\n"
                 + diagnostic.explanation() + "\n\n"
                 + "## Recommended next action\n"
@@ -693,8 +694,56 @@ public class WorldSimulationHarness {
                 + "5. did NSER improve? latest NSER=" + nser + ".\n"
                 + "6. did PNNC increase or show stronger durable novelty signals? see analytics/persistent-novel-niche.json and trend outputs.\n"
                 + "7. did the ecosystem move closer to a healthy multi-attractor state? assess alongside ecology diagnostic state and dominant share.\n\n"
-                + "fitnessSharingActive=" + distribution.get("enabled") + ", mode=" + distribution.get("model") + ", avgSharingLoad=" + distribution.get("averageSharingLoad") + ".\n";
+                + "fitnessSharingActive=" + distribution.get("enabled") + ", mode=" + distribution.get("model") + ", avgSharingLoad=" + distribution.get("averageSharingLoad") + ".\n"
+                + "adaptiveNicheCapacity=" + speciesNicheEngine.adaptiveNicheCapacitySummary() + "\n";
         Files.writeString(worldLab.resolve("fitness-sharing-impact-review.md"), impact);
+    }
+
+
+    private void writeAdaptiveNicheCapacityReports(Path analytics,
+                                                   Path worldLab,
+                                                   Map<String, Object> crowdingDistribution,
+                                                   NovelStrategyEmergenceAnalyzer.NserResult nserResult) throws IOException {
+        Map<String, Object> distribution = new LinkedHashMap<>();
+        distribution.put("enabled", crowdingDistribution.getOrDefault("adaptiveNicheCapacityEnabled", false));
+        distribution.put("bounds", crowdingDistribution.getOrDefault("adaptiveNicheCapacityBounds", Map.of("min", 0.80D, "max", 1.25D)));
+        distribution.put("nicheCapacity", crowdingDistribution.getOrDefault("nicheCapacity", Map.of()));
+        distribution.put("nicheCapacityTimeline", crowdingDistribution.getOrDefault("nicheCapacityTimeline", Map.of()));
+        distribution.put("seasonAdjustments", crowdingDistribution.getOrDefault("nicheCapacitySeasonAdjustments", List.of()));
+        Files.writeString(analytics.resolve("adaptive-niche-capacity-distribution.json"), toJson(distribution, 0));
+
+        String report = "# Adaptive Niche Capacity Report\n\n"
+                + "- Enabled: " + distribution.get("enabled") + "\n"
+                + "- Bounds (min/max): " + distribution.get("bounds") + "\n"
+                + "- Capacity values by niche: " + distribution.get("nicheCapacity") + "\n"
+                + "- Capacity changes over time: " + distribution.get("nicheCapacityTimeline") + "\n"
+                + "- Positive/negative adjustment contributors (seasonal): " + distribution.get("seasonAdjustments") + "\n\n"
+                + "## Most expanded niches\n"
+                + "- Derived from positive seasonal deltas in `seasonAdjustments`.\n\n"
+                + "## Most constrained niches\n"
+                + "- Derived from negative seasonal deltas in `seasonAdjustments`.\n\n"
+                + "## Expected ecosystem impact\n"
+                + "- Durable and diverse niches can slowly earn capacity headroom; chronically overcrowded/stagnant niches lose some room.\n"
+                + "- Fitness sharing remains active; niche capacity only modulates sharing load with bounded influence.\n\n"
+                + "## Risk analysis\n"
+                + "- If novelty signal is noisy, capacity can drift toward neutral; monitor PNNC/END before tightening weights.\n"
+                + "- Bounds and maxSeasonDelta prevent violent swings or runaway advantage.\n";
+        Files.writeString(analytics.resolve("adaptive-niche-capacity-report.md"), report);
+
+        double end = extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact");
+        double tnt = extractLastSeasonDouble(seasonalSnapshots, "turnoverRate");
+        double nser = latestNser(nserResult);
+        double pnnc = extractLastSeasonDouble(seasonalSnapshots, "pnnc");
+        double dominantShare = extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare");
+        String impact = "# Adaptive Niche Capacity Impact Review\n\n"
+                + "1. did END improve? latest END=" + end + "\n"
+                + "2. did TNT rise into healthy range rather than chaos? latest TNT=" + tnt + "\n"
+                + "3. did NSER improve? latest NSER=" + nser + "\n"
+                + "4. did PNNC increase or show stronger growth potential? latest PNNC=" + pnnc + "\n"
+                + "5. did dominant niche share decrease? final dominant niche share=" + dominantShare + "\n"
+                + "6. did multiple niches gain enough room to stabilize? see adaptive-niche-capacity-distribution.json nicheCapacityTimeline\n"
+                + "7. did ecology move toward healthy multi-attractor behavior? check ecology diagnostic + dominant share trajectory.\n";
+        Files.writeString(worldLab.resolve("adaptive-niche-capacity-impact-review.md"), impact);
     }
 
     private double extractLastSeasonDouble(List<Map<String, Object>> snapshots, String key) {
@@ -1368,6 +1417,7 @@ public class WorldSimulationHarness {
                 + "- Risk analysis: bounded penalties (<=1.15x) reduce monoculture risk while preserving local adaptation pressure.\n";
         Files.writeString(analytics.resolve("niche-crowding-report.md"), crowdingReport);
         writeFitnessSharingReports(analytics, worldLab, speciationSummary, crowdingDistribution, nserResult);
+        writeAdaptiveNicheCapacityReports(analytics, worldLab, crowdingDistribution, nserResult);
 
         String nicheQualityReport = "# Niche Detection Quality Report\n\n"
                 + "- Niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"

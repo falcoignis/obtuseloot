@@ -41,6 +41,17 @@ public final class WorldSimulationRunner {
                         doubleProp("world.behavioralProjection.traitEcologyWeight", defaults.behavioralProjection().traitEcologyWeight()),
                         doubleProp("world.behavioralProjection.behaviorWeight", defaults.behavioralProjection().behaviorWeight())
                 ),
+                new AdaptiveNicheCapacityConfig(
+                        boolProp("world.adaptiveNicheCapacity.enabled", defaults.adaptiveNicheCapacity().enabled()),
+                        doubleProp("world.adaptiveNicheCapacity.minCapacity", defaults.adaptiveNicheCapacity().minCapacity()),
+                        doubleProp("world.adaptiveNicheCapacity.maxCapacity", defaults.adaptiveNicheCapacity().maxCapacity()),
+                        doubleProp("world.adaptiveNicheCapacity.noveltyWeight", defaults.adaptiveNicheCapacity().noveltyWeight()),
+                        doubleProp("world.adaptiveNicheCapacity.diversityWeight", defaults.adaptiveNicheCapacity().diversityWeight()),
+                        doubleProp("world.adaptiveNicheCapacity.persistenceWeight", defaults.adaptiveNicheCapacity().persistenceWeight()),
+                        doubleProp("world.adaptiveNicheCapacity.overcrowdingWeight", defaults.adaptiveNicheCapacity().overcrowdingWeight()),
+                        doubleProp("world.adaptiveNicheCapacity.stagnationWeight", defaults.adaptiveNicheCapacity().stagnationWeight()),
+                        doubleProp("world.adaptiveNicheCapacity.maxSeasonDelta", defaults.adaptiveNicheCapacity().maxSeasonDelta())
+                ).bounded(),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();

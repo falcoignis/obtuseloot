@@ -95,7 +95,7 @@ public final class OpenEndednessTestRunner {
                 defaults.chaosEventRate(), defaults.lowHealthEventRate(),
                 defaults.mutationPressureMultiplier(), defaults.memoryEventMultiplier(),
                 defaults.outputDirectory(), ede, ecosystemBias, diversity, selfBalancing,
-                environmentPressure, traitInteractions, coEvolution, defaults.fitnessSharing(), defaults.behavioralProjection(), defaults.scoringMode());
+                environmentPressure, traitInteractions, coEvolution, defaults.fitnessSharing(), defaults.behavioralProjection(), defaults.adaptiveNicheCapacity(), defaults.scoringMode());
     }
 
     private static Map<String, Object> summarize(List<Map<String, Object>> seasonal) {

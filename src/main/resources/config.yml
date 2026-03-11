@@ -116,3 +116,13 @@ analytics:
       maxPenalty: 0.15
       targetOccupancy: 0.18
       similarityRadius: 0.20
+    adaptiveNicheCapacity:
+      enabled: true
+      minCapacity: 0.80
+      maxCapacity: 1.25
+      noveltyWeight: 0.03
+      diversityWeight: 0.02
+      persistenceWeight: 0.02
+      overcrowdingWeight: 0.03
+      stagnationWeight: 0.03
+      maxSeasonDelta: 0.05
