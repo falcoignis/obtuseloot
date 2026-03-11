@@ -18,3 +18,8 @@
 - Role repulsion dominance: hybrid-role-behavior
 - Role axis set: [support_vs_damage, burst_vs_persistence, mobility_vs_stationary, environment_dependent_vs_agnostic, memory_driven_vs_direct_trigger, interaction_heavy_vs_solo]
 - Top behavioral separation dimensions: [trigger_class_activation_distribution, interaction_diversity, mechanic_usage_distribution]
+
+- Minimum role separation enabled: true
+- roleSplitThreshold: 0.40
+- mode: hard_reject
+- niche separation source: traits+behavior+soft-role-repulsion+hard-role-gating

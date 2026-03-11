@@ -109,7 +109,12 @@ public class DashboardDataAssembler {
             String content = Files.readString(nicheQuality);
             out.put("roleBasedRepulsionEnabled", extractBoolean(content, "roleBasedRepulsionEnabled"));
             out.put("roleRepulsionBeta", extractNumber(content, "roleRepulsionBeta"));
-            out.put("nicheSeparationMode", extractString(content, "roleRepulsionDominance"));
+            out.put("minimumRoleSeparationEnabled", extractBoolean(content, "minimumRoleSeparationEnabled"));
+            out.put("roleSplitThreshold", extractNumber(content, "roleSplitThreshold"));
+            out.put("minimumRoleSeparationMode", extractString(content, "minimumRoleSeparationMode"));
+            out.put("hardRoleGateRejections", extractNumber(content, "hardRoleGateRejections"));
+            out.put("topRoleVarianceAxes", parseStringList(content, "topRoleVarianceAxes"));
+            out.put("nicheSeparationMode", extractString(content, "nicheSeparationSource"));
         }
         return out;
     }
@@ -144,6 +149,20 @@ public class DashboardDataAssembler {
             pairs.add(pairMatcher.group(1));
         }
         return pairs;
+    }
+
+    private java.util.List<String> parseStringList(String content, String key) {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\\[(.*?)]", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(content);
+        if (!matcher.find()) {
+            return java.util.List.of();
+        }
+        Matcher itemMatcher = Pattern.compile("\"([^\"]+)\"").matcher(matcher.group(1));
+        java.util.List<String> out = new java.util.ArrayList<>();
+        while (itemMatcher.find()) {
+            out.add(itemMatcher.group(1));
+        }
+        return out;
     }
 
     private double averageMapValues(Map<String, Double> map) {
