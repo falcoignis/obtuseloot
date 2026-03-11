@@ -14,6 +14,7 @@ public record AbilityTemplate(
         String awakeningVariant,
         String fusionVariant,
         String memoryVariant,
-        List<AbilityModifier> supportModifiers
+        List<AbilityModifier> supportModifiers,
+        AbilityMetadata metadata
 ) {
 }

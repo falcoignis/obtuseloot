@@ -6,6 +6,7 @@ import obtuseloot.events.ArtifactItemStorageListener;
 import obtuseloot.events.PlayerJoinLoadListener;
 import obtuseloot.events.PlayerStateCleanupListener;
 import obtuseloot.events.ReputationFeedListener;
+import obtuseloot.events.NonCombatAbilityListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -24,6 +25,7 @@ public class ObtuseEngine {
         Bukkit.getPluginManager().registerEvents(new PlayerJoinLoadListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new PlayerStateCleanupListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new ArtifactItemStorageListener(), plugin);
+        Bukkit.getPluginManager().registerEvents(new NonCombatAbilityListener(), plugin);
         plugin.getLogger().info("ObtuseEngine online.");
     }
 

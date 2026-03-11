@@ -20,28 +20,28 @@ public final class RegulatoryEligibilityFilter {
         double weight = 1.0D;
         weight *= gateWeight(profile, RegulatoryGate.RESONANCE,
                 template.family() == AbilityFamily.PRECISION || template.family() == AbilityFamily.CONSISTENCY,
-                template.mechanic() == AbilityMechanic.MEMORY_ECHO);
+                template.mechanic() == AbilityMechanic.MEMORY_ECHO || template.mechanic() == AbilityMechanic.INSIGHT_REVEAL);
         weight *= gateWeight(profile, RegulatoryGate.VOLATILITY,
                 template.family() == AbilityFamily.CHAOS || template.family() == AbilityFamily.BRUTALITY,
-                template.mechanic() == AbilityMechanic.UNSTABLE_DETONATION || template.trigger() == AbilityTrigger.ON_DRIFT_MUTATION);
+                template.mechanic() == AbilityMechanic.REVENANT_TRIGGER || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT);
         weight *= gateWeight(profile, RegulatoryGate.MEMORY,
                 template.trigger() == AbilityTrigger.ON_MEMORY_EVENT,
-                template.mechanic() == AbilityMechanic.MEMORY_ECHO || template.mechanic() == AbilityMechanic.RECOVERY_WINDOW);
+                template.mechanic() == AbilityMechanic.MEMORY_ECHO || template.mechanic() == AbilityMechanic.INSIGHT_REVEAL || template.mechanic() == AbilityMechanic.RECOVERY_WINDOW);
         weight *= gateWeight(profile, RegulatoryGate.ENVIRONMENT,
-                template.trigger() == AbilityTrigger.ON_DRIFT_MUTATION || template.mechanic() == AbilityMechanic.BATTLEFIELD_FIELD,
+                template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE || template.trigger() == AbilityTrigger.ON_WORLD_SCAN,
                 template.trigger() == AbilityTrigger.ON_REPOSITION);
         weight *= gateWeight(profile, RegulatoryGate.MOBILITY,
                 template.family() == AbilityFamily.MOBILITY,
-                template.trigger() == AbilityTrigger.ON_MOVEMENT || template.trigger() == AbilityTrigger.ON_REPOSITION);
+                template.trigger() == AbilityTrigger.ON_MOVEMENT || template.trigger() == AbilityTrigger.ON_REPOSITION || template.trigger() == AbilityTrigger.ON_WORLD_SCAN);
         weight *= gateWeight(profile, RegulatoryGate.SURVIVAL,
                 template.family() == AbilityFamily.SURVIVAL,
-                template.trigger() == AbilityTrigger.ON_LOW_HEALTH || template.mechanic() == AbilityMechanic.DEFENSIVE_THRESHOLD);
+                template.trigger() == AbilityTrigger.ON_BLOCK_HARVEST || template.mechanic() == AbilityMechanic.HARVEST_RELAY || template.mechanic() == AbilityMechanic.RITUAL_CHANNEL);
         weight *= gateWeight(profile, RegulatoryGate.DISCIPLINE,
                 template.family() == AbilityFamily.CONSISTENCY || template.family() == AbilityFamily.PRECISION,
-                template.mechanic() == AbilityMechanic.MARK || template.mechanic() == AbilityMechanic.GUARDIAN_PULSE);
+                template.mechanic() == AbilityMechanic.INSIGHT_REVEAL || template.mechanic() == AbilityMechanic.NAVIGATION_ANCHOR);
         weight *= gateWeight(profile, RegulatoryGate.LINEAGE_MILESTONE,
-                template.trigger() == AbilityTrigger.ON_AWAKENING || template.trigger() == AbilityTrigger.ON_FUSION,
-                template.trigger() == AbilityTrigger.ON_BOSS_KILL || template.mechanic() == AbilityMechanic.REVENANT_TRIGGER);
+                template.trigger() == AbilityTrigger.ON_RITUAL_INTERACT || template.trigger() == AbilityTrigger.ON_MEMORY_EVENT,
+                template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE || template.mechanic() == AbilityMechanic.REVENANT_TRIGGER);
         return weight;
     }
 
