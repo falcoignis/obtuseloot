@@ -81,7 +81,7 @@ public class WorldSimulationHarness {
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
-        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed());
+        this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing());
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -533,7 +533,8 @@ public class WorldSimulationHarness {
                 + "- Warning flags: " + diagnostic.warningFlags() + "\n"
                 + "- Supporting context: nicheCount=" + diagnostic.nicheCount() + ", speciesCount=" + diagnostic.speciesCount()
                 + ", dominantNicheShare=" + diagnostic.dominantNicheShare() + ", dominantSpeciesShare=" + diagnostic.dominantSpeciesShare()
-                + ", dominantAttractorShare=" + diagnostic.dominantAttractorShare() + ", relabelingEvents=" + diagnostic.relabelingEvents() + "\n\n"
+                + ", dominantAttractorShare=" + diagnostic.dominantAttractorShare() + ", relabelingEvents=" + diagnostic.relabelingEvents() + "\n"
+                + "- Fitness sharing: active=" + speciesNicheEngine.isFitnessSharingEnabled() + ", mode=" + speciesNicheEngine.fitnessSharingMode() + ", avgLoad=" + speciesNicheEngine.averageFitnessSharingLoad() + "\n\n"
                 + "## Explanation summary\n"
                 + diagnostic.explanation() + "\n\n"
                 + "## Recommended next action\n"
@@ -580,7 +581,8 @@ public class WorldSimulationHarness {
                 + "- final diagnostic state: " + diagnostic.state() + "\n"
                 + "- attractor weakening vs relabeling: "
                 + (diagnostic.dominantAttractorShare() < 0.55D ? "attractor weakening is visible" : "dominant attractor is mostly being relabeled")
-                + "\n";
+                + "\n"
+                + "- fitness sharing active: " + speciesNicheEngine.isFitnessSharingEnabled() + ", mode=" + speciesNicheEngine.fitnessSharingMode() + ", avgLoad=" + speciesNicheEngine.averageFitnessSharingLoad() + "\n";
         Files.writeString(Path.of("analytics/world-lab/ecology-diagnostic-review.md"), worldLabDiagnosticReview);
 
         String openEndednessReview = "# Ecology Diagnostic Open-Endedness Review\n\n"
@@ -634,6 +636,60 @@ public class WorldSimulationHarness {
         if (alertResult.shouldFail()) {
             throw new IllegalStateException("Ecology regression gate failed due to ERROR-level alerts.");
         }
+    }
+
+    private void writeFitnessSharingReports(Path analytics,
+                                           Path worldLab,
+                                           Map<String, Object> speciationSummary,
+                                           Map<String, Object> crowdingDistribution) throws IOException {
+        Map<String, Object> distribution = new LinkedHashMap<>();
+        distribution.put("model", crowdingDistribution.getOrDefault("fitnessSharingMode", "niche"));
+        distribution.put("enabled", crowdingDistribution.getOrDefault("fitnessSharingEnabled", false));
+        distribution.put("alpha", crowdingDistribution.getOrDefault("fitnessSharingAlpha", 0.0D));
+        distribution.put("maxPenalty", crowdingDistribution.getOrDefault("fitnessSharingMaxPenalty", 0.0D));
+        distribution.put("targetOccupancy", crowdingDistribution.getOrDefault("fitnessSharingTargetOccupancy", crowdingDistribution.getOrDefault("targetOccupancy", 0.18D)));
+        distribution.put("averageSharingLoad", crowdingDistribution.getOrDefault("averageSharingLoad", 1.0D));
+        distribution.put("averageSharingFactor", crowdingDistribution.getOrDefault("averageSharingFactor", 1.0D));
+        distribution.put("occupancyByNiche", crowdingDistribution.getOrDefault("occupancyByNiche", Map.of()));
+        distribution.put("nicheSharingLoad", crowdingDistribution.getOrDefault("nicheSharingLoad", Map.of()));
+        distribution.put("nicheSharingFactor", crowdingDistribution.getOrDefault("nicheSharingFactor", Map.of()));
+        distribution.put("penaltyActivationFrequency", crowdingDistribution.getOrDefault("penaltyActivationFrequency", 0.0D));
+        Files.writeString(analytics.resolve("fitness-sharing-distribution.json"), toJson(distribution, 0));
+
+        String sharingReport = "# Fitness Sharing Report\n\n"
+                + "- model: " + distribution.get("model") + "\n"
+                + "- formula: sharingFactor = 1 / (1 + alpha * max(0, nicheOccupancy - targetOccupancy))\n"
+                + "- alpha: " + distribution.get("alpha") + "\n"
+                + "- maxPenalty: " + distribution.get("maxPenalty") + "\n"
+                + "- targetOccupancy: " + distribution.get("targetOccupancy") + "\n"
+                + "- applied in: species persistence evaluation / world-lab survival scoring (crowding penalty layer)\n"
+                + "- average sharing load: " + distribution.get("averageSharingLoad") + "\n"
+                + "- average sharing factor: " + distribution.get("averageSharingFactor") + "\n"
+                + "- most crowded niches: " + distribution.get("occupancyByNiche") + "\n\n"
+                + "## Expected ecological effects\n"
+                + "- dominant niches lose small bounded viability, reducing premature convergence.\n"
+                + "- nearby underrepresented niches avoid immediate extinction due to lower sharing load.\n"
+                + "- effect remains smooth and bounded via maxPenalty cap.\n\n"
+                + "## Risk analysis\n"
+                + "- if alpha is too high, viable dominant lineages may be over-dampened.\n"
+                + "- if alpha is too low, monoculture collapse remains sticky.\n"
+                + "- current defaults are conservative and bounded to <=20% viability reduction.\n";
+        Files.writeString(analytics.resolve("fitness-sharing-report.md"), sharingReport);
+
+        double dominantShare = extractLastSeasonDouble(seasonalSnapshots, "dominantNicheShare");
+        double end = extractLastSeasonDouble(seasonalSnapshots, "effectiveNichesArtifact");
+        double tnt = extractLastSeasonDouble(seasonalSnapshots, "turnoverRate");
+        double nser = extractLastSeasonDouble(seasonalSnapshots, "noveltyRate");
+        String impact = "# Fitness Sharing Impact Review\n\n"
+                + "1. did dominant niche share decrease? dominantShare(final)=" + dominantShare + " and occupancy=" + crowdingDistribution.get("occupancyByNiche") + ".\n"
+                + "2. did underrepresented niches survive longer? speciesFractionByNiche=" + crowdingDistribution.get("speciesFractionByNiche") + ".\n"
+                + "3. did END improve? latest END=" + end + ".\n"
+                + "4. did TNT remain healthy instead of chaotic? latest TNT=" + tnt + ".\n"
+                + "5. did NSER improve? latest NSER=" + nser + ".\n"
+                + "6. did PNNC increase or show stronger durable novelty signals? see analytics/persistent-novel-niche.json and trend outputs.\n"
+                + "7. did the ecosystem move closer to a healthy multi-attractor state? assess alongside ecology diagnostic state and dominant share.\n\n"
+                + "fitnessSharingActive=" + distribution.get("enabled") + ", mode=" + distribution.get("model") + ", avgSharingLoad=" + distribution.get("averageSharingLoad") + ".\n";
+        Files.writeString(worldLab.resolve("fitness-sharing-impact-review.md"), impact);
     }
 
     private double extractLastSeasonDouble(List<Map<String, Object>> snapshots, String key) {
@@ -1126,6 +1182,7 @@ public class WorldSimulationHarness {
                 + "- Expected ecological impact: small dampening to dominant niches without suppressing underrepresented roles.\n"
                 + "- Risk analysis: bounded penalties (<=1.15x) reduce monoculture risk while preserving local adaptation pressure.\n";
         Files.writeString(analytics.resolve("niche-crowding-report.md"), crowdingReport);
+        writeFitnessSharingReports(analytics, worldLab, speciationSummary, crowdingDistribution);
 
         String nicheQualityReport = "# Niche Detection Quality Report\n\n"
                 + "- Niche count: " + nicheQualityDiagnostics.get("nicheCount") + "\n"

@@ -15,3 +15,5 @@ Turnover is near zero with weak novelty, indicating a stagnant ecological basin.
 
 ## Recommended next action
 Investigate ecological bottlenecks and validate niche detector sensitivity.
+
+- Fitness sharing: active=true, mode=niche (bounded viability dampening).
