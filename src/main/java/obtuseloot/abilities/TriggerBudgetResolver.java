@@ -5,7 +5,7 @@ public final class TriggerBudgetResolver {
     public TriggerBudgetProfile resolve(AbilityDefinition ability, AbilityEventContext context) {
         TriggerBudgetProfile metadataProfile = ability.metadata() == null ? null : ability.metadata().triggerBudgetProfile();
         TriggerBudgetProfile base = metadataProfile == null ? defaultsFor(ability, context.trigger()) : metadataProfile;
-        if (isIntentional(context.trigger(), context.source())) {
+        if (isIntentional(context)) {
             return new TriggerBudgetProfile(
                     base.triggerCost() * 0.85D,
                     base.evaluationCost(),
@@ -37,12 +37,13 @@ public final class TriggerBudgetResolver {
         };
     }
 
-    private boolean isIntentional(AbilityTrigger trigger, String source) {
+    private boolean isIntentional(AbilityEventContext context) {
+        AbilityTrigger trigger = context.trigger();
         if (trigger == AbilityTrigger.ON_RITUAL_INTERACT || trigger == AbilityTrigger.ON_ENTITY_INSPECT
                 || trigger == AbilityTrigger.ON_BLOCK_INSPECT || trigger == AbilityTrigger.ON_BLOCK_HARVEST
                 || trigger == AbilityTrigger.ON_SOCIAL_INTERACT) {
             return true;
         }
-        return source != null && (source.contains("inspect") || source.contains("gesture") || source.contains("interact") || source.contains("harvest"));
+        return context.runtimeContext() != null && context.runtimeContext().intentional();
     }
 }

@@ -16,6 +16,7 @@ public class ItemAbilityManager {
     private final AbilityResolver resolver;
     private final Map<String, Integer> triggerCounts = new HashMap<>();
     private final Map<String, Integer> triggerSourceCounts = new HashMap<>();
+    private final Map<String, LongAdder> coalescedExecutionByTrigger = new HashMap<>();
     private final TriggerSubscriptionIndex subscriptionIndex = new TriggerSubscriptionIndex();
     private final EventAbilityDispatcher dispatcher = new EventAbilityDispatcher();
     private final TriggerBudgetManager triggerBudgetManager = new TriggerBudgetManager();
@@ -64,7 +65,13 @@ public class ItemAbilityManager {
     public AbilityDispatchResult resolveDispatch(AbilityEventContext context) {
         dispatchCalls.increment();
         dispatchByTrigger.get(context.trigger()).increment();
-        triggerSourceCounts.merge(context.trigger()+"#"+context.source(), 1, Integer::sum);
+        String sourceId = context.runtimeContext() == null || context.runtimeContext().source() == null
+                ? context.source()
+                : context.runtimeContext().source().id();
+        triggerSourceCounts.merge(context.trigger()+"#"+sourceId, 1, Integer::sum);
+        if (context.runtimeContext() != null && context.runtimeContext().coalesced()) {
+            coalescedExecutionByTrigger.computeIfAbsent(context.trigger().name(), ignored -> new LongAdder()).increment();
+        }
         executionStatusCounts.get(AbilityExecutionStatus.TRIGGER_SEEN).increment();
 
         UUID ownerId = context.artifact().getOwnerId();
@@ -225,6 +232,10 @@ public class ItemAbilityManager {
 
     public Map<String, Long> outcomeTypeCounts() {
         return snapshotLongAdders(outcomeTypeCounts);
+    }
+
+    public Map<String, Long> coalescedExecutionByTrigger() {
+        return snapshotLongAdders(coalescedExecutionByTrigger);
     }
 
     private Map<String, Long> snapshotLongAdders(Map<String, LongAdder> source) {

@@ -1,15 +1,18 @@
 package obtuseloot.events;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.AbilityMechanic;
+import obtuseloot.abilities.AbilityRuntimeContext;
+import obtuseloot.abilities.AbilitySource;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.obtuseengine.ArtifactProcessor;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.generator.structure.GeneratedStructure;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -19,7 +22,6 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,37 +34,59 @@ public class NonCombatAbilityListener implements Listener {
 
     private final Map<UUID, Long> lastStructureSense = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> lastChunkKey = new ConcurrentHashMap<>();
-    private final Map<Long, StructureSenseSnapshot> structureSenseCache = new ConcurrentHashMap<>();
 
+    private final TriggerWorkCoalescer coalescer;
+    private final StructureSenseService structureSenseService;
 
     private static final EnumSet<Material> CROPS = EnumSet.of(Material.WHEAT, Material.CARROTS, Material.POTATOES, Material.BEETROOTS, Material.NETHER_WART);
-    private static final Set<Material> STRUCTURE_AFFINITY_BLOCKS = Set.of(
-            Material.CHISELED_DEEPSLATE, Material.SCULK, Material.SCULK_SHRIEKER, Material.MOSSY_COBBLESTONE,
-            Material.CHISELED_STONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.GILDED_BLACKSTONE,
-            Material.SUSPICIOUS_GRAVEL, Material.CUT_COPPER, Material.DEEPSLATE_BRICKS
-    );
+
+    public NonCombatAbilityListener() {
+        this.coalescer = new TriggerWorkCoalescer(ObtuseLoot.get());
+        this.structureSenseService = new StructureSenseService(new ChunkSenseCacheCodec(ObtuseLoot.get()));
+    }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onMove(PlayerMoveEvent event) {
         if (event.getTo() == null || event.getFrom().getWorld() == null || event.getTo().getWorld() == null) return;
         if (event.getFrom().distanceSquared(event.getTo()) < MOVE_DISTANCE_SQ) return;
         Player player = event.getPlayer();
-        long now = System.currentTimeMillis();
-        if (!allowProbe(player, AbilityTrigger.ON_WORLD_SCAN, "move-world-scan-probe", 0.8D, false)) return;
+        if (!allowProbe(player, AbilityTrigger.ON_WORLD_SCAN, AbilitySource.MOVE_WORLD_SCAN.id(), 0.8D, false)) return;
 
         int chunkKey = (event.getTo().getBlockX() >> 4) * 7340033 ^ (event.getTo().getBlockZ() >> 4);
         int previous = lastChunkKey.getOrDefault(player.getUniqueId(), Integer.MIN_VALUE);
         if (previous != chunkKey) {
             lastChunkKey.put(player.getUniqueId(), chunkKey);
-            ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_WORLD_SCAN, 1.0D, "move-chunk");
-            if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS
-                    && allowProbe(player, AbilityTrigger.ON_STRUCTURE_SENSE, "move-structure-probe", 1.2D, false)) {
-                lastStructureSense.put(player.getUniqueId(), now);
-                if (shouldSenseStructures(event.getTo().getChunk(), now)) {
-                    ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_STRUCTURE_SENSE, 1.0D, "structure-cache-hit");
-                }
-            }
+            scheduleChunkAwareSense(player, event.getTo().getChunk(), true);
         }
+    }
+
+    private void scheduleChunkAwareSense(Player player, Chunk chunk, boolean coalesced) {
+        String workKey = "sense:" + player.getUniqueId() + ":" + chunk.getChunkKey();
+        coalescer.coalesce(workKey, 4L, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            ArtifactProcessor.processAbilityTriggerWithResult(
+                    player,
+                    AbilityTrigger.ON_WORLD_SCAN,
+                    1.0D,
+                    AbilitySource.CHUNK_WORLD_SCAN.id(),
+                    AbilityRuntimeContext.chunkAware(AbilitySource.CHUNK_WORLD_SCAN, chunk.getChunkKey(), coalesced)
+            );
+            long now = System.currentTimeMillis();
+            if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS
+                    && allowProbe(player, AbilityTrigger.ON_STRUCTURE_SENSE, AbilitySource.STRUCTURE_SENSE.id(), 1.2D, false)
+                    && structureSenseService.shouldTriggerStructureSense(chunk, now)) {
+                lastStructureSense.put(player.getUniqueId(), now);
+                ArtifactProcessor.processAbilityTriggerWithResult(
+                        player,
+                        AbilityTrigger.ON_STRUCTURE_SENSE,
+                        1.0D,
+                        AbilitySource.STRUCTURE_SENSE.id(),
+                        AbilityRuntimeContext.chunkAware(AbilitySource.STRUCTURE_SENSE, chunk.getChunkKey(), coalesced)
+                );
+            }
+        });
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -71,25 +95,25 @@ public class NonCombatAbilityListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
             Block block = event.getClickedBlock();
             if (Tag.DOORS.isTagged(block.getType()) || Tag.TRAPDOORS.isTagged(block.getType()) || Tag.FENCE_GATES.isTagged(block.getType())) {
-                ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_SOCIAL_INTERACT, 1.0D, "quiet-passage");
-                ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, "quiet-passage");
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_SOCIAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
             }
             if (block.getType() == Material.CAMPFIRE || block.getType() == Material.SOUL_CAMPFIRE) {
-                ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, "campfire");
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
             }
-            ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_BLOCK_INSPECT, 1.0D, "inspect-block");
+            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_INSPECT, 1.0D, AbilitySource.BLOCK_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT));
         }
         if (event.getAction() == Action.RIGHT_CLICK_AIR && player.isSneaking()) {
-            ArtifactProcessor.processAbilityTrigger(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, "gesture-anchor");
+            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.RITUAL_GESTURE.id(), AbilityRuntimeContext.intentional(AbilitySource.RITUAL_GESTURE));
         }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityInspect(PlayerInteractAtEntityEvent event) {
-        ArtifactProcessor.processAbilityTrigger(event.getPlayer(), AbilityTrigger.ON_ENTITY_INSPECT, 1.0D, "inspect-entity");
+        ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_ENTITY_INSPECT, 1.0D, AbilitySource.ENTITY_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.ENTITY_INSPECT));
         Entity entity = event.getRightClicked();
         if (!(entity instanceof Player)) {
-            ArtifactProcessor.processAbilityTrigger(event.getPlayer(), AbilityTrigger.ON_WITNESS_EVENT, 1.0D, "entity-witness");
+            ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_WITNESS_EVENT, 1.0D, AbilitySource.WITNESS_EVENT.id(), AbilityRuntimeContext.passive(AbilitySource.WITNESS_EVENT));
         }
     }
 
@@ -97,46 +121,18 @@ public class NonCombatAbilityListener implements Listener {
     public void onHarvest(BlockBreakEvent event) {
         Block block = event.getBlock();
         if (!CROPS.contains(block.getType())) return;
-        boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, "crop-harvest")
+        boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, AbilitySource.CROP_HARVEST.id(), AbilityRuntimeContext.intentional(AbilitySource.CROP_HARVEST))
                 .hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY);
         if (hasGentleHarvest) {
-            block.getWorld().getBlockAt(block.getLocation()).setType(block.getType());
+            Bukkit.getScheduler().runTaskLater(ObtuseLoot.get(), () -> block.getWorld().getBlockAt(block.getLocation()).setType(block.getType()), 1L);
         }
-    }
-    private boolean shouldSenseStructures(Chunk chunk, long now) {
-        long chunkKey = chunk.getChunkKey();
-        StructureSenseSnapshot cached = structureSenseCache.get(chunkKey);
-        if (cached != null && now - cached.timestamp() < 120_000L) {
-            return cached.detected();
-        }
-
-        boolean detected = hasStructureSignals(chunk);
-        structureSenseCache.put(chunkKey, new StructureSenseSnapshot(now, detected));
-        return detected;
-    }
-
-    private boolean hasStructureSignals(Chunk chunk) {
-        Collection<GeneratedStructure> generatedStructures = chunk.getStructures();
-        if (generatedStructures != null && !generatedStructures.isEmpty()) {
-            return true;
-        }
-        for (org.bukkit.block.BlockState tile : chunk.getTileEntities(true)) {
-            if (STRUCTURE_AFFINITY_BLOCKS.contains(tile.getType())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean allowProbe(Player player, AbilityTrigger trigger, String source, double cost, boolean intentional) {
-        var plugin = obtuseloot.ObtuseLoot.get();
+        var plugin = ObtuseLoot.get();
         if (plugin == null || plugin.getItemAbilityManager() == null) return true;
         var artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
         return plugin.getItemAbilityManager().triggerBudgetManager()
                 .allowProbe(player.getUniqueId(), artifact.getArtifactStorageKey(), trigger, source, cost, intentional);
     }
-
-    private record StructureSenseSnapshot(long timestamp, boolean detected) {
-    }
-
 }
