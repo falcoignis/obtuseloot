@@ -16,8 +16,20 @@ class NonCombatAbilityIntegrationTest {
     @Test
     void registryContainsCuratedNonCombatPool() {
         AbilityRegistry registry = new AbilityRegistry();
-        assertEquals(18, registry.templates().size());
+        assertEquals(31, registry.templates().size());
         assertTrue(registry.templates().stream().noneMatch(t -> t.trigger() == AbilityTrigger.ON_HIT || t.trigger() == AbilityTrigger.ON_KILL));
+    }
+
+
+    @Test
+    void registryContainsEcologicalAbilityBatch() {
+        AbilityRegistry registry = new AbilityRegistry();
+        List<String> ids = registry.templates().stream().map(AbilityTemplate::id).toList();
+        assertTrue(ids.contains("exploration.pathfinder_instinct"));
+        assertTrue(ids.contains("gathering.forager_memory"));
+        assertTrue(ids.contains("ritual.altar_resonance"));
+        assertTrue(ids.contains("social.collective_insight"));
+        assertTrue(ids.contains("environment.terrain_affinity"));
     }
 
     @Test

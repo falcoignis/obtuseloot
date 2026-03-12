@@ -31,17 +31,34 @@ public class NicheTaxonomy {
         mechanicToNiches.put(AbilityMechanic.BURST_STATE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
         mechanicToNiches.put(AbilityMechanic.RETALIATION, EnumSet.of(MechanicNicheTag.PROTECTION_WARDING));
         mechanicToNiches.put(AbilityMechanic.UNSTABLE_DETONATION, EnumSet.of(MechanicNicheTag.RARE_HIGH_COST_UTILITY, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.ECOLOGICAL_PATHING, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
+        mechanicToNiches.put(AbilityMechanic.BIOME_RESONANCE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_SENSING, MechanicNicheTag.INSPECT_INFORMATION));
+        mechanicToNiches.put(AbilityMechanic.CARTOGRAPHIC_ECHO, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.STRUCTURE_SENSING));
+        mechanicToNiches.put(AbilityMechanic.FORAGING_MEMORY, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.MEMORY_HISTORY));
+        mechanicToNiches.put(AbilityMechanic.RESOURCE_ECOLOGY_SCAN, EnumSet.of(MechanicNicheTag.INSPECT_INFORMATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
+        mechanicToNiches.put(AbilityMechanic.CLUSTER_INTUITION, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.NAVIGATION));
+        mechanicToNiches.put(AbilityMechanic.RITUAL_STABILIZATION, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.SUPPORT_COHESION));
+        mechanicToNiches.put(AbilityMechanic.ALTAR_SIGNAL_BOOST, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY));
+        mechanicToNiches.put(AbilityMechanic.TEMPORAL_SPECIALIZATION, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.WITNESS_IMPRINT, EnumSet.of(MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.MEMORY_HISTORY));
+        mechanicToNiches.put(AbilityMechanic.COLLECTIVE_RELAY, EnumSet.of(MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.SUPPORT_COHESION));
+        mechanicToNiches.put(AbilityMechanic.TRADE_SCENT, EnumSet.of(MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.INSPECT_INFORMATION));
+        mechanicToNiches.put(AbilityMechanic.WEATHER_ATTUNEMENT, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
+        mechanicToNiches.put(AbilityMechanic.STRUCTURE_ATTUNEMENT, EnumSet.of(MechanicNicheTag.STRUCTURE_SENSING, MechanicNicheTag.ENVIRONMENTAL_SENSING));
+        mechanicToNiches.put(AbilityMechanic.TERRAIN_ADAPTATION, EnumSet.of(MechanicNicheTag.MOBILITY_UTILITY, MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
     }
 
     public Set<MechanicNicheTag> nichesFor(AbilityMechanic mechanic, AbilityTrigger trigger) {
         EnumSet<MechanicNicheTag> tags = EnumSet.copyOf(mechanicToNiches.getOrDefault(mechanic, EnumSet.of(MechanicNicheTag.GENERALIST)));
-        if (trigger == AbilityTrigger.ON_WORLD_SCAN || trigger == AbilityTrigger.ON_STRUCTURE_SENSE) {
+        if (trigger == AbilityTrigger.ON_WORLD_SCAN || trigger == AbilityTrigger.ON_STRUCTURE_SENSE
+                || trigger == AbilityTrigger.ON_CHUNK_ENTER || trigger == AbilityTrigger.ON_STRUCTURE_DISCOVERY
+                || trigger == AbilityTrigger.ON_STRUCTURE_PROXIMITY) {
             tags.add(MechanicNicheTag.ENVIRONMENTAL_SENSING);
         }
         if (trigger == AbilityTrigger.ON_BLOCK_INSPECT) {
             tags.add(MechanicNicheTag.INSPECT_INFORMATION);
         }
-        if (trigger == AbilityTrigger.ON_MEMORY_EVENT) {
+        if (trigger == AbilityTrigger.ON_MEMORY_EVENT || trigger == AbilityTrigger.ON_PLAYER_WITNESS) {
             tags.add(MechanicNicheTag.MEMORY_HISTORY);
         }
         return tags;

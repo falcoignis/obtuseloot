@@ -52,12 +52,12 @@ public final class AbilityExecutor {
 
     private AbilityOutcomeType resolveOutcomeType(AbilityMechanic mechanic) {
         return switch (mechanic) {
-            case HARVEST_RELAY -> AbilityOutcomeType.CROP_REPLANT;
-            case NAVIGATION_ANCHOR -> AbilityOutcomeType.NAVIGATION_HINT;
-            case SENSE_PING -> AbilityOutcomeType.STRUCTURE_SENSE;
-            case MEMORY_ECHO -> AbilityOutcomeType.MEMORY_MARK;
-            case SOCIAL_ATTUNEMENT, RITUAL_CHANNEL -> AbilityOutcomeType.SOCIAL_SIGNAL;
-            case INSIGHT_REVEAL -> AbilityOutcomeType.INFORMATION;
+            case HARVEST_RELAY, FORAGING_MEMORY, CLUSTER_INTUITION -> AbilityOutcomeType.CROP_REPLANT;
+            case NAVIGATION_ANCHOR, ECOLOGICAL_PATHING, CARTOGRAPHIC_ECHO, TERRAIN_ADAPTATION -> AbilityOutcomeType.NAVIGATION_HINT;
+            case SENSE_PING, BIOME_RESONANCE, WEATHER_ATTUNEMENT, STRUCTURE_ATTUNEMENT -> AbilityOutcomeType.STRUCTURE_SENSE;
+            case MEMORY_ECHO, WITNESS_IMPRINT, ALTAR_SIGNAL_BOOST -> AbilityOutcomeType.MEMORY_MARK;
+            case SOCIAL_ATTUNEMENT, RITUAL_CHANNEL, RITUAL_STABILIZATION, COLLECTIVE_RELAY, TRADE_SCENT -> AbilityOutcomeType.SOCIAL_SIGNAL;
+            case INSIGHT_REVEAL, RESOURCE_ECOLOGY_SCAN, TEMPORAL_SPECIALIZATION -> AbilityOutcomeType.INFORMATION;
             default -> AbilityOutcomeType.FLAVOR_ONLY;
         };
     }
