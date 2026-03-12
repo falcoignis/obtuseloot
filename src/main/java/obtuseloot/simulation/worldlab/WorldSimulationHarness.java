@@ -500,7 +500,15 @@ public class WorldSimulationHarness {
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
 
         Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
-        Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryArchive.readAll().stream().map(Object::toString).toList()));
+        List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
+        Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryEvents.stream().map(Object::toString).toList()));
+        Path telemetryOutDir = out.resolve("telemetry");
+        Files.createDirectories(telemetryOutDir);
+        new EcosystemHistoryArchive(telemetryOutDir.resolve("ecosystem-events.log")).append(telemetryEvents);
+        new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
+                .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
+                        System.currentTimeMillis(), "harness_export", snapshot));
+        Files.writeString(out.resolve("scenario-metadata.properties"), "scenario=" + scenario.name() + "\n");
         Files.writeString(out.resolve("rollup-snapshots.json"), toJson(Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot), 0));
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));

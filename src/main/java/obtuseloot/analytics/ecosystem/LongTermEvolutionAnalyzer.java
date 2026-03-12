@@ -3,6 +3,7 @@ package obtuseloot.analytics.ecosystem;
 import obtuseloot.telemetry.EcosystemSnapshot;
 import obtuseloot.telemetry.TelemetryRollupSnapshot;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ public class LongTermEvolutionAnalyzer {
         List<TelemetryRollupSnapshot> selected = new AnalysisWindowSelector().select(history, policy);
         if (selected == null || selected.size() < 3) {
             return new LongTermEvolutionReport(0.0D, Map.of(), List.of(), 0.0D,
+                    List.of(),
                     "Insufficient historical rollups for long-term analysis.");
         }
 
@@ -32,13 +34,30 @@ public class LongTermEvolutionAnalyzer {
         double adaptationCycleStrength = (last.diversityIndex() - first.diversityIndex())
                 + (last.turnoverRate() - first.turnoverRate());
 
+        List<LongTermEvolutionReport.WindowDelta> deltas = computeDeltas(selected);
+
         String summary = "window=" + policy.bucketType().name().toLowerCase(java.util.Locale.ROOT)
                 + ", retention=" + policy.retentionBuckets()
                 + ", turnover=" + format(turnover)
                 + ", adaptationCycleStrength=" + format(adaptationCycleStrength)
+                + ", recentDelta=" + (deltas.isEmpty() ? "n/a" : format(deltas.getLast().diversityDelta()) + "/" + format(deltas.getLast().turnoverDelta()))
                 + ", emergingNiches=" + emergingNiches;
 
-        return new LongTermEvolutionReport(turnover, lifespanWindows, emergingNiches, adaptationCycleStrength, summary);
+        return new LongTermEvolutionReport(turnover, lifespanWindows, emergingNiches, adaptationCycleStrength, deltas, summary);
+    }
+
+    private List<LongTermEvolutionReport.WindowDelta> computeDeltas(List<TelemetryRollupSnapshot> selected) {
+        List<LongTermEvolutionReport.WindowDelta> out = new ArrayList<>();
+        for (int i = 1; i < selected.size(); i++) {
+            TelemetryRollupSnapshot previous = selected.get(i - 1);
+            TelemetryRollupSnapshot current = selected.get(i);
+            out.add(new LongTermEvolutionReport.WindowDelta(
+                    previous.createdAtMs(),
+                    current.createdAtMs(),
+                    current.ecosystemSnapshot().diversityIndex() - previous.ecosystemSnapshot().diversityIndex(),
+                    current.ecosystemSnapshot().turnoverRate() - previous.ecosystemSnapshot().turnoverRate()));
+        }
+        return List.copyOf(out);
     }
 
     private Map<String, Long> lineageLifespan(List<EcosystemSnapshot> snapshots) {

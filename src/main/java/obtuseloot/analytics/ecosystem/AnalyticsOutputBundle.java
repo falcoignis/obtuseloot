@@ -10,6 +10,9 @@ public record AnalyticsOutputBundle(
         Path reportPath,
         Path recommendationHistoryPath,
         Path exportedProfilePath,
+        Path jobRecordPath,
+        Path runMetadataPath,
+        Path outputManifestPath,
         Map<String, String> scenarioMetadata
 ) {
 }
