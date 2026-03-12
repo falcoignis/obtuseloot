@@ -1,0 +1,10 @@
+job=validation-gatherer-heavy
+rollups_loaded=1
+window_size=1
+telemetry_events=63596
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-gatherer-heavy-0c4dd65b-e201-43d3-b5dc-b68a8d9366c0
+decision=PROPOSED
+long_term_summary=Insufficient historical rollups for long-term analysis.

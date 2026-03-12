@@ -1,0 +1,10 @@
+job=validation-mixed
+rollups_loaded=1
+window_size=1
+telemetry_events=69346
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-mixed-db8fc441-4d61-4e16-9257-de7503ed4a4e
+decision=PROPOSED
+long_term_summary=Insufficient historical rollups for long-term analysis.

@@ -1,0 +1,10 @@
+job=validation-ritualist-heavy
+rollups_loaded=1
+window_size=1
+telemetry_events=62200
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-ritualist-heavy-8aafd1c6-37f9-4807-a94d-9ba1f8f76d79
+decision=PROPOSED
+long_term_summary=Insufficient historical rollups for long-term analysis.
