@@ -2,7 +2,7 @@ package obtuseloot.abilities.mutation;
 
 import obtuseloot.abilities.*;
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.evolution.UtilityHistoryRollup;
+import obtuseloot.evolution.*;
 import obtuseloot.memory.ArtifactMemoryProfile;
 
 import java.util.ArrayList;
@@ -31,6 +31,23 @@ public class AbilityMutationEngine {
         Random r = new Random(artifact.getArtifactSeed() ^ artifact.getDriftLevel() ^ artifact.getDriftAlignment().hashCode() ^ artifact.getAwakeningPath().hashCode()
                 ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure() ^ definitions.size());
 
+        EcosystemRoleClassifier roleClassifier = new EcosystemRoleClassifier();
+        ArtifactNicheProfile nicheProfile = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
+        double specializationBias = nicheProfile.specialization().specializationScore();
+        List<AbilityMechanic> underrepresentedUsefulMechanics = utilityHistory.signalByMechanicTrigger().entrySet().stream()
+                .filter(entry -> entry.getValue().utilityDensity() > 0.30D && entry.getValue().attempts() >= 2)
+                .sorted(java.util.Comparator.comparingDouble((java.util.Map.Entry<String, MechanicUtilitySignal> e) -> e.getValue().utilityDensity()).reversed())
+                .map(entry -> entry.getKey().split("@")[0])
+                .map(name -> {
+                    try {
+                        return AbilityMechanic.valueOf(name);
+                    } catch (IllegalArgumentException ex) {
+                        return null;
+                    }
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
         List<AbilityDefinition> mutated = new ArrayList<>();
         int mutationCount = 0;
         for (AbilityDefinition definition : definitions) {
@@ -44,7 +61,7 @@ public class AbilityMutationEngine {
                 mutationCount++;
             }
 
-            AbilityMechanic mechanic = mutateMechanic(beforeMechanic, definition.family(), chaosGrowth, memoryProfile, r, utilityHistory);
+            AbilityMechanic mechanic = mutateMechanic(beforeMechanic, definition.family(), chaosGrowth, memoryProfile, r, utilityHistory, specializationBias, underrepresentedUsefulMechanics);
             if (mechanic != beforeMechanic) {
                 out.add(new AbilityMutation("mechanic mutation", beforeMechanic.name(), mechanic.name(), "mechanic remapped to keep mutation behavior active"));
                 mutationCount++;
@@ -115,7 +132,9 @@ public class AbilityMutationEngine {
                                            boolean chaosGrowth,
                                            ArtifactMemoryProfile memoryProfile,
                                            Random random,
-                                           UtilityHistoryRollup utilityHistory) {
+                                           UtilityHistoryRollup utilityHistory,
+                                           double specializationBias,
+                                           List<AbilityMechanic> underrepresentedUsefulMechanics) {
         if (chaosGrowth && family == AbilityFamily.CHAOS) {
             return AbilityMechanic.UNSTABLE_DETONATION;
         }
@@ -127,6 +146,9 @@ public class AbilityMutationEngine {
         }
         if (memoryProfile.disciplineWeight() > 1.2D && family == AbilityFamily.CONSISTENCY) {
             return AbilityMechanic.CHAIN_ESCALATION;
+        }
+        if (!underrepresentedUsefulMechanics.isEmpty() && random.nextDouble() < (0.20D + (specializationBias * 0.20D))) {
+            return underrepresentedUsefulMechanics.get(random.nextInt(underrepresentedUsefulMechanics.size()));
         }
         if (utilityHistory.hasUtilityHistory() && random.nextDouble() < 0.55D) {
             return utilityHistory.preferredMechanic(current);

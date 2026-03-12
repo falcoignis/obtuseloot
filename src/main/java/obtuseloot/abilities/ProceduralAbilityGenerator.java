@@ -213,7 +213,10 @@ public class ProceduralAbilityGenerator {
             double confidence = utilityHistory.confidence();
             score = (score * (1.0D - (0.45D * confidence))) + (utilityBias * (1.9D * confidence));
         }
-        return score * rarityModifier(template);
+        double ecology = experienceEvolutionEngine == null
+                ? 1.0D
+                : experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger());
+        return score * rarityModifier(template) * ecology;
     }
 
 
@@ -245,6 +248,14 @@ public class ProceduralAbilityGenerator {
         double ecosystem = ecosystemEngine == null ? 1.0D : ecosystemEngine.weightForFamily(key);
         double lineageInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveFamilyInfluence(lineage, key);
         double profileScore = base * ecosystem * lineageInfluence;
+        if (experienceEvolutionEngine != null) {
+            double familyEcology = registry.templates().stream()
+                    .filter(template -> template.family() == family)
+                    .mapToDouble(template -> experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger()))
+                    .average()
+                    .orElse(1.0D);
+            profileScore *= familyEcology;
+        }
         if (!utilityHistory.hasUtilityHistory()) {
             return profileScore;
         }

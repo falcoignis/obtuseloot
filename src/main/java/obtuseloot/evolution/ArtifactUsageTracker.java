@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ArtifactUsageTracker {
     private final Map<Long, ArtifactUsageProfile> profiles = new ConcurrentHashMap<>();
     private final TriggerBudgetResolver budgetResolver = new TriggerBudgetResolver();
+    private final NichePopulationTracker nichePopulationTracker = new NichePopulationTracker();
 
     public ArtifactUsageProfile profileFor(Artifact artifact) {
         return profileForSeed(artifact.getArtifactSeed());
@@ -25,6 +26,7 @@ public class ArtifactUsageTracker {
 
     public void trackCreated(Artifact artifact) {
         profileFor(artifact).markCreated(System.currentTimeMillis());
+        nichePopulationTracker.markCreated(artifact.getArtifactSeed());
     }
 
     public void trackUse(Artifact artifact) {
@@ -37,6 +39,7 @@ public class ArtifactUsageTracker {
 
     public void trackDiscard(Artifact artifact) {
         profileFor(artifact).recordDiscard(System.currentTimeMillis());
+        nichePopulationTracker.markDiscarded(artifact.getArtifactSeed());
     }
 
     public void trackFusionParticipation(Artifact artifact) {
@@ -73,6 +76,7 @@ public class ArtifactUsageTracker {
                 context.source(),
                 System.currentTimeMillis()
         ));
+        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), profileFor(artifact).utilitySignalsByMechanic());
     }
 
     private double contextualRelevance(AbilityDefinition definition,
@@ -117,6 +121,11 @@ public class ArtifactUsageTracker {
         }
         UtilityHistoryRollup rollup = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
         profileFor(artifact).restoreUtilitySignals(rollup.signalByMechanicTrigger());
+        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), rollup.signalByMechanicTrigger());
+    }
+
+    public NichePopulationTracker nichePopulationTracker() {
+        return nichePopulationTracker;
     }
 
     private MechanicUtilitySignal mergeSignal(MechanicUtilitySignal a, MechanicUtilitySignal b) {
