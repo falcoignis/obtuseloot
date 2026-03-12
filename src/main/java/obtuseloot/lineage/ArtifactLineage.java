@@ -29,6 +29,7 @@ public class ArtifactLineage {
     private final Deque<Double> ecologicalPressureHistory = new ArrayDeque<>();
     private final Deque<Double> specializationTrajectory = new ArrayDeque<>();
     private int repeatedDivergences;
+    private double currentBranchDivergence;
     private int driftWindowTicks = 5;
     private int descendantsObserved;
     private int branchBirths;
@@ -56,6 +57,7 @@ public class ArtifactLineage {
     public EvolutionaryBiasGenome evolutionaryBiasGenome() { return evolutionaryBiasGenome; }
     public Map<String, LineageBranchProfile> branches() { return Map.copyOf(branches); }
     public int repeatedDivergences() { return repeatedDivergences; }
+    public double currentBranchDivergence() { return currentBranchDivergence; }
     public int descendantsObserved() { return descendantsObserved; }
     public int branchBirths() { return branchBirths; }
     public int branchCollapses() { return branchCollapses; }
@@ -110,6 +112,7 @@ public class ArtifactLineage {
         }
 
         double divergence = branchingHeuristics.distance(evolutionaryBiasGenome, observedBias);
+        currentBranchDivergence = divergence;
         double adaptationStrength = Math.max(0.05D,
                 (0.22D * mutationInfluence)
                         - (Math.max(0.0D, ecologicalPressure - 1.0D) * 0.14D)
@@ -149,6 +152,13 @@ public class ArtifactLineage {
             }
         }
         branchCollapses = collapses;
+    }
+
+    public double specializationTrajectoryDelta() {
+        if (specializationTrajectory.size() < 2) {
+            return 0.0D;
+        }
+        return specializationTrajectory.peekLast() - specializationTrajectory.peekFirst();
     }
 
     public String dominantBranchId() {
