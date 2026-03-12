@@ -12,6 +12,8 @@ import obtuseloot.lineage.ArtifactLineage;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
+import obtuseloot.lineage.EvolutionaryBiasGenome;
+import obtuseloot.lineage.LineageBiasDimension;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -141,7 +143,7 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> selected = traitInteractionsEnabled
                 ? traitInterferenceResolver.selectTopWithInterferenceShuffle(scoringPool, genome, picks, seed ^ 0x5DEECE66DL, 0.94D, 3)
                 : scoringPool.stream()
-                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage, utilityHistory)))
+                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage, utilityHistory, lineage)))
                 .limit(picks)
                 .toList();
         List<AbilityDefinition> picked = new ArrayList<>();
@@ -165,12 +167,22 @@ public class ProceduralAbilityGenerator {
                 if (pool.isEmpty()) {
                     continue;
                 }
-                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random, utilityHistory);
+                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random, utilityHistory, lineage);
                 picked.add(fromTemplate(t, family, evolutionStage));
                 if (picked.size() >= picks) {
                     break;
                 }
             }
+        }
+
+        if (lineageRegistry != null && lineage != null) {
+            EvolutionaryBiasGenome observedBias = deriveObservedBias(selected, memoryProfile, utilityHistory);
+            double ecologicalPressure = experienceEvolutionEngine == null ? 1.0D
+                    : selected.stream()
+                    .mapToDouble(t -> experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), t.mechanic(), t.trigger()))
+                    .average()
+                    .orElse(1.0D);
+            lineageRegistry.recordDescendantBias(artifact, observedBias, ecologicalPressure);
         }
 
         return new AbilityProfile("procedural-" + ranked.get(0).name().toLowerCase() + "-s" + evolutionStage, picked);
@@ -183,11 +195,11 @@ public class ProceduralAbilityGenerator {
                 "Awakening/Fusion: " + t.awakeningVariant() + " / " + t.fusionVariant(), "Memory: " + t.memoryVariant());
     }
 
-    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory) {
+    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage) {
         double total = 0.0D;
         double[] scores = new double[pool.size()];
         for (int i = 0; i < pool.size(); i++) {
-            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage, utilityHistory) * rarityModifier(pool.get(i)));
+            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage, utilityHistory, lineage) * rarityModifier(pool.get(i)));
             total += scores[i];
         }
         double roll = random.nextDouble() * total;
@@ -198,7 +210,7 @@ public class ProceduralAbilityGenerator {
         return pool.get(pool.size() - 1);
     }
 
-    private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory) {
+    private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage) {
         double score = 1.0D;
         if (template.trigger() == AbilityTrigger.ON_MEMORY_EVENT || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT) score += memoryProfile.pressure() * 0.08D;
         if (template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE) score += memoryProfile.bossWeight() * 0.06D;
@@ -216,9 +228,37 @@ public class ProceduralAbilityGenerator {
         double ecology = experienceEvolutionEngine == null
                 ? 1.0D
                 : experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger());
-        return score * rarityModifier(template) * ecology;
+        double lineageTemplateInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveTemplateInfluence(lineage, template.metadata());
+        double ecologicalCorrection = lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, ecology);
+        return score * rarityModifier(template) * ecology * lineageTemplateInfluence * ecologicalCorrection;
     }
 
+
+    private EvolutionaryBiasGenome deriveObservedBias(List<AbilityTemplate> templates, ArtifactMemoryProfile memoryProfile, UtilityHistoryRollup utilityHistory) {
+        EvolutionaryBiasGenome observed = new EvolutionaryBiasGenome();
+        if (templates.isEmpty()) {
+            return observed;
+        }
+        double activeRate = templates.stream().filter(template -> template.trigger() != AbilityTrigger.ON_AWAKENING && template.trigger() != AbilityTrigger.ON_FUSION).count() / (double) templates.size();
+        observed.add(LineageBiasDimension.ACTIVE_BEHAVIOR, (activeRate - 0.5D) * 0.40D);
+        long memoryTemplates = templates.stream().filter(template -> template.metadata().hasAffinity("memory")).count();
+        observed.add(LineageBiasDimension.MEMORY_REACTIVITY, ((memoryTemplates / (double) templates.size()) * 0.45D) + (memoryProfile.pressure() * 0.01D));
+        double nicheSpread = templates.stream().map(t -> t.mechanic().name()).distinct().count() / (double) templates.size();
+        observed.add(LineageBiasDimension.SPECIALIZATION, (0.6D - nicheSpread) * 0.45D);
+        observed.add(LineageBiasDimension.WEIRDNESS, templates.stream().filter(t -> t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.40D);
+        observed.add(LineageBiasDimension.RARITY_APPETITE, templates.stream().mapToDouble(this::rarityModifier).average().orElse(1.0D) < 1.0D ? -0.08D : 0.08D);
+        observed.add(LineageBiasDimension.PATIENCE, templates.stream().filter(t -> t.trigger() == AbilityTrigger.ON_AWAKENING || t.trigger() == AbilityTrigger.ON_FUSION).count() / (double) templates.size() * 0.30D);
+        observed.add(LineageBiasDimension.BUDGET_DISCIPLINE, Math.max(-0.25D, Math.min(0.25D, (templates.stream().mapToDouble(t -> t.metadata().triggerEfficiency()).average().orElse(1.0D) - 1.0D) * 0.4D)));
+        observed.add(LineageBiasDimension.UTILITY_DENSITY_PREFERENCE, Math.max(-0.25D, Math.min(0.25D, (utilityHistory.utilityDensity() - 0.5D) * 0.40D)));
+        observed.add(LineageBiasDimension.EXPLORATION_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("exploration")).count() / (double) templates.size() * 0.32D);
+        observed.add(LineageBiasDimension.SUPPORT_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("support")).count() / (double) templates.size() * 0.32D);
+        observed.add(LineageBiasDimension.RITUAL_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("ritual")).count() / (double) templates.size() * 0.32D);
+        observed.add(LineageBiasDimension.ENVIRONMENTAL_SENSITIVITY, Math.max(-0.20D, Math.min(0.20D, (memoryProfile.traumaWeight() * 0.02D) + (memoryProfile.bossWeight() * 0.015D))));
+        observed.add(LineageBiasDimension.RELIABILITY, templates.stream().filter(t -> t.family() == AbilityFamily.CONSISTENCY || t.family() == AbilityFamily.PRECISION).count() / (double) templates.size() * 0.30D);
+        observed.add(LineageBiasDimension.RISK_APPETITE, templates.stream().filter(t -> t.family() == AbilityFamily.BRUTALITY || t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.30D);
+        observed.add(LineageBiasDimension.COMPETITION_TOLERANCE, Math.max(-0.22D, Math.min(0.22D, memoryProfile.aggressionWeight() * 0.04D)));
+        return observed;
+    }
 
     private double rarityModifier(AbilityTemplate template) {
         if (ecosystemEngine == null || template == null) {
@@ -254,7 +294,7 @@ public class ProceduralAbilityGenerator {
                     .mapToDouble(template -> experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger()))
                     .average()
                     .orElse(1.0D);
-            profileScore *= familyEcology;
+            profileScore *= familyEcology * (lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, familyEcology));
         }
         if (!utilityHistory.hasUtilityHistory()) {
             return profileScore;

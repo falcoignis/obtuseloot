@@ -5,6 +5,7 @@ import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.lineage.ArtifactLineage;
+import obtuseloot.lineage.LineageBiasDimension;
 
 import java.util.*;
 
@@ -15,6 +16,12 @@ public class TraitInteractionAnalyzer {
     private final Set<String> knownTraits = Arrays.stream(GenomeTrait.values())
             .map(trait -> toCamelCase(trait.name()))
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+    {
+        for (LineageBiasDimension dimension : LineageBiasDimension.values()) {
+            knownTraits.add(toCamelCase(dimension.name()));
+        }
+    }
 
     public TraitCorrelationMatrix analyze(Collection<Artifact> artifacts,
                                           Collection<ArtifactLineage> lineages) {
@@ -58,6 +65,11 @@ public class TraitInteractionAnalyzer {
         for (Map.Entry<GenomeTrait, Double> entry : lineage.genomeTraits().entrySet()) {
             if (entry.getValue() >= GENOME_ACTIVITY_THRESHOLD) {
                 traits.add(toCamelCase(entry.getKey().name()));
+            }
+        }
+        for (LineageBiasDimension dimension : LineageBiasDimension.values()) {
+            if (lineage.evolutionaryBiasGenome().tendency(dimension) >= 0.12D) {
+                traits.add(toCamelCase(dimension.name()));
             }
         }
         return traits;
