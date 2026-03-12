@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import obtuseloot.evolution.UtilityHistoryRollup;
+
 public class LineageRegistry {
     private final Map<String, ArtifactLineage> lineages = new LinkedHashMap<>();
     private final Map<String, LinkedList<ArtifactPopulationSignature>> speciesSignatures = new LinkedHashMap<>();
@@ -44,10 +46,22 @@ public class LineageRegistry {
         return lineage;
     }
 
-    public void recordDescendantBias(Artifact artifact, EvolutionaryBiasGenome observedBias, double ecologicalPressure) {
+    public void recordDescendantBias(Artifact artifact,
+                                     EvolutionaryBiasGenome observedBias,
+                                     double ecologicalPressure,
+                                     double mutationInfluence) {
         ArtifactLineage lineage = assignLineage(artifact);
         int beforeBranches = lineage.branches().size();
-        lineage.registerDescendantBias(artifact.getArtifactSeed(), observedBias, ecologicalPressure, branchingHeuristics);
+        double driftWindow = new LineageInfluenceResolver().resolveDriftWindow(lineage);
+        double utilityDensity = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()).utilityDensity();
+        lineage.registerDescendantBias(
+                artifact.getArtifactSeed(),
+                observedBias,
+                ecologicalPressure,
+                mutationInfluence,
+                driftWindow,
+                utilityDensity,
+                branchingHeuristics);
         if (lineage.branches().size() > beforeBranches) {
             String branchId = lineage.dominantBranchId();
             artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.LINEAGE, lineage.lineageId() + " [" + branchId + "]"));

@@ -1,10 +1,14 @@
 package obtuseloot.lineage;
 
 import obtuseloot.abilities.AbilityMetadata;
+import obtuseloot.abilities.genome.ArtifactGenome;
+import obtuseloot.abilities.genome.GenomeMutationEngine;
+import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.analytics.LineageInheritanceAnalytics;
 import obtuseloot.artifacts.Artifact;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +63,7 @@ class LineageInheritanceBiasSystemTest {
 
         double before = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS);
         for (int i = 0; i < 4; i++) {
-            lineage.registerDescendantBias(100L + i, observed, 1.0D, new InheritanceBranchingHeuristics());
+            lineage.registerDescendantBias(100L + i, observed, 1.0D, 1.0D, 0.04D, 0.60D, new InheritanceBranchingHeuristics());
         }
         double after = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS);
 
@@ -75,11 +79,13 @@ class LineageInheritanceBiasSystemTest {
         EvolutionaryBiasGenome observed = new EvolutionaryBiasGenome();
         observed.add(LineageBiasDimension.SUPPORT_PREFERENCE, 0.30D);
 
-        lowPressure.registerDescendantBias(201L, observed, 1.0D, new InheritanceBranchingHeuristics());
-        highPressure.registerDescendantBias(202L, observed, 1.4D, new InheritanceBranchingHeuristics());
+        double lowBefore = lowPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE);
+        double highBefore = highPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE);
+        lowPressure.registerDescendantBias(201L, observed, 1.0D, 1.0D, 0.03D, 0.58D, new InheritanceBranchingHeuristics());
+        highPressure.registerDescendantBias(202L, observed, 1.4D, 1.0D, 0.03D, 0.58D, new InheritanceBranchingHeuristics());
 
-        double lowDelta = Math.abs(lowPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE));
-        double highDelta = Math.abs(highPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE));
+        double lowDelta = Math.abs(lowPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE) - lowBefore);
+        double highDelta = Math.abs(highPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE) - highBefore);
 
         assertTrue(lowDelta > highDelta, "Higher ecological pressure should reduce direct inheritance lock-in.");
     }
@@ -94,7 +100,7 @@ class LineageInheritanceBiasSystemTest {
         divergent.add(LineageBiasDimension.WEIRDNESS, 0.30D);
 
         for (int i = 0; i < 8; i++) {
-            lineage.registerDescendantBias(400L + i, divergent, 1.2D, new InheritanceBranchingHeuristics());
+            lineage.registerDescendantBias(400L + i, divergent, 1.2D, 1.0D, 0.035D, 0.52D, new InheritanceBranchingHeuristics());
         }
 
         assertFalse(lineage.branches().isEmpty());
@@ -108,7 +114,7 @@ class LineageInheritanceBiasSystemTest {
         EvolutionaryBiasGenome observed = new EvolutionaryBiasGenome();
         observed.add(LineageBiasDimension.WEIRDNESS, 0.30D);
         for (int i = 0; i < 5; i++) {
-            lineage.registerDescendantBias(600L + i, observed, 1.1D, new InheritanceBranchingHeuristics());
+            lineage.registerDescendantBias(600L + i, observed, 1.1D, 1.0D, 0.033D, 0.65D, new InheritanceBranchingHeuristics());
         }
 
         Artifact artifact = artifact(603L, "lineage-analytics");
@@ -118,8 +124,12 @@ class LineageInheritanceBiasSystemTest {
 
         Map<?, ?> utility = (Map<?, ?>) summary.get("lineageUtilityDensity");
         Map<?, ?> branches = (Map<?, ?>) summary.get("lineageBranchCounts");
+        Map<?, ?> population = (Map<?, ?>) summary.get("lineagePopulation");
+        Map<?, ?> specialization = (Map<?, ?>) summary.get("lineageSpecializationCurrent");
         assertEquals(0.65D, (Double) utility.get("lineage-analytics"), 1.0E-9D);
         assertTrue((Integer) branches.get("lineage-analytics") >= 0);
+        assertEquals(1, population.get("lineage-analytics"));
+        assertNotNull(specialization.get("lineage-analytics"));
     }
 
     @Test
@@ -139,7 +149,7 @@ class LineageInheritanceBiasSystemTest {
                 descendantBias.add(LineageBiasDimension.WEIRDNESS, 0.25D);
                 descendantBias.add(LineageBiasDimension.SUPPORT_PREFERENCE, -0.20D);
             }
-            registry.recordDescendantBias(artifact(901L + i, "lineage-e2e"), descendantBias, 1.15D);
+            registry.recordDescendantBias(artifact(901L + i, "lineage-e2e"), descendantBias, 1.15D, 1.05D);
         }
 
         assertTrue(lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.MEMORY_REACTIVITY) > 0.0D);
@@ -152,6 +162,48 @@ class LineageInheritanceBiasSystemTest {
 
         assertTrue(((Map<?, ?>) analytics.get("lineageUtilityDensity")).containsKey("lineage-e2e"));
         assertTrue((Long) analytics.get("branchingLineages") >= 1L);
+        assertTrue(((Map<?, ?>) analytics.get("lineagePopulation")).containsKey("lineage-e2e"));
+        assertTrue(((Map<?, ?>) analytics.get("lineageBranchSurvivalRates")).containsKey("lineage-e2e"));
+    }
+
+    @Test
+    void resolveMutationInfluenceBiasesMutationWeightingButKeepsStochasticity() {
+        GenomeMutationEngine engine = new GenomeMutationEngine();
+        ArtifactGenome base = seededGenome(88L, 0.6D, 0.3D);
+        ArtifactLineage lineage = new ArtifactLineage("lineage-mutation-weight");
+        lineage.evolutionaryBiasGenome().add(LineageBiasDimension.WEIRDNESS, 0.25D);
+        lineage.evolutionaryBiasGenome().add(LineageBiasDimension.RISK_APPETITE, 0.28D);
+        lineage.evolutionaryBiasGenome().add(LineageBiasDimension.RELIABILITY, -0.15D);
+        lineage.evolutionaryBiasGenome().add(LineageBiasDimension.SPECIALIZATION, 0.18D);
+        LineageInfluenceResolver resolver = new LineageInfluenceResolver();
+
+        ArtifactGenome influenced = engine.mutate(base, 5, resolver.resolveMutationInfluence(lineage), 1.0D, lineage.evolutionaryBiasGenome().tendencies());
+        ArtifactGenome neutral = engine.mutate(base, 5, 1.0D, 1.0D, Map.of());
+
+        double influencedDelta = traitDelta(base, influenced, GenomeTrait.CHAOS_AFFINITY);
+        double neutralDelta = traitDelta(base, neutral, GenomeTrait.CHAOS_AFFINITY);
+        assertTrue(influencedDelta > neutralDelta, "Lineage mutation influence should increase weighted mutation shift.");
+        assertNotEquals(influenced.trait(GenomeTrait.CHAOS_AFFINITY), influenced.trait(GenomeTrait.STABILITY), 1.0E-9D,
+                "Mutation remains stochastic and trait-specific under lineage influence.");
+    }
+
+    @Test
+    void driftWindowReducesPersistenceOverTimeAndEcologyAcceleratesDecay() {
+        ArtifactLineage mildPressure = new ArtifactLineage("lineage-drift-mild");
+        ArtifactLineage highPressure = new ArtifactLineage("lineage-drift-high");
+        EvolutionaryBiasGenome observed = new EvolutionaryBiasGenome();
+        observed.add(LineageBiasDimension.RELIABILITY, 0.22D);
+
+        for (int i = 0; i < 7; i++) {
+            mildPressure.registerDescendantBias(700L + i, observed, 1.0D, 1.0D, 0.03D, 0.50D, new InheritanceBranchingHeuristics());
+            highPressure.registerDescendantBias(800L + i, observed, 1.35D, 1.0D, 0.03D, 0.50D, new InheritanceBranchingHeuristics());
+        }
+
+        assertTrue(mildPressure.driftWindowTicks() <= 0);
+        assertTrue(highPressure.driftWindowTicks() <= 0);
+        double mildDistance = Math.abs(mildPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY) - observed.tendency(LineageBiasDimension.RELIABILITY));
+        double highDistance = Math.abs(highPressure.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY) - observed.tendency(LineageBiasDimension.RELIABILITY));
+        assertTrue(highDistance > mildDistance, "Higher ecology pressure should accelerate drift away from locked inheritance.");
     }
 
     private Artifact artifact(long seed, String lineage) {
@@ -159,5 +211,21 @@ class LineageInheritanceBiasSystemTest {
         artifact.setArtifactSeed(seed);
         artifact.setLatentLineage(lineage);
         return artifact;
+    }
+
+    private ArtifactGenome seededGenome(long seed, double sensitivity, double volatility) {
+        EnumMap<GenomeTrait, Double> traits = new EnumMap<>(GenomeTrait.class);
+        EnumMap<GenomeTrait, Double> latent = new EnumMap<>(GenomeTrait.class);
+        for (GenomeTrait trait : GenomeTrait.values()) {
+            traits.put(trait, 0.5D);
+            latent.put(trait, 0.45D);
+        }
+        traits.put(GenomeTrait.MUTATION_SENSITIVITY, sensitivity);
+        traits.put(GenomeTrait.VOLATILITY, volatility);
+        return new ArtifactGenome(seed, traits, latent, Set.of());
+    }
+
+    private double traitDelta(ArtifactGenome base, ArtifactGenome mutated, GenomeTrait trait) {
+        return Math.abs(mutated.trait(trait) - base.trait(trait));
     }
 }

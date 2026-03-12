@@ -37,16 +37,24 @@ public class ExperienceEvolutionEngine {
     }
 
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed, int nichePopulation) {
+        return applyExperienceFeedback(genome, artifactSeed, nichePopulation, 1.0D);
+    }
+
+    public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome,
+                                                  long artifactSeed,
+                                                  int nichePopulation,
+                                                  double lineageMutationInfluence) {
         ArtifactUsageProfile usage = usageTracker.profileForSeed(artifactSeed);
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         double fitness = fitnessEvaluator.evaluate(usage);
         double effectiveFitness = fitnessEvaluator.effectiveFitness(fitnessEvaluator.effectiveFitness(fitness, nichePopulation), pressure);
         double normalized = normalizeFitness(effectiveFitness);
+        double lineageInfluence = clamp(lineageMutationInfluence, 0.75D, 1.25D);
 
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
         EnumMap<GenomeTrait, Double> latentAdjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
-            double multiplier = traitMultiplier(entry.getKey(), normalized) * ecoTraitBias(pressure);
+            double multiplier = traitMultiplier(entry.getKey(), normalized) * ecoTraitBias(pressure, lineageInfluence);
             double environmental = pressureEngine.multiplierFor(entry.getKey());
             adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier * environmental));
             latentAdjusted.put(entry.getKey(), clamp01(genome.latentTrait(entry.getKey()) * (1.0D + ((multiplier - 1.0D) * 0.35D))));
@@ -76,9 +84,20 @@ public class ExperienceEvolutionEngine {
         return pressureEngine;
     }
 
+    public double mutationEcologyPressureFor(long artifactSeed) {
+        RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
+        return clamp(1.0D
+                + ((pressure.specializationPressure() - 1.0D) * 0.22D)
+                + (pressure.ecologicalRepulsion() * 0.24D)
+                + Math.max(0.0D, 1.0D - pressure.templateWeightModifier()) * 0.30D,
+                0.70D,
+                1.45D);
+    }
 
-    private double ecoTraitBias(RolePressureMetrics pressure) {
-        return clamp(0.95D + ((pressure.retentionBias() - 1.0D) * 0.35D) + (pressure.specializationPressure() * 0.08D) - (pressure.ecologicalRepulsion() * 0.10D), 0.90D, 1.10D);
+
+    private double ecoTraitBias(RolePressureMetrics pressure, double lineageInfluence) {
+        return clamp((0.95D + ((pressure.retentionBias() - 1.0D) * 0.35D) + (pressure.specializationPressure() * 0.08D) - (pressure.ecologicalRepulsion() * 0.10D))
+                * (1.0D + ((lineageInfluence - 1.0D) * 0.25D)), 0.90D, 1.12D);
     }
 
     private double traitMultiplier(GenomeTrait trait, double normalizedFitness) {
