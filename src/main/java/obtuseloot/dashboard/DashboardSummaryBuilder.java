@@ -1,9 +1,13 @@
 package obtuseloot.dashboard;
 
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class DashboardSummaryBuilder {
     public String build(DashboardMetrics metrics) {
+        String sources = metrics.dataSources().stream()
+                .map(source -> source.id() + "=" + source.sourceKind() + (source.authoritative() ? "(authoritative)" : "(context)"))
+                .collect(Collectors.joining(", "));
         return "Dominance=" + fmt(metrics.dominanceIndex())
                 + ", BranchEntropy=" + fmt(metrics.branchEntropy())
                 + ", TraitVariance=" + fmt(metrics.traitVariance())
@@ -17,7 +21,7 @@ public class DashboardSummaryBuilder {
                 + ", EcologyDiagnostic=" + metrics.diagnosticState().name()
                 + ", DiagnosticConfidence=" + fmt(metrics.diagnosticConfidence())
                 + ", WarningFlags=" + metrics.diagnosticWarningFlags()
-                + " | Data source: analytics/ecosystem-balance-data.json + analytics/ecosystem-health-gauge.json";
+                + " | Data sources: " + sources;
     }
 
     private String fmt(double value) {

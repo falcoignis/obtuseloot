@@ -6,6 +6,7 @@ import obtuseloot.analytics.RankAbundanceAnalyzer;
 import obtuseloot.analytics.RankAbundanceAnalyzer.RankAbundanceResult;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -80,16 +81,73 @@ public class DashboardService {
                 gaugeData.warningFlags(),
                 ecologicalMemory.active(),
                 ecologicalMemory.attractorDuration(),
-                ecologicalMemory.memoryPressure());
+                ecologicalMemory.memoryPressure(),
+                buildDataSourceDescriptors());
     }
 
     public Path regenerateDashboard() throws IOException {
-        return ecosystemDashboard.generate(analyticsRoot, calculateMetrics(), dashboardFile());
+        DashboardMetrics metrics = calculateMetrics();
+        Path output = ecosystemDashboard.generate(analyticsRoot, metrics, dashboardFile());
+        writeGenerationMetadata(new ReportGenerationMetadata(Instant.now(), "runtime-dashboard", output.toString(), metrics.dataSources()), output);
+        return output;
     }
 
     public Path generateSeasonDashboard(int season) throws IOException {
         Path output = analyticsRoot.resolve("world-lab").resolve("season" + season + "-ecosystem-dashboard.html");
-        return ecosystemDashboard.generate(analyticsRoot, calculateMetrics(), output);
+        DashboardMetrics metrics = calculateMetrics();
+        Path rendered = ecosystemDashboard.generate(analyticsRoot, metrics, output);
+        writeGenerationMetadata(new ReportGenerationMetadata(Instant.now(), "season-dashboard", rendered.toString(), metrics.dataSources()), rendered);
+        return rendered;
+    }
+
+    private java.util.List<DashboardDataSourceDescriptor> buildDataSourceDescriptors() {
+        return java.util.List.of(
+                new DashboardDataSourceDescriptor("ecosystem-balance", analyticsRoot.resolve("ecosystem-balance-data.json").toString(),
+                        DashboardDataSourceDescriptor.DashboardSourceKind.SIMULATION_SNAPSHOT, true,
+                        "Primary branch/trait/family distributions for dashboard aggregates."),
+                new DashboardDataSourceDescriptor("ecosystem-gauge", analyticsRoot.resolve("ecosystem-health-gauge.json").toString(),
+                        DashboardDataSourceDescriptor.DashboardSourceKind.DERIVED_ANALYTIC, true,
+                        "END/TNT/NSER/PNNC gauge rollup from world-lab evidence."),
+                new DashboardDataSourceDescriptor("ecology-diagnostic", analyticsRoot.resolve("ecology-diagnostic-state.json").toString(),
+                        DashboardDataSourceDescriptor.DashboardSourceKind.DERIVED_ANALYTIC, true,
+                        "Diagnostic state and confidence used for status light."),
+                new DashboardDataSourceDescriptor("world-sim-memory", analyticsRoot.resolve("world-lab").resolve("world-sim-data.json").toString(),
+                        DashboardDataSourceDescriptor.DashboardSourceKind.SIMULATION_SNAPSHOT, false,
+                        "Ecological memory context panel input.")
+        );
+    }
+
+    private void writeGenerationMetadata(ReportGenerationMetadata metadata, Path dashboardPath) throws IOException {
+        Path meta = dashboardPath.resolveSibling(dashboardPath.getFileName() + ".meta.json");
+        Files.createDirectories(meta.getParent());
+        StringBuilder json = new StringBuilder();
+        json.append("{\n")
+                .append("  \"generatedAt\": \"" ).append(metadata.generatedAt()).append("\",\n")
+                .append("  \"reportType\": \"" ).append(jsonEscape(metadata.reportType())).append("\",\n")
+                .append("  \"outputPath\": \"" ).append(jsonEscape(metadata.outputPath())).append("\",\n")
+                .append("  \"dataSources\": [\n");
+        for (int i = 0; i < metadata.dataSources().size(); i++) {
+            DashboardDataSourceDescriptor source = metadata.dataSources().get(i);
+            json.append("    {")
+                    .append("\"id\":\"").append(jsonEscape(source.id())).append("\",")
+                    .append("\"path\":\"").append(jsonEscape(source.path())).append("\",")
+                    .append("\"sourceKind\":\"").append(source.sourceKind()).append("\",")
+                    .append("\"authoritative\":").append(source.authoritative()).append(",")
+                    .append("\"notes\":\"").append(jsonEscape(source.notes())).append("\"}");
+            if (i < metadata.dataSources().size() - 1) {
+                json.append(',');
+            }
+            json.append("\n");
+        }
+        json.append("  ]\n}");
+        Files.writeString(meta, json.toString());
+    }
+
+    private String jsonEscape(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private DashboardMetrics.CollapseRisk determineRisk(double dominance, double entropy, double concentration) {
