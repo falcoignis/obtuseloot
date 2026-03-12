@@ -127,9 +127,10 @@ public class ExperienceEvolutionEngine {
                 candidate.dominantNiche(),
                 candidateRollup,
                 rollups.isEmpty() ? Map.of(candidate.dominantNiche(), candidateRollup) : rollups);
-        double specializationTilt = candidate.specialization().specializationScore() * 0.12D;
+        double specializationTilt = candidate.specialization().specializationScore() * 0.14D;
+        double behaviorTilt = behaviorOpportunityTilt(candidate.dominantNiche(), mechanic, trigger);
         return clamp((artifactPressure.templateWeightModifier() * candidatePressure.templateWeightModifier() + specializationTilt)
-                * support.retentionOpportunity() * profile.nicheSaturationSensitivity(), 0.62D, 1.55D);
+                * support.retentionOpportunity() * profile.nicheSaturationSensitivity() * behaviorTilt, 0.60D, 1.52D);
     }
 
     public EnvironmentPressureEngine pressureEngine() {
@@ -160,6 +161,21 @@ public class ExperienceEvolutionEngine {
 
     public Map<String, Object> competitionAnalytics(LineageRegistry lineageRegistry) {
         return supportAllocator.analyticsSnapshot(usageTracker, lineageRegistry);
+    }
+
+    private double behaviorOpportunityTilt(MechanicNicheTag niche, AbilityMechanic mechanic, AbilityTrigger trigger) {
+        double tilt = switch (niche) {
+            case NAVIGATION -> (trigger == AbilityTrigger.ON_CHUNK_ENTER || trigger == AbilityTrigger.ON_STRUCTURE_DISCOVERY) ? 1.10D : 1.04D;
+            case FARMING_WORLDKEEPING -> (trigger == AbilityTrigger.ON_BLOCK_HARVEST || trigger == AbilityTrigger.ON_RESOURCE_HARVEST_STREAK) ? 1.10D : 1.03D;
+            case RITUAL_STRANGE_UTILITY -> (trigger == AbilityTrigger.ON_RITUAL_INTERACT || trigger == AbilityTrigger.ON_RITUAL_COMPLETION) ? 1.11D : 1.03D;
+            case SOCIAL_WORLD_INTERACTION -> (trigger == AbilityTrigger.ON_PLAYER_GROUP_ACTION || trigger == AbilityTrigger.ON_PLAYER_TRADE) ? 1.12D : 1.04D;
+            case ENVIRONMENTAL_ADAPTATION, ENVIRONMENTAL_SENSING -> (trigger == AbilityTrigger.ON_WEATHER_CHANGE || trigger == AbilityTrigger.ON_ELEVATION_CHANGE || trigger == AbilityTrigger.ON_BIOME_CHANGE) ? 1.10D : 1.02D;
+            default -> 1.0D;
+        };
+        if (mechanic == AbilityMechanic.TRADE_SCENT || mechanic == AbilityMechanic.COLLECTIVE_RELAY || mechanic == AbilityMechanic.RITUAL_STABILIZATION) {
+            tilt += 0.02D;
+        }
+        return clamp(tilt, 0.96D, 1.14D);
     }
 
     private double ecoTraitBias(RolePressureMetrics pressure,

@@ -1,7 +1,7 @@
 package obtuseloot.lineage;
 
 public class InheritanceBranchingHeuristics {
-    private static final double DIVERGENCE_THRESHOLD = 0.16D;
+    private static final double DIVERGENCE_THRESHOLD = 0.18D;
 
     public boolean shouldBranch(EvolutionaryBiasGenome lineageBias,
                                 EvolutionaryBiasGenome observedBias,
@@ -11,8 +11,8 @@ public class InheritanceBranchingHeuristics {
             return false;
         }
         double distance = distance(lineageBias, observedBias);
-        double ecologicalBoost = Math.max(0.0D, ecologicalPressure - 1.0D) * 0.08D;
-        return repeatedDivergences >= 2 && distance > (DIVERGENCE_THRESHOLD - ecologicalBoost);
+        double ecologicalBoost = Math.max(0.0D, ecologicalPressure - 1.0D) * 0.05D;
+        return repeatedDivergences >= 3 && distance > (DIVERGENCE_THRESHOLD - ecologicalBoost);
     }
 
     public double distance(EvolutionaryBiasGenome left, EvolutionaryBiasGenome right) {

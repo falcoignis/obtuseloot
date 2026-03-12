@@ -62,4 +62,19 @@ public record AbilityMetadata(
         double cost = triggerBudgetProfile == null ? 1.0D : Math.max(0.1D, triggerBudgetProfile.triggerCost() + triggerBudgetProfile.evaluationCost());
         return utility / cost;
     }
+
+    public double utilityPotential() {
+        return (discoveryValue * 0.18D)
+                + (explorationValue * 0.17D)
+                + (informationValue * 0.17D)
+                + (ritualValue * 0.15D)
+                + (socialValue * 0.15D)
+                + (worldUtilityValue * 0.18D);
+    }
+
+    public double ecologicalYieldScore() {
+        double utilityPotential = utilityPotential();
+        double efficiency = triggerEfficiency();
+        return (utilityPotential * 0.72D) + (Math.min(1.6D, efficiency) * 0.28D);
+    }
 }

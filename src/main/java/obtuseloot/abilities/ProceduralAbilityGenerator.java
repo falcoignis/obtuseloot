@@ -18,10 +18,23 @@ import obtuseloot.lineage.LineageBiasDimension;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class ProceduralAbilityGenerator {
+
+    private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
+
+    static {
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_WORLD_SCAN, 1.22D);
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_RITUAL_INTERACT, 1.15D);
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_BLOCK_INSPECT, 1.08D);
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_STRUCTURE_SENSE, 1.06D);
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_STRUCTURE_DISCOVERY, 1.04D);
+        TRIGGER_SATURATION_WEIGHTS.put(AbilityTrigger.ON_CHUNK_ENTER, 1.04D);
+    }
     private final AbilityRegistry registry;
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private final LineageRegistry lineageRegistry;
@@ -227,11 +240,17 @@ public class ProceduralAbilityGenerator {
 
     private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation) {
         double score = 1.0D;
+        double utilityYield = clamp(template.metadata().ecologicalYieldScore(), 0.42D, 1.28D);
+        score *= utilityYield;
         if (template.trigger() == AbilityTrigger.ON_MEMORY_EVENT || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT) score += memoryProfile.pressure() * 0.08D;
         if (template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE) score += memoryProfile.bossWeight() * 0.06D;
         if (template.mechanic() == AbilityMechanic.RITUAL_CHANNEL || template.mechanic() == AbilityMechanic.REVENANT_TRIGGER) score += memoryProfile.chaosWeight() * 0.07D;
         if (template.mechanic() == AbilityMechanic.NAVIGATION_ANCHOR || template.trigger() == AbilityTrigger.ON_WORLD_SCAN) score += memoryProfile.mobilityWeight() * 0.1D;
         if (template.mechanic() == AbilityMechanic.HARVEST_RELAY || template.trigger() == AbilityTrigger.ON_BLOCK_HARVEST) score += memoryProfile.survivalWeight() * 0.08D;
+        if (template.metadata().affinities().contains("exploration")) score += memoryProfile.mobilityWeight() * 0.05D;
+        if (template.metadata().affinities().contains("ritual")) score += memoryProfile.chaosWeight() * 0.05D;
+        if (template.metadata().affinities().contains("gathering")) score += memoryProfile.survivalWeight() * 0.045D;
+        if (template.metadata().affinities().contains("social")) score += memoryProfile.aggressionWeight() * 0.04D;
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.5D;
         if (!"none".equalsIgnoreCase(artifact.getFusionPath()) && template.trigger() == AbilityTrigger.ON_FUSION) score += 0.5D;
@@ -243,14 +262,21 @@ public class ProceduralAbilityGenerator {
         double ecology = experienceEvolutionEngine == null
                 ? 1.0D
                 : experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger(), lineage == null ? null : lineage.lineageId(), lineageRegistry);
+        double triggerSaturation = triggerSaturationPenalty(template);
         double lineageTemplateInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveTemplateInfluence(lineage, template.metadata());
         double mutationInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
         double mechanicInfluence = mechanicLineageWeight(template.mechanic(), lineage);
         double ecologicalCorrection = lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, ecology);
         double opportunity = supportAllocation == null ? 1.0D : supportAllocation.reinforcementMultiplier();
-        return score * rarityModifier(template) * ecology * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
+        return score * rarityModifier(template) * ecology * triggerSaturation * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
     }
 
+    private double triggerSaturationPenalty(AbilityTemplate template) {
+        long total = registry.templates().stream().filter(candidate -> candidate.trigger() == template.trigger()).count();
+        double pressureWeight = TRIGGER_SATURATION_WEIGHTS.getOrDefault(template.trigger(), 1.0D);
+        double pressure = Math.max(0.0D, total - 1.0D) * 0.045D * pressureWeight;
+        return clamp(1.0D - pressure, 0.72D, 1.02D);
+    }
 
     private EvolutionaryBiasGenome deriveObservedBias(List<AbilityTemplate> templates, ArtifactMemoryProfile memoryProfile, UtilityHistoryRollup utilityHistory) {
         EvolutionaryBiasGenome observed = new EvolutionaryBiasGenome();
@@ -268,9 +294,9 @@ public class ProceduralAbilityGenerator {
         observed.add(LineageBiasDimension.PATIENCE, templates.stream().filter(t -> t.trigger() == AbilityTrigger.ON_AWAKENING || t.trigger() == AbilityTrigger.ON_FUSION).count() / (double) templates.size() * 0.30D);
         observed.add(LineageBiasDimension.BUDGET_DISCIPLINE, Math.max(-0.25D, Math.min(0.25D, (templates.stream().mapToDouble(t -> t.metadata().triggerEfficiency()).average().orElse(1.0D) - 1.0D) * 0.4D)));
         observed.add(LineageBiasDimension.UTILITY_DENSITY_PREFERENCE, Math.max(-0.25D, Math.min(0.25D, (utilityHistory.utilityDensity() - 0.5D) * 0.40D)));
-        observed.add(LineageBiasDimension.EXPLORATION_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("exploration")).count() / (double) templates.size() * 0.32D);
-        observed.add(LineageBiasDimension.SUPPORT_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("support")).count() / (double) templates.size() * 0.32D);
-        observed.add(LineageBiasDimension.RITUAL_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("ritual")).count() / (double) templates.size() * 0.32D);
+        observed.add(LineageBiasDimension.EXPLORATION_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("exploration")).count() / (double) templates.size() * 0.40D);
+        observed.add(LineageBiasDimension.SUPPORT_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("support")).count() / (double) templates.size() * 0.34D);
+        observed.add(LineageBiasDimension.RITUAL_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("ritual")).count() / (double) templates.size() * 0.40D);
         observed.add(LineageBiasDimension.ENVIRONMENTAL_SENSITIVITY, Math.max(-0.20D, Math.min(0.20D, (memoryProfile.traumaWeight() * 0.02D) + (memoryProfile.bossWeight() * 0.015D))));
         observed.add(LineageBiasDimension.RELIABILITY, templates.stream().filter(t -> t.family() == AbilityFamily.CONSISTENCY || t.family() == AbilityFamily.PRECISION).count() / (double) templates.size() * 0.30D);
         observed.add(LineageBiasDimension.RISK_APPETITE, templates.stream().filter(t -> t.family() == AbilityFamily.BRUTALITY || t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.30D);
@@ -325,6 +351,10 @@ public class ProceduralAbilityGenerator {
                 .orElse(0.0D);
         double confidence = utilityHistory.confidence();
         return (profileScore * (1.0D - (0.55D * confidence))) + (utilityFamilyBias * (2.2D * confidence));
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private double mechanicLineageWeight(AbilityMechanic mechanic, ArtifactLineage lineage) {

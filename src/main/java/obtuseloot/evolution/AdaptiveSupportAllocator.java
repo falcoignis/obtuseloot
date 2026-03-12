@@ -106,16 +106,18 @@ public class AdaptiveSupportAllocator {
             double popShare = rollup.activeArtifacts() / Math.max(1.0D, totalPopulation);
             double utilityAdvantage = rollup.utilityDensity() - avgDensity;
             double rarityLift = clamp((0.14D - popShare) * 1.8D, 0.0D, 0.35D);
-            double crowdedPenalty = clamp((popShare - 0.18D) * 1.5D, 0.0D, 0.50D);
-            double specializationDiversity = clamp((1.0D - popShare) * 0.30D + rollup.outcomeYield() * 0.20D, 0.0D, 0.40D);
-            double ecologicalPressure = clamp(budget.saturationIndex() * popShare * 0.90D, 0.0D, 0.45D);
+            double crowdedPenalty = clamp((popShare - 0.16D) * 1.8D, 0.0D, 0.56D);
+            double specializationDiversity = clamp((1.0D - popShare) * 0.32D + rollup.outcomeYield() * 0.24D, 0.0D, 0.42D);
+            double ecologicalPressure = clamp(budget.saturationIndex() * popShare * 1.05D, 0.0D, 0.50D);
+            double lowYieldPenalty = clamp((0.34D - rollup.outcomeYield()) * 0.75D, 0.0D, 0.28D);
             double raw = Math.max(0.05D,
                     1.0D
                             + (utilityAdvantage * 0.80D)
                             + rarityLift
                             + specializationDiversity
                             - crowdedPenalty
-                            - ecologicalPressure);
+                            - ecologicalPressure
+                            - lowYieldPenalty);
             rawWeights.put(entry.getKey(), raw);
         }
 
@@ -124,11 +126,11 @@ public class AdaptiveSupportAllocator {
         for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : rollups.entrySet()) {
             double share = rawWeights.get(entry.getKey()) / Math.max(0.0001D, rawTotal);
             double popShare = entry.getValue().activeArtifacts() / Math.max(1.0D, totalPopulation);
-            double pressure = clamp(Math.max(0.0D, popShare - share) + budget.saturationIndex() * 0.15D, 0.0D, 0.85D);
-            double diminishing = 1.0D - (pressure / (pressure + 0.65D));
-            double reinforcement = clamp((0.70D + share * 1.40D) * diminishing, 0.50D, 1.45D);
-            double mutation = clamp((0.75D + share * 1.20D) * (0.88D + entry.getValue().outcomeYield() * 0.25D), 0.55D, 1.45D);
-            double retention = clamp((0.78D + share * 1.10D) * diminishing + entry.getValue().utilityDensity() * 0.12D, 0.55D, 1.45D);
+            double pressure = clamp(Math.max(0.0D, popShare - share) + budget.saturationIndex() * 0.18D, 0.0D, 0.88D);
+            double diminishing = 1.0D - (pressure / (pressure + 0.58D));
+            double reinforcement = clamp((0.68D + share * 1.32D) * diminishing, 0.48D, 1.40D);
+            double mutation = clamp((0.72D + share * 1.08D) * (0.85D + entry.getValue().outcomeYield() * 0.30D), 0.52D, 1.38D);
+            double retention = clamp((0.76D + share * 1.05D) * diminishing + entry.getValue().utilityDensity() * 0.12D, 0.52D, 1.42D);
             out.put(entry.getKey(), new NicheOpportunityAllocation(
                     entry.getKey(),
                     share,
