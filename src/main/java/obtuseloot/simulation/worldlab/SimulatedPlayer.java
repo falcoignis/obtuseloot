@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record SimulatedPlayer(
         UUID id,
+        PlayerBehaviorModel behaviorModel,
         BehaviorProfile profile,
         List<SimulatedArtifactAgent> artifacts
 ) {

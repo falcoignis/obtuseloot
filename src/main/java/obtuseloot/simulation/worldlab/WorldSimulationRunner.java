@@ -77,7 +77,8 @@ public final class WorldSimulationRunner {
                         doubleProp("world.opportunityWeightedMutation.capacityWeight", defaults.opportunityWeightedMutation().capacityWeight()),
                         doubleProp("world.opportunityWeightedMutation.interactionWeight", defaults.opportunityWeightedMutation().interactionWeight())
                 ).bounded(),
-                ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode())
+                ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode()),
+                System.getProperty("world.scenarioConfigPath", defaults.scenarioConfigPath())
         );
         new WorldSimulationHarness(config).runAndWriteOutputs();
         System.out.println("World simulation outputs written to " + config.outputDirectory());
