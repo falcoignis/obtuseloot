@@ -1,6 +1,7 @@
 package obtuseloot.analytics;
 
 import obtuseloot.ObtuseLoot;
+import obtuseloot.evolution.ArtifactFitnessEvaluator;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.abilities.ItemAbilityManager;
 
@@ -62,6 +63,7 @@ public final class TriggerSubscriptionIndexReporter {
         if (plugin != null && plugin.getArtifactUsageTracker() != null) {
             out.append("- Utility density by mechanic@trigger: ").append(plugin.getArtifactUsageTracker().utilitySignalRollup()).append("\n");
             out.append("- High-volume low-value mechanics: ").append(plugin.getArtifactUsageTracker().highVolumeLowValueSignals()).append("\n");
+            out.append("- Utility-first decision hierarchy: ").append(new ArtifactFitnessEvaluator().decisionHierarchy()).append("\n");
         }
         out.append("\n");
 

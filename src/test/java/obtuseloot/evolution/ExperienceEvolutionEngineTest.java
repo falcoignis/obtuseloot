@@ -63,4 +63,12 @@ class ExperienceEvolutionEngineTest {
             }
         }
     }
+
+    @Test
+    void fitnessEvaluatorPublishesExplicitUtilityFirstHierarchy() {
+        String hierarchy = new ArtifactFitnessEvaluator().decisionHierarchy();
+        assertTrue(hierarchy.startsWith("validatedUtility"));
+        assertTrue(hierarchy.contains("utilityDensity"));
+        assertTrue(hierarchy.contains("legacyActivityConfidence"));
+    }
 }

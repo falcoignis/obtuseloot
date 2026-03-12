@@ -34,6 +34,9 @@ public class ArtifactManager {
         Artifact artifact = cache.resolve(playerId, () -> {
             Artifact loaded = stateStore.loadArtifact(playerId);
             Artifact resolved = loaded != null ? loaded : ArtifactGenerator.generateFor(playerId);
+            if (loaded != null && ObtuseLoot.get() != null) {
+                ObtuseLoot.get().getArtifactUsageTracker().hydrateFromArtifact(resolved);
+            }
             if (resolved.getNaming() == null) {
                 resolved.setNaming(ArtifactNameResolver.initialize(resolved));
             }
@@ -53,12 +56,19 @@ public class ArtifactManager {
     public void save(UUID playerId) {
         Artifact artifact = loadedArtifacts.get(playerId);
         if (artifact != null) {
+            if (ObtuseLoot.get() != null) {
+                artifact.setLastUtilityHistory(ObtuseLoot.get().getArtifactUsageTracker().utilityHistoryFor(artifact).encode());
+            }
             stateStore.saveArtifact(playerId, artifact);
         }
         cache.saveOwner(playerId);
     }
 
     public void saveAll() {
+        if (ObtuseLoot.get() != null) {
+            loadedArtifacts.values().forEach(artifact ->
+                    artifact.setLastUtilityHistory(ObtuseLoot.get().getArtifactUsageTracker().utilityHistoryFor(artifact).encode()));
+        }
         loadedArtifacts.forEach(stateStore::saveArtifact);
         cache.saveAllDirty();
     }

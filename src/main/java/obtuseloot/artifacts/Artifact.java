@@ -61,6 +61,7 @@ public class Artifact {
     private String lastInterferenceEffects;
     private double lastLatentActivationRate;
     private String lastActivatedLatentTraits;
+    private String lastUtilityHistory;
 
     public Artifact(UUID ownerId) {
         this.ownerId = ownerId;
@@ -97,6 +98,7 @@ public class Artifact {
         this.lastInterferenceEffects = "none";
         this.lastLatentActivationRate = 0.0D;
         this.lastActivatedLatentTraits = "[]";
+        this.lastUtilityHistory = "";
     }
 
     public void resetMutableState() {
@@ -131,6 +133,7 @@ public class Artifact {
         lastInterferenceEffects = "none";
         lastLatentActivationRate = 0.0D;
         lastActivatedLatentTraits = "[]";
+        lastUtilityHistory = "";
     }
 
     public ArtifactRank getRank() { return ArtifactRankResolver.resolve(this); }
@@ -243,6 +246,8 @@ public class Artifact {
     public void setLastLatentActivationRate(double lastLatentActivationRate) { this.lastLatentActivationRate = lastLatentActivationRate; }
     public String getLastActivatedLatentTraits() { return lastActivatedLatentTraits; }
     public void setLastActivatedLatentTraits(String lastActivatedLatentTraits) { this.lastActivatedLatentTraits = lastActivatedLatentTraits; }
+    public String getLastUtilityHistory() { return lastUtilityHistory; }
+    public void setLastUtilityHistory(String lastUtilityHistory) { this.lastUtilityHistory = lastUtilityHistory; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {

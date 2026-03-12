@@ -2,6 +2,7 @@ package obtuseloot.abilities.mutation;
 
 import obtuseloot.abilities.*;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.evolution.UtilityHistoryRollup;
 import obtuseloot.memory.ArtifactMemoryProfile;
 
 import java.util.ArrayList;
@@ -10,6 +11,14 @@ import java.util.Random;
 
 public class AbilityMutationEngine {
     public AbilityMutationResult mutate(Artifact artifact, List<AbilityDefinition> definitions, ArtifactMemoryProfile memoryProfile, boolean driftMutation) {
+        return mutate(artifact, definitions, memoryProfile, driftMutation, UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()));
+    }
+
+    public AbilityMutationResult mutate(Artifact artifact,
+                                        List<AbilityDefinition> definitions,
+                                        ArtifactMemoryProfile memoryProfile,
+                                        boolean driftMutation,
+                                        UtilityHistoryRollup utilityHistory) {
         List<AbilityMutation> out = new ArrayList<>();
         boolean instabilityExceeded = artifact.hasInstability() && artifact.getDriftLevel() > 2;
         boolean chaosGrowth = "volatile".equalsIgnoreCase(artifact.getDriftAlignment()) || "paradox".equalsIgnoreCase(artifact.getDriftAlignment());
@@ -29,13 +38,13 @@ public class AbilityMutationEngine {
             AbilityMechanic beforeMechanic = definition.mechanic();
             String beforePattern = definition.effectPattern();
 
-            AbilityTrigger trigger = mutateTrigger(beforeTrigger, definition.mechanic(), chaosGrowth, memoryProfile, r);
+            AbilityTrigger trigger = mutateTrigger(beforeTrigger, definition.mechanic(), chaosGrowth, memoryProfile, r, utilityHistory);
             if (trigger != beforeTrigger) {
                 out.add(new AbilityMutation("trigger mutation", beforeTrigger.name(), trigger.name(), "drift/memory alignment shifted trigger cadence"));
                 mutationCount++;
             }
 
-            AbilityMechanic mechanic = mutateMechanic(beforeMechanic, definition.family(), chaosGrowth, memoryProfile, r);
+            AbilityMechanic mechanic = mutateMechanic(beforeMechanic, definition.family(), chaosGrowth, memoryProfile, r, utilityHistory);
             if (mechanic != beforeMechanic) {
                 out.add(new AbilityMutation("mechanic mutation", beforeMechanic.name(), mechanic.name(), "mechanic remapped to keep mutation behavior active"));
                 mutationCount++;
@@ -77,7 +86,12 @@ public class AbilityMutationEngine {
         return new AbilityMutationResult(mutated, out);
     }
 
-    private AbilityTrigger mutateTrigger(AbilityTrigger current, AbilityMechanic mechanic, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {
+    private AbilityTrigger mutateTrigger(AbilityTrigger current,
+                                         AbilityMechanic mechanic,
+                                         boolean chaosGrowth,
+                                         ArtifactMemoryProfile memoryProfile,
+                                         Random random,
+                                         UtilityHistoryRollup utilityHistory) {
         if (chaosGrowth && mechanic == AbilityMechanic.REVENANT_TRIGGER) {
             return AbilityTrigger.ON_WITNESS_EVENT;
         }
@@ -90,10 +104,18 @@ public class AbilityMutationEngine {
         if (memoryProfile.mobilityWeight() > 0.8D && mechanic == AbilityMechanic.NAVIGATION_ANCHOR) {
             return AbilityTrigger.ON_WORLD_SCAN;
         }
+        if (utilityHistory.hasUtilityHistory() && random.nextDouble() < 0.55D) {
+            return utilityHistory.preferredTrigger(current);
+        }
         return random.nextDouble() < 0.2D ? AbilityTrigger.ON_MEMORY_EVENT : current;
     }
 
-    private AbilityMechanic mutateMechanic(AbilityMechanic current, AbilityFamily family, boolean chaosGrowth, ArtifactMemoryProfile memoryProfile, Random random) {
+    private AbilityMechanic mutateMechanic(AbilityMechanic current,
+                                           AbilityFamily family,
+                                           boolean chaosGrowth,
+                                           ArtifactMemoryProfile memoryProfile,
+                                           Random random,
+                                           UtilityHistoryRollup utilityHistory) {
         if (chaosGrowth && family == AbilityFamily.CHAOS) {
             return AbilityMechanic.UNSTABLE_DETONATION;
         }
@@ -105,6 +127,9 @@ public class AbilityMutationEngine {
         }
         if (memoryProfile.disciplineWeight() > 1.2D && family == AbilityFamily.CONSISTENCY) {
             return AbilityMechanic.CHAIN_ESCALATION;
+        }
+        if (utilityHistory.hasUtilityHistory() && random.nextDouble() < 0.55D) {
+            return utilityHistory.preferredMechanic(current);
         }
         if (random.nextDouble() < 0.1D && family == AbilityFamily.PRECISION) {
             return AbilityMechanic.MARK;

@@ -131,6 +131,28 @@ class ArtifactUtilityFitnessModelTest {
         assertTrue(efficient.utilityDensity() > expensive.utilityDensity());
     }
 
+    @Test
+    void legacyActivityActsAsSecondaryConfidenceOnly() {
+        ArtifactUsageProfile highUtilityLowVolume = new ArtifactUsageProfile();
+        ArtifactUsageProfile lowUtilityHighVolume = new ArtifactUsageProfile();
+        long now = 9_000L;
+
+        for (int i = 0; i < 5; i++) {
+            highUtilityLowVolume.recordUse(now + i);
+            highUtilityLowVolume.recordUtilityOutcome(outcome(now + i, true, false, AbilityOutcomeType.WORLD_INTERACTION, true, "intent"));
+        }
+
+        for (int i = 0; i < 70; i++) {
+            lowUtilityHighVolume.recordUse(now + i);
+        }
+        for (int i = 0; i < 8; i++) {
+            lowUtilityHighVolume.recordUtilityOutcome(outcome(now + i, false, true, AbilityOutcomeType.FLAVOR_ONLY, false, "ambient"));
+        }
+
+        ArtifactFitnessEvaluator evaluator = new ArtifactFitnessEvaluator();
+        assertTrue(evaluator.evaluate(highUtilityLowVolume) > evaluator.evaluate(lowUtilityHighVolume));
+    }
+
     private UtilityOutcomeRecord outcome(long t,
                                          boolean intentional,
                                          boolean noOp,
