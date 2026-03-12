@@ -16,7 +16,7 @@ class NonCombatAbilityIntegrationTest {
     @Test
     void registryContainsCuratedNonCombatPool() {
         AbilityRegistry registry = new AbilityRegistry();
-        assertEquals(12, registry.templates().size());
+        assertEquals(18, registry.templates().size());
         assertTrue(registry.templates().stream().noneMatch(t -> t.trigger() == AbilityTrigger.ON_HIT || t.trigger() == AbilityTrigger.ON_KILL));
     }
 

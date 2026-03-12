@@ -1,6 +1,8 @@
 package obtuseloot.evolution;
 
 import obtuseloot.lineage.LineageRegistry;
+import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.EcosystemTelemetryEventType;
 
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -9,6 +11,11 @@ import java.util.Map;
 public class AdaptiveSupportAllocator {
     private final EcosystemCarryingCapacityModel capacityModel = new EcosystemCarryingCapacityModel();
     private final LineageCompetitionModel lineageCompetitionModel = new LineageCompetitionModel();
+    private volatile EcosystemTelemetryEmitter telemetryEmitter;
+
+    public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
+        this.telemetryEmitter = telemetryEmitter;
+    }
 
     public EvolutionOpportunityPool buildPool(ArtifactUsageTracker usageTracker, LineageRegistry lineageRegistry) {
         Map<MechanicNicheTag, NicheUtilityRollup> rollups = usageTracker.nichePopulationTracker().rollups();
@@ -37,7 +44,7 @@ public class AdaptiveSupportAllocator {
         double branchPersistence = clamp(lineage.branchPersistenceSupport() * (1.0D + pool.budget().turnoverPressure() * 0.20D), 0.60D, 1.55D);
         double diminishing = clamp(niche.competitionPressure() * 0.45D + (1.0D - lineage.diminishingReturns()) * 0.65D, 0.0D, 0.85D);
 
-        return new AdaptiveSupportAllocation(
+        AdaptiveSupportAllocation allocation = new AdaptiveSupportAllocation(
                 reinforcement,
                 mutation,
                 retention,
@@ -45,6 +52,12 @@ public class AdaptiveSupportAllocator {
                 niche.competitionPressure(),
                 pool.lineageMomentumPool().displacementPressure(),
                 1.0D - diminishing);
+        EcosystemTelemetryEmitter emitter = telemetryEmitter;
+        if (emitter != null) {
+            emitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, artifactSeed, lineageId == null ? "" : lineageId, profile.dominantNiche().name(),
+                    Map.of("reinforcement", String.valueOf(allocation.reinforcementMultiplier()), "mutation", String.valueOf(allocation.mutationOpportunity()), "retention", String.valueOf(allocation.retentionOpportunity())));
+        }
+        return allocation;
     }
 
     public Map<String, Object> analyticsSnapshot(ArtifactUsageTracker usageTracker, LineageRegistry lineageRegistry) {

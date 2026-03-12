@@ -6,15 +6,33 @@ import obtuseloot.abilities.AbilityExecutionResult;
 import obtuseloot.abilities.TriggerBudgetProfile;
 import obtuseloot.abilities.TriggerBudgetResolver;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.telemetry.ArtifactRuntimeCache;
+import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.EcosystemTelemetryEventType;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class ArtifactUsageTracker {
     private final Map<Long, ArtifactUsageProfile> profiles = new ConcurrentHashMap<>();
     private final TriggerBudgetResolver budgetResolver = new TriggerBudgetResolver();
     private final NichePopulationTracker nichePopulationTracker = new NichePopulationTracker();
+    private final ArtifactRuntimeCache<Map<String, MechanicUtilitySignal>> signalCache;
+    private volatile EcosystemTelemetryEmitter telemetryEmitter;
+
+    public ArtifactUsageTracker() {
+        this(new ArtifactRuntimeCache<>(2048, 300_000L));
+    }
+
+    public ArtifactUsageTracker(ArtifactRuntimeCache<Map<String, MechanicUtilitySignal>> signalCache) {
+        this.signalCache = signalCache;
+    }
+
+    public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
+        this.telemetryEmitter = telemetryEmitter;
+        nichePopulationTracker.setTelemetryEmitter(telemetryEmitter);
+    }
 
     public ArtifactUsageProfile profileFor(Artifact artifact) {
         return profileForSeed(artifact.getArtifactSeed());
@@ -63,7 +81,8 @@ public class ArtifactUsageTracker {
         double relevance = contextualRelevance(definition, result, intentional);
         double budgetCost = budgetProfile.triggerCost() + budgetProfile.evaluationCost();
 
-        profileFor(artifact).recordUtilityOutcome(new UtilityOutcomeRecord(
+        ArtifactUsageProfile profile = profileFor(artifact);
+        profile.recordUtilityOutcome(new UtilityOutcomeRecord(
                 result.abilityId(),
                 result.mechanic(),
                 result.trigger(),
@@ -76,7 +95,24 @@ public class ArtifactUsageTracker {
                 context.source(),
                 System.currentTimeMillis()
         ));
-        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), profileFor(artifact).utilitySignalsByMechanic());
+        Map<String, MechanicUtilitySignal> signals = signalCache.getOrCompute(artifact.getArtifactSeed(), profile::utilitySignalsByMechanic);
+        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), signals);
+
+        EcosystemTelemetryEmitter emitter = telemetryEmitter;
+        if (emitter != null) {
+            ArtifactNicheProfile niche = nichePopulationTracker.nicheProfile(artifact.getArtifactSeed());
+            emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                    artifact.getArtifactSeed(),
+                    artifact.getLatentLineage(),
+                    niche.dominantNiche().name(),
+                    Map.of(
+                            "abilityId", result.abilityId(),
+                            "mechanic", result.mechanic().name(),
+                            "trigger", result.trigger().name(),
+                            "status", result.status().name(),
+                            "meaningful", String.valueOf(result.meaningfulOutcome())
+                    ));
+        }
     }
 
     private double contextualRelevance(AbilityDefinition definition,

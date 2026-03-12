@@ -143,3 +143,13 @@ analytics:
       noveltyWeight: 0.02
       capacityWeight: 0.02
       interactionWeight: 0.01
+
+
+ecosystem:
+  parameters:
+    nicheSaturationSensitivity: 0.90
+    lineageMomentumInfluence: 1.00
+    mutationAmplitudeMin: 0.70
+    mutationAmplitudeMax: 1.65
+    driftWindowDurationTicks: 5
+    competitionReinforcementCurve: 1.00

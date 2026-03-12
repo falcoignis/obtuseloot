@@ -1,5 +1,8 @@
 package obtuseloot.evolution;
 
+import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.EcosystemTelemetryEventType;
+
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,6 +16,7 @@ public class NichePopulationTracker {
     private final EcosystemCarryingCapacityModel carryingCapacityModel = new EcosystemCarryingCapacityModel();
     private final Map<Long, Map<String, MechanicUtilitySignal>> signalsByArtifact = new ConcurrentHashMap<>();
     private final Set<Long> activeArtifacts = ConcurrentHashMap.newKeySet();
+    private volatile EcosystemTelemetryEmitter telemetryEmitter;
 
     public NichePopulationTracker() {
         this(new EcosystemRoleClassifier(), new EcosystemSaturationModel());
@@ -21,6 +25,10 @@ public class NichePopulationTracker {
     public NichePopulationTracker(EcosystemRoleClassifier classifier, EcosystemSaturationModel saturationModel) {
         this.classifier = classifier;
         this.saturationModel = saturationModel;
+    }
+
+    public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
+        this.telemetryEmitter = telemetryEmitter;
     }
 
     public void markCreated(long artifactSeed) {
@@ -36,8 +44,17 @@ public class NichePopulationTracker {
             return;
         }
         activeArtifacts.add(artifactSeed);
+        ArtifactNicheProfile previous = nicheProfilesByArtifact.get(artifactSeed);
         signalsByArtifact.put(artifactSeed, Map.copyOf(signals));
-        nicheProfilesByArtifact.put(artifactSeed, classifier.classify(signals));
+        ArtifactNicheProfile next = classifier.classify(signals);
+        nicheProfilesByArtifact.put(artifactSeed, next);
+        if (previous != null && previous.dominantNiche() != next.dominantNiche() && telemetryEmitter != null) {
+            telemetryEmitter.emit(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
+                    artifactSeed,
+                    "",
+                    next.dominantNiche().name(),
+                    Map.of("from", previous.dominantNiche().name(), "to", next.dominantNiche().name()));
+        }
     }
 
     public ArtifactNicheProfile nicheProfile(long artifactSeed) {

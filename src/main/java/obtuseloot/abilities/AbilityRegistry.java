@@ -49,6 +49,25 @@ public class AbilityRegistry {
                 template("consistency.bestiary_insight", "Bestiary Insight", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_ENTITY_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
                         "Intentional creature inspection reveals behavior and habitat notes", "more species lore", "drift adds uncanny annotations", "awakening improves behavior certainty", "fusion shares creature notes", "memory stores observed creatures",
                         metadata(Set.of("information", "social-world-behavior"), Set.of("entity-interact"), Set.of("watchful", "curious", "support"), 0.64D, 0.53D, 0.89D, 0.36D, 0.69D, 0.33D))
+,
+                template("mobility.hidden_path_memory", "Hidden Path Memory", AbilityFamily.MOBILITY, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.NAVIGATION_ANCHOR,
+                        "Traversed routes gain subtle return vectors through complex terrain", "stronger route confidence", "drift introduces decoy routes", "awakening stabilizes route lineage", "fusion shares hidden tracks", "memory preserves trusted trails",
+                        metadata(Set.of("navigation", "memory-history"), Set.of("movement-throttled"), Set.of("exploration", "memory"), 0.75D, 0.90D, 0.62D, 0.28D, 0.30D, 0.55D)),
+                template("survival.weather_omen", "Weather Omen", AbilityFamily.SURVIVAL, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.INSIGHT_REVEAL,
+                        "Sky pressure cues forecast short-term weather turns", "longer forecast horizon", "drift adds dramatic false omens", "awakening filters chaotic fronts", "fusion syncs omens across artifacts", "memory records recurring climate loops",
+                        metadata(Set.of("environmental-sensing", "information"), Set.of("weather-poll"), Set.of("watchful", "support"), 0.66D, 0.58D, 0.84D, 0.31D, 0.42D, 0.63D)),
+                template("precision.artifact_sympathy", "Artifact Sympathy", AbilityFamily.PRECISION, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityMechanic.SOCIAL_ATTUNEMENT,
+                        "Nearby artifacts reveal affinity hints during intentional greetings", "deeper affinity hints", "drift yields contradictory impressions", "awakening clarifies emotional residue", "fusion links sympathy contexts", "memory retains known signatures",
+                        metadata(Set.of("social-flavor", "information"), Set.of("player-intent"), Set.of("support", "memory", "watchful"), 0.71D, 0.52D, 0.77D, 0.24D, 0.91D, 0.35D)),
+                template("chaos.ritual_echo", "Ritual Echo", AbilityFamily.CHAOS, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.RITUAL_CHANNEL,
+                        "Completed rituals leave resonant echoes for follow-up interactions", "longer echo chains", "drift creates misleading echoes", "awakening separates true ritual signatures", "fusion braids compatible echoes", "memory archives ritual cadence",
+                        metadata(Set.of("ritual-utility", "memory-history"), Set.of("ritual-completion"), Set.of("ritual", "memory"), 0.80D, 0.60D, 0.65D, 0.94D, 0.36D, 0.40D)),
+                template("consistency.structure_echo", "Structure Echo", AbilityFamily.CONSISTENCY, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityMechanic.SENSE_PING,
+                        "Ruins and dungeons project directional echo gradients", "higher structure certainty", "drift can offset bearings", "awakening locks ancient signatures", "fusion triangulates echoes", "memory keeps stable structure routes",
+                        metadata(Set.of("structure-awareness", "navigation"), Set.of("chunk-structure-entry"), Set.of("exploration", "watchful"), 0.78D, 0.88D, 0.71D, 0.40D, 0.29D, 0.52D)),
+                template("survival.herd_instinct", "Herd Instinct", AbilityFamily.SURVIVAL, AbilityTrigger.ON_ENTITY_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
+                        "Animal groups reveal migration and safety tendencies", "deeper migration context", "drift overstates danger", "awakening improves behavior confidence", "fusion blends herd observations", "memory stores seasonal movement",
+                        metadata(Set.of("environmental-sensing", "social-world-behavior"), Set.of("entity-interact"), Set.of("support", "watchful", "worldkeeper"), 0.63D, 0.74D, 0.82D, 0.20D, 0.58D, 0.70D))
         );
     }
 

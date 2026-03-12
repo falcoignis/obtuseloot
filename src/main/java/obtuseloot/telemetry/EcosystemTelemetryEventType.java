@@ -1,0 +1,11 @@
+package obtuseloot.telemetry;
+
+public enum EcosystemTelemetryEventType {
+    ABILITY_EXECUTION,
+    LINEAGE_UPDATE,
+    MUTATION_EVENT,
+    BRANCH_FORMATION,
+    NICHE_CLASSIFICATION_CHANGE,
+    COMPETITION_ALLOCATION,
+    ROLLUP_GENERATED
+}

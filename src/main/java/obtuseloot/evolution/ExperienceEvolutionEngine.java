@@ -5,6 +5,8 @@ import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.ecosystem.EnvironmentPressureEngine;
+import obtuseloot.evolution.params.EvolutionParameterRegistry;
+import obtuseloot.evolution.params.EcosystemTuningProfile;
 import obtuseloot.lineage.LineageRegistry;
 
 import java.util.EnumMap;
@@ -17,25 +19,35 @@ public class ExperienceEvolutionEngine {
     private final ArtifactFitnessEvaluator fitnessEvaluator;
     private final EnvironmentPressureEngine pressureEngine;
     private final AdaptiveSupportAllocator supportAllocator;
+    private final EvolutionParameterRegistry parameterRegistry;
 
     public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker, ArtifactFitnessEvaluator fitnessEvaluator) {
-        this(usageTracker, fitnessEvaluator, new EnvironmentPressureEngine(), new AdaptiveSupportAllocator());
+        this(usageTracker, fitnessEvaluator, new EnvironmentPressureEngine(), new AdaptiveSupportAllocator(), new EvolutionParameterRegistry());
     }
 
     public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker,
                                      ArtifactFitnessEvaluator fitnessEvaluator,
                                      EnvironmentPressureEngine pressureEngine) {
-        this(usageTracker, fitnessEvaluator, pressureEngine, new AdaptiveSupportAllocator());
+        this(usageTracker, fitnessEvaluator, pressureEngine, new AdaptiveSupportAllocator(), new EvolutionParameterRegistry());
     }
 
     public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker,
                                      ArtifactFitnessEvaluator fitnessEvaluator,
                                      EnvironmentPressureEngine pressureEngine,
                                      AdaptiveSupportAllocator supportAllocator) {
+        this(usageTracker, fitnessEvaluator, pressureEngine, supportAllocator, new EvolutionParameterRegistry());
+    }
+
+    public ExperienceEvolutionEngine(ArtifactUsageTracker usageTracker,
+                                     ArtifactFitnessEvaluator fitnessEvaluator,
+                                     EnvironmentPressureEngine pressureEngine,
+                                     AdaptiveSupportAllocator supportAllocator,
+                                     EvolutionParameterRegistry parameterRegistry) {
         this.usageTracker = usageTracker;
         this.fitnessEvaluator = fitnessEvaluator;
         this.pressureEngine = pressureEngine;
         this.supportAllocator = supportAllocator;
+        this.parameterRegistry = parameterRegistry;
     }
 
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed) {
@@ -63,12 +75,13 @@ public class ExperienceEvolutionEngine {
                                                   double lineageMutationInfluence,
                                                   String lineageId,
                                                   LineageRegistry lineageRegistry) {
+        EcosystemTuningProfile profile = parameterRegistry.profile();
         ArtifactUsageProfile usage = usageTracker.profileForSeed(artifactSeed);
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
         double fitness = fitnessEvaluator.evaluate(usage);
         double effectiveFitness = fitnessEvaluator.effectiveFitness(fitnessEvaluator.effectiveFitness(fitness, nichePopulation), pressure);
-        effectiveFitness *= support.reinforcementMultiplier();
+        effectiveFitness *= support.reinforcementMultiplier() * profile.lineageMomentumInfluence();
         double normalized = normalizeFitness(effectiveFitness);
         double lineageInfluence = clamp(lineageMutationInfluence, 0.75D, 1.25D) * support.mutationOpportunity();
 
@@ -99,6 +112,7 @@ public class ExperienceEvolutionEngine {
                                      AbilityTrigger trigger,
                                      String lineageId,
                                      LineageRegistry lineageRegistry) {
+        EcosystemTuningProfile profile = parameterRegistry.profile();
         RolePressureMetrics artifactPressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
         EcosystemRoleClassifier classifier = new EcosystemRoleClassifier();
@@ -114,11 +128,15 @@ public class ExperienceEvolutionEngine {
                 rollups.isEmpty() ? Map.of(candidate.dominantNiche(), candidateRollup) : rollups);
         double specializationTilt = candidate.specialization().specializationScore() * 0.12D;
         return clamp((artifactPressure.templateWeightModifier() * candidatePressure.templateWeightModifier() + specializationTilt)
-                * support.retentionOpportunity(), 0.62D, 1.55D);
+                * support.retentionOpportunity() * profile.nicheSaturationSensitivity(), 0.62D, 1.55D);
     }
 
     public EnvironmentPressureEngine pressureEngine() {
         return pressureEngine;
+    }
+
+    public void setTelemetryEmitter(obtuseloot.telemetry.EcosystemTelemetryEmitter telemetryEmitter) {
+        supportAllocator.setTelemetryEmitter(telemetryEmitter);
     }
 
     public double mutationEcologyPressureFor(long artifactSeed) {
@@ -126,6 +144,7 @@ public class ExperienceEvolutionEngine {
     }
 
     public double mutationEcologyPressureFor(long artifactSeed, String lineageId, LineageRegistry lineageRegistry) {
+        EcosystemTuningProfile profile = parameterRegistry.profile();
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
         return clamp((1.0D
@@ -134,8 +153,8 @@ public class ExperienceEvolutionEngine {
                 + Math.max(0.0D, 1.0D - pressure.templateWeightModifier()) * 0.30D)
                 * (1.0D + Math.max(0.0D, 1.0D - support.mutationOpportunity()) * 0.35D)
                 * (1.0D + (1.0D - support.diminishingReturnFactor()) * 0.18D),
-                0.70D,
-                1.65D);
+                profile.mutationAmplitudeMin(),
+                profile.mutationAmplitudeMax());
     }
 
     public Map<String, Object> competitionAnalytics(LineageRegistry lineageRegistry) {
