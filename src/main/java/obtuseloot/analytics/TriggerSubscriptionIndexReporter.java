@@ -1,5 +1,6 @@
 package obtuseloot.analytics;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.AbilityTrigger;
 import obtuseloot.abilities.ItemAbilityManager;
 
@@ -56,7 +57,13 @@ public final class TriggerSubscriptionIndexReporter {
         out.append("- Budget consumption by mechanic-id (x100 units): ").append(manager.triggerBudgetConsumptionByAbility()).append("\n");
         out.append("- Execution status by mechanic@trigger: ").append(manager.executionStatusByMechanicTrigger()).append("\n");
         out.append("- Meaningful outcomes by mechanic@trigger: ").append(manager.meaningfulOutcomeByMechanicTrigger()).append("\n");
-        out.append("- No-op outcomes by mechanic@trigger: ").append(manager.noOpByMechanicTrigger()).append("\n\n");
+        out.append("- No-op outcomes by mechanic@trigger: ").append(manager.noOpByMechanicTrigger()).append("\n");
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin != null && plugin.getArtifactUsageTracker() != null) {
+            out.append("- Utility density by mechanic@trigger: ").append(plugin.getArtifactUsageTracker().utilitySignalRollup()).append("\n");
+            out.append("- High-volume low-value mechanics: ").append(plugin.getArtifactUsageTracker().highVolumeLowValueSignals()).append("\n");
+        }
+        out.append("\n");
 
         out.append("## 7) Remaining hot-path concerns\n");
         out.append("- Ensure subscription rebuild hooks are triggered after state-changing debug, evolution, drift, awakening, and fusion flows.\n");

@@ -3,6 +3,7 @@ package obtuseloot.abilities;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
+import obtuseloot.evolution.MechanicUtilitySignal;
 import obtuseloot.reputation.ArtifactReputation;
 
 import java.util.EnumMap;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 
 public class ItemAbilityManager {
     private final AbilityResolver resolver;
@@ -78,10 +80,14 @@ public class ItemAbilityManager {
         if (triggerSubscriptionIndexingEnabled && ownerId != null) {
             PlayerArtifactTriggerMap triggerMap = subscriptionIndex.getOrRebuild(ownerId, context.artifact(), context.reputation(), this, "lazy-event-build");
             List<ArtifactTriggerBinding> bindings = triggerMap.bindingsFor(context.trigger());
+            Map<String, AbilityDefinition> definitionsById = bindings.stream()
+                    .map(ArtifactTriggerBinding::definition)
+                    .collect(Collectors.toMap(AbilityDefinition::id, d -> d, (a, b) -> a));
             indexedDispatchCalls.increment();
             totalIndexedSubscribers.add(bindings.size());
             subscriberByTrigger.get(context.trigger()).add(bindings.size());
             AbilityDispatchResult dispatchResult = dispatcher.dispatchIndexed(context, bindings, this);
+            recordUtilityOutcomes(context, dispatchResult, definitionsById);
             ObtuseLoot plugin = ObtuseLoot.get();
             if (plugin != null) {
                 plugin.getArtifactManager().markDirty(context.artifact());
@@ -91,7 +97,10 @@ public class ItemAbilityManager {
 
         fullScanDispatchCalls.increment();
         AbilityProfile profile = profileFor(context.artifact(), context.reputation());
+        Map<String, AbilityDefinition> definitionsById = profile.abilities().stream()
+                .collect(Collectors.toMap(AbilityDefinition::id, d -> d, (a, b) -> a));
         AbilityDispatchResult dispatchResult = dispatcher.dispatchFullScan(context, profile, this);
+        recordUtilityOutcomes(context, dispatchResult, definitionsById);
         ObtuseLoot plugin = ObtuseLoot.get();
         if (plugin != null) {
             plugin.getArtifactManager().markDirty(context.artifact());
@@ -236,6 +245,29 @@ public class ItemAbilityManager {
 
     public Map<String, Long> coalescedExecutionByTrigger() {
         return snapshotLongAdders(coalescedExecutionByTrigger);
+    }
+
+    public Map<String, MechanicUtilitySignal> utilitySignalsForArtifact(Artifact artifact) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin == null || artifact == null) {
+            return Map.of();
+        }
+        return plugin.getArtifactUsageTracker().profileFor(artifact).utilitySignalsByMechanic();
+    }
+
+    private void recordUtilityOutcomes(AbilityEventContext context,
+                                       AbilityDispatchResult dispatchResult,
+                                       Map<String, AbilityDefinition> definitionsById) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin == null) {
+            return;
+        }
+        dispatchResult.executions().forEach(result -> {
+            AbilityDefinition definition = definitionsById.get(result.abilityId());
+            if (definition != null) {
+                plugin.getArtifactUsageTracker().trackAbilityExecution(context.artifact(), context, result, definition);
+            }
+        });
     }
 
     private Map<String, Long> snapshotLongAdders(Map<String, LongAdder> source) {
