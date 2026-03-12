@@ -34,6 +34,15 @@ public class GenomeMutationEngine {
                                  double mutationInfluence,
                                  double ecologicalPressure,
                                  Map<LineageBiasDimension, Double> lineageBias) {
+        return mutate(baseGenome, evolutionStage, mutationInfluence, ecologicalPressure, 1.0D, lineageBias);
+    }
+
+    public ArtifactGenome mutate(ArtifactGenome baseGenome,
+                                 int evolutionStage,
+                                 double mutationInfluence,
+                                 double ecologicalPressure,
+                                 double mutationOpportunity,
+                                 Map<LineageBiasDimension, Double> lineageBias) {
         if (evolutionStage <= 1) {
             return baseGenome;
         }
@@ -48,7 +57,7 @@ public class GenomeMutationEngine {
         double lineageSpecialization = tendency(lineageBias, LineageBiasDimension.SPECIALIZATION);
         double ecologyResistance = clamp(1.0D - (Math.max(0.0D, ecologicalPressure - 1.0D) * 0.30D), 0.70D, 1.0D);
         double lineageVariance = 1.0D + (lineageRisk * 0.22D) - (lineageReliability * 0.18D);
-        double effectiveInfluence = clamp(mutationInfluence * ecologyResistance, 0.74D, 1.26D);
+        double effectiveInfluence = clamp(mutationInfluence * ecologyResistance * clamp(mutationOpportunity, 0.50D, 1.45D), 0.62D, 1.30D);
         double amplitude = (0.02D + (0.08D * sensitivity) + (0.06D * volatility))
                 * Math.min(1.0D, evolutionStage / 6.0D)
                 * lineageVariance
