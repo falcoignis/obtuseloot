@@ -105,16 +105,23 @@ public class ProceduralAbilityGenerator {
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
         UtilityHistoryRollup utilityHistory = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
         ArtifactLineage lineage = lineageRegistry == null ? null : lineageRegistry.assignLineage(artifact);
+        double lineageMutationInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
+        double mutationEcologyPressure = experienceEvolutionEngine == null ? 1.0D : experienceEvolutionEngine.mutationEcologyPressureFor(artifact.getArtifactSeed());
         List<AbilityFamily> ranked = new ArrayList<>(List.of(AbilityFamily.values()));
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage, utilityHistory)));
 
-        ArtifactGenome baseGenome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
+        ArtifactGenome baseGenome = mutationEngine.mutate(
+                genomeResolver.resolve(artifact.getArtifactSeed()),
+                evolutionStage,
+                lineageMutationInfluence,
+                mutationEcologyPressure,
+                lineage == null ? null : lineage.evolutionaryBiasGenome().tendencies());
         ArtifactGenome lineageGenome = (lineage == null)
                 ? baseGenome
                 : lineageGenomeInheritance.inherit(lineage, baseGenome, artifact.getArtifactSeed());
         ArtifactGenome evolvedGenome = experienceEvolutionEngine == null
                 ? lineageGenome
-                : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed());
+                : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed(), 1, lineageMutationInfluence);
         TraitInterferenceSnapshot preActivationInterference = traitInterferenceResolver.summarizeInterference(registry.templates(), evolvedGenome, traitInterferenceResolver.scoringMode());
         LatentActivationContext activationContext = LatentActivationContext.bounded(
                 memoryProfile.survivalWeight() / 4.0D,
@@ -182,7 +189,7 @@ public class ProceduralAbilityGenerator {
                     .mapToDouble(t -> experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), t.mechanic(), t.trigger()))
                     .average()
                     .orElse(1.0D);
-            lineageRegistry.recordDescendantBias(artifact, observedBias, ecologicalPressure);
+            lineageRegistry.recordDescendantBias(artifact, observedBias, ecologicalPressure, lineageMutationInfluence);
         }
 
         return new AbilityProfile("procedural-" + ranked.get(0).name().toLowerCase() + "-s" + evolutionStage, picked);
@@ -229,8 +236,10 @@ public class ProceduralAbilityGenerator {
                 ? 1.0D
                 : experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger());
         double lineageTemplateInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveTemplateInfluence(lineage, template.metadata());
+        double mutationInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
+        double mechanicInfluence = mechanicLineageWeight(template.mechanic(), lineage);
         double ecologicalCorrection = lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, ecology);
-        return score * rarityModifier(template) * ecology * lineageTemplateInfluence * ecologicalCorrection;
+        return score * rarityModifier(template) * ecology * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence;
     }
 
 
@@ -287,7 +296,8 @@ public class ProceduralAbilityGenerator {
         String key = family.name().toLowerCase();
         double ecosystem = ecosystemEngine == null ? 1.0D : ecosystemEngine.weightForFamily(key);
         double lineageInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveFamilyInfluence(lineage, key);
-        double profileScore = base * ecosystem * lineageInfluence;
+        double mutationInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
+        double profileScore = base * ecosystem * lineageInfluence * mutationInfluence;
         if (experienceEvolutionEngine != null) {
             double familyEcology = registry.templates().stream()
                     .filter(template -> template.family() == family)
@@ -306,5 +316,21 @@ public class ProceduralAbilityGenerator {
                 .orElse(0.0D);
         double confidence = utilityHistory.confidence();
         return (profileScore * (1.0D - (0.55D * confidence))) + (utilityFamilyBias * (2.2D * confidence));
+    }
+
+    private double mechanicLineageWeight(AbilityMechanic mechanic, ArtifactLineage lineage) {
+        if (lineage == null) {
+            return 1.0D;
+        }
+        EvolutionaryBiasGenome bias = lineage.evolutionaryBiasGenome();
+        double risk = bias.tendency(LineageBiasDimension.RISK_APPETITE);
+        double specialization = bias.tendency(LineageBiasDimension.SPECIALIZATION);
+        double reliability = bias.tendency(LineageBiasDimension.RELIABILITY);
+        double directional = switch (mechanic) {
+            case UNSTABLE_DETONATION, CHAIN_ESCALATION, BURST_STATE -> (risk * 0.30D) - (reliability * 0.10D);
+            case NAVIGATION_ANCHOR, HARVEST_RELAY, DEFENSIVE_THRESHOLD, GUARDIAN_PULSE -> (specialization * 0.18D) + (reliability * 0.14D);
+            default -> (risk * 0.08D) + (specialization * 0.10D);
+        };
+        return Math.max(0.82D, Math.min(1.18D, 1.0D + directional));
     }
 }

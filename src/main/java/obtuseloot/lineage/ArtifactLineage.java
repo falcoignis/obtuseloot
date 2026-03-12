@@ -14,6 +14,7 @@ import java.util.Random;
 
 public class ArtifactLineage {
     private static final int OBSERVATION_WINDOW = 16;
+    private static final int SPECIALIZATION_WINDOW = 24;
 
     private final String lineageId;
     private int generationIndex;
@@ -24,7 +25,15 @@ public class ArtifactLineage {
     private final EvolutionaryBiasGenome evolutionaryBiasGenome;
     private final Map<String, LineageBranchProfile> branches = new LinkedHashMap<>();
     private final Deque<EvolutionaryBiasGenome> observedDescendantBiases = new ArrayDeque<>();
+    private final Deque<Double> utilityDensityHistory = new ArrayDeque<>();
+    private final Deque<Double> ecologicalPressureHistory = new ArrayDeque<>();
+    private final Deque<Double> specializationTrajectory = new ArrayDeque<>();
     private int repeatedDivergences;
+    private int driftWindowTicks = 5;
+    private int descendantsObserved;
+    private int branchBirths;
+    private int branchCollapses;
+    private int branchSurvivors;
 
     public ArtifactLineage(String lineageId) {
         this.lineageId = lineageId;
@@ -47,6 +56,14 @@ public class ArtifactLineage {
     public EvolutionaryBiasGenome evolutionaryBiasGenome() { return evolutionaryBiasGenome; }
     public Map<String, LineageBranchProfile> branches() { return Map.copyOf(branches); }
     public int repeatedDivergences() { return repeatedDivergences; }
+    public int descendantsObserved() { return descendantsObserved; }
+    public int branchBirths() { return branchBirths; }
+    public int branchCollapses() { return branchCollapses; }
+    public int branchSurvivors() { return branchSurvivors; }
+    public int driftWindowTicks() { return driftWindowTicks; }
+    public List<Double> utilityDensityHistory() { return List.copyOf(utilityDensityHistory); }
+    public List<Double> ecologicalPressureHistory() { return List.copyOf(ecologicalPressureHistory); }
+    public List<Double> specializationTrajectory() { return List.copyOf(specializationTrajectory); }
 
     public void addAncestor(ArtifactAncestor ancestor) {
         ancestors.add(ancestor);
@@ -70,18 +87,44 @@ public class ArtifactLineage {
     public void registerDescendantBias(long artifactSeed,
                                        EvolutionaryBiasGenome observedBias,
                                        double ecologicalPressure,
+                                       double mutationInfluence,
+                                       double driftWindow,
+                                       double utilityDensity,
                                        InheritanceBranchingHeuristics branchingHeuristics) {
+        descendantsObserved++;
         observedDescendantBiases.addLast(observedBias.copy());
         while (observedDescendantBiases.size() > OBSERVATION_WINDOW) {
             observedDescendantBiases.removeFirst();
         }
+        utilityDensityHistory.addLast(utilityDensity);
+        ecologicalPressureHistory.addLast(ecologicalPressure);
+        specializationTrajectory.addLast(observedBias.tendency(LineageBiasDimension.SPECIALIZATION));
+        while (utilityDensityHistory.size() > SPECIALIZATION_WINDOW) {
+            utilityDensityHistory.removeFirst();
+        }
+        while (ecologicalPressureHistory.size() > SPECIALIZATION_WINDOW) {
+            ecologicalPressureHistory.removeFirst();
+        }
+        while (specializationTrajectory.size() > SPECIALIZATION_WINDOW) {
+            specializationTrajectory.removeFirst();
+        }
 
         double divergence = branchingHeuristics.distance(evolutionaryBiasGenome, observedBias);
-        double adaptationStrength = Math.max(0.06D, 0.22D - (Math.max(0.0D, ecologicalPressure - 1.0D) * 0.08D));
+        double adaptationStrength = Math.max(0.05D,
+                (0.22D * mutationInfluence)
+                        - (Math.max(0.0D, ecologicalPressure - 1.0D) * 0.14D)
+                        - (driftWindowTicks <= 0 ? Math.max(0.0D, ecologicalPressure - 1.0D) * 0.05D : 0.0D));
         evolutionaryBiasGenome.mergeToward(observedBias, adaptationStrength);
 
         Random driftRandom = new Random(artifactSeed ^ lineageId.hashCode());
-        evolutionaryBiasGenome.applyDrift(driftRandom, 0.035D);
+        double pressureAcceleration = Math.max(0.0D, ecologicalPressure - 1.0D) * 0.030D;
+        double effectiveDrift = driftWindowTicks > 0
+                ? driftWindow * (0.35D + pressureAcceleration)
+                : driftWindow * (1.0D + pressureAcceleration + Math.max(0.0D, divergence - 0.08D));
+        evolutionaryBiasGenome.applyDrift(driftRandom, Math.max(0.003D, effectiveDrift));
+        if (driftWindowTicks > 0) {
+            driftWindowTicks--;
+        }
 
         if (divergence > 0.12D) {
             repeatedDivergences++;
@@ -95,8 +138,17 @@ public class ArtifactLineage {
             LineageBranchProfile branch = branches.computeIfAbsent(signature,
                     ignored -> new LineageBranchProfile(lineageId + ":" + signature, lineageId, observedBias.copy()));
             branch.registerMember(artifactSeed);
+            branchBirths++;
+            branchSurvivors = (int) branches.values().stream().filter(candidate -> candidate.stabilizationCount() >= 2).count();
             repeatedDivergences = 0;
         }
+        int collapses = 0;
+        for (LineageBranchProfile branch : branches.values()) {
+            if (branch.stabilizationCount() == 1 && ecologicalPressure > 1.25D) {
+                collapses++;
+            }
+        }
+        branchCollapses = collapses;
     }
 
     public String dominantBranchId() {
