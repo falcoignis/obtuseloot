@@ -27,7 +27,7 @@ public class AnalyticsJobOrchestrator {
 
     public AnalysisPipelineContext prepare(EcosystemAnalysisJob job) {
         List<EcosystemTelemetryEvent> telemetry = loadTelemetry(job.telemetryArchivePath());
-        List<TelemetryRollupSnapshot> rollups = loadRollups(job.rollupSnapshotDirectory(), job.harnessOutputDirectory());
+        List<TelemetryRollupSnapshot> rollups = loadRollups(job.rollupSnapshotDirectory());
         Map<String, String> scenarioMetadata = loadScenarioMetadata(job.harnessOutputDirectory());
         List<TelemetryRollupSnapshot> selected = windowedRollupReader.readWindow(rollups, job.bucketPolicy());
         return new AnalysisPipelineContext(job, telemetry, rollups, scenarioMetadata, selected);
@@ -40,7 +40,7 @@ public class AnalyticsJobOrchestrator {
         return new EcosystemHistoryArchive(telemetryArchivePath).readAll();
     }
 
-    private List<TelemetryRollupSnapshot> loadRollups(Path rollupSnapshotDirectory, Path harnessDir) {
+    private List<TelemetryRollupSnapshot> loadRollups(Path rollupSnapshotDirectory) {
         List<TelemetryRollupSnapshot> out = new ArrayList<>();
         if (rollupSnapshotDirectory != null && Files.isDirectory(rollupSnapshotDirectory)) {
             try (var files = Files.list(rollupSnapshotDirectory)) {
@@ -52,12 +52,6 @@ public class AnalyticsJobOrchestrator {
             }
         }
 
-        if (harnessDir != null && Files.isDirectory(harnessDir)) {
-            Path harnessSnapshot = harnessDir.resolve("rollup-snapshot.properties");
-            if (Files.exists(harnessSnapshot)) {
-                new TelemetryRollupSnapshotStore(harnessSnapshot).readLatest().ifPresent(out::add);
-            }
-        }
         return List.copyOf(out.stream().sorted(java.util.Comparator.comparingLong(TelemetryRollupSnapshot::createdAtMs)).toList());
     }
 
