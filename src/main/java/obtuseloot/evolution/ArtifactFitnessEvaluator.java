@@ -33,6 +33,17 @@ public class ArtifactFitnessEvaluator {
     public double effectiveFitness(double fitness, int nichePopulation) {
         return fitness / Math.max(1, nichePopulation);
     }
+
+    public double effectiveFitness(double fitness, RolePressureMetrics pressureMetrics) {
+        if (pressureMetrics == null) {
+            return fitness;
+        }
+        double adjusted = fitness * pressureMetrics.retentionBias();
+        adjusted *= (1.0D + (pressureMetrics.specializationPressure() * 0.4D));
+        adjusted *= (1.0D - (pressureMetrics.ecologicalRepulsion() * 0.45D));
+        return adjusted;
+    }
+
     public String decisionHierarchy() {
         return "validatedUtility > utilityDensity > noOpSpamRedundancyPenalty > budgetEfficiency > legacyActivityConfidence";
     }
