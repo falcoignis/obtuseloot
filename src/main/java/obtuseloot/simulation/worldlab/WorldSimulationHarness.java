@@ -372,10 +372,12 @@ public class WorldSimulationHarness {
                     nicheId,
                     Map.of(
                             "generation", String.valueOf(currentGeneration),
-                            "trigger", trigger.name(),
+                            "trigger", definition.trigger().name(),
                             "mechanic", definition.mechanic().name(),
                             "ability_id", definition.id(),
                             "execution_status", AbilityExecutionStatus.SUCCESS.name(),
+                            "outcome_classification", "MEANINGFUL",
+                            "niche_tags", String.join("|", definition.metadata() == null ? java.util.Set.of("general") : definition.metadata().utilityDomains()),
                             "utility_score", String.valueOf(utilityScore),
                             "utility_density", String.valueOf(Math.max(0.0D, utilityScore / Math.max(1.0D, definitions.size())))
                     ));

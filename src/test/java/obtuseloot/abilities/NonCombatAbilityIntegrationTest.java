@@ -25,10 +25,10 @@ class NonCombatAbilityIntegrationTest {
     void registryContainsEcologicalAbilityBatch() {
         AbilityRegistry registry = new AbilityRegistry();
         List<String> ids = registry.templates().stream().map(AbilityTemplate::id).toList();
-        assertTrue(ids.contains("exploration.pathfinder_instinct"));
+        assertTrue(ids.contains("exploration.trail_sense"));
         assertTrue(ids.contains("gathering.forager_memory"));
-        assertTrue(ids.contains("ritual.altar_resonance"));
-        assertTrue(ids.contains("social.collective_insight"));
+        assertTrue(ids.contains("ritual.pattern_resonance"));
+        assertTrue(ids.contains("social.witness_imprint"));
         assertTrue(ids.contains("environment.terrain_affinity"));
     }
 

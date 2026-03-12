@@ -167,12 +167,15 @@ public class ExperienceEvolutionEngine {
         double tilt = switch (niche) {
             case NAVIGATION -> (trigger == AbilityTrigger.ON_CHUNK_ENTER || trigger == AbilityTrigger.ON_STRUCTURE_DISCOVERY) ? 1.10D : 1.04D;
             case FARMING_WORLDKEEPING -> (trigger == AbilityTrigger.ON_BLOCK_HARVEST || trigger == AbilityTrigger.ON_RESOURCE_HARVEST_STREAK) ? 1.10D : 1.03D;
-            case RITUAL_STRANGE_UTILITY -> (trigger == AbilityTrigger.ON_RITUAL_INTERACT || trigger == AbilityTrigger.ON_RITUAL_COMPLETION) ? 1.11D : 1.03D;
-            case SOCIAL_WORLD_INTERACTION -> (trigger == AbilityTrigger.ON_PLAYER_GROUP_ACTION || trigger == AbilityTrigger.ON_PLAYER_TRADE) ? 1.12D : 1.04D;
+            case RITUAL_STRANGE_UTILITY -> (trigger == AbilityTrigger.ON_RITUAL_INTERACT || trigger == AbilityTrigger.ON_RITUAL_COMPLETION || trigger == AbilityTrigger.ON_REPEATED_BLOCK_PATTERN) ? 1.11D : 1.03D;
+            case SOCIAL_WORLD_INTERACTION -> (trigger == AbilityTrigger.ON_PLAYER_GROUP_ACTION || trigger == AbilityTrigger.ON_PLAYER_TRADE || trigger == AbilityTrigger.ON_PLAYER_WITNESS) ? 1.12D : 1.04D;
             case ENVIRONMENTAL_ADAPTATION, ENVIRONMENTAL_SENSING -> (trigger == AbilityTrigger.ON_WEATHER_CHANGE || trigger == AbilityTrigger.ON_ELEVATION_CHANGE || trigger == AbilityTrigger.ON_BIOME_CHANGE) ? 1.10D : 1.02D;
             default -> 1.0D;
         };
-        if (mechanic == AbilityMechanic.TRADE_SCENT || mechanic == AbilityMechanic.COLLECTIVE_RELAY || mechanic == AbilityMechanic.RITUAL_STABILIZATION) {
+        if (mechanic == AbilityMechanic.TRADE_SCENT || mechanic == AbilityMechanic.COLLECTIVE_RELAY || mechanic == AbilityMechanic.RITUAL_STABILIZATION
+                || mechanic == AbilityMechanic.TRAIL_SENSE || mechanic == AbilityMechanic.FORAGER_MEMORY
+                || mechanic == AbilityMechanic.PATTERN_RESONANCE || mechanic == AbilityMechanic.CARTOGRAPHERS_ECHO
+                || mechanic == AbilityMechanic.WITNESS_IMPRINT) {
             tilt += 0.02D;
         }
         return clamp(tilt, 0.96D, 1.14D);
