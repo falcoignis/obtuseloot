@@ -22,7 +22,8 @@ public class EvolutionParameterRegistry {
                 config.getDouble("ecosystem.parameters.competitionReinforcementCurve", defaults.competitionReinforcementCurve()),
                 config.getInt("ecosystem.parameters.telemetryFlushIntervalTicks", defaults.telemetryFlushIntervalTicks()),
                 config.getInt("ecosystem.parameters.telemetryArchiveBatchSize", defaults.telemetryArchiveBatchSize()),
-                config.getLong("ecosystem.parameters.telemetryRollupIntervalMs", defaults.telemetryRollupIntervalMs())
+                config.getLong("ecosystem.parameters.telemetryRollupIntervalMs", defaults.telemetryRollupIntervalMs()),
+                config.getInt("ecosystem.parameters.telemetryRehydrateReplayWindowEvents", defaults.telemetryRehydrateReplayWindowEvents())
         );
         activeProfile.set(profile);
     }

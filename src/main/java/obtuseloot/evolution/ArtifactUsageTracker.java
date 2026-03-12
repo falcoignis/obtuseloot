@@ -119,6 +119,10 @@ public class ArtifactUsageTracker {
                             Map.entry("player_id", artifact.getOwnerId() == null ? "na" : artifact.getOwnerId().toString()),
                             Map.entry("chunk", context.runtimeContext() != null && context.runtimeContext().chunkKey() != null
                                     ? String.valueOf(context.runtimeContext().chunkKey()) : "na"),
+                            Map.entry("world", context.runtimeContext() != null && context.runtimeContext().world() != null
+                                    ? context.runtimeContext().world() : "na"),
+                            Map.entry("dimension", context.runtimeContext() != null && context.runtimeContext().dimension() != null
+                                    ? context.runtimeContext().dimension() : "na"),
                             Map.entry("context_tags", "ability-execution")
                     ));
         }

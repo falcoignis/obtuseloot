@@ -18,12 +18,14 @@ class EvolutionParameterRegistryTest {
         config.set("ecosystem.parameters.telemetryFlushIntervalTicks", 80);
         config.set("ecosystem.parameters.telemetryArchiveBatchSize", 100);
         config.set("ecosystem.parameters.telemetryRollupIntervalMs", 2500L);
+        config.set("ecosystem.parameters.telemetryRehydrateReplayWindowEvents", 300);
 
         registry.load(config);
         assertEquals(1.1D, registry.profile().nicheSaturationSensitivity());
         assertEquals(80, registry.profile().telemetryFlushIntervalTicks());
         assertEquals(100, registry.profile().telemetryArchiveBatchSize());
         assertEquals(2500L, registry.profile().telemetryRollupIntervalMs());
+        assertEquals(300, registry.profile().telemetryRehydrateReplayWindowEvents());
 
         config.set("ecosystem.parameters.nicheSaturationSensitivity", 0.7D);
         registry.reload(config);

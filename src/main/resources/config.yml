@@ -156,3 +156,4 @@ ecosystem:
     telemetryFlushIntervalTicks: 100
     telemetryArchiveBatchSize: 256
     telemetryRollupIntervalMs: 5000
+    telemetryRehydrateReplayWindowEvents: 512

@@ -12,8 +12,8 @@ public class TelemetryEventFactory {
         long now = System.currentTimeMillis();
         Map<String, String> normalized = new LinkedHashMap<>(attributes == null ? Map.of() : attributes);
         normalized.put("timestamp", String.valueOf(now));
-        normalized.put("artifact_seed", String.valueOf(artifactSeed));
-        normalized.put("artifact_id", "artifact-" + Long.toUnsignedString(artifactSeed));
+        normalized.put("artifact_seed", artifactSeed > 0L ? String.valueOf(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
+        normalized.put("artifact_id", artifactSeed > 0L ? "artifact-" + Long.toUnsignedString(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
         normalized.put("lineage_id", lineageId == null || lineageId.isBlank() ? TelemetryFieldContract.NOT_APPLICABLE : lineageId);
         normalized.put("niche", niche == null || niche.isBlank() ? TelemetryFieldContract.NOT_APPLICABLE : niche);
         return new EcosystemTelemetryEvent(

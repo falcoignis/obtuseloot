@@ -36,10 +36,12 @@ import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.reputation.ReputationManager;
 import obtuseloot.telemetry.EcosystemHistoryArchive;
 import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.RollupStateHydrator;
 import obtuseloot.telemetry.ScheduledEcosystemRollups;
 import obtuseloot.telemetry.TelemetryAggregationAnalytics;
 import obtuseloot.telemetry.TelemetryAggregationBuffer;
 import obtuseloot.telemetry.TelemetryAggregationService;
+import obtuseloot.telemetry.TelemetryRollupSnapshotStore;
 import obtuseloot.telemetry.TelemetryFlushScheduler;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -89,7 +91,14 @@ public class ObtuseLoot extends JavaPlugin {
         TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(java.nio.file.Path.of("analytics/telemetry/ecosystem-events.log"));
         ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, tuningProfile.telemetryRollupIntervalMs());
-        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, tuningProfile.telemetryArchiveBatchSize());
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(java.nio.file.Path.of("analytics/telemetry/rollup-snapshot.properties"));
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, telemetryArchive, tuningProfile.telemetryRehydrateReplayWindowEvents());
+        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups,
+                tuningProfile.telemetryArchiveBatchSize(), snapshotStore, hydrator);
+        aggregationService.initializeFromHistory();
+        getLogger().info("[Telemetry] initialization mode=" + aggregationService.initialization().mode()
+                + ", replayedEvents=" + aggregationService.initialization().replayedEvents()
+                + ", durationMs=" + aggregationService.initialization().durationMs());
         ecosystemTelemetryEmitter = new EcosystemTelemetryEmitter(aggregationService);
         telemetryAggregationAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
 

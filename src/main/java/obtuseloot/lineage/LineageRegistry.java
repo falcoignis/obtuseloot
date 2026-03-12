@@ -154,7 +154,12 @@ public class LineageRegistry {
     private void emit(EcosystemTelemetryEventType type, Artifact artifact, String lineageId, Map<String, String> attrs) {
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
         if (emitter != null && artifact != null) {
-            emitter.emit(type, artifact.getArtifactSeed(), lineageId, "", attrs);
+            Map<String, String> enriched = new LinkedHashMap<>(attrs);
+            ArtifactLineage lineage = lineages.get(lineageId);
+            if (lineage != null) {
+                enriched.put("generation", String.valueOf(lineage.generationIndex()));
+            }
+            emitter.emit(type, artifact.getArtifactSeed(), lineageId, "", enriched);
         }
     }
 }
