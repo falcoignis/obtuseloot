@@ -66,6 +66,7 @@ public class WorldSimulationHarness {
     private final SimulationClock clock = new SimulationClock();
     private final SimulationMetricsCollector metrics = new SimulationMetricsCollector();
     private final List<Map<String, Object>> seasonalSnapshots = new ArrayList<>();
+    private final List<TelemetryRollupSnapshot> rollupHistory = new ArrayList<>();
     private final List<Long> initialSeedPool = new ArrayList<>();
     private List<SimulatedPlayer> latestPlayers = List.of();
 
@@ -160,6 +161,11 @@ public class WorldSimulationHarness {
             Map<String, Object> opportunitySummary = refreshOpportunitySignals(seasonArtifacts);
             seasonSnapshot.put("opportunityWeightedMutation", opportunitySummary);
             seasonalSnapshots.add(seasonSnapshot);
+            rollupHistory.add(new TelemetryRollupSnapshot(
+                    TelemetryRollupSnapshot.CURRENT_VERSION,
+                    System.currentTimeMillis(),
+                    "harness_season_" + season,
+                    telemetryAnalytics.ecosystemSnapshot()));
             resetSeasonTallies();
             exportSeasonInteractionHeatmap(players, season);
         }
@@ -404,10 +410,23 @@ public class WorldSimulationHarness {
 
     private Map<String, Object> buildPhase6Outputs(EcosystemSnapshot snapshot) {
         Map<String, Object> out = new LinkedHashMap<>();
+        List<Map<String, Object>> nichePopulationTimelines = buildNichePopulationTimelines();
+        List<Map<String, Object>> nicheUtilityDensityTimelines = buildNicheUtilityDensityTimelines();
+        List<Map<String, Object>> branchLifecycleTimeline = buildBranchLifecycleTimeline();
+
         out.put("lineage_survival_curves", metrics.lineageCounts());
-        out.put("niche_population_timelines", seasonNicheCounts);
+        out.put("niche_population_timelines", nichePopulationTimelines);
+        out.put("niche_active_artifact_timelines", nichePopulationTimelines);
+        out.put("niche_meaningful_outcome_timelines", buildNicheLongTimelines("nicheMeaningfulOutcomes"));
+        out.put("niche_utility_density_timelines", nicheUtilityDensityTimelines);
+        out.put("niche_efficiency_timelines", buildNicheDoubleTimelines("nicheSpecializationPressure"));
+        out.put("niche_saturation_timelines", buildNicheDoubleTimelines("nicheSaturationPressure"));
+        out.put("niche_opportunity_timelines", buildNicheDoubleTimelines("nicheOpportunityShare"));
         out.put("ecosystem_diversity_metrics", Map.of("diversity_timeline", metrics.diversityTimeline(), "turnover_rate", snapshot.turnoverRate()));
         out.put("branch_formation_statistics", Map.of("births", snapshot.branchBirthCount(), "collapses", snapshot.branchCollapseCount(), "distribution", seasonBranchCounts));
+        out.put("branch_lifecycle_timeline", branchLifecycleTimeline);
+        out.put("branch_pruning_diagnostics", buildBranchPruningDiagnostics(snapshot, branchLifecycleTimeline));
+        out.put("behavior_model_separation", buildBehaviorModelSeparationDiagnostics());
         out.put("turnover_rates", Map.of("rollup", snapshot.turnoverRate(), "dead_branch_rate", dataRate(metrics.asData(), "world", "dead_branch_rate")));
         return out;
     }
@@ -455,6 +474,119 @@ public class WorldSimulationHarness {
         dashboardService.generateSeasonDashboard(season);
     }
 
+    private List<Map<String, Object>> buildNichePopulationTimelines() {
+        return buildNicheLongTimelines("nicheOccupancy");
+    }
+
+    private List<Map<String, Object>> buildNicheUtilityDensityTimelines() {
+        return buildNicheDoubleTimelines("nicheUtilityDensity");
+    }
+
+    private List<Map<String, Object>> buildNicheLongTimelines(String snapshotKey) {
+        Map<String, List<Map<String, Object>>> perNiche = new LinkedHashMap<>();
+        for (int i = 0; i < rollupHistory.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+            Map<String, Long> source = switch (snapshotKey) {
+                case "nicheOccupancy" -> rollup.ecosystemSnapshot().nichePopulationRollup().populationByNiche();
+                case "nicheMeaningfulOutcomes" -> rollup.ecosystemSnapshot().nichePopulationRollup().meaningfulOutcomesByNiche();
+                case "nicheBranchContribution" -> rollup.ecosystemSnapshot().nichePopulationRollup().branchContributionByNiche();
+                default -> Map.of();
+            };
+            for (Map.Entry<String, Long> entry : source.entrySet()) {
+                perNiche.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>())
+                        .add(Map.of("window", i + 1, "generated_at_ms", rollup.ecosystemSnapshot().generatedAtMs(), "value", entry.getValue()));
+            }
+        }
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : perNiche.entrySet()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("niche", entry.getKey());
+            row.put("points", entry.getValue());
+            out.add(row);
+        }
+        return out;
+    }
+
+    private List<Map<String, Object>> buildNicheDoubleTimelines(String snapshotKey) {
+        Map<String, List<Map<String, Object>>> perNiche = new LinkedHashMap<>();
+        for (int i = 0; i < rollupHistory.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+            Map<String, Double> source = switch (snapshotKey) {
+                case "nicheUtilityDensity" -> rollup.ecosystemSnapshot().nichePopulationRollup().utilityDensityByNiche();
+                case "nicheSaturationPressure" -> rollup.ecosystemSnapshot().nichePopulationRollup().saturationPressureByNiche();
+                case "nicheOpportunityShare" -> rollup.ecosystemSnapshot().nichePopulationRollup().opportunityShareByNiche();
+                case "nicheSpecializationPressure" -> rollup.ecosystemSnapshot().nichePopulationRollup().specializationPressureByNiche();
+                default -> Map.of();
+            };
+            for (Map.Entry<String, Double> entry : source.entrySet()) {
+                perNiche.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>())
+                        .add(Map.of("window", i + 1, "generated_at_ms", rollup.ecosystemSnapshot().generatedAtMs(), "value", entry.getValue()));
+            }
+        }
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : perNiche.entrySet()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("niche", entry.getKey());
+            row.put("points", entry.getValue());
+            out.add(row);
+        }
+        return out;
+    }
+
+    private List<Map<String, Object>> buildBranchLifecycleTimeline() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        Map<String, Integer> previous = Map.of();
+        for (Map<String, Object> snapshot : seasonalSnapshots) {
+            int season = ((Number) snapshot.getOrDefault("season", 0)).intValue();
+            Map<String, Integer> current = toIntegerMap((Map<?, ?>) snapshot.getOrDefault("branches", Map.of()));
+            int births = 0;
+            int collapses = 0;
+            for (String id : current.keySet()) {
+                if (!previous.containsKey(id)) {
+                    births++;
+                }
+            }
+            for (String id : previous.keySet()) {
+                if (!current.containsKey(id)) {
+                    collapses++;
+                }
+            }
+            int active = current.size();
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("season", season);
+            row.put("births", births);
+            row.put("collapses", collapses);
+            row.put("active", active);
+            row.put("survival_rate", active == 0 ? 0.0D : (active - collapses) / (double) active);
+            out.add(row);
+            previous = current;
+        }
+        return out;
+    }
+
+    private Map<String, Object> buildBranchPruningDiagnostics(EcosystemSnapshot snapshot, List<Map<String, Object>> lifecycle) {
+        int births = lifecycle.stream().mapToInt(m -> ((Number) m.getOrDefault("births", 0)).intValue()).sum();
+        int collapses = lifecycle.stream().mapToInt(m -> ((Number) m.getOrDefault("collapses", 0)).intValue()).sum();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("birth_to_collapse_ratio", collapses == 0 ? births : births / (double) collapses);
+        out.put("rollup_branch_birth_count", snapshot.branchBirthCount());
+        out.put("rollup_branch_collapse_count", snapshot.branchCollapseCount());
+        out.put("unpruned_accumulation_warning", births > 0 && collapses == 0);
+        out.put("seasonal_age_proxy", lifecycle.stream().map(m -> m.get("active")).toList());
+        return out;
+    }
+
+    private Map<String, Object> buildBehaviorModelSeparationDiagnostics() {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("trigger_distribution", new LinkedHashMap<>(metrics.triggers()));
+        out.put("mechanic_distribution", new LinkedHashMap<>(metrics.mechanics()));
+        out.put("branch_distribution", new LinkedHashMap<>(metrics.branches()));
+        out.put("lineage_distribution", new LinkedHashMap<>(metrics.lineageCounts()));
+        out.put("dominant_niche_trajectory", seasonalSnapshots.stream().map(s -> s.getOrDefault("dominantNicheShare", 0.0D)).toList());
+        out.put("niche_separation_timeline", speciesNicheEngine.nicheStabilityTimeline());
+        return out;
+    }
+
     private void writeReports() throws IOException {
         Path out = Path.of(config.outputDirectory());
         Files.createDirectories(out);
@@ -499,17 +631,39 @@ public class WorldSimulationHarness {
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
 
+        Map<String, Object> rollupHistoryJson = new LinkedHashMap<>();
+        List<Map<String, Object>> rollupSnapshots = new ArrayList<>();
+        for (int i = 0; i < rollupHistory.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("window_index", i + 1);
+            item.put("created_at_ms", rollup.createdAtMs());
+            item.put("snapshot", rollup.ecosystemSnapshot());
+            rollupSnapshots.add(item);
+        }
+        rollupHistoryJson.put("rollup_snapshots", rollupSnapshots);
+        data.put("rollup_history", rollupHistoryJson);
+
         Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
         List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
         Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryEvents.stream().map(Object::toString).toList()));
         Path telemetryOutDir = out.resolve("telemetry");
+        Path rollupOutDir = out.resolve("rollup_history");
         Files.createDirectories(telemetryOutDir);
+        Files.createDirectories(rollupOutDir);
         new EcosystemHistoryArchive(telemetryOutDir.resolve("ecosystem-events.log")).append(telemetryEvents);
         new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
                 .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
                         System.currentTimeMillis(), "harness_export", snapshot));
-        Files.writeString(out.resolve("scenario-metadata.properties"), "scenario=" + scenario.name() + "\n");
-        Files.writeString(out.resolve("rollup-snapshots.json"), toJson(Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot), 0));
+        for (int i = 0; i < rollupHistory.size(); i++) {
+            String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
+            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollupHistory.get(i));
+        }
+        Files.writeString(out.resolve("scenario-metadata.properties"),
+                "scenario=" + scenario.name() + "\n"
+                        + "rollup_history_windows=" + rollupHistory.size() + "\n"
+                        + "rollup_history_dir=rollup_history\n");
+        Files.writeString(out.resolve("rollup-snapshots.json"), toJson(rollupHistoryJson, 0));
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
@@ -2258,31 +2412,8 @@ public class WorldSimulationHarness {
         return v instanceof Number n ? n.doubleValue() : 0.0D;
     }
 
-    @SuppressWarnings("unchecked")
     private String toJson(Object value, int indent) {
-        String pad = "  ".repeat(indent);
-        if (value instanceof Map<?, ?> map) {
-            StringBuilder sb = new StringBuilder("{\n");
-            Iterator<? extends Map.Entry<?, ?>> it = map.entrySet().iterator();
-            while (it.hasNext()) {
-                var e = it.next();
-                sb.append(pad).append("  \"").append(e.getKey()).append("\": ").append(toJson(e.getValue(), indent + 1));
-                if (it.hasNext()) sb.append(',');
-                sb.append('\n');
-            }
-            return sb.append(pad).append('}').toString();
-        }
-        if (value instanceof List<?> list) {
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < list.size(); i++) {
-                if (i > 0) sb.append(',');
-                sb.append(toJson(list.get(i), indent + 1));
-            }
-            return sb.append(']').toString();
-        }
-        if (value instanceof String s) {
-            return "\"" + s.replace("\"", "\\\"") + "\"";
-        }
-        return String.valueOf(value);
+        return JsonOutputContract.toJson(value);
     }
+
 }
