@@ -56,7 +56,7 @@ public final class TelemetryFieldContract {
         out.put("rollup_window_ms", NOT_APPLICABLE);
         out.put("snapshot_version", NOT_APPLICABLE);
         out.put("event_type", type.name());
-        out.put("schema_version", TelemetrySchemaVersion.PHASE_5_6_V1.name());
+        out.put("schema_version", TelemetrySchemaVersion.PHASE_5_7_V1.name());
 
         if (provided != null) {
             provided.forEach((k, v) -> {
@@ -103,31 +103,31 @@ public final class TelemetryFieldContract {
 
         map.put(EcosystemTelemetryEventType.LINEAGE_UPDATE,
                 new SchemaContract(
-                        required("lineage_id"),
+                        required("lineage_id", "branch_divergence", "specialization_trajectory"),
                         optional("branch_id", "world", "dimension", "niche", "context_tags"),
                         absent("ability_id", "trigger", "mechanic", "execution_status", "utility_score", "utility_density", "budget_cost", "reinforcement_multiplier")));
 
         map.put(EcosystemTelemetryEventType.MUTATION_EVENT,
                 new SchemaContract(
-                        required("lineage_id", "mutation_influence", "drift_window_remaining"),
+                        required("lineage_id", "mutation_influence", "drift_window_remaining", "branch_divergence", "specialization_trajectory"),
                         optional("world", "dimension", "utility_density", "ecology_pressure", "context_tags"),
                         absent("ability_id", "trigger", "mechanic", "execution_status", "budget_cost", "reinforcement_multiplier")));
 
         map.put(EcosystemTelemetryEventType.BRANCH_FORMATION,
                 new SchemaContract(
-                        required("lineage_id", "branch_id"),
-                        optional("world", "dimension", "niche", "branch_divergence", "context_tags"),
+                        required("lineage_id", "branch_id", "branch_divergence"),
+                        optional("world", "dimension", "niche", "context_tags"),
                         absent("ability_id", "trigger", "mechanic", "execution_status", "budget_cost", "reinforcement_multiplier")));
 
         map.put(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
                 new SchemaContract(
-                        required("niche"),
-                        optional("lineage_id", "generation", "subniche", "world", "dimension", "specialization_pressure", "context_tags"),
+                        required("niche", "specialization_pressure", "specialization_trajectory"),
+                        optional("lineage_id", "generation", "subniche", "world", "dimension", "context_tags"),
                         absent("ability_id", "trigger", "mechanic", "execution_status", "mutation_influence", "drift_window_remaining", "branch_divergence")));
 
         map.put(EcosystemTelemetryEventType.COMPETITION_ALLOCATION,
                 new SchemaContract(
-                        required("niche", "reinforcement_multiplier", "ecology_pressure"),
+                        required("niche", "reinforcement_multiplier", "ecology_pressure", "specialization_trajectory"),
                         optional("lineage_id", "generation", "lineage_momentum", "world", "dimension", "utility_density", "context_tags"),
                         absent("ability_id", "trigger", "mechanic", "execution_status", "mutation_influence", "drift_window_remaining", "branch_divergence")));
 

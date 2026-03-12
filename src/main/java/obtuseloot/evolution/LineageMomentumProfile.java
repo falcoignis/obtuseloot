@@ -8,6 +8,7 @@ public record LineageMomentumProfile(
         double ecologicalCompatibility,
         double outcomeEfficiency,
         double nicheContribution,
+        double specializationTrajectory,
         double diminishingReturns,
         double mutationSupportStrength,
         double retentionBias,

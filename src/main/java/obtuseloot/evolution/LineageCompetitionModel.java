@@ -22,6 +22,7 @@ public class LineageCompetitionModel {
                     : lineage.branchSurvivors() / (double) Math.max(1, lineage.branchBirths());
             double ecologicalCompatibility = 1.0D - clamp(lineage.ecologicalPressureHistory().stream().mapToDouble(Double::doubleValue).average().orElse(1.0D) - 1.0D, 0.0D, 1.0D);
             double outcomeEfficiency = clamp(utilityDensity * 0.70D + branchSurvival * 0.30D, 0.0D, 1.2D);
+            double specializationTrajectory = lineage.specializationTrajectoryDelta();
             double nicheContribution = clamp(lineage.specializationTrajectory().stream().mapToDouble(Math::abs).average().orElse(0.15D) * 1.1D, 0.0D, 1.0D);
 
             double rawMomentum = Math.max(0.05D,
@@ -33,7 +34,7 @@ public class LineageCompetitionModel {
             total += rawMomentum;
             peak = Math.max(peak, rawMomentum);
             momentum.put(entry.getKey(), new LineageMomentumProfile(entry.getKey(), rawMomentum, utilityDensity, branchSurvival,
-                    ecologicalCompatibility, outcomeEfficiency, nicheContribution, 0.0D,
+                    ecologicalCompatibility, outcomeEfficiency, nicheContribution, specializationTrajectory, 0.0D,
                     1.0D, 1.0D, 1.0D, 1.0D));
         }
 
@@ -50,7 +51,7 @@ public class LineageCompetitionModel {
             double templateWeight = clamp(0.80D + (profile.outcomeEfficiency() * 0.35D) - (1.0D - diminishing) * 0.22D, 0.62D, 1.30D);
             normalized.put(profile.lineageId(), new LineageMomentumProfile(
                     profile.lineageId(), share, profile.utilityDensity(), profile.branchSurvivalRate(), profile.ecologicalCompatibility(),
-                    profile.outcomeEfficiency(), profile.nicheContribution(), diminishing,
+                    profile.outcomeEfficiency(), profile.nicheContribution(), profile.specializationTrajectory(), diminishing,
                     mutationSupport, retentionSupport, branchSupport, templateWeight));
         }
 

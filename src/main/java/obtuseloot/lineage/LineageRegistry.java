@@ -158,6 +158,15 @@ public class LineageRegistry {
             ArtifactLineage lineage = lineages.get(lineageId);
             if (lineage != null) {
                 enriched.put("generation", String.valueOf(lineage.generationIndex()));
+                if (type == EcosystemTelemetryEventType.LINEAGE_UPDATE
+                        || type == EcosystemTelemetryEventType.MUTATION_EVENT
+                        || type == EcosystemTelemetryEventType.BRANCH_FORMATION) {
+                    enriched.put("branch_divergence", String.valueOf(lineage.currentBranchDivergence()));
+                }
+                if (type == EcosystemTelemetryEventType.LINEAGE_UPDATE
+                        || type == EcosystemTelemetryEventType.MUTATION_EVENT) {
+                    enriched.put("specialization_trajectory", String.valueOf(lineage.specializationTrajectoryDelta()));
+                }
             }
             emitter.emit(type, artifact.getArtifactSeed(), lineageId, "", enriched);
         }

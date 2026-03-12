@@ -59,7 +59,7 @@ class EcosystemTelemetryPipelineTest {
         assertEquals("42", ability.attributes().get("artifact_seed"));
         assertEquals("lineage-a", ability.attributes().get("lineage_id"));
         assertEquals("128", ability.attributes().get("chunk"));
-        assertEquals("PHASE_5_6_V1", ability.attributes().get("schema_version"));
+        assertEquals("PHASE_5_7_V1", ability.attributes().get("schema_version"));
         assertEquals("world", ability.attributes().get("world"));
         assertEquals("NORMAL", ability.attributes().get("dimension"));
         assertNotNull(ability.attributes().get("utility_density"));
@@ -119,6 +119,23 @@ class EcosystemTelemetryPipelineTest {
                 Map.of("niche", "SCOUT")));
     }
 
+
+    @Test
+    void schemaRequiresBranchDivergenceAndSpecializationTrajectoryOnRelevantEvents() {
+        assertThrows(IllegalArgumentException.class, () -> TelemetryFieldContract.normalize(
+                EcosystemTelemetryEventType.BRANCH_FORMATION,
+                Map.of("lineage_id", "lin-a", "branch_id", "b-1")));
+
+        assertThrows(IllegalArgumentException.class, () -> TelemetryFieldContract.normalize(
+                EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
+                Map.of("niche", "SCOUT", "specialization_pressure", "0.6")));
+
+        Map<String, String> normalized = TelemetryFieldContract.normalize(
+                EcosystemTelemetryEventType.COMPETITION_ALLOCATION,
+                Map.of("niche", "SCOUT", "reinforcement_multiplier", "1.1", "ecology_pressure", "0.4", "specialization_trajectory", "-0.12"));
+        assertEquals("-0.12", normalized.get("specialization_trajectory"));
+    }
+
     @Test
     void periodicFlushRunsDuringRuntimeAndPersistsBeforeShutdown() {
         Path archivePath = tempDir.resolve("periodic-events.log");
@@ -128,7 +145,7 @@ class EcosystemTelemetryPipelineTest {
         TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 1000);
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
-        emitter.emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, 7L, "lin-a", "SCOUT", Map.of("event", "ancestor-added"));
+        emitter.emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, 7L, "lin-a", "SCOUT", Map.of("event", "ancestor-added", "branch_divergence", "0.0", "specialization_trajectory", "0.0"));
         assertEquals(1, buffer.pendingCount());
 
         new TelemetryFlushScheduler(emitter).run();
@@ -149,7 +166,7 @@ class EcosystemTelemetryPipelineTest {
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.BRANCH_FORMATION, 1L, "lin-1", "SCOUT",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.BRANCH_FORMATION, Map.of("niche", "SCOUT", "lineage_id", "lin-1", "branch_id", "b-1", "branch_divergence", "0.2"))));
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.COMPETITION_ALLOCATION, 2L, "lin-2", "RITUAL",
-                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, Map.of("niche", "RITUAL", "lineage_id", "lin-2", "lineage_momentum", "1.1", "opportunity_share", "0.22", "reinforcement_multiplier", "1.1", "ecology_pressure", "0.2"))));
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, Map.of("niche", "RITUAL", "lineage_id", "lin-2", "lineage_momentum", "1.1", "opportunity_share", "0.22", "reinforcement_multiplier", "1.1", "ecology_pressure", "0.2", "specialization_trajectory", "0.08"))));
 
         service.scheduledRollupTick(System.currentTimeMillis() + 5L);
         EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();

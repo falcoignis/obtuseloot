@@ -15,6 +15,7 @@ public class NichePopulationTracker {
     private final Map<Long, ArtifactNicheProfile> nicheProfilesByArtifact = new ConcurrentHashMap<>();
     private final EcosystemCarryingCapacityModel carryingCapacityModel = new EcosystemCarryingCapacityModel();
     private final Map<Long, Map<String, MechanicUtilitySignal>> signalsByArtifact = new ConcurrentHashMap<>();
+    private final Map<Long, Double> specializationScoreByArtifact = new ConcurrentHashMap<>();
     private final Set<Long> activeArtifacts = ConcurrentHashMap.newKeySet();
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
 
@@ -37,6 +38,7 @@ public class NichePopulationTracker {
 
     public void markDiscarded(long artifactSeed) {
         activeArtifacts.remove(artifactSeed);
+        specializationScoreByArtifact.remove(artifactSeed);
     }
 
     public void recordTelemetry(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
@@ -48,6 +50,9 @@ public class NichePopulationTracker {
         signalsByArtifact.put(artifactSeed, Map.copyOf(signals));
         ArtifactNicheProfile next = classifier.classify(signals);
         nicheProfilesByArtifact.put(artifactSeed, next);
+        double previousSpecialization = specializationScoreByArtifact.getOrDefault(artifactSeed, next.specialization().specializationScore());
+        double specializationTrajectory = next.specialization().specializationScore() - previousSpecialization;
+        specializationScoreByArtifact.put(artifactSeed, next.specialization().specializationScore());
         if (previous != null && previous.dominantNiche() != next.dominantNiche() && telemetryEmitter != null) {
             telemetryEmitter.emit(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
                     artifactSeed,
@@ -57,6 +62,7 @@ public class NichePopulationTracker {
                             "to", next.dominantNiche().name(),
                             "subniche", next.specialization().dominantSubniche(),
                             "specialization_pressure", String.valueOf(next.specialization().specializationScore()),
+                            "specialization_trajectory", String.valueOf(specializationTrajectory),
                             "context_tags", "niche-reclassification"));
         }
     }

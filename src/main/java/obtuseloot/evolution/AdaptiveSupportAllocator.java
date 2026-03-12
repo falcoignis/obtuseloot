@@ -40,7 +40,7 @@ public class AdaptiveSupportAllocator {
         ArtifactNicheProfile profile = usageTracker.nichePopulationTracker().nicheProfile(artifactSeed);
         NicheOpportunityAllocation niche = pool.nicheAllocations().getOrDefault(profile.dominantNiche(), defaultNiche(profile.dominantNiche()));
         LineageMomentumProfile lineage = lineageId == null
-                ? new LineageMomentumProfile("unknown", 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D, 1.0D, 1.0D)
+                ? new LineageMomentumProfile("unknown", 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D, 1.0D, 1.0D)
                 : pool.lineageMomentumPool().profile(lineageId);
 
         double reinforcement = clamp(Math.pow(Math.max(0.001D, niche.reinforcementMultiplier() * lineage.templateSelectionWeight()), competitionReinforcementCurve), 0.55D, 1.50D);
@@ -68,6 +68,7 @@ public class AdaptiveSupportAllocator {
                             "ecology_pressure", String.valueOf(niche.competitionPressure()),
                             "opportunity_share", String.valueOf(niche.opportunityShare()),
                             "specialization_pressure", String.valueOf(niche.competitionPressure()),
+                            "specialization_trajectory", String.valueOf(lineage.specializationTrajectory()),
                             "context_tags", "competition-allocation"));
         }
         return allocation;

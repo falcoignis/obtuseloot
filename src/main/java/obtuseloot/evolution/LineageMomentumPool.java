@@ -18,6 +18,7 @@ public record LineageMomentumPool(
                 0.0D,
                 0.0D,
                 0.0D,
+                0.0D,
                 1.0D,
                 1.0D,
                 1.0D,
