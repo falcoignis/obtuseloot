@@ -25,6 +25,19 @@ public final class OutcomeUtilityProfile {
         this.mechanicKey = mechanicKey;
     }
 
+    public static OutcomeUtilityProfile fromSnapshot(MechanicUtilitySignal signal) {
+        OutcomeUtilityProfile profile = new OutcomeUtilityProfile(signal.mechanicKey());
+        profile.attempts = signal.attempts();
+        profile.meaningfulOutcomes = signal.meaningfulOutcomes();
+        profile.noOps = Math.round(signal.noOpRate() * signal.attempts());
+        profile.validatedUtility = signal.validatedUtility();
+        profile.contextualUtility = signal.contextualRelevance() * signal.attempts();
+        profile.budgetConsumed = signal.budgetConsumed();
+        profile.redundancyPenalty = signal.redundancyPenalty() * signal.attempts();
+        profile.spamPenalty = signal.spamPenalty() * signal.attempts();
+        return profile;
+    }
+
     public MechanicUtilitySignal ingest(UtilityOutcomeRecord record, ValidatedOutcomeClassifier classifier) {
         attempts++;
         String signature = record.outcomeType().name() + "#" + record.status().name() + "#" + record.source();
@@ -80,4 +93,3 @@ public final class OutcomeUtilityProfile {
         return validatedUtility / Math.max(1.0D, budgetConsumed);
     }
 }
-

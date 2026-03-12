@@ -129,6 +129,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setLastGateCandidatePool(yaml.getString("artifact.last-gate-candidate-pool", "0->0"));
         artifact.setLastTriggerProfile(yaml.getString("artifact.last-trigger-profile", ""));
         artifact.setLastMechanicProfile(yaml.getString("artifact.last-mechanic-profile", ""));
+        artifact.setLastUtilityHistory(yaml.getString("artifact.last-utility-history", ""));
         artifact.setLastMemoryInfluence(yaml.getString("artifact.last-memory-influence", "none"));
         for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
             try {
@@ -354,6 +355,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "last-gate-candidate-pool", artifact.getLastGateCandidatePool());
         yaml.set(base + "last-trigger-profile", artifact.getLastTriggerProfile());
         yaml.set(base + "last-mechanic-profile", artifact.getLastMechanicProfile());
+        yaml.set(base + "last-utility-history", artifact.getLastUtilityHistory());
         yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
         artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
     }

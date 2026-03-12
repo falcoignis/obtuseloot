@@ -1,6 +1,10 @@
 package obtuseloot.evolution;
 
 public class ArtifactFitnessEvaluator {
+    // Decision hierarchy (utility-first, auditable):
+    // 1) validated utility, 2) utility density/outcome efficiency,
+    // 3) redundancy+spam/no-op penalties, 4) budget efficiency,
+    // 5) legacy activity and longevity as secondary confidence support.
     public double evaluate(ArtifactUsageProfile usage) {
         double validatedUtility = usage.validatedUtilityScore();
         double utilityDensity = usage.utilityDensity();
@@ -12,15 +16,16 @@ public class ArtifactFitnessEvaluator {
                 + (usage.averageSpamPenalty() * 1.9D)
                 + (usage.averageRedundancyPenalty() * 1.6D)
                 + (usage.discardRate() * 0.8D);
-        double noisyVolumePenalty = Math.max(0.0D, usage.usageFrequency() - 6.0D) * 0.05D;
+        double noisyVolumePenalty = Math.max(0.0D, usage.usageFrequency() - 6.0D) * 0.08D;
+        double legacyConfidenceSupport = Math.min(0.45D, (usage.usageFrequency() * 0.015D) + (usage.lifetimeHours() * 0.01D));
 
-        return (validatedUtility * 1.9D)
-                + (utilityDensity * 4.0D)
-                + (budgetEfficiency * 2.3D)
-                + (meaningfulRate * 2.0D)
+        return (validatedUtility * 2.4D)
+                + (utilityDensity * 5.2D)
+                + (budgetEfficiency * 2.9D)
+                + (meaningfulRate * 2.4D)
                 + (contextualRelevance * 1.3D)
-                + (usage.killParticipation() * 0.35D)
-                + (usage.lifetimeHours() * 0.06D)
+                + (usage.killParticipation() * 0.25D)
+                + legacyConfidenceSupport
                 - pressurePenalty
                 - noisyVolumePenalty;
     }
@@ -28,4 +33,8 @@ public class ArtifactFitnessEvaluator {
     public double effectiveFitness(double fitness, int nichePopulation) {
         return fitness / Math.max(1, nichePopulation);
     }
+    public String decisionHierarchy() {
+        return "validatedUtility > utilityDensity > noOpSpamRedundancyPenalty > budgetEfficiency > legacyActivityConfidence";
+    }
+
 }

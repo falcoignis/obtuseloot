@@ -33,6 +33,7 @@ public class SqlSchemaManager {
                     gate_candidate_pool TEXT,
                     trigger_profile TEXT,
                     mechanic_profile TEXT,
+                    utility_history TEXT,
                     drift_level INT,
                     total_drifts INT,
                     last_drift_timestamp BIGINT,
@@ -107,6 +108,15 @@ public class SqlSchemaManager {
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_archetype ON artifacts(archetype)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_evolution ON artifacts(evolution_path)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_drift_alignment ON artifacts(drift_alignment)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN utility_history TEXT");
+        }
+    }
+
+    private void tryAddColumn(Statement statement, String ddl) {
+        try {
+            statement.executeUpdate(ddl);
+        } catch (SQLException ignored) {
+            // Column likely already exists on upgraded installs.
         }
     }
 }

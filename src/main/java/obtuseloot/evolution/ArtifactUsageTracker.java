@@ -104,6 +104,21 @@ public class ArtifactUsageTracker {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    public UtilityHistoryRollup utilityHistoryFor(Artifact artifact) {
+        if (artifact == null) {
+            return UtilityHistoryRollup.empty();
+        }
+        return UtilityHistoryRollup.fromProfile(profileFor(artifact));
+    }
+
+    public void hydrateFromArtifact(Artifact artifact) {
+        if (artifact == null) {
+            return;
+        }
+        UtilityHistoryRollup rollup = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
+        profileFor(artifact).restoreUtilitySignals(rollup.signalByMechanicTrigger());
+    }
+
     private MechanicUtilitySignal mergeSignal(MechanicUtilitySignal a, MechanicUtilitySignal b) {
         long attempts = a.attempts() + b.attempts();
         long meaningful = a.meaningfulOutcomes() + b.meaningfulOutcomes();

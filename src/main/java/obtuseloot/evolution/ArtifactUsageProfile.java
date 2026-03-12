@@ -99,6 +99,14 @@ public final class ArtifactUsageProfile {
         return Map.copyOf(snapshot);
     }
 
+    public void restoreUtilitySignals(Map<String, MechanicUtilitySignal> signals) {
+        utilityProfiles.clear();
+        if (signals == null || signals.isEmpty()) {
+            return;
+        }
+        signals.forEach((key, signal) -> utilityProfiles.put(key, OutcomeUtilityProfile.fromSnapshot(signal)));
+    }
+
     public double validatedUtilityScore() {
         return utilityProfiles.values().stream().map(OutcomeUtilityProfile::snapshot)
                 .mapToDouble(MechanicUtilitySignal::validatedUtility)

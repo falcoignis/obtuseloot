@@ -5,6 +5,7 @@ import obtuseloot.abilities.genome.GenomeMutationEngine;
 import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.lineage.LineageGenomeInheritance;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
+import obtuseloot.evolution.UtilityHistoryRollup;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.lineage.ArtifactLineage;
@@ -100,9 +101,10 @@ public class ProceduralAbilityGenerator {
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
+        UtilityHistoryRollup utilityHistory = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
         ArtifactLineage lineage = lineageRegistry == null ? null : lineageRegistry.assignLineage(artifact);
         List<AbilityFamily> ranked = new ArrayList<>(List.of(AbilityFamily.values()));
-        ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage)));
+        ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage, utilityHistory)));
 
         ArtifactGenome baseGenome = mutationEngine.mutate(genomeResolver.resolve(artifact.getArtifactSeed()), evolutionStage);
         ArtifactGenome lineageGenome = (lineage == null)
@@ -139,7 +141,7 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> selected = traitInteractionsEnabled
                 ? traitInterferenceResolver.selectTopWithInterferenceShuffle(scoringPool, genome, picks, seed ^ 0x5DEECE66DL, 0.94D, 3)
                 : scoringPool.stream()
-                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage)))
+                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage, utilityHistory)))
                 .limit(picks)
                 .toList();
         List<AbilityDefinition> picked = new ArrayList<>();
@@ -163,7 +165,7 @@ public class ProceduralAbilityGenerator {
                 if (pool.isEmpty()) {
                     continue;
                 }
-                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random);
+                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random, utilityHistory);
                 picked.add(fromTemplate(t, family, evolutionStage));
                 if (picked.size() >= picks) {
                     break;
@@ -181,11 +183,11 @@ public class ProceduralAbilityGenerator {
                 "Awakening/Fusion: " + t.awakeningVariant() + " / " + t.fusionVariant(), "Memory: " + t.memoryVariant());
     }
 
-    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random) { /* unchanged */
+    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory) {
         double total = 0.0D;
         double[] scores = new double[pool.size()];
         for (int i = 0; i < pool.size(); i++) {
-            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage) * rarityModifier(pool.get(i)));
+            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage, utilityHistory) * rarityModifier(pool.get(i)));
             total += scores[i];
         }
         double roll = random.nextDouble() * total;
@@ -196,7 +198,7 @@ public class ProceduralAbilityGenerator {
         return pool.get(pool.size() - 1);
     }
 
-    private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage) { /* unchanged */
+    private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory) {
         double score = 1.0D;
         if (template.trigger() == AbilityTrigger.ON_MEMORY_EVENT || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT) score += memoryProfile.pressure() * 0.08D;
         if (template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE) score += memoryProfile.bossWeight() * 0.06D;
@@ -206,6 +208,11 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.5D;
         if (!"none".equalsIgnoreCase(artifact.getFusionPath()) && template.trigger() == AbilityTrigger.ON_FUSION) score += 0.5D;
+        double utilityBias = utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger());
+        if (utilityHistory.hasUtilityHistory()) {
+            double confidence = utilityHistory.confidence();
+            score = (score * (1.0D - (0.45D * confidence))) + (utilityBias * (1.9D * confidence));
+        }
         return score * rarityModifier(template);
     }
 
@@ -221,7 +228,7 @@ public class ProceduralAbilityGenerator {
         return Math.max(0.93D, Math.min(1.07D, modifier));
     }
 
-    private double scoreFamily(Artifact artifact, AbilityFamily family, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage) {
+    private double scoreFamily(Artifact artifact, AbilityFamily family, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage, UtilityHistoryRollup utilityHistory) {
         double base = switch (family) {
             case PRECISION -> artifact.getSeedPrecisionAffinity() + artifact.getDriftBias("precision") + memoryProfile.disciplineWeight() + (memoryProfile.bossWeight() * 0.2D);
             case BRUTALITY -> artifact.getSeedBrutalityAffinity()
@@ -237,6 +244,16 @@ public class ProceduralAbilityGenerator {
         String key = family.name().toLowerCase();
         double ecosystem = ecosystemEngine == null ? 1.0D : ecosystemEngine.weightForFamily(key);
         double lineageInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveFamilyInfluence(lineage, key);
-        return base * ecosystem * lineageInfluence;
+        double profileScore = base * ecosystem * lineageInfluence;
+        if (!utilityHistory.hasUtilityHistory()) {
+            return profileScore;
+        }
+        double utilityFamilyBias = registry.templates().stream()
+                .filter(template -> template.family() == family)
+                .mapToDouble(template -> utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger()))
+                .max()
+                .orElse(0.0D);
+        double confidence = utilityHistory.confidence();
+        return (profileScore * (1.0D - (0.55D * confidence))) + (utilityFamilyBias * (2.2D * confidence));
     }
 }
