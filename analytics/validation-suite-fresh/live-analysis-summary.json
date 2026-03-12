@@ -1,0 +1,52 @@
+{
+  "explorer-heavy": {
+    "rollups_loaded": "2",
+    "telemetry_events": "63520",
+    "severity": "0.000",
+    "runaway_lineages": "[]",
+    "niche_collapse": "[]",
+    "recommendation_id": "live-explorer-heavy-4ada97ba-5b20-4ff3-ad62-65fd106a35ef",
+    "decision": "PROPOSED",
+    "long_term_summary": "Insufficient historical rollups for long-term analysis."
+  },
+  "ritualist-heavy": {
+    "rollups_loaded": "2",
+    "telemetry_events": "63528",
+    "severity": "0.000",
+    "runaway_lineages": "[]",
+    "niche_collapse": "[]",
+    "recommendation_id": "live-ritualist-heavy-755eaa96-a1cd-4cec-8a6a-61da3e5c3145",
+    "decision": "PROPOSED",
+    "long_term_summary": "Insufficient historical rollups for long-term analysis."
+  },
+  "gatherer-heavy": {
+    "rollups_loaded": "2",
+    "telemetry_events": "63560",
+    "severity": "0.000",
+    "runaway_lineages": "[]",
+    "niche_collapse": "[]",
+    "recommendation_id": "live-gatherer-heavy-7373bf12-bc87-4a37-885b-416015dbf8d2",
+    "decision": "PROPOSED",
+    "long_term_summary": "Insufficient historical rollups for long-term analysis."
+  },
+  "mixed": {
+    "rollups_loaded": "2",
+    "telemetry_events": "71104",
+    "severity": "0.000",
+    "runaway_lineages": "[]",
+    "niche_collapse": "[]",
+    "recommendation_id": "live-mixed-eae9209c-bd73-49b6-8d6e-be86cc653c8f",
+    "decision": "PROPOSED",
+    "long_term_summary": "Insufficient historical rollups for long-term analysis."
+  },
+  "random-baseline": {
+    "rollups_loaded": "2",
+    "telemetry_events": "62726",
+    "severity": "0.000",
+    "runaway_lineages": "[]",
+    "niche_collapse": "[]",
+    "recommendation_id": "live-random-baseline-08fcd1a2-7152-46e3-b4f4-c8eaa32a55e7",
+    "decision": "PROPOSED",
+    "long_term_summary": "Insufficient historical rollups for long-term analysis."
+  }
+}
