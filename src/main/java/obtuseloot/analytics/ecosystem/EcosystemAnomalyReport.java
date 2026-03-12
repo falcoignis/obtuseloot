@@ -9,6 +9,8 @@ public record EcosystemAnomalyReport(
         List<String> mutationStagnationLineages,
         List<String> ecologicalDeadZones,
         List<String> branchExplosionLineages,
-        Map<String, String> diagnostics
+        Map<String, String> diagnostics,
+        Map<String, Double> baselineMetrics,
+        double anomalySeverityScore
 ) {
 }

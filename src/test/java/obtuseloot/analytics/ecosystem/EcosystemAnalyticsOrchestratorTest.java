@@ -53,6 +53,8 @@ class EcosystemAnalyticsOrchestratorTest {
         assertFalse(report.anomalyReport().runawayLineages().isEmpty());
         assertFalse(report.anomalyReport().nicheCollapse().isEmpty());
         assertFalse(report.anomalyReport().mutationStagnationLineages().isEmpty());
+        assertTrue(report.anomalyReport().baselineMetrics().containsKey("runaway_success_rate_threshold"));
+        assertTrue(report.anomalyReport().anomalySeverityScore() >= 0.0D);
 
         assertEquals("phase6-ecosystem-stabilization", report.tuningProfileRecommendation().profileName());
         assertTrue(report.tuningProfileRecommendation().parameterAdjustments().containsKey("niche_saturation_sensitivity"));
