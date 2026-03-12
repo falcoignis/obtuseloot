@@ -14,6 +14,12 @@ public class SubnicheClassifier {
                 if (mechanic == AbilityMechanic.NAVIGATION_ANCHOR) {
                     yield "route_guidance";
                 }
+                if (mechanic == AbilityMechanic.TRAIL_SENSE) {
+                    yield "frontier_pathfinding";
+                }
+                if (mechanic == AbilityMechanic.CARTOGRAPHERS_ECHO || trigger == AbilityTrigger.ON_STRUCTURE_DISCOVERY) {
+                    yield "structure_chain_discovery";
+                }
                 yield "exploration_navigation";
             }
             case STRUCTURE_SENSING, ENVIRONMENTAL_SENSING -> {
@@ -32,18 +38,24 @@ public class SubnicheClassifier {
                 if (trigger == AbilityTrigger.ON_RITUAL_COMPLETION) {
                     yield "completion_ritual";
                 }
+                if (mechanic == AbilityMechanic.PATTERN_RESONANCE || trigger == AbilityTrigger.ON_REPEATED_BLOCK_PATTERN) {
+                    yield "pattern_repeat_ritual";
+                }
                 if (trigger == AbilityTrigger.ON_WORLD_SCAN) {
                     yield "environment_ritual";
                 }
                 yield "memory_ritual";
             }
-            case FARMING_WORLDKEEPING -> trigger == AbilityTrigger.ON_BLOCK_HARVEST ? "crop_cycle" : "resource_gathering";
+            case FARMING_WORLDKEEPING -> (mechanic == AbilityMechanic.FORAGER_MEMORY || trigger == AbilityTrigger.ON_RESOURCE_HARVEST_STREAK) ? "harvest_chain_cluster" : (trigger == AbilityTrigger.ON_BLOCK_HARVEST ? "crop_cycle" : "resource_gathering");
             case SOCIAL_WORLD_INTERACTION -> {
                 if (trigger == AbilityTrigger.ON_PLAYER_GROUP_ACTION) {
                     yield "group_coordination";
                 }
                 if (trigger == AbilityTrigger.ON_PLAYER_TRADE) {
                     yield "trade_coordination";
+                }
+                if (mechanic == AbilityMechanic.WITNESS_IMPRINT || trigger == AbilityTrigger.ON_PLAYER_WITNESS) {
+                    yield "witness_memory";
                 }
                 yield "social_presence";
             }

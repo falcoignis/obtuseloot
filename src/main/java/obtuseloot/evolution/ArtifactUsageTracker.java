@@ -10,6 +10,7 @@ import obtuseloot.telemetry.ArtifactRuntimeCache;
 import obtuseloot.telemetry.EcosystemTelemetryEmitter;
 import obtuseloot.telemetry.EcosystemTelemetryEventType;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -104,33 +105,76 @@ public class ArtifactUsageTracker {
             String outcomeClassification = result.meaningfulOutcome() ? "MEANINGFUL"
                     : (result.outcomeType() == obtuseloot.abilities.AbilityOutcomeType.FLAVOR_ONLY ? "FLAVOR_ONLY" : "NO_OP");
             String nicheTags = definition.metadata() == null ? "general" : String.join("|", definition.metadata().utilityDomains());
+            Map<String, String> attributes = new HashMap<>(Map.ofEntries(
+                    Map.entry("abilityId", result.abilityId()),
+                    Map.entry("ability_id", result.abilityId()),
+                    Map.entry("mechanic", result.mechanic().name()),
+                    Map.entry("trigger", result.trigger().name()),
+                    Map.entry("status", result.status().name()),
+                    Map.entry("execution_status", result.status().name()),
+                    Map.entry("meaningful", String.valueOf(result.meaningfulOutcome())),
+                    Map.entry("budget_cost", String.valueOf(budgetCost)),
+                    Map.entry("utility_score", String.valueOf(relevance)),
+                    Map.entry("utility_density", String.valueOf(Math.max(0.0D, relevance / Math.max(1.0D, budgetCost)))),
+                    Map.entry("player_id", artifact.getOwnerId() == null ? "na" : artifact.getOwnerId().toString()),
+                    Map.entry("chunk", context.runtimeContext() != null && context.runtimeContext().chunkKey() != null
+                            ? String.valueOf(context.runtimeContext().chunkKey()) : "na"),
+                    Map.entry("world", context.runtimeContext() != null && context.runtimeContext().world() != null
+                            ? context.runtimeContext().world() : "na"),
+                    Map.entry("dimension", context.runtimeContext() != null && context.runtimeContext().dimension() != null
+                            ? context.runtimeContext().dimension() : "na"),
+                    Map.entry("context_tags", "ability-execution"),
+                    Map.entry("outcome_classification", outcomeClassification),
+                    Map.entry("niche_tags", nicheTags)
+            ));
+            attributes.putAll(abilityTelemetrySignals(result, context));
             emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
                     artifact.getArtifactSeed(),
                     artifact.getLatentLineage(),
                     niche.dominantNiche().name(),
-                    Map.ofEntries(
-                            Map.entry("abilityId", result.abilityId()),
-                            Map.entry("ability_id", result.abilityId()),
-                            Map.entry("mechanic", result.mechanic().name()),
-                            Map.entry("trigger", result.trigger().name()),
-                            Map.entry("status", result.status().name()),
-                            Map.entry("execution_status", result.status().name()),
-                            Map.entry("meaningful", String.valueOf(result.meaningfulOutcome())),
-                            Map.entry("budget_cost", String.valueOf(budgetCost)),
-                            Map.entry("utility_score", String.valueOf(relevance)),
-                            Map.entry("utility_density", String.valueOf(Math.max(0.0D, relevance / Math.max(1.0D, budgetCost)))),
-                            Map.entry("player_id", artifact.getOwnerId() == null ? "na" : artifact.getOwnerId().toString()),
-                            Map.entry("chunk", context.runtimeContext() != null && context.runtimeContext().chunkKey() != null
-                                    ? String.valueOf(context.runtimeContext().chunkKey()) : "na"),
-                            Map.entry("world", context.runtimeContext() != null && context.runtimeContext().world() != null
-                                    ? context.runtimeContext().world() : "na"),
-                            Map.entry("dimension", context.runtimeContext() != null && context.runtimeContext().dimension() != null
-                                    ? context.runtimeContext().dimension() : "na"),
-                            Map.entry("context_tags", "ability-execution"),
-                            Map.entry("outcome_classification", outcomeClassification),
-                            Map.entry("niche_tags", nicheTags)
-                    ));
+                    attributes);
         }
+    }
+
+    private Map<String, String> abilityTelemetrySignals(AbilityExecutionResult result,
+                                                         AbilityEventContext context) {
+        Map<String, String> fields = new HashMap<>();
+        double value = Math.max(0.0D, context.value());
+        switch (result.mechanic()) {
+            case TRAIL_SENSE -> {
+                fields.put("exploration_chain_length", String.valueOf(1 + Math.round(value * 4.0D)));
+                fields.put("distance_traveled", String.valueOf(value * 24.0D));
+                fields.put("uncharted_chunk_entries", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("niche", "EXPLORATION");
+            }
+            case FORAGER_MEMORY -> {
+                fields.put("harvest_chain_length", String.valueOf(1 + Math.round(value * 5.0D)));
+                fields.put("cluster_detection_events", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("resource_density", String.valueOf(Math.min(1.0D, value)));
+                fields.put("niche", "GATHERING");
+            }
+            case PATTERN_RESONANCE -> {
+                fields.put("ritual_pattern_frequency", String.valueOf(Math.round(value * 10.0D)));
+                fields.put("ritual_activation_count", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("pattern_repeat_interval", String.valueOf(Math.max(1.0D, 12.0D - (value * 8.0D))));
+                fields.put("niche", "RITUAL");
+            }
+            case WITNESS_IMPRINT -> {
+                fields.put("witness_interactions", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("co_presence_density", String.valueOf(Math.min(1.0D, value)));
+                fields.put("artifact_visibility_events", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("niche", "SOCIAL");
+            }
+            case CARTOGRAPHERS_ECHO -> {
+                fields.put("structure_chain_discovery", result.meaningfulOutcome() ? "1" : "0");
+                fields.put("structure_proximity_events", String.valueOf(Math.round(value * 3.0D)));
+                fields.put("exploration_success_rate", String.valueOf(result.meaningfulOutcome() ? Math.min(1.0D, value) : 0.0D));
+                fields.put("niche", "EXPLORATION");
+            }
+            default -> {
+            }
+        }
+        return fields;
     }
 
     private double contextualRelevance(AbilityDefinition definition,

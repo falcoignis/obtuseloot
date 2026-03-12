@@ -31,12 +31,16 @@ public class NicheTaxonomy {
         mechanicToNiches.put(AbilityMechanic.BURST_STATE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
         mechanicToNiches.put(AbilityMechanic.RETALIATION, EnumSet.of(MechanicNicheTag.PROTECTION_WARDING));
         mechanicToNiches.put(AbilityMechanic.UNSTABLE_DETONATION, EnumSet.of(MechanicNicheTag.RARE_HIGH_COST_UTILITY, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.TRAIL_SENSE, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
         mechanicToNiches.put(AbilityMechanic.ECOLOGICAL_PATHING, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
         mechanicToNiches.put(AbilityMechanic.BIOME_RESONANCE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_SENSING, MechanicNicheTag.INSPECT_INFORMATION));
+        mechanicToNiches.put(AbilityMechanic.CARTOGRAPHERS_ECHO, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.STRUCTURE_SENSING));
         mechanicToNiches.put(AbilityMechanic.CARTOGRAPHIC_ECHO, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.STRUCTURE_SENSING));
+        mechanicToNiches.put(AbilityMechanic.FORAGER_MEMORY, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.MEMORY_HISTORY));
         mechanicToNiches.put(AbilityMechanic.FORAGING_MEMORY, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.MEMORY_HISTORY));
         mechanicToNiches.put(AbilityMechanic.RESOURCE_ECOLOGY_SCAN, EnumSet.of(MechanicNicheTag.INSPECT_INFORMATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
         mechanicToNiches.put(AbilityMechanic.CLUSTER_INTUITION, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.NAVIGATION));
+        mechanicToNiches.put(AbilityMechanic.PATTERN_RESONANCE, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY));
         mechanicToNiches.put(AbilityMechanic.RITUAL_STABILIZATION, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.SUPPORT_COHESION));
         mechanicToNiches.put(AbilityMechanic.ALTAR_SIGNAL_BOOST, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY));
         mechanicToNiches.put(AbilityMechanic.TEMPORAL_SPECIALIZATION, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
