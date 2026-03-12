@@ -1,0 +1,10 @@
+job=validation-explorer-heavy
+rollups_loaded=1
+window_size=1
+telemetry_events=63110
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-explorer-heavy-2224e19a-6636-429b-a943-b23e8ffdf5b0
+decision=PROPOSED
+long_term_summary=Insufficient historical rollups for long-term analysis.

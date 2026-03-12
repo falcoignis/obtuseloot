@@ -1,0 +1,10 @@
+job=validation-random-baseline
+rollups_loaded=1
+window_size=1
+telemetry_events=62950
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-random-baseline-4c641e9f-7b52-4300-b331-47c001aa74ea
+decision=PROPOSED
+long_term_summary=Insufficient historical rollups for long-term analysis.
