@@ -8,6 +8,8 @@ import obtuseloot.species.SpeciesRegistry;
 import obtuseloot.species.SpeciesRegistrySnapshot;
 import obtuseloot.species.SpeciesSignatureResolver;
 
+import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.EcosystemTelemetryEventType;
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
@@ -31,6 +33,11 @@ public class LineageRegistry {
     private final LineageSpeciationEngine speciationEngine = new LineageSpeciationEngine();
     private final SpeciesSignatureResolver signatureResolver = new SpeciesSignatureResolver();
     private final InheritanceBranchingHeuristics branchingHeuristics = new InheritanceBranchingHeuristics();
+    private volatile EcosystemTelemetryEmitter telemetryEmitter;
+
+    public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
+        this.telemetryEmitter = telemetryEmitter;
+    }
 
     public ArtifactLineage assignLineage(Artifact artifact) {
         Random random = new Random(artifact.getArtifactSeed() ^ artifact.getOwnerId().getMostSignificantBits());
@@ -45,6 +52,7 @@ public class LineageRegistry {
         ArtifactLineage lineage = lineages.computeIfAbsent(lineageId, ArtifactLineage::new);
         if (!lineage.ancestorSeeds().contains(artifact.getArtifactSeed())) {
             lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.generationIndex() + 1));
+            emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, artifact, lineageId, Map.of("event", "ancestor-added"));
         }
         return lineage;
     }
@@ -65,9 +73,16 @@ public class LineageRegistry {
                 driftWindow,
                 utilityDensity,
                 branchingHeuristics);
+        emit(EcosystemTelemetryEventType.MUTATION_EVENT, artifact, lineage.lineageId(), Map.of(
+                "driftWindow", String.valueOf(driftWindow),
+                "utilityDensity", String.valueOf(utilityDensity),
+                "ecologicalPressure", String.valueOf(ecologicalPressure),
+                "mutationInfluence", String.valueOf(mutationInfluence)
+        ));
         if (lineage.branches().size() > beforeBranches) {
             String branchId = lineage.dominantBranchId();
             artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.LINEAGE, lineage.lineageId() + " [" + branchId + "]"));
+            emit(EcosystemTelemetryEventType.BRANCH_FORMATION, artifact, lineage.lineageId(), Map.of("branchId", branchId));
         }
     }
 
@@ -125,5 +140,12 @@ public class LineageRegistry {
 
     public void restoreSpeciesSnapshot(SpeciesRegistrySnapshot snapshot) {
         speciesRegistry.restore(snapshot);
+    }
+
+    private void emit(EcosystemTelemetryEventType type, Artifact artifact, String lineageId, Map<String, String> attrs) {
+        EcosystemTelemetryEmitter emitter = telemetryEmitter;
+        if (emitter != null && artifact != null) {
+            emitter.emit(type, artifact.getArtifactSeed(), lineageId, "", attrs);
+        }
     }
 }

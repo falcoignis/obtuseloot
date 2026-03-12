@@ -25,6 +25,7 @@ import obtuseloot.evolution.ArtifactUsageTracker;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
+import obtuseloot.evolution.params.EvolutionParameterRegistry;
 import obtuseloot.lore.LoreEngine;
 import obtuseloot.obtuseengine.EngineScheduler;
 import obtuseloot.obtuseengine.ObtuseEngine;
@@ -33,6 +34,12 @@ import obtuseloot.persistence.PersistenceManager;
 import obtuseloot.persistence.PlayerStateStore;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.reputation.ReputationManager;
+import obtuseloot.telemetry.EcosystemHistoryArchive;
+import obtuseloot.telemetry.EcosystemTelemetryEmitter;
+import obtuseloot.telemetry.ScheduledEcosystemRollups;
+import obtuseloot.telemetry.TelemetryAggregationAnalytics;
+import obtuseloot.telemetry.TelemetryAggregationBuffer;
+import obtuseloot.telemetry.TelemetryAggregationService;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -62,6 +69,10 @@ public class ObtuseLoot extends JavaPlugin {
     private DashboardWebServer dashboardWebServer;
     private EcosystemMapRenderer ecosystemMapRenderer;
     private BukkitTask environmentalPressureTask;
+    private BukkitTask telemetryRollupTask;
+    private EcosystemTelemetryEmitter ecosystemTelemetryEmitter;
+    private TelemetryAggregationAnalytics telemetryAggregationAnalytics;
+    private EvolutionParameterRegistry evolutionParameterRegistry;
     private final EnvironmentalPressureReporter environmentalPressureReporter = new EnvironmentalPressureReporter();
     private final TriggerSubscriptionIndexReporter triggerSubscriptionIndexReporter = new TriggerSubscriptionIndexReporter();
 
@@ -70,6 +81,15 @@ public class ObtuseLoot extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         RuntimeSettings.load(getConfig());
+        evolutionParameterRegistry = new EvolutionParameterRegistry();
+        evolutionParameterRegistry.load(getConfig());
+
+        TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
+        EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(java.nio.file.Path.of("analytics/telemetry/ecosystem-events.log"));
+        ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, 5_000L);
+        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, 256);
+        ecosystemTelemetryEmitter = new EcosystemTelemetryEmitter(aggregationService);
+        telemetryAggregationAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
 
         persistenceManager = new PersistenceManager(this, PersistenceConfig.from(getConfig(), getDataFolder()));
         try {
@@ -87,13 +107,16 @@ public class ObtuseLoot extends JavaPlugin {
         combatContextManager = new CombatContextManager();
         evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         artifactUsageTracker = new ArtifactUsageTracker();
+        artifactUsageTracker.setTelemetryEmitter(ecosystemTelemetryEmitter);
         ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
-        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine());
+        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine(), new obtuseloot.evolution.AdaptiveSupportAllocator(), evolutionParameterRegistry);
+        experienceEvolutionEngine.setTelemetryEmitter(ecosystemTelemetryEmitter);
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
         ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
+        lineageRegistry.setTelemetryEmitter(ecosystemTelemetryEmitter);
         lineageRegistry.restoreSpeciesSnapshot(playerStateStore.loadSpeciesSnapshot());
         lineageInfluenceResolver = new LineageInfluenceResolver();
         itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
@@ -147,6 +170,11 @@ public class ObtuseLoot extends JavaPlugin {
             }
         }, 24_000L, 24_000L);
 
+        telemetryRollupTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
+                () -> ecosystemTelemetryEmitter.rollups().maybeRun(System.currentTimeMillis()),
+                100L,
+                100L);
+
         engine = new ObtuseEngine(this);
         engine.initialize();
         engineScheduler.startAll();
@@ -160,6 +188,10 @@ public class ObtuseLoot extends JavaPlugin {
         if (environmentalPressureTask != null) {
             environmentalPressureTask.cancel();
             environmentalPressureTask = null;
+        }
+        if (telemetryRollupTask != null) {
+            telemetryRollupTask.cancel();
+            telemetryRollupTask = null;
         }
         if (artifactManager != null) {
             artifactManager.saveAll();
@@ -187,6 +219,9 @@ public class ObtuseLoot extends JavaPlugin {
         } catch (Exception exception) {
             getLogger().warning("[Runtime] Failed to write trigger subscription report on disable: " + exception.getMessage());
         }
+        if (ecosystemTelemetryEmitter != null) {
+            ecosystemTelemetryEmitter.flush();
+        }
     }
 
     public static ObtuseLoot get() { return instance; }
@@ -209,4 +244,7 @@ public class ObtuseLoot extends JavaPlugin {
     public ExperienceEvolutionEngine getExperienceEvolutionEngine() { return experienceEvolutionEngine; }
     public DashboardService getDashboardService() { return dashboardService; }
     public EcosystemMapRenderer getEcosystemMapRenderer() { return ecosystemMapRenderer; }
+    public EcosystemTelemetryEmitter getEcosystemTelemetryEmitter() { return ecosystemTelemetryEmitter; }
+    public TelemetryAggregationAnalytics getTelemetryAggregationAnalytics() { return telemetryAggregationAnalytics; }
+    public EvolutionParameterRegistry getEvolutionParameterRegistry() { return evolutionParameterRegistry; }
 }
