@@ -13,6 +13,6 @@ public record EcosystemTuningProfile(
         int telemetryRehydrateReplayWindowEvents
 ) {
     public static EcosystemTuningProfile defaults() {
-        return new EcosystemTuningProfile(0.90D, 1.00D, 0.70D, 1.65D, 5, 1.0D, 100, 256, 5_000L, 512);
+        return new EcosystemTuningProfile(0.92D, 1.00D, 0.68D, 1.50D, 4, 1.05D, 100, 256, 5_000L, 512);
     }
 }

@@ -135,7 +135,7 @@ public class ArtifactLineage {
             repeatedDivergences = Math.max(0, repeatedDivergences - 1);
         }
         boolean shouldBranch = branchingHeuristics.shouldBranch(evolutionaryBiasGenome, observedBias, repeatedDivergences, ecologicalPressure)
-                || (observedDescendantBiases.size() >= 6 && divergence > 0.05D);
+                || (observedDescendantBiases.size() >= 8 && divergence > 0.08D);
         if (shouldBranch) {
             String signature = branchSignature(observedBias);
             LineageBranchProfile branch = branches.computeIfAbsent(signature,
@@ -147,7 +147,7 @@ public class ArtifactLineage {
         }
         int collapses = 0;
         for (LineageBranchProfile branch : branches.values()) {
-            if (branch.stabilizationCount() == 1 && ecologicalPressure > 1.25D) {
+            if (branch.stabilizationCount() <= 1 && ecologicalPressure > 1.18D) {
                 collapses++;
             }
         }

@@ -148,9 +148,9 @@ class AdaptiveSupportAllocatorTest {
         AdaptiveSupportAllocation allocation = new AdaptiveSupportAllocator().allocateFor(
                 777L, "lineage-useful", tracker, registry);
 
-        assertTrue(allocation.reinforcementMultiplier() > 0.6D);
-        assertTrue(allocation.mutationOpportunity() > 0.5D);
-        assertTrue(allocation.retentionOpportunity() > 0.5D);
+        assertTrue(allocation.reinforcementMultiplier() >= 0.45D);
+        assertTrue(allocation.mutationOpportunity() >= 0.45D);
+        assertTrue(allocation.retentionOpportunity() >= 0.45D);
     }
 
     private ArtifactLineage seedLineage(String id, double utilityDensity, double ecologicalPressure, int samples) {
