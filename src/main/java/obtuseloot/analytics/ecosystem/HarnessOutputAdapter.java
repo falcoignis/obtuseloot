@@ -21,14 +21,21 @@ public class HarnessOutputAdapter {
             throw new IllegalArgumentException("Harness dataset missing telemetry archive at telemetry/ecosystem-events.log");
         }
 
+        Path rollupHistoryDir = normalized.resolve("rollup_history");
         Path rollupSnapshot = normalized.resolve("telemetry").resolve("rollup-snapshot.properties");
         Path legacyRollupSnapshot = normalized.resolve("rollup-snapshot.properties");
-        Path rollupDir = normalized.resolve("telemetry");
+        Path rollupDir = Files.isDirectory(rollupHistoryDir) ? rollupHistoryDir : normalized.resolve("telemetry");
         if (!Files.exists(rollupSnapshot) && Files.exists(legacyRollupSnapshot)) {
             rollupDir = normalized;
         }
-        if (!Files.exists(rollupDir.resolve("rollup-snapshot.properties"))) {
-            throw new IllegalArgumentException("Harness dataset missing rollup snapshot at telemetry/rollup-snapshot.properties or rollup-snapshot.properties");
+        boolean hasPropertiesRollups;
+        try (var files = Files.list(rollupDir)) {
+            hasPropertiesRollups = files.anyMatch(path -> path.getFileName().toString().endsWith(".properties"));
+        } catch (Exception ex) {
+            hasPropertiesRollups = false;
+        }
+        if (!hasPropertiesRollups) {
+            throw new IllegalArgumentException("Harness dataset missing rollup snapshots (.properties) in rollup_history/, telemetry/, or root legacy layout");
         }
 
         Path scenarioMetadata = normalized.resolve("scenario-metadata.properties");

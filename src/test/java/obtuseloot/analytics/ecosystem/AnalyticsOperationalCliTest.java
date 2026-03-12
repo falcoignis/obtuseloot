@@ -101,6 +101,21 @@ class AnalyticsOperationalCliTest {
         new TelemetryRollupSnapshotStore(harnessTelemetry.resolve("rollup-snapshot.properties")).write(snapshot(1_100L, 0.5D, 0.1D));
         assertDoesNotThrow(() -> Files.writeString(harness.resolve("scenario-metadata.properties"), "scenario=test\n"));
         assertEquals(AnalyticsInputDataset.SourceKind.HARNESS, contract.resolve(harness).sourceKind());
+
+        Path harnessWithHistory = tempDir.resolve("harness-history");
+        Path harnessHistoryTelemetry = harnessWithHistory.resolve("telemetry");
+        Path rollupHistory = harnessWithHistory.resolve("rollup_history");
+        assertDoesNotThrow(() -> Files.createDirectories(harnessHistoryTelemetry));
+        assertDoesNotThrow(() -> Files.createDirectories(rollupHistory));
+        new EcosystemHistoryArchive(harnessHistoryTelemetry.resolve("ecosystem-events.log")).append(List.of(
+                new EcosystemTelemetryEvent(1_200L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 3L, "lin", "SCOUT", Map.of())
+        ));
+        new TelemetryRollupSnapshotStore(rollupHistory.resolve("rollup-001.properties")).write(snapshot(1_200L, 0.55D, 0.11D));
+        new TelemetryRollupSnapshotStore(rollupHistory.resolve("rollup-002.properties")).write(snapshot(1_300L, 0.57D, 0.13D));
+        assertDoesNotThrow(() -> Files.writeString(harnessWithHistory.resolve("scenario-metadata.properties"), "scenario=test-history\n"));
+        AnalyticsInputDataset historyDataset = contract.resolve(harnessWithHistory);
+        assertEquals(AnalyticsInputDataset.SourceKind.HARNESS, historyDataset.sourceKind());
+        assertEquals(rollupHistory.toAbsolutePath().normalize(), historyDataset.rollupSnapshotDirectory().toAbsolutePath().normalize());
     }
 
     private TelemetryRollupSnapshot snapshot(long ts, double diversity, double turnover) {

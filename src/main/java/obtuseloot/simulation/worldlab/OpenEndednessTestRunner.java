@@ -704,34 +704,8 @@ public final class OpenEndednessTestRunner {
     }
 
     private static String toJson(Object value, int indent) {
-        String pad = "  ".repeat(indent);
-        if (value instanceof Map<?, ?> map) {
-            StringBuilder sb = new StringBuilder("{\n");
-            Iterator<? extends Map.Entry<?, ?>> it = map.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<?, ?> entry = it.next();
-                sb.append(pad).append("  \"").append(entry.getKey()).append("\": ")
-                        .append(toJson(entry.getValue(), indent + 1));
-                if (it.hasNext()) {
-                    sb.append(',');
-                }
-                sb.append('\n');
-            }
-            return sb.append(pad).append('}').toString();
-        }
-        if (value instanceof List<?> list) {
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < list.size(); i++) {
-                if (i > 0) {
-                    sb.append(',');
-                }
-                sb.append(toJson(list.get(i), indent + 1));
-            }
-            return sb.append(']').toString();
-        }
-        if (value instanceof String text) {
-            return "\"" + text.replace("\"", "\\\"") + "\"";
-        }
-        return String.valueOf(value);
+        return JsonOutputContract.toJson(value);
     }
+
+
 }
