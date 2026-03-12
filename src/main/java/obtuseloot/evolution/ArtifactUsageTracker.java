@@ -105,12 +105,21 @@ public class ArtifactUsageTracker {
                     artifact.getArtifactSeed(),
                     artifact.getLatentLineage(),
                     niche.dominantNiche().name(),
-                    Map.of(
-                            "abilityId", result.abilityId(),
-                            "mechanic", result.mechanic().name(),
-                            "trigger", result.trigger().name(),
-                            "status", result.status().name(),
-                            "meaningful", String.valueOf(result.meaningfulOutcome())
+                    Map.ofEntries(
+                            Map.entry("abilityId", result.abilityId()),
+                            Map.entry("ability_id", result.abilityId()),
+                            Map.entry("mechanic", result.mechanic().name()),
+                            Map.entry("trigger", result.trigger().name()),
+                            Map.entry("status", result.status().name()),
+                            Map.entry("execution_status", result.status().name()),
+                            Map.entry("meaningful", String.valueOf(result.meaningfulOutcome())),
+                            Map.entry("budget_cost", String.valueOf(budgetCost)),
+                            Map.entry("utility_score", String.valueOf(relevance)),
+                            Map.entry("utility_density", String.valueOf(Math.max(0.0D, relevance / Math.max(1.0D, budgetCost)))),
+                            Map.entry("player_id", artifact.getOwnerId() == null ? "na" : artifact.getOwnerId().toString()),
+                            Map.entry("chunk", context.runtimeContext() != null && context.runtimeContext().chunkKey() != null
+                                    ? String.valueOf(context.runtimeContext().chunkKey()) : "na"),
+                            Map.entry("context_tags", "ability-execution")
                     ));
         }
     }

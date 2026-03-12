@@ -32,6 +32,12 @@ public class TelemetryAggregationService {
         }
     }
 
+    public void flushAll() {
+        while (buffer.pendingCount() > 0) {
+            flush();
+        }
+    }
+
     public void scheduledRollupTick(long nowMs) {
         flush();
         rollups.maybeRun(nowMs);

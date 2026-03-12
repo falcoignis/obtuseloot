@@ -19,7 +19,10 @@ public class EvolutionParameterRegistry {
                 config.getDouble("ecosystem.parameters.mutationAmplitudeMin", defaults.mutationAmplitudeMin()),
                 config.getDouble("ecosystem.parameters.mutationAmplitudeMax", defaults.mutationAmplitudeMax()),
                 config.getInt("ecosystem.parameters.driftWindowDurationTicks", defaults.driftWindowDurationTicks()),
-                config.getDouble("ecosystem.parameters.competitionReinforcementCurve", defaults.competitionReinforcementCurve())
+                config.getDouble("ecosystem.parameters.competitionReinforcementCurve", defaults.competitionReinforcementCurve()),
+                config.getInt("ecosystem.parameters.telemetryFlushIntervalTicks", defaults.telemetryFlushIntervalTicks()),
+                config.getInt("ecosystem.parameters.telemetryArchiveBatchSize", defaults.telemetryArchiveBatchSize()),
+                config.getLong("ecosystem.parameters.telemetryRollupIntervalMs", defaults.telemetryRollupIntervalMs())
         );
         activeProfile.set(profile);
     }
