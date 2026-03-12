@@ -29,12 +29,18 @@ public class EcosystemAnalyticsOrchestrator {
     }
 
     public EcosystemAnalyticsReport analyze(List<TelemetryRollupSnapshot> rollupHistory) {
-        NicheEvolutionReport nicheReport = trendAnalyzer.analyze(rollupHistory);
+        return analyze(rollupHistory, rollupHistory);
+    }
+
+    public EcosystemAnalyticsReport analyze(List<TelemetryRollupSnapshot> analysisWindow,
+                                            List<TelemetryRollupSnapshot> fullHistory) {
+        NicheEvolutionReport nicheReport = trendAnalyzer.analyze(analysisWindow);
         LineageSuccessReport lineageReport = lineageSuccessAnalyzer.analyze(
-                rollupHistory.stream().map(TelemetryRollupSnapshot::ecosystemSnapshot).toList());
-        EcosystemAnomalyReport anomaly = anomalyDetector.detect(nicheReport, lineageReport);
+                analysisWindow.stream().map(TelemetryRollupSnapshot::ecosystemSnapshot).toList());
+        EcosystemAnomalyReport anomaly = anomalyDetector.detect(nicheReport, lineageReport, fullHistory);
         TuningProfileRecommendation tuning = tuningRecommender.recommend(nicheReport, lineageReport, anomaly);
-        LongTermEvolutionReport longTerm = longTermEvolutionAnalyzer.analyze(rollupHistory);
+        LongTermEvolutionReport longTerm = longTermEvolutionAnalyzer.analyze(fullHistory,
+                HistoricalBucketPolicy.rollingSnapshots(Math.max(1, analysisWindow.size())));
 
         return new EcosystemAnalyticsReport(nicheReport, lineageReport, anomaly, tuning, longTerm);
     }

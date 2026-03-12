@@ -11,12 +11,17 @@ import java.util.stream.Collectors;
 public class LongTermEvolutionAnalyzer {
 
     public LongTermEvolutionReport analyze(List<TelemetryRollupSnapshot> history) {
-        if (history == null || history.size() < 3) {
+        return analyze(history, HistoricalBucketPolicy.scenarioWindow());
+    }
+
+    public LongTermEvolutionReport analyze(List<TelemetryRollupSnapshot> history, HistoricalBucketPolicy policy) {
+        List<TelemetryRollupSnapshot> selected = new AnalysisWindowSelector().select(history, policy);
+        if (selected == null || selected.size() < 3) {
             return new LongTermEvolutionReport(0.0D, Map.of(), List.of(), 0.0D,
                     "Insufficient historical rollups for long-term analysis.");
         }
 
-        List<EcosystemSnapshot> snapshots = history.stream().map(TelemetryRollupSnapshot::ecosystemSnapshot).toList();
+        List<EcosystemSnapshot> snapshots = selected.stream().map(TelemetryRollupSnapshot::ecosystemSnapshot).toList();
         double turnover = snapshots.stream().mapToDouble(EcosystemSnapshot::turnoverRate).average().orElse(0.0D);
 
         Map<String, Long> lifespanWindows = lineageLifespan(snapshots);
@@ -27,7 +32,9 @@ public class LongTermEvolutionAnalyzer {
         double adaptationCycleStrength = (last.diversityIndex() - first.diversityIndex())
                 + (last.turnoverRate() - first.turnoverRate());
 
-        String summary = "Turnover=" + format(turnover)
+        String summary = "window=" + policy.bucketType().name().toLowerCase(java.util.Locale.ROOT)
+                + ", retention=" + policy.retentionBuckets()
+                + ", turnover=" + format(turnover)
                 + ", adaptationCycleStrength=" + format(adaptationCycleStrength)
                 + ", emergingNiches=" + emergingNiches;
 
