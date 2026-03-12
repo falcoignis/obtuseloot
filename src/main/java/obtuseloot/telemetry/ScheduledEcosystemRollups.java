@@ -17,14 +17,15 @@ public class ScheduledEcosystemRollups {
         this.minIntervalMs = minIntervalMs;
     }
 
-    public void maybeRun(long nowMs) {
+    public RollupGeneration maybeRun(long nowMs) {
         if (nowMs - lastGeneratedAtMs < minIntervalMs) {
-            return;
+            return RollupGeneration.skipped(nowMs);
         }
-        run(nowMs);
+        return run(nowMs);
     }
 
-    public void run(long nowMs) {
+    public RollupGeneration run(long nowMs) {
+        long before = System.nanoTime();
         NichePopulationRollup niche = new NichePopulationRollup(
                 nowMs,
                 buffer.nichePopulationSnapshot(),
@@ -72,6 +73,19 @@ public class ScheduledEcosystemRollups {
         lineageRollup.set(lineage);
         snapshot.set(next);
         lastGeneratedAtMs = nowMs;
+        long durationMs = Math.max(0L, (System.nanoTime() - before) / 1_000_000L);
+        long recordCount = next.eventCounts().values().stream().mapToLong(Long::longValue).sum();
+        return RollupGeneration.generated(nowMs, durationMs, recordCount);
+    }
+
+    public synchronized void restore(EcosystemSnapshot restored, long restoredAtMs) {
+        if (restored == null) {
+            return;
+        }
+        nicheRollup.set(restored.nichePopulationRollup());
+        lineageRollup.set(restored.lineagePopulationRollup());
+        snapshot.set(restored);
+        lastGeneratedAtMs = Math.max(lastGeneratedAtMs, restoredAtMs);
     }
 
     public NichePopulationRollup nichePopulationRollup() { return nicheRollup.get(); }
@@ -84,5 +98,18 @@ public class ScheduledEcosystemRollups {
 
     private static LineagePopulationRollup emptyLineage(long ts) {
         return new LineagePopulationRollup(ts, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+    }
+
+    public record RollupGeneration(boolean generated,
+                                   long atMs,
+                                   long durationMs,
+                                   long recordCount) {
+        static RollupGeneration skipped(long atMs) {
+            return new RollupGeneration(false, atMs, 0L, 0L);
+        }
+
+        static RollupGeneration generated(long atMs, long durationMs, long recordCount) {
+            return new RollupGeneration(true, atMs, durationMs, recordCount);
+        }
     }
 }

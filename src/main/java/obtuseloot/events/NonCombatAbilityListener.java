@@ -72,7 +72,7 @@ public class NonCombatAbilityListener implements Listener {
                     AbilityTrigger.ON_WORLD_SCAN,
                     1.0D,
                     AbilitySource.CHUNK_WORLD_SCAN.id(),
-                    AbilityRuntimeContext.chunkAware(AbilitySource.CHUNK_WORLD_SCAN, chunk.getChunkKey(), coalesced)
+                    AbilityRuntimeContext.chunkAware(AbilitySource.CHUNK_WORLD_SCAN, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name())
             );
             long now = System.currentTimeMillis();
             if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS
@@ -84,7 +84,7 @@ public class NonCombatAbilityListener implements Listener {
                         AbilityTrigger.ON_STRUCTURE_SENSE,
                         1.0D,
                         AbilitySource.STRUCTURE_SENSE.id(),
-                        AbilityRuntimeContext.chunkAware(AbilitySource.STRUCTURE_SENSE, chunk.getChunkKey(), coalesced)
+                        AbilityRuntimeContext.chunkAware(AbilitySource.STRUCTURE_SENSE, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name())
                 );
             }
         });
@@ -96,25 +96,25 @@ public class NonCombatAbilityListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
             Block block = event.getClickedBlock();
             if (Tag.DOORS.isTagged(block.getType()) || Tag.TRAPDOORS.isTagged(block.getType()) || Tag.FENCE_GATES.isTagged(block.getType())) {
-                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_SOCIAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
-                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_SOCIAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
             }
             if (block.getType() == Material.CAMPFIRE || block.getType() == Material.SOUL_CAMPFIRE) {
-                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT));
+                ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
             }
-            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_INSPECT, 1.0D, AbilitySource.BLOCK_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT));
+            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_INSPECT, 1.0D, AbilitySource.BLOCK_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
         }
         if (event.getAction() == Action.RIGHT_CLICK_AIR && player.isSneaking()) {
-            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.RITUAL_GESTURE.id(), AbilityRuntimeContext.intentional(AbilitySource.RITUAL_GESTURE));
+            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.RITUAL_GESTURE.id(), AbilityRuntimeContext.intentional(AbilitySource.RITUAL_GESTURE, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
         }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityInspect(PlayerInteractAtEntityEvent event) {
-        ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_ENTITY_INSPECT, 1.0D, AbilitySource.ENTITY_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.ENTITY_INSPECT));
+        ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_ENTITY_INSPECT, 1.0D, AbilitySource.ENTITY_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.ENTITY_INSPECT, event.getPlayer().getWorld().getName(), event.getPlayer().getWorld().getEnvironment().name()));
         Entity entity = event.getRightClicked();
         if (!(entity instanceof Player)) {
-            ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_WITNESS_EVENT, 1.0D, AbilitySource.WITNESS_EVENT.id(), AbilityRuntimeContext.passive(AbilitySource.WITNESS_EVENT));
+            ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_WITNESS_EVENT, 1.0D, AbilitySource.WITNESS_EVENT.id(), AbilityRuntimeContext.passive(AbilitySource.WITNESS_EVENT, event.getPlayer().getWorld().getName(), event.getPlayer().getWorld().getEnvironment().name()));
         }
     }
 
@@ -122,7 +122,7 @@ public class NonCombatAbilityListener implements Listener {
     public void onHarvest(BlockBreakEvent event) {
         Block block = event.getBlock();
         if (!CROPS.contains(block.getType())) return;
-        boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, AbilitySource.CROP_HARVEST.id(), AbilityRuntimeContext.intentional(AbilitySource.CROP_HARVEST))
+        boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, AbilitySource.CROP_HARVEST.id(), AbilityRuntimeContext.intentional(AbilitySource.CROP_HARVEST, event.getPlayer().getWorld().getName(), event.getPlayer().getWorld().getEnvironment().name()))
                 .hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY);
         if (hasGentleHarvest) {
             Bukkit.getScheduler().runTaskLater(ObtuseLoot.get(), () -> block.getWorld().getBlockAt(block.getLocation()).setType(block.getType()), 1L);

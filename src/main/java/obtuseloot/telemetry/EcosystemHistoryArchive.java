@@ -51,6 +51,17 @@ public class EcosystemHistoryArchive {
         }
     }
 
+    public synchronized List<EcosystemTelemetryEvent> readRecent(int maxEvents) {
+        if (maxEvents <= 0) {
+            return List.of();
+        }
+        List<EcosystemTelemetryEvent> all = readAll();
+        if (all.size() <= maxEvents) {
+            return all;
+        }
+        return List.copyOf(all.subList(all.size() - maxEvents, all.size()));
+    }
+
     private String encode(EcosystemTelemetryEvent event) {
         StringBuilder payload = new StringBuilder();
         event.attributes().forEach((key, value) -> {

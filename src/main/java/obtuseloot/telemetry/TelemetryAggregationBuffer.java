@@ -32,6 +32,12 @@ public class TelemetryAggregationBuffer {
     private final LongAdder branchBirthCount = new LongAdder();
     private final LongAdder branchCollapseCount = new LongAdder();
     private final Map<String, LongAdder> competitionPressureDistribution = new ConcurrentHashMap<>();
+    private final Map<String, Long> baselineNichePopulation = new ConcurrentHashMap<>();
+    private final Map<String, Long> baselineLineagePopulation = new ConcurrentHashMap<>();
+    private final Map<EcosystemTelemetryEventType, Long> baselineTypeCounts = new ConcurrentHashMap<>();
+    private volatile long baselineActiveArtifactCount;
+    private volatile long baselineBranchBirthCount;
+    private volatile long baselineBranchCollapseCount;
 
     public void enqueue(EcosystemTelemetryEvent event) {
         pending.add(event);
@@ -100,11 +106,12 @@ public class TelemetryAggregationBuffer {
     }
 
     public int pendingCount() { return pending.size(); }
-    public Map<String, Long> nichePopulationSnapshot() { return sizeSnapshot(nicheArtifacts); }
-    public Map<String, Long> lineagePopulationSnapshot() { return sizeSnapshot(lineageArtifacts); }
+    public Map<String, Long> nichePopulationSnapshot() { return mergeLongMaps(baselineNichePopulation, sizeSnapshot(nicheArtifacts)); }
+    public Map<String, Long> lineagePopulationSnapshot() { return mergeLongMaps(baselineLineagePopulation, sizeSnapshot(lineageArtifacts)); }
     public Map<EcosystemTelemetryEventType, Long> typeCountsSnapshot() {
         Map<EcosystemTelemetryEventType, Long> out = new ConcurrentHashMap<>();
-        typeCounts.forEach((k, v) -> out.put(k, v.sum()));
+        out.putAll(baselineTypeCounts);
+        typeCounts.forEach((k, v) -> out.merge(k, v.sum(), Long::sum));
         return Map.copyOf(out);
     }
     public Map<String, Long> meaningfulByNicheSnapshot() { return longSnapshot(meaningfulByNiche); }
@@ -128,10 +135,25 @@ public class TelemetryAggregationBuffer {
     }
     public Map<String, Double> driftWindowByLineageSnapshot() { return doubleSnapshot(driftWindowByLineage); }
     public Map<String, Double> branchDivergenceByLineageSnapshot() { return doubleSnapshot(branchDivergenceByLineage); }
-    public long activeArtifactCountSnapshot() { return activeArtifacts.size(); }
-    public long branchBirthCountSnapshot() { return branchBirthCount.sum(); }
-    public long branchCollapseCountSnapshot() { return branchCollapseCount.sum(); }
+    public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifacts.size(); }
+    public long branchBirthCountSnapshot() { return baselineBranchBirthCount + branchBirthCount.sum(); }
+    public long branchCollapseCountSnapshot() { return baselineBranchCollapseCount + branchCollapseCount.sum(); }
     public Map<String, Long> competitionPressureDistributionSnapshot() { return longSnapshot(competitionPressureDistribution); }
+
+    public synchronized void rehydrateFrom(EcosystemSnapshot snapshot) {
+        if (snapshot == null) {
+            return;
+        }
+        baselineNichePopulation.clear();
+        baselineLineagePopulation.clear();
+        baselineTypeCounts.clear();
+        baselineNichePopulation.putAll(snapshot.nichePopulationRollup().populationByNiche());
+        baselineLineagePopulation.putAll(snapshot.lineagePopulationRollup().populationByLineage());
+        baselineTypeCounts.putAll(snapshot.eventCounts());
+        baselineActiveArtifactCount = snapshot.activeArtifactCount();
+        baselineBranchBirthCount = snapshot.branchBirthCount();
+        baselineBranchCollapseCount = snapshot.branchCollapseCount();
+    }
 
     private void addDoubleMetric(Map<String, String> attrs,
                                  String key,
@@ -150,6 +172,12 @@ public class TelemetryAggregationBuffer {
     private Map<String, Long> sizeSnapshot(Map<String, Set<Long>> source) {
         Map<String, Long> out = new ConcurrentHashMap<>();
         source.forEach((k, v) -> out.put(k, (long) v.size()));
+        return Map.copyOf(out);
+    }
+
+    private <K> Map<K, Long> mergeLongMaps(Map<K, Long> baseline, Map<K, Long> live) {
+        Map<K, Long> out = new ConcurrentHashMap<>(baseline);
+        live.forEach((k, v) -> out.merge(k, v, Long::sum));
         return Map.copyOf(out);
     }
 
