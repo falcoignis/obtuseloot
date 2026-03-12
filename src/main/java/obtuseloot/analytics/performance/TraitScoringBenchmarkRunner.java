@@ -179,7 +179,8 @@ public class TraitScoringBenchmarkRunner {
                     d.minimumRoleSeparation(),
                     d.adaptiveNicheCapacity(),
                     d.opportunityWeightedMutation(),
-                    mode
+                    mode,
+                    d.scenarioConfigPath()
             );
             long start = System.currentTimeMillis();
             WorldSimulationHarness harness = new WorldSimulationHarness(cfg);

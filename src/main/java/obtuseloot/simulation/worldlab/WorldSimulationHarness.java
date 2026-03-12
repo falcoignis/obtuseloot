@@ -37,6 +37,7 @@ import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageMutation;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
+import obtuseloot.telemetry.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -91,10 +92,31 @@ public class WorldSimulationHarness {
     private final Map<String, Integer> seasonTriggerCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonMechanicCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonEnvironmentCounts = new LinkedHashMap<>();
+    private final EvolutionExperimentConfig experimentConfig;
+    private final SimulationScenario scenario;
+    private final TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
+    private final EcosystemHistoryArchive telemetryArchive;
+    private final ScheduledEcosystemRollups scheduledRollups;
+    private final TelemetryAggregationService telemetryAggregationService;
+    private final EcosystemTelemetryEmitter telemetryEmitter;
+    private final TelemetryAggregationAnalytics telemetryAnalytics;
+    private final TelemetryEventFactory telemetryEventFactory = new TelemetryEventFactory();
+    private int currentGeneration;
 
     public WorldSimulationHarness(WorldSimulationConfig config) {
         this.config = config;
         this.random = new Random(config.seed());
+        this.experimentConfig = EvolutionExperimentConfig.load(config.scenarioConfigPath() == null || config.scenarioConfigPath().isBlank() ? null : Path.of(config.scenarioConfigPath()), config);
+        this.scenario = experimentConfig.scenario();
+        Path telemetryDir = Path.of(config.outputDirectory(), "telemetry");
+        this.telemetryArchive = new EcosystemHistoryArchive(telemetryDir.resolve("ecosystem-events.log"));
+        this.scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, 1L);
+        this.telemetryAggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, 256,
+                new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")),
+                new RollupStateHydrator(new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")), telemetryArchive, 1024));
+        this.telemetryAggregationService.initializeFromHistory();
+        this.telemetryEmitter = new EcosystemTelemetryEmitter(telemetryAggregationService, telemetryEventFactory);
+        this.telemetryAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
                 : null;
@@ -108,6 +130,11 @@ public class WorldSimulationHarness {
                 experienceEvolutionEngine,
                 config.enableTraitInteractions(),
                 config.scoringMode());
+        usageTracker.setTelemetryEmitter(telemetryEmitter);
+        lineageRegistry.setTelemetryEmitter(telemetryEmitter);
+        if (experienceEvolutionEngine != null) {
+            experienceEvolutionEngine.setTelemetryEmitter(telemetryEmitter);
+        }
     }
 
     public TraitProjectionStats traitProjectionStats() {
@@ -119,7 +146,9 @@ public class WorldSimulationHarness {
         latestPlayers = players;
         for (int season = 1; season <= config.seasonCount(); season++) {
             for (int s = 0; s < config.sessionsPerSeason(); s++) {
+                currentGeneration++;
                 simulateRound(players);
+                telemetryEmitter.scheduledTick(System.currentTimeMillis());
                 clock.advanceDay();
             }
             metrics.closeSeasonSnapshot();
@@ -134,16 +163,19 @@ public class WorldSimulationHarness {
             resetSeasonTallies();
             exportSeasonInteractionHeatmap(players, season);
         }
+        telemetryEmitter.flushAll();
+        telemetryEmitter.scheduledTick(System.currentTimeMillis());
         writeRegulatoryReports();
         writeReports();
     }
 
     private List<SimulatedPlayer> generatePlayers() {
         List<SimulatedPlayer> players = new ArrayList<>();
-        for (int i = 0; i < config.playerCount(); i++) {
-            SimulatedPlayer.BehaviorProfile profile = new SimulatedPlayer.BehaviorProfile(
-                    random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(),
-                    random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble());
+        int derivedPlayers = Math.max(1, scenario.artifactPopulationSize() / Math.max(1, config.artifactsPerPlayer()));
+        int playerCount = Math.max(config.playerCount(), derivedPlayers);
+        for (int i = 0; i < playerCount; i++) {
+            PlayerBehaviorModel model = sampleBehaviorModel();
+            SimulatedPlayer.BehaviorProfile profile = profileForModel(model);
             List<SimulatedArtifactAgent> artifacts = new ArrayList<>();
             for (int j = 0; j < config.artifactsPerPlayer(); j++) {
                 long artifactSeed = deterministicSeed(i, j);
@@ -156,7 +188,7 @@ public class WorldSimulationHarness {
                 artifacts.add(new SimulatedArtifactAgent(artifact));
             }
             metrics.recordPlayerProfile(profile);
-            players.add(new SimulatedPlayer(UUID.randomUUID(), profile, artifacts));
+            players.add(new SimulatedPlayer(UUID.randomUUID(), model, profile, artifacts));
         }
         return players;
     }
@@ -230,6 +262,7 @@ public class WorldSimulationHarness {
         }
         if (random.nextDouble() < profile.consistency()) rep.recordConsistency();
 
+        AbilityTrigger trigger = toTrigger(encounter, profile);
         evolutionEngine.evaluate(null, agent.artifact(), rep);
         ArtifactMemoryProfile memory = memoryEngine.profile(agent.artifact());
         String currentNicheId = speciesNicheEngine.nicheForArtifact(agent.artifact().getArtifactSeed());
@@ -279,14 +312,105 @@ public class WorldSimulationHarness {
         agent.artifact().setLastTriggerProfile(finalDefinitions.stream().map(d -> d.trigger().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.artifact().setLastMechanicProfile(finalDefinitions.stream().map(d -> d.mechanic().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.setAbilityProfile(new AbilityProfile(abilityProfile.profileId(), finalDefinitions));
+        emitAbilityExecutions(agent, trigger, finalDefinitions, penaltyResult.nicheId(), evolvedScore);
         var resolvedSpecies = lineageRegistry.evaluateSpeciation(agent.artifact());
         boolean successful = rep.getTotalScore() >= 30;
         speciesNicheEngine.observeArtifact(agent.artifact(), resolvedSpecies, agent.abilityProfile(), successful, Math.max(1, seasonalSnapshots.size() + 1), penaltyResult.crowdingPenalty());
+        emitNicheAndCompetitionTelemetry(agent, penaltyResult.nicheId(), opportunitySignal, evolvedScore);
+        telemetryEmitter.emit(EcosystemTelemetryEventType.MUTATION_EVENT, agent.artifact().getArtifactSeed(), agent.artifact().getLatentLineage(), penaltyResult.nicheId(), Map.of("generation", String.valueOf(currentGeneration), "mutation_influence", String.valueOf(memoryFeedback.mutationBias()), "drift_window_remaining", String.valueOf(Math.max(1, 5 - (currentGeneration % 5))), "branch_divergence", String.valueOf(opportunitySignal.mutationBias() - 1.0D), "specialization_trajectory", String.valueOf(opportunitySignal.latentBias() - 1.0D), "utility_density", String.valueOf(evolvedScore), "ecology_pressure", String.valueOf(penaltyResult.crowdingPenalty())));
         tallySeasonSignals(agent, resolvedSpecies.speciesId());
         metrics.recordAbilityProfile(agent.abilityProfile());
     }
 
 
+
+    private PlayerBehaviorModel sampleBehaviorModel() {
+        double roll = random.nextDouble();
+        double cumulative = 0.0D;
+        for (Map.Entry<PlayerBehaviorModel, Double> entry : scenario.behaviorMix().entrySet()) {
+            cumulative += entry.getValue();
+            if (roll <= cumulative) {
+                return entry.getKey();
+            }
+        }
+        return PlayerBehaviorModel.RANDOM_BASELINE;
+    }
+
+    private SimulatedPlayer.BehaviorProfile profileForModel(PlayerBehaviorModel model) {
+        return switch (model) {
+            case EXPLORER -> new SimulatedPlayer.BehaviorProfile(0.35D, 0.55D, 0.80D, 0.45D, 0.20D, 0.10D, 0.75D, 0.35D, 0.55D);
+            case RITUALIST -> new SimulatedPlayer.BehaviorProfile(0.30D, 0.70D, 0.35D, 0.65D, 0.15D, 0.20D, 0.70D, 0.25D, 0.85D);
+            case GATHERER -> new SimulatedPlayer.BehaviorProfile(0.25D, 0.50D, 0.60D, 0.75D, 0.10D, 0.05D, 0.80D, 0.20D, 0.75D);
+            case RANDOM_BASELINE -> new SimulatedPlayer.BehaviorProfile(random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble());
+        };
+    }
+
+    private AbilityTrigger toTrigger(SimulatedEncounter encounter, SimulatedPlayer.BehaviorProfile profile) {
+        return switch (encounter.type()) {
+            case BOSS -> AbilityTrigger.ON_BOSS_KILL;
+            case MULTI_TARGET -> AbilityTrigger.ON_MULTI_KILL;
+            case EXPLORATION -> profile.precision() > 0.6D ? AbilityTrigger.ON_STRUCTURE_SENSE : AbilityTrigger.ON_WORLD_SCAN;
+            case NORMAL_COMBAT -> encounter.lowHealthMoment() ? AbilityTrigger.ON_LOW_HEALTH : AbilityTrigger.ON_HIT;
+        };
+    }
+
+    private void emitAbilityExecutions(SimulatedArtifactAgent agent,
+                                       AbilityTrigger trigger,
+                                       List<AbilityDefinition> definitions,
+                                       String nicheId,
+                                       double utilityScore) {
+        for (AbilityDefinition definition : definitions) {
+            telemetryEmitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                    agent.artifact().getArtifactSeed(),
+                    agent.artifact().getLatentLineage(),
+                    nicheId,
+                    Map.of(
+                            "generation", String.valueOf(currentGeneration),
+                            "trigger", trigger.name(),
+                            "mechanic", definition.mechanic().name(),
+                            "ability_id", definition.id(),
+                            "execution_status", AbilityExecutionStatus.SUCCESS.name(),
+                            "utility_score", String.valueOf(utilityScore),
+                            "utility_density", String.valueOf(Math.max(0.0D, utilityScore / Math.max(1.0D, definitions.size())))
+                    ));
+        }
+    }
+
+    private void emitNicheAndCompetitionTelemetry(SimulatedArtifactAgent agent,
+                                                  String nicheId,
+                                                  OpportunityWeightedMutationEngine.OpportunitySignal signal,
+                                                  double utilityScore) {
+        String lineageId = agent.artifact().getLatentLineage();
+        telemetryEmitter.emit(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
+                agent.artifact().getArtifactSeed(), lineageId, nicheId,
+                Map.of(
+                        "generation", String.valueOf(currentGeneration),
+                        "niche", nicheId,
+                        "specialization_pressure", String.valueOf(Math.max(0.0D, signal.mutationBias() - 1.0D)),
+                        "specialization_trajectory", String.valueOf(signal.latentBias() - 1.0D)
+                ));
+        telemetryEmitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION,
+                agent.artifact().getArtifactSeed(), lineageId, nicheId,
+                Map.of(
+                        "generation", String.valueOf(currentGeneration),
+                        "niche", nicheId,
+                        "reinforcement_multiplier", String.valueOf(signal.mutationBias()),
+                        "ecology_pressure", String.valueOf(Math.max(0.0D, 1.0D - signal.latentBias())),
+                        "lineage_momentum", String.valueOf(1.0D + (utilityScore / 100.0D)),
+                        "specialization_trajectory", String.valueOf(signal.latentBias() - 1.0D),
+                        "utility_density", String.valueOf(utilityScore)
+                ));
+    }
+
+    private Map<String, Object> buildPhase6Outputs(EcosystemSnapshot snapshot) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("lineage_survival_curves", metrics.lineageCounts());
+        out.put("niche_population_timelines", seasonNicheCounts);
+        out.put("ecosystem_diversity_metrics", Map.of("diversity_timeline", metrics.diversityTimeline(), "turnover_rate", snapshot.turnoverRate()));
+        out.put("branch_formation_statistics", Map.of("births", snapshot.branchBirthCount(), "collapses", snapshot.branchCollapseCount(), "distribution", seasonBranchCounts));
+        out.put("turnover_rates", Map.of("rollup", snapshot.turnoverRate(), "dead_branch_rate", dataRate(metrics.asData(), "world", "dead_branch_rate")));
+        return out;
+    }
 
     private void tallySeasonSignals(SimulatedArtifactAgent agent, String speciesId) {
         seasonSpeciesCounts.merge(speciesId == null ? "unknown" : speciesId, 1, Integer::sum);
@@ -354,6 +478,7 @@ public class WorldSimulationHarness {
         data.put("speciation", speciationSummary);
         data.put("niches", speciesNicheMap);
         data.put("ecological_memory", ecologicalMemoryEngine.diagnostics());
+        data.put("simulation_scenario", Map.of("name", scenario.name(), "artifact_population_size", scenario.artifactPopulationSize(), "generations", scenario.generations(), "mutation_intensity", scenario.mutationIntensity(), "competition_pressure", scenario.competitionPressure(), "ecology_sensitivity", scenario.ecologySensitivity(), "lineage_drift_window", scenario.lineageDriftWindow(), "behavior_mix", scenario.behaviorMix(), "parallel_batches", experimentConfig.parallelBatches()));
         ArtifactEcosystemBalancingAI ai = new ArtifactEcosystemBalancingAI();
         EcosystemHealthReport report = ai.evaluate(metrics.families(), metrics.branches(), metrics.mutations(), metrics.triggers(), metrics.mechanics(), metrics.memories());
         WorldEcosystemProfile profile = new WorldEcosystemProfile(
@@ -369,8 +494,14 @@ public class WorldSimulationHarness {
             ecosystemEngine.evaluate(profile, report, metrics);
         }
         WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
+        EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
+        data.put("telemetry", Map.of("archive", telemetryArchive.readAll().size(), "event_counts", snapshot.eventCounts()));
+        data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
+        data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
 
         Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
+        Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryArchive.readAll().stream().map(Object::toString).toList()));
+        Files.writeString(out.resolve("rollup-snapshots.json"), toJson(Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot), 0));
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
