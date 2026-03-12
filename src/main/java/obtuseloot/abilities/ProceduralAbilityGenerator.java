@@ -15,6 +15,8 @@ import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import obtuseloot.lineage.EvolutionaryBiasGenome;
 import obtuseloot.lineage.LineageBiasDimension;
+import obtuseloot.evolution.MechanicNicheTag;
+import obtuseloot.evolution.NicheTaxonomy;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,6 +50,8 @@ public class ProceduralAbilityGenerator {
     private final RegulatoryGateResolver regulatoryGateResolver;
     private final RegulatoryEligibilityFilter regulatoryEligibilityFilter;
     private final LatentTraitActivationResolver latentTraitActivationResolver;
+    private final NicheTaxonomy nicheTaxonomy;
+    private final Map<MechanicNicheTag, Double> nicheTemplatePressure;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -114,6 +118,8 @@ public class ProceduralAbilityGenerator {
         this.regulatoryGateResolver = new RegulatoryGateResolver();
         this.regulatoryEligibilityFilter = new RegulatoryEligibilityFilter();
         this.latentTraitActivationResolver = new LatentTraitActivationResolver();
+        this.nicheTaxonomy = new NicheTaxonomy();
+        this.nicheTemplatePressure = computeNicheTemplatePressure();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -263,12 +269,13 @@ public class ProceduralAbilityGenerator {
                 ? 1.0D
                 : experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger(), lineage == null ? null : lineage.lineageId(), lineageRegistry);
         double triggerSaturation = triggerSaturationPenalty(template);
+        double nicheSaturation = nicheTemplatePenalty(template);
         double lineageTemplateInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveTemplateInfluence(lineage, template.metadata());
         double mutationInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
         double mechanicInfluence = mechanicLineageWeight(template.mechanic(), lineage);
         double ecologicalCorrection = lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, ecology);
         double opportunity = supportAllocation == null ? 1.0D : supportAllocation.reinforcementMultiplier();
-        return score * rarityModifier(template) * ecology * triggerSaturation * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
+        return score * rarityModifier(template) * ecology * triggerSaturation * nicheSaturation * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
     }
 
     private double triggerSaturationPenalty(AbilityTemplate template) {
@@ -276,6 +283,31 @@ public class ProceduralAbilityGenerator {
         double pressureWeight = TRIGGER_SATURATION_WEIGHTS.getOrDefault(template.trigger(), 1.0D);
         double pressure = Math.max(0.0D, total - 1.0D) * 0.045D * pressureWeight;
         return clamp(1.0D - pressure, 0.72D, 1.02D);
+    }
+
+    private double nicheTemplatePenalty(AbilityTemplate template) {
+        double pressure = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger()).stream()
+                .mapToDouble(tag -> nicheTemplatePressure.getOrDefault(tag, 0.0D))
+                .average()
+                .orElse(0.0D);
+        double lowYieldPenalty = clamp((0.62D - template.metadata().ecologicalYieldScore()) * 0.12D, 0.0D, 0.07D);
+        return clamp(1.0D - pressure - lowYieldPenalty, 0.74D, 1.06D);
+    }
+
+    private Map<MechanicNicheTag, Double> computeNicheTemplatePressure() {
+        Map<MechanicNicheTag, Integer> counts = new EnumMap<>(MechanicNicheTag.class);
+        for (AbilityTemplate template : registry.templates()) {
+            for (MechanicNicheTag niche : nicheTaxonomy.nichesFor(template.mechanic(), template.trigger())) {
+                counts.merge(niche, 1, Integer::sum);
+            }
+        }
+        double average = counts.values().stream().mapToInt(Integer::intValue).average().orElse(1.0D);
+        Map<MechanicNicheTag, Double> pressure = new EnumMap<>(MechanicNicheTag.class);
+        counts.forEach((niche, count) -> {
+            double crowded = clamp((count - average) / Math.max(1.0D, average), 0.0D, 1.0D);
+            pressure.put(niche, crowded * 0.08D);
+        });
+        return Map.copyOf(pressure);
     }
 
     private EvolutionaryBiasGenome deriveObservedBias(List<AbilityTemplate> templates, ArtifactMemoryProfile memoryProfile, UtilityHistoryRollup utilityHistory) {
