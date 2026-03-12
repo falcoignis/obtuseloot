@@ -174,6 +174,35 @@ class PostExpansionStabilizationTest {
         assertTrue(specialization.containsKey("group_coordination"));
     }
 
+
+    @Test
+    void crowdedLowYieldNicheTemplatesArePenalizedAgainstHigherYieldPeers() {
+        AbilityRegistry registry = new AbilityRegistry();
+        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+
+        int environmentHits = 0;
+        int gatheringHits = 0;
+        int runs = 280;
+        for (int i = 0; i < runs; i++) {
+            Artifact artifact = artifact(77_777L + i);
+            ArtifactMemoryProfile memory = profileFor(i % 5);
+            AbilityProfile profile = generator.generate(artifact, 2, memory);
+            for (AbilityDefinition ability : profile.abilities()) {
+                if (ability.id().startsWith("environment.")) {
+                    environmentHits++;
+                }
+                if (ability.id().startsWith("gathering.") || ability.id().equals("survival.gentle_harvest")) {
+                    gatheringHits++;
+                }
+            }
+        }
+
+        assertTrue(environmentHits > 0, "Expanded environmental abilities should remain reachable.");
+        assertTrue(gatheringHits > 0, "Gathering-support abilities should remain reachable.");
+        assertTrue(environmentHits < gatheringHits * 1.40D,
+                "Crowded, lower-yield environmental templates should not overrun gathering-oriented utility generation.");
+    }
+
     private int sum(Map<String, Integer> byPrefix, String... prefixes) {
         return Arrays.stream(prefixes).mapToInt(prefix -> byPrefix.getOrDefault(prefix, 0)).sum();
     }
