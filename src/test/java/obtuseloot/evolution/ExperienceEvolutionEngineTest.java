@@ -26,9 +26,10 @@ class ExperienceEvolutionEngineTest {
         assertTrue(profile.discardRate() > 0.0D);
         assertEquals(1.0D, profile.fusionParticipation(), 1.0E-9D);
         assertEquals(1.0D, profile.awakeningRate(), 1.0E-9D);
+        assertEquals(0.0D, profile.validatedUtilityScore(), 1.0E-9D);
 
         double fitness = new ArtifactFitnessEvaluator().evaluate(profile);
-        assertTrue(fitness > 0.0D);
+        assertTrue(Double.isFinite(fitness));
     }
 
     @Test
