@@ -27,7 +27,8 @@ public record DashboardMetrics(
         List<String> diagnosticWarningFlags,
         boolean ecologicalMemoryActive,
         double dominantAttractorDuration,
-        double memoryPressureMagnitude
+        double memoryPressureMagnitude,
+        java.util.List<DashboardDataSourceDescriptor> dataSources
 ) {
     public enum CollapseRisk {
         LOW,
