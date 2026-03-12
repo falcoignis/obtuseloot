@@ -6,9 +6,12 @@ public record EcosystemTuningProfile(
         double mutationAmplitudeMin,
         double mutationAmplitudeMax,
         int driftWindowDurationTicks,
-        double competitionReinforcementCurve
+        double competitionReinforcementCurve,
+        int telemetryFlushIntervalTicks,
+        int telemetryArchiveBatchSize,
+        long telemetryRollupIntervalMs
 ) {
     public static EcosystemTuningProfile defaults() {
-        return new EcosystemTuningProfile(0.90D, 1.00D, 0.70D, 1.65D, 5, 1.0D);
+        return new EcosystemTuningProfile(0.90D, 1.00D, 0.70D, 1.65D, 5, 1.0D, 100, 256, 5_000L);
     }
 }

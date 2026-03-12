@@ -48,6 +48,7 @@ public class ExperienceEvolutionEngine {
         this.pressureEngine = pressureEngine;
         this.supportAllocator = supportAllocator;
         this.parameterRegistry = parameterRegistry;
+        this.supportAllocator.setCompetitionReinforcementCurve(parameterRegistry.profile().competitionReinforcementCurve());
     }
 
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed) {

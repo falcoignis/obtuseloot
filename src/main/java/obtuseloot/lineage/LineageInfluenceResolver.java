@@ -54,12 +54,17 @@ public class LineageInfluenceResolver {
     }
 
     public double resolveDriftWindow(ArtifactLineage lineage) {
+        return resolveDriftWindow(lineage, 5);
+    }
+
+    public double resolveDriftWindow(ArtifactLineage lineage, int driftWindowDurationTicks) {
         if (lineage == null) {
             return 0.035D;
         }
         double reliability = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY);
         double weirdness = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS);
-        return 0.03D + Math.max(0.0D, weirdness * 0.04D) + Math.max(0.0D, -reliability * 0.03D);
+        double base = 0.03D + Math.max(0.0D, weirdness * 0.04D) + Math.max(0.0D, -reliability * 0.03D);
+        return base * Math.max(0.5D, driftWindowDurationTicks / 5.0D);
     }
 
     public Map<String, Double> traitSnapshot(ArtifactLineage lineage) {

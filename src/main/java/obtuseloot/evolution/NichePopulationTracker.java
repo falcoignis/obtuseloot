@@ -53,7 +53,11 @@ public class NichePopulationTracker {
                     artifactSeed,
                     "",
                     next.dominantNiche().name(),
-                    Map.of("from", previous.dominantNiche().name(), "to", next.dominantNiche().name()));
+                    Map.of("from", previous.dominantNiche().name(),
+                            "to", next.dominantNiche().name(),
+                            "subniche", next.specialization().dominantSubniche(),
+                            "specialization_pressure", String.valueOf(next.specialization().specializationScore()),
+                            "context_tags", "niche-reclassification"));
         }
     }
 

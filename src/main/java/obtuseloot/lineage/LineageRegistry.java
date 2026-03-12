@@ -33,10 +33,15 @@ public class LineageRegistry {
     private final LineageSpeciationEngine speciationEngine = new LineageSpeciationEngine();
     private final SpeciesSignatureResolver signatureResolver = new SpeciesSignatureResolver();
     private final InheritanceBranchingHeuristics branchingHeuristics = new InheritanceBranchingHeuristics();
+    private volatile int driftWindowDurationTicks = 5;
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
 
     public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
         this.telemetryEmitter = telemetryEmitter;
+    }
+
+    public void setDriftWindowDurationTicks(int driftWindowDurationTicks) {
+        this.driftWindowDurationTicks = Math.max(1, driftWindowDurationTicks);
     }
 
     public ArtifactLineage assignLineage(Artifact artifact) {
@@ -52,7 +57,7 @@ public class LineageRegistry {
         ArtifactLineage lineage = lineages.computeIfAbsent(lineageId, ArtifactLineage::new);
         if (!lineage.ancestorSeeds().contains(artifact.getArtifactSeed())) {
             lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.generationIndex() + 1));
-            emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, artifact, lineageId, Map.of("event", "ancestor-added"));
+            emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, artifact, lineageId, Map.of("event", "ancestor-added", "context_tags", "lineage-update"));
         }
         return lineage;
     }
@@ -63,7 +68,7 @@ public class LineageRegistry {
                                      double mutationInfluence) {
         ArtifactLineage lineage = assignLineage(artifact);
         int beforeBranches = lineage.branches().size();
-        double driftWindow = new LineageInfluenceResolver().resolveDriftWindow(lineage);
+        double driftWindow = new LineageInfluenceResolver().resolveDriftWindow(lineage, driftWindowDurationTicks);
         double utilityDensity = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()).utilityDensity();
         lineage.registerDescendantBias(
                 artifact.getArtifactSeed(),
@@ -75,14 +80,18 @@ public class LineageRegistry {
                 branchingHeuristics);
         emit(EcosystemTelemetryEventType.MUTATION_EVENT, artifact, lineage.lineageId(), Map.of(
                 "driftWindow", String.valueOf(driftWindow),
+                "drift_window_remaining", String.valueOf(driftWindow),
                 "utilityDensity", String.valueOf(utilityDensity),
+                "utility_density", String.valueOf(utilityDensity),
                 "ecologicalPressure", String.valueOf(ecologicalPressure),
-                "mutationInfluence", String.valueOf(mutationInfluence)
+                "ecology_pressure", String.valueOf(ecologicalPressure),
+                "mutationInfluence", String.valueOf(mutationInfluence),
+                "mutation_influence", String.valueOf(mutationInfluence)
         ));
         if (lineage.branches().size() > beforeBranches) {
             String branchId = lineage.dominantBranchId();
             artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.LINEAGE, lineage.lineageId() + " [" + branchId + "]"));
-            emit(EcosystemTelemetryEventType.BRANCH_FORMATION, artifact, lineage.lineageId(), Map.of("branchId", branchId));
+            emit(EcosystemTelemetryEventType.BRANCH_FORMATION, artifact, lineage.lineageId(), Map.of("branchId", branchId, "branch_id", branchId));
         }
     }
 

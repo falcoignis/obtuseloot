@@ -153,3 +153,6 @@ ecosystem:
     mutationAmplitudeMax: 1.65
     driftWindowDurationTicks: 5
     competitionReinforcementCurve: 1.00
+    telemetryFlushIntervalTicks: 100
+    telemetryArchiveBatchSize: 256
+    telemetryRollupIntervalMs: 5000

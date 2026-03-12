@@ -12,9 +12,14 @@ public class AdaptiveSupportAllocator {
     private final EcosystemCarryingCapacityModel capacityModel = new EcosystemCarryingCapacityModel();
     private final LineageCompetitionModel lineageCompetitionModel = new LineageCompetitionModel();
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
+    private volatile double competitionReinforcementCurve = 1.0D;
 
     public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
         this.telemetryEmitter = telemetryEmitter;
+    }
+
+    public void setCompetitionReinforcementCurve(double competitionReinforcementCurve) {
+        this.competitionReinforcementCurve = Math.max(0.25D, competitionReinforcementCurve);
     }
 
     public EvolutionOpportunityPool buildPool(ArtifactUsageTracker usageTracker, LineageRegistry lineageRegistry) {
@@ -38,7 +43,7 @@ public class AdaptiveSupportAllocator {
                 ? new LineageMomentumProfile("unknown", 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D, 1.0D, 1.0D)
                 : pool.lineageMomentumPool().profile(lineageId);
 
-        double reinforcement = clamp(niche.reinforcementMultiplier() * lineage.templateSelectionWeight(), 0.55D, 1.50D);
+        double reinforcement = clamp(Math.pow(Math.max(0.001D, niche.reinforcementMultiplier() * lineage.templateSelectionWeight()), competitionReinforcementCurve), 0.55D, 1.50D);
         double mutation = clamp(niche.mutationSupport() * lineage.mutationSupportStrength(), 0.50D, 1.50D);
         double retention = clamp(niche.retentionSupport() * lineage.retentionBias(), 0.55D, 1.45D);
         double branchPersistence = clamp(lineage.branchPersistenceSupport() * (1.0D + pool.budget().turnoverPressure() * 0.20D), 0.60D, 1.55D);
@@ -55,7 +60,15 @@ public class AdaptiveSupportAllocator {
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
         if (emitter != null) {
             emitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, artifactSeed, lineageId == null ? "" : lineageId, profile.dominantNiche().name(),
-                    Map.of("reinforcement", String.valueOf(allocation.reinforcementMultiplier()), "mutation", String.valueOf(allocation.mutationOpportunity()), "retention", String.valueOf(allocation.retentionOpportunity())));
+                    Map.of("reinforcement", String.valueOf(allocation.reinforcementMultiplier()),
+                            "reinforcement_multiplier", String.valueOf(allocation.reinforcementMultiplier()),
+                            "mutation", String.valueOf(allocation.mutationOpportunity()),
+                            "retention", String.valueOf(allocation.retentionOpportunity()),
+                            "lineage_momentum", String.valueOf(lineage.momentum()),
+                            "ecology_pressure", String.valueOf(niche.competitionPressure()),
+                            "opportunity_share", String.valueOf(niche.opportunityShare()),
+                            "specialization_pressure", String.valueOf(niche.competitionPressure()),
+                            "context_tags", "competition-allocation"));
         }
         return allocation;
     }

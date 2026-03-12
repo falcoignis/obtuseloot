@@ -40,6 +40,7 @@ import obtuseloot.telemetry.ScheduledEcosystemRollups;
 import obtuseloot.telemetry.TelemetryAggregationAnalytics;
 import obtuseloot.telemetry.TelemetryAggregationBuffer;
 import obtuseloot.telemetry.TelemetryAggregationService;
+import obtuseloot.telemetry.TelemetryFlushScheduler;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -83,11 +84,12 @@ public class ObtuseLoot extends JavaPlugin {
         RuntimeSettings.load(getConfig());
         evolutionParameterRegistry = new EvolutionParameterRegistry();
         evolutionParameterRegistry.load(getConfig());
+        var tuningProfile = evolutionParameterRegistry.profile();
 
         TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(java.nio.file.Path.of("analytics/telemetry/ecosystem-events.log"));
-        ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, 5_000L);
-        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, 256);
+        ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, tuningProfile.telemetryRollupIntervalMs());
+        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, tuningProfile.telemetryArchiveBatchSize());
         ecosystemTelemetryEmitter = new EcosystemTelemetryEmitter(aggregationService);
         telemetryAggregationAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
 
@@ -117,6 +119,7 @@ public class ObtuseLoot extends JavaPlugin {
         ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
         lineageRegistry.setTelemetryEmitter(ecosystemTelemetryEmitter);
+        lineageRegistry.setDriftWindowDurationTicks(tuningProfile.driftWindowDurationTicks());
         lineageRegistry.restoreSpeciesSnapshot(playerStateStore.loadSpeciesSnapshot());
         lineageInfluenceResolver = new LineageInfluenceResolver();
         itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
@@ -171,9 +174,9 @@ public class ObtuseLoot extends JavaPlugin {
         }, 24_000L, 24_000L);
 
         telemetryRollupTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
-                () -> ecosystemTelemetryEmitter.rollups().maybeRun(System.currentTimeMillis()),
-                100L,
-                100L);
+                new TelemetryFlushScheduler(ecosystemTelemetryEmitter),
+                tuningProfile.telemetryFlushIntervalTicks(),
+                tuningProfile.telemetryFlushIntervalTicks());
 
         engine = new ObtuseEngine(this);
         engine.initialize();
@@ -220,7 +223,7 @@ public class ObtuseLoot extends JavaPlugin {
             getLogger().warning("[Runtime] Failed to write trigger subscription report on disable: " + exception.getMessage());
         }
         if (ecosystemTelemetryEmitter != null) {
-            ecosystemTelemetryEmitter.flush();
+            ecosystemTelemetryEmitter.flushAll();
         }
     }
 
