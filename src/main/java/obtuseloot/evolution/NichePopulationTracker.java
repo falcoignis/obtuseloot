@@ -10,6 +10,7 @@ public class NichePopulationTracker {
     private final EcosystemRoleClassifier classifier;
     private final EcosystemSaturationModel saturationModel;
     private final Map<Long, ArtifactNicheProfile> nicheProfilesByArtifact = new ConcurrentHashMap<>();
+    private final EcosystemCarryingCapacityModel carryingCapacityModel = new EcosystemCarryingCapacityModel();
     private final Map<Long, Map<String, MechanicUtilitySignal>> signalsByArtifact = new ConcurrentHashMap<>();
     private final Set<Long> activeArtifacts = ConcurrentHashMap.newKeySet();
 
@@ -84,7 +85,12 @@ public class NichePopulationTracker {
         out.put("nicheUtilityDensity", rollups.entrySet().stream().collect(java.util.stream.Collectors.toMap(e -> e.getKey().name(), e -> e.getValue().utilityDensity(), (a, b) -> a, LinkedHashMap::new)));
         out.put("saturationPressure", rollups.entrySet().stream().collect(java.util.stream.Collectors.toMap(e -> e.getKey().name(), e -> saturationModel.pressureFor(e.getKey(), e.getValue(), rollups).saturationPenalty(), (a, b) -> a, LinkedHashMap::new)));
         out.put("scarcityBonus", rollups.entrySet().stream().collect(java.util.stream.Collectors.toMap(e -> e.getKey().name(), e -> saturationModel.pressureFor(e.getKey(), e.getValue(), rollups).scarcityBonus(), (a, b) -> a, LinkedHashMap::new)));
+        AdaptiveSupportBudget budget = carryingCapacityModel.calculate(rollups);
         out.put("specializationTrends", nicheProfilesByArtifact.values().stream().collect(java.util.stream.Collectors.groupingBy(v -> v.specialization().dominantSubniche(), LinkedHashMap::new, java.util.stream.Collectors.counting())));
+        out.put("carryingCapacity", budget.carryingCapacity());
+        out.put("capacityUtilization", budget.capacityUtilization());
+        out.put("saturationIndex", budget.saturationIndex());
+        out.put("turnoverPressure", budget.turnoverPressure());
         return out;
     }
 

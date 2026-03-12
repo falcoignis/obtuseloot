@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import obtuseloot.evolution.AdaptiveSupportBudget;
+import obtuseloot.evolution.LineageCompetitionModel;
+import obtuseloot.evolution.LineageMomentumPool;
 import obtuseloot.evolution.UtilityHistoryRollup;
 
 public class LineageRegistry {
@@ -101,6 +104,11 @@ public class LineageRegistry {
         while (history.size() > 20) {
             history.removeFirst();
         }
+    }
+
+
+    public LineageMomentumPool momentumSnapshot(AdaptiveSupportBudget budget) {
+        return new LineageCompetitionModel().evaluate(lineages, budget);
     }
 
     public Map<String, ArtifactLineage> lineages() {

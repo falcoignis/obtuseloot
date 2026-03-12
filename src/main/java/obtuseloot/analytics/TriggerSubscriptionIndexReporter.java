@@ -65,6 +65,7 @@ public final class TriggerSubscriptionIndexReporter {
             out.append("- High-volume low-value mechanics: ").append(plugin.getArtifactUsageTracker().highVolumeLowValueSignals()).append("\n");
             out.append("- Utility-first decision hierarchy: ").append(new ArtifactFitnessEvaluator().decisionHierarchy()).append("\n");
             out.append("- Live niche ecology telemetry: ").append(plugin.getArtifactUsageTracker().nichePopulationTracker().analyticsSnapshot()).append("\n");
+            out.append("- Evolution opportunity competition telemetry: ").append(plugin.getExperienceEvolutionEngine().competitionAnalytics(plugin.getLineageRegistry())).append("\n");
         }
         out.append("\n");
 
