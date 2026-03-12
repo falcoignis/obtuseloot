@@ -25,6 +25,7 @@ public class LineageRegistry {
     private final SpeciesRegistry speciesRegistry = new SpeciesRegistry();
     private final LineageSpeciationEngine speciationEngine = new LineageSpeciationEngine();
     private final SpeciesSignatureResolver signatureResolver = new SpeciesSignatureResolver();
+    private final InheritanceBranchingHeuristics branchingHeuristics = new InheritanceBranchingHeuristics();
 
     public ArtifactLineage assignLineage(Artifact artifact) {
         Random random = new Random(artifact.getArtifactSeed() ^ artifact.getOwnerId().getMostSignificantBits());
@@ -41,6 +42,16 @@ public class LineageRegistry {
             lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.generationIndex() + 1));
         }
         return lineage;
+    }
+
+    public void recordDescendantBias(Artifact artifact, EvolutionaryBiasGenome observedBias, double ecologicalPressure) {
+        ArtifactLineage lineage = assignLineage(artifact);
+        int beforeBranches = lineage.branches().size();
+        lineage.registerDescendantBias(artifact.getArtifactSeed(), observedBias, ecologicalPressure, branchingHeuristics);
+        if (lineage.branches().size() > beforeBranches) {
+            String branchId = lineage.dominantBranchId();
+            artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.LINEAGE, lineage.lineageId() + " [" + branchId + "]"));
+        }
     }
 
     public ArtifactLineage lineageFor(String lineageId) {

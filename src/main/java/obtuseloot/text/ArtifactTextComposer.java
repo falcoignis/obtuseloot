@@ -71,7 +71,17 @@ public class ArtifactTextComposer {
 
     private String lineage(ArtifactTextIdentity identity, String lineage) {
         String source = lineage == null || lineage.isBlank() ? "an older house" : lineage;
-        return "Its making belongs to " + source + ", where craft ran toward " + identity.motifs().getFirst() + ".";
+        String branchHint = "";
+        if (source.contains("[") && source.contains("]")) {
+            int start = source.indexOf("[");
+            int end = source.indexOf("]", start);
+            if (end > start) {
+                String branch = source.substring(start + 1, end);
+                source = source.substring(0, start).trim();
+                branchHint = " The " + branch + " branch keeps " + lastMotif(identity) + " close.";
+            }
+        }
+        return "Its making belongs to " + source + ", where craft ran toward " + identity.motifs().getFirst() + "." + branchHint;
     }
 
     private String memory(ArtifactTextIdentity identity, String event) {
