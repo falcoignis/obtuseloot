@@ -31,19 +31,19 @@ public final class OpenEndednessTestRunner {
                 "world.sessionsPerSeason",
                 String.valueOf(defaults.sessionsPerSeason())));
 
-        List<WorldSpec> worlds = List.of(
-                new WorldSpec("A", "world-a-full-system", "World A — Full System",
-                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, true, true)),
-                new WorldSpec("B", "world-b-no-ede", "World B — No Experience-Driven Evolution",
-                        cfg(defaults, players, seasons, sessions, false, true, true, true, true, true, true)),
-                new WorldSpec("C", "world-c-no-bias-diversity", "World C — No Ecosystem Bias / Diversity Preservation",
-                        cfg(defaults, players, seasons, sessions, true, false, false, false, false, true, true)),
-                new WorldSpec("D", "world-d-no-trait-interactions", "World D — No Trait Interaction Layer",
-                        cfg(defaults, players, seasons, sessions, true, true, true, true, true, false, true))
-        );
-
         Path outputDir = Path.of("analytics/world-lab/open-endedness");
         Files.createDirectories(outputDir);
+
+        List<WorldSpec> worlds = List.of(
+                new WorldSpec("A", "world-a-full-system", "World A — Full System",
+                        cfg(defaults, outputDir.resolve("world-a-full-system"), players, seasons, sessions, true, true, true, true, true, true, true)),
+                new WorldSpec("B", "world-b-no-ede", "World B — No Experience-Driven Evolution",
+                        cfg(defaults, outputDir.resolve("world-b-no-ede"), players, seasons, sessions, false, true, true, true, true, true, true)),
+                new WorldSpec("C", "world-c-no-bias-diversity", "World C — No Ecosystem Bias / Diversity Preservation",
+                        cfg(defaults, outputDir.resolve("world-c-no-bias-diversity"), players, seasons, sessions, true, false, false, false, false, true, true)),
+                new WorldSpec("D", "world-d-no-trait-interactions", "World D — No Trait Interaction Layer",
+                        cfg(defaults, outputDir.resolve("world-d-no-trait-interactions"), players, seasons, sessions, true, true, true, true, true, false, true))
+        );
 
         Map<String, Map<String, Object>> results = new LinkedHashMap<>();
         for (WorldSpec world : worlds) {
@@ -79,6 +79,7 @@ public final class OpenEndednessTestRunner {
     }
 
     private static WorldSimulationConfig cfg(WorldSimulationConfig defaults,
+                                             Path outputDirectory,
                                              int players,
                                              int seasons,
                                              int sessions,
@@ -94,7 +95,7 @@ public final class OpenEndednessTestRunner {
                 defaults.bossFrequency(), defaults.encounterDensity(),
                 defaults.chaosEventRate(), defaults.lowHealthEventRate(),
                 defaults.mutationPressureMultiplier(), defaults.memoryEventMultiplier(),
-                defaults.outputDirectory(), ede, ecosystemBias, diversity, selfBalancing,
+                outputDirectory.toString(), ede, ecosystemBias, diversity, selfBalancing,
                 environmentPressure, traitInteractions, coEvolution, defaults.fitnessSharing(), defaults.behavioralProjection(), defaults.roleBasedRepulsion(), defaults.minimumRoleSeparation(), defaults.adaptiveNicheCapacity(), defaults.opportunityWeightedMutation(), defaults.validationProfile(), defaults.scoringMode(), defaults.scenarioConfigPath());
     }
 
