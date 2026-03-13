@@ -104,6 +104,7 @@ public class WorldSimulationHarness {
     private final TelemetryAggregationAnalytics telemetryAnalytics;
     private final TelemetryEventFactory telemetryEventFactory = new TelemetryEventFactory();
     private final int maxRollupHistoryInMemory;
+    private final double telemetrySamplingRate;
     private final int maxSeasonSnapshotsInMemory;
     private final int memoryLogEveryGenerations;
     private int currentGeneration;
@@ -118,6 +119,7 @@ public class WorldSimulationHarness {
         this.memoryLogEveryGenerations = Integer.getInteger("world.memoryLogEveryGenerations", Math.max(1, config.sessionsPerSeason()));
         int maxTelemetryBufferEvents = Integer.getInteger("world.maxTelemetryBufferEvents", config.validationProfile() ? 512 : 4096);
         int archiveBatchSize = Integer.getInteger("world.telemetryArchiveBatchSize", config.validationProfile() ? 64 : 256);
+        this.telemetrySamplingRate = clampSamplingRate(Double.parseDouble(System.getProperty("world.telemetrySamplingRate", "1.0")));
         this.telemetryBuffer = new TelemetryAggregationBuffer(maxTelemetryBufferEvents);
         Path telemetryDir = Path.of(config.outputDirectory(), "telemetry");
         this.telemetryArchive = new EcosystemHistoryArchive(telemetryDir.resolve("ecosystem-events.log"));
@@ -126,7 +128,7 @@ public class WorldSimulationHarness {
                 new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")),
                 new RollupStateHydrator(new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")), telemetryArchive, 1024));
         this.telemetryAggregationService.initializeFromHistory();
-        this.telemetryEmitter = new EcosystemTelemetryEmitter(telemetryAggregationService, telemetryEventFactory);
+        this.telemetryEmitter = new EcosystemTelemetryEmitter(telemetryAggregationService, telemetryEventFactory, telemetrySamplingRate);
         this.telemetryAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
         this.experienceEvolutionEngine = config.enableExperienceDrivenEvolution()
                 ? new ExperienceEvolutionEngine(usageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine())
@@ -634,7 +636,8 @@ public class WorldSimulationHarness {
                 "scenario=" + scenario.name() + "\n"
                         + "rollup_history_windows=" + rollups.size() + "\n"
                         + "rollup_history_dir=rollup_history\n"
-                        + "validation_profile=" + config.validationProfile() + "\n");
+                        + "validation_profile=" + config.validationProfile() + "\n"
+                        + "telemetry_sampling_rate=" + telemetrySamplingRate + "\n");
         writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
 
         Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
@@ -650,7 +653,7 @@ public class WorldSimulationHarness {
             data.put("ability", baseData.get("ability"));
             data.put("lineage", baseData.get("lineage"));
             data.put("simulation_scenario", Map.of("name", scenario.name(), "artifact_population_size", scenario.artifactPopulationSize(), "generations", scenario.generations(), "mutation_intensity", scenario.mutationIntensity(), "competition_pressure", scenario.competitionPressure(), "ecology_sensitivity", scenario.ecologySensitivity(), "lineage_drift_window", scenario.lineageDriftWindow(), "behavior_mix", scenario.behaviorMix(), "parallel_batches", experimentConfig.parallelBatches()));
-            data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents()));
+            data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents(), "sampling_rate", telemetrySamplingRate));
             data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
             data.put("rollup_history", rollupHistorySummary);
             data.put("validation_profile", true);
@@ -696,7 +699,7 @@ public class WorldSimulationHarness {
         if (config.enableSelfBalancingAdjustments() || config.enableDiversityPreservation() || config.enableEnvironmentalPressure()) {
             ecosystemEngine.evaluate(profile, report, metrics);
         }
-        data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents()));
+        data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents(), "sampling_rate", telemetrySamplingRate));
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
         data.put("rollup_history", rollupHistorySummary);
@@ -2509,6 +2512,13 @@ public class WorldSimulationHarness {
 
     public List<Long> initialSeedPool() {
         return List.copyOf(initialSeedPool);
+    }
+
+    private static double clampSamplingRate(double raw) {
+        if (Double.isNaN(raw) || Double.isInfinite(raw)) {
+            return 1.0D;
+        }
+        return Math.max(0.0D, Math.min(1.0D, raw));
     }
 
     private double dataRate(Map<String, Object> data, String section, String key) {
