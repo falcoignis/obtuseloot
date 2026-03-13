@@ -179,6 +179,7 @@ public class TraitScoringBenchmarkRunner {
                     d.minimumRoleSeparation(),
                     d.adaptiveNicheCapacity(),
                     d.opportunityWeightedMutation(),
+                    d.validationProfile(),
                     mode,
                     d.scenarioConfigPath()
             );

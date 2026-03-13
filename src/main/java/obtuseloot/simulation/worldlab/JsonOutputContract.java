@@ -1,5 +1,8 @@
 package obtuseloot.simulation.worldlab;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
@@ -17,6 +20,14 @@ public final class JsonOutputContract {
 
     public static String toJson(Object value) {
         return writeJson(normalize(value), 0);
+    }
+
+    public static void writeJson(Writer writer, Object value) {
+        try {
+            writeJsonValue(writer, normalize(value), 0);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     private static Object normalize(Object value) {
@@ -103,6 +114,50 @@ public final class JsonOutputContract {
             return "null";
         }
         return String.valueOf(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void writeJsonValue(Writer writer, Object value, int indent) throws IOException {
+        String pad = "  ".repeat(indent);
+        if (value instanceof Map<?, ?> map) {
+            writer.write("{\n");
+            var entries = ((Map<String, Object>) map).entrySet().iterator();
+            while (entries.hasNext()) {
+                var entry = entries.next();
+                writer.write(pad);
+                writer.write("  ");
+                writer.write(quote(entry.getKey()));
+                writer.write(": ");
+                writeJsonValue(writer, entry.getValue(), indent + 1);
+                if (entries.hasNext()) {
+                    writer.write(',');
+                }
+                writer.write('\n');
+            }
+            writer.write(pad);
+            writer.write('}');
+            return;
+        }
+        if (value instanceof List<?> list) {
+            writer.write('[');
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) {
+                    writer.write(',');
+                }
+                writeJsonValue(writer, list.get(i), indent + 1);
+            }
+            writer.write(']');
+            return;
+        }
+        if (value instanceof String s) {
+            writer.write(quote(s));
+            return;
+        }
+        if (value == null) {
+            writer.write("null");
+            return;
+        }
+        writer.write(String.valueOf(value));
     }
 
     private static String quote(String value) {

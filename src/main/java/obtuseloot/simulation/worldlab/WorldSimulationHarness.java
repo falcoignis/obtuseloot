@@ -39,6 +39,7 @@ import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import obtuseloot.telemetry.*;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +67,7 @@ public class WorldSimulationHarness {
     private final SimulationClock clock = new SimulationClock();
     private final SimulationMetricsCollector metrics = new SimulationMetricsCollector();
     private final List<Map<String, Object>> seasonalSnapshots = new ArrayList<>();
-    private final List<TelemetryRollupSnapshot> rollupHistory = new ArrayList<>();
+    private final Deque<TelemetryRollupSnapshot> rollupHistory = new ArrayDeque<>();
     private final List<Long> initialSeedPool = new ArrayList<>();
     private List<SimulatedPlayer> latestPlayers = List.of();
 
@@ -95,13 +96,16 @@ public class WorldSimulationHarness {
     private final Map<String, Integer> seasonEnvironmentCounts = new LinkedHashMap<>();
     private final EvolutionExperimentConfig experimentConfig;
     private final SimulationScenario scenario;
-    private final TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
+    private final TelemetryAggregationBuffer telemetryBuffer;
     private final EcosystemHistoryArchive telemetryArchive;
     private final ScheduledEcosystemRollups scheduledRollups;
     private final TelemetryAggregationService telemetryAggregationService;
     private final EcosystemTelemetryEmitter telemetryEmitter;
     private final TelemetryAggregationAnalytics telemetryAnalytics;
     private final TelemetryEventFactory telemetryEventFactory = new TelemetryEventFactory();
+    private final int maxRollupHistoryInMemory;
+    private final int maxSeasonSnapshotsInMemory;
+    private final int memoryLogEveryGenerations;
     private int currentGeneration;
 
     public WorldSimulationHarness(WorldSimulationConfig config) {
@@ -109,10 +113,16 @@ public class WorldSimulationHarness {
         this.random = new Random(config.seed());
         this.experimentConfig = EvolutionExperimentConfig.load(config.scenarioConfigPath() == null || config.scenarioConfigPath().isBlank() ? null : Path.of(config.scenarioConfigPath()), config);
         this.scenario = experimentConfig.scenario();
+        this.maxRollupHistoryInMemory = Integer.getInteger("world.maxRollupHistoryInMemory", config.validationProfile() ? 32 : 512);
+        this.maxSeasonSnapshotsInMemory = Integer.getInteger("world.maxSeasonSnapshotsInMemory", config.validationProfile() ? 16 : 256);
+        this.memoryLogEveryGenerations = Integer.getInteger("world.memoryLogEveryGenerations", Math.max(1, config.sessionsPerSeason()));
+        int maxTelemetryBufferEvents = Integer.getInteger("world.maxTelemetryBufferEvents", config.validationProfile() ? 512 : 4096);
+        int archiveBatchSize = Integer.getInteger("world.telemetryArchiveBatchSize", config.validationProfile() ? 64 : 256);
+        this.telemetryBuffer = new TelemetryAggregationBuffer(maxTelemetryBufferEvents);
         Path telemetryDir = Path.of(config.outputDirectory(), "telemetry");
         this.telemetryArchive = new EcosystemHistoryArchive(telemetryDir.resolve("ecosystem-events.log"));
         this.scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, 1L);
-        this.telemetryAggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, 256,
+        this.telemetryAggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, archiveBatchSize,
                 new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")),
                 new RollupStateHydrator(new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")), telemetryArchive, 1024));
         this.telemetryAggregationService.initializeFromHistory();
@@ -160,18 +170,25 @@ public class WorldSimulationHarness {
             seasonSnapshot.put("ecologicalMemory", ecologicalMemoryEngine.diagnostics());
             Map<String, Object> opportunitySummary = refreshOpportunitySignals(seasonArtifacts);
             seasonSnapshot.put("opportunityWeightedMutation", opportunitySummary);
-            seasonalSnapshots.add(seasonSnapshot);
-            rollupHistory.add(new TelemetryRollupSnapshot(
+            appendSeasonSnapshot(seasonSnapshot);
+            appendRollupSnapshot(new TelemetryRollupSnapshot(
                     TelemetryRollupSnapshot.CURRENT_VERSION,
                     System.currentTimeMillis(),
                     "harness_season_" + season,
                     telemetryAnalytics.ecosystemSnapshot()));
             resetSeasonTallies();
-            exportSeasonInteractionHeatmap(players, season);
+            if (!config.validationProfile()) {
+                exportSeasonInteractionHeatmap(players, season);
+            }
+            if (currentGeneration % memoryLogEveryGenerations == 0) {
+                logMemoryCheckpoint(players);
+            }
         }
         telemetryEmitter.flushAll();
         telemetryEmitter.scheduledTick(System.currentTimeMillis());
-        writeRegulatoryReports();
+        if (!config.validationProfile()) {
+            writeRegulatoryReports();
+        }
         writeReports();
     }
 
@@ -486,8 +503,9 @@ public class WorldSimulationHarness {
 
     private List<Map<String, Object>> buildNicheLongTimelines(String snapshotKey) {
         Map<String, List<Map<String, Object>>> perNiche = new LinkedHashMap<>();
-        for (int i = 0; i < rollupHistory.size(); i++) {
-            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+        List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
+        for (int i = 0; i < rollups.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollups.get(i);
             Map<String, Long> source = switch (snapshotKey) {
                 case "nicheOccupancy" -> rollup.ecosystemSnapshot().nichePopulationRollup().populationByNiche();
                 case "nicheMeaningfulOutcomes" -> rollup.ecosystemSnapshot().nichePopulationRollup().meaningfulOutcomesByNiche();
@@ -511,8 +529,9 @@ public class WorldSimulationHarness {
 
     private List<Map<String, Object>> buildNicheDoubleTimelines(String snapshotKey) {
         Map<String, List<Map<String, Object>>> perNiche = new LinkedHashMap<>();
-        for (int i = 0; i < rollupHistory.size(); i++) {
-            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+        List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
+        for (int i = 0; i < rollups.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollups.get(i);
             Map<String, Double> source = switch (snapshotKey) {
                 case "nicheUtilityDensity" -> rollup.ecosystemSnapshot().nichePopulationRollup().utilityDensityByNiche();
                 case "nicheSaturationPressure" -> rollup.ecosystemSnapshot().nichePopulationRollup().saturationPressureByNiche();
@@ -629,14 +648,15 @@ public class WorldSimulationHarness {
         }
         WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
         EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
-        data.put("telemetry", Map.of("archive", telemetryArchive.readAll().size(), "event_counts", snapshot.eventCounts()));
+        data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents()));
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
 
+        List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
         Map<String, Object> rollupHistoryJson = new LinkedHashMap<>();
         List<Map<String, Object>> rollupSnapshots = new ArrayList<>();
-        for (int i = 0; i < rollupHistory.size(); i++) {
-            TelemetryRollupSnapshot rollup = rollupHistory.get(i);
+        for (int i = 0; i < rollups.size(); i++) {
+            TelemetryRollupSnapshot rollup = rollups.get(i);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("window_index", i + 1);
             item.put("created_at_ms", rollup.createdAtMs());
@@ -646,31 +666,46 @@ public class WorldSimulationHarness {
         rollupHistoryJson.put("rollup_snapshots", rollupSnapshots);
         data.put("rollup_history", rollupHistoryJson);
 
-        Files.writeString(out.resolve("world-sim-data.json"), toJson(data, 0));
-        List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
-        Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryEvents.stream().map(Object::toString).toList()));
+        if (config.validationProfile()) {
+            data.put("validation_profile", true);
+            data.remove("phase6_experiment_outputs");
+        }
+        writeJsonFile(out.resolve("world-sim-data.json"), data);
+        if (!config.validationProfile()) {
+            List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
+            Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryEvents.stream().map(Object::toString).toList()));
+        }
         Path telemetryOutDir = out.resolve("telemetry");
         Path rollupOutDir = out.resolve("rollup_history");
         Files.createDirectories(telemetryOutDir);
         Files.createDirectories(rollupOutDir);
-        new EcosystemHistoryArchive(telemetryOutDir.resolve("ecosystem-events.log")).append(telemetryEvents);
+        if (!config.validationProfile()) {
+            List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
+            new EcosystemHistoryArchive(telemetryOutDir.resolve("ecosystem-events.log")).append(telemetryEvents);
+        }
         new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
                 .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
                         System.currentTimeMillis(), "harness_export", snapshot));
-        for (int i = 0; i < rollupHistory.size(); i++) {
+        for (int i = 0; i < rollups.size(); i++) {
             String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
-            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollupHistory.get(i));
+            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
         }
         Files.writeString(out.resolve("scenario-metadata.properties"),
                 "scenario=" + scenario.name() + "\n"
-                        + "rollup_history_windows=" + rollupHistory.size() + "\n"
-                        + "rollup_history_dir=rollup_history\n");
-        Files.writeString(out.resolve("rollup-snapshots.json"), toJson(rollupHistoryJson, 0));
+                        + "rollup_history_windows=" + rollups.size() + "\n"
+                        + "rollup_history_dir=rollup_history\n"
+                        + "validation_profile=" + config.validationProfile() + "\n");
+        writeJsonFile(out.resolve("rollup-snapshots.json"), rollupHistoryJson);
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
-        Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
-        Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
+        if (!config.validationProfile()) {
+            Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
+            Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
+        } else {
+            Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
+            Files.writeString(out.resolve("world-sim-balance-findings.md"), "# Validation profile enabled\n\nHeavy balance findings are disabled.\n");
+        }
 
-        if (Boolean.getBoolean("world.minimalReports")) {
+        if (config.validationProfile() || Boolean.getBoolean("world.minimalReports")) {
             return;
         }
 
@@ -2403,6 +2438,46 @@ public class WorldSimulationHarness {
                 + "4. Did NSER increase? " + (lateNser >= earlyNser) + " (early=" + earlyNser + ", late=" + lateNser + ").\n"
                 + "5. Did TNT remain stable instead of chaotic? " + (tnt <= 0.35D) + " (latest TNT=" + tnt + ").\n";
         Files.writeString(Path.of("analytics/world-lab/ecological-memory-impact-review.md"), review);
+    }
+
+
+    private void appendSeasonSnapshot(Map<String, Object> seasonSnapshot) {
+        seasonalSnapshots.add(seasonSnapshot);
+        if (seasonalSnapshots.size() > maxSeasonSnapshotsInMemory) {
+            seasonalSnapshots.remove(0);
+        }
+    }
+
+    private void appendRollupSnapshot(TelemetryRollupSnapshot snapshot) {
+        rollupHistory.addLast(snapshot);
+        while (rollupHistory.size() > maxRollupHistoryInMemory) {
+            rollupHistory.removeFirst();
+        }
+    }
+
+    private List<TelemetryRollupSnapshot> rollupHistoryView() {
+        return new ArrayList<>(rollupHistory);
+    }
+
+    private void logMemoryCheckpoint(List<SimulatedPlayer> players) {
+        Runtime runtime = Runtime.getRuntime();
+        long usedMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+        long maxMb = runtime.maxMemory() / (1024 * 1024);
+        int artifactPopulation = players.stream().mapToInt(p -> p.artifacts().size()).sum();
+        System.out.println("[world-sim][memory] generation=" + currentGeneration
+                + " heap_used_mb=" + usedMb
+                + " heap_max_mb=" + maxMb
+                + " telemetry_buffer_size=" + telemetryBuffer.pendingCount()
+                + " rollup_history_count=" + rollupHistory.size()
+                + " artifact_population=" + artifactPopulation);
+    }
+
+    private void writeJsonFile(Path path, Object value) throws IOException {
+        Files.createDirectories(path.getParent());
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+            JsonOutputContract.writeJson(writer, value);
+            writer.write("\n");
+        }
     }
 
     public List<Map<String, Object>> seasonalSnapshots() {
