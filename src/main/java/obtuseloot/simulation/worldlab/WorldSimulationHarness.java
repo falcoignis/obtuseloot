@@ -186,12 +186,17 @@ public class WorldSimulationHarness {
                 logMemoryCheckpoint(players);
             }
         }
-        telemetryEmitter.flushAll();
-        telemetryEmitter.scheduledTick(System.currentTimeMillis());
+        flushTelemetryForExport();
         if (!config.validationProfile()) {
             writeRegulatoryReports();
         }
         writeReports();
+    }
+
+    private void flushTelemetryForExport() {
+        telemetryEmitter.flushAll();
+        telemetryEmitter.scheduledTick(System.currentTimeMillis());
+        telemetryEmitter.flushAll();
     }
 
     private List<SimulatedPlayer> generatePlayers() {
@@ -614,31 +619,16 @@ public class WorldSimulationHarness {
         Path out = Path.of(config.outputDirectory());
         Files.createDirectories(out);
         WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
+        flushTelemetryForExport();
         EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
         List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
-        Path telemetryOutDir = out.resolve("telemetry");
         Path rollupOutDir = out.resolve("rollup_history");
-        Files.createDirectories(telemetryOutDir);
         Files.createDirectories(rollupOutDir);
-        Path telemetryArchiveOutput = telemetryOutDir.resolve("ecosystem-events.log");
-        telemetryArchive.copyTo(telemetryArchiveOutput);
-        if (!Files.exists(telemetryArchiveOutput)) {
-            Files.writeString(telemetryArchiveOutput, "");
-        }
-        new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
-                .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
-                        System.currentTimeMillis(), "harness_export", snapshot));
+        writeTelemetryArtifacts(out, snapshot, rollups);
         for (int i = 0; i < rollups.size(); i++) {
             String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
             new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
         }
-        Files.writeString(out.resolve("scenario-metadata.properties"),
-                "scenario=" + scenario.name() + "\n"
-                        + "rollup_history_windows=" + rollups.size() + "\n"
-                        + "rollup_history_dir=rollup_history\n"
-                        + "validation_profile=" + config.validationProfile() + "\n"
-                        + "telemetry_sampling_rate=" + telemetrySamplingRate + "\n");
-        writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
 
         Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
         rollupHistorySummary.put("rollup_count", rollups.size());
@@ -745,6 +735,32 @@ public class WorldSimulationHarness {
         dashboardService.generateSeasonDashboard(3);
 
         writeWorldLabNserReconciliationReview(nserResult);
+    }
+
+    private void writeTelemetryArtifacts(Path out,
+                                         EcosystemSnapshot snapshot,
+                                         List<TelemetryRollupSnapshot> rollups) throws IOException {
+        Path telemetryOutDir = out.resolve("telemetry");
+        Files.createDirectories(telemetryOutDir);
+
+        Path telemetryArchiveOutput = telemetryOutDir.resolve("ecosystem-events.log");
+        telemetryArchive.copyTo(telemetryArchiveOutput);
+        if (!Files.exists(telemetryArchiveOutput)) {
+            Files.writeString(telemetryArchiveOutput, "");
+        }
+
+        new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
+                .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
+                        System.currentTimeMillis(), "harness_export", snapshot));
+
+        writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
+
+        Files.writeString(out.resolve("scenario-metadata.properties"),
+                "scenario=" + scenario.name() + "\n"
+                        + "rollup_history_windows=" + rollups.size() + "\n"
+                        + "rollup_history_dir=rollup_history\n"
+                        + "validation_profile=" + config.validationProfile() + "\n"
+                        + "telemetry_sampling_rate=" + telemetrySamplingRate + "\n");
     }
 
     private void writeAnalyticsConsistencyReports(AnalyticsTruthSnapshot truth) throws IOException {
