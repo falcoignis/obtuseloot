@@ -8,7 +8,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.LongAdder;
 
 public class TelemetryAggregationBuffer {
+    private static final int DEFAULT_MAX_DIMENSION_KEYS = Integer.getInteger("world.telemetryMaxDimensionKeys", 2048);
+
     private final int maxPendingEvents;
+    private final int maxDimensionKeys;
     private final ConcurrentLinkedQueue<EcosystemTelemetryEvent> pending = new ConcurrentLinkedQueue<>();
     private final LongAdder droppedEvents = new LongAdder();
     private final Map<String, LongAdder> nicheArtifactCounts = new ConcurrentHashMap<>();
@@ -45,7 +48,12 @@ public class TelemetryAggregationBuffer {
     }
 
     public TelemetryAggregationBuffer(int maxPendingEvents) {
+        this(maxPendingEvents, DEFAULT_MAX_DIMENSION_KEYS);
+    }
+
+    public TelemetryAggregationBuffer(int maxPendingEvents, int maxDimensionKeys) {
         this.maxPendingEvents = Math.max(64, maxPendingEvents);
+        this.maxDimensionKeys = Math.max(64, maxDimensionKeys);
     }
 
     public void enqueue(EcosystemTelemetryEvent event) {
@@ -59,15 +67,15 @@ public class TelemetryAggregationBuffer {
             activeArtifactCount.increment();
         }
         if (present(event.niche())) {
-            nicheArtifactCounts.computeIfAbsent(event.niche(), ignored -> new LongAdder()).increment();
+            incrementLong(nicheArtifactCounts, event.niche());
         }
         if (present(event.lineageId())) {
-            lineageArtifactCounts.computeIfAbsent(event.lineageId(), ignored -> new LongAdder()).increment();
+            incrementLong(lineageArtifactCounts, event.lineageId());
         }
         String niche = normalized(event.attributes().get("niche"), event.niche());
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
         if (present(niche) && "true".equalsIgnoreCase(event.attributes().get("meaningful"))) {
-            meaningfulByNiche.computeIfAbsent(niche, ignored -> new LongAdder()).increment();
+            incrementLong(meaningfulByNiche, niche);
         }
         addDoubleMetric(event.attributes(), "utility_density", niche, utilityDensityByNiche, utilityDensitySamplesByNiche);
         addDoubleMetric(event.attributes(), "ecology_pressure", niche, saturationPressureByNiche, null);
@@ -80,18 +88,18 @@ public class TelemetryAggregationBuffer {
         addDoubleMetric(event.attributes(), "branch_divergence", lineage, branchDivergenceByLineage, null);
 
         if (present(lineage) && present(niche)) {
-            nicheDistributionByLineage
-                    .computeIfAbsent(lineage, ignored -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(niche, ignored -> new LongAdder())
-                    .increment();
+            Map<String, LongAdder> lineageNicheCounts = boundedMapForLineage(lineage);
+            if (lineageNicheCounts != null) {
+                incrementLong(lineageNicheCounts, niche);
+            }
         }
         if (event.type() == EcosystemTelemetryEventType.BRANCH_FORMATION) {
             branchBirthCount.increment();
             if (present(niche)) {
-                branchContributionByNiche.computeIfAbsent(niche, ignored -> new LongAdder()).increment();
+                incrementLong(branchContributionByNiche, niche);
             }
             if (present(lineage)) {
-                branchCountByLineage.computeIfAbsent(lineage, ignored -> new LongAdder()).increment();
+                incrementLong(branchCountByLineage, lineage);
             }
         }
         if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE
@@ -101,7 +109,7 @@ public class TelemetryAggregationBuffer {
         double pressure = parseDouble(event.attributes().get("ecology_pressure"));
         if (!Double.isNaN(pressure)) {
             String bucket = pressure < 0.33D ? "low" : pressure < 0.66D ? "medium" : "high";
-            competitionPressureDistribution.computeIfAbsent(bucket, ignored -> new LongAdder()).increment();
+            incrementLong(competitionPressureDistribution, bucket);
         }
     }
 
@@ -165,6 +173,33 @@ public class TelemetryAggregationBuffer {
         baselineBranchCollapseCount = snapshot.branchCollapseCount();
     }
 
+
+    private void incrementLong(Map<String, LongAdder> store, String key) {
+        if (!present(key)) {
+            return;
+        }
+        ensureCapacity(store, key);
+        store.computeIfAbsent(key, ignored -> new LongAdder()).increment();
+    }
+
+    private Map<String, LongAdder> boundedMapForLineage(String lineage) {
+        if (!present(lineage)) {
+            return null;
+        }
+        ensureCapacity(nicheDistributionByLineage, lineage);
+        return nicheDistributionByLineage.computeIfAbsent(lineage, ignored -> new ConcurrentHashMap<>());
+    }
+
+    private <V> void ensureCapacity(Map<String, V> store, String incomingKey) {
+        if (store.containsKey(incomingKey) || store.size() < maxDimensionKeys) {
+            return;
+        }
+        var iterator = store.keySet().iterator();
+        if (iterator.hasNext()) {
+            store.remove(iterator.next());
+        }
+    }
+
     private void addDoubleMetric(Map<String, String> attrs,
                                  String key,
                                  String namespace,
@@ -173,8 +208,10 @@ public class TelemetryAggregationBuffer {
         if (!present(namespace)) return;
         double v = parseDouble(attrs.get(key));
         if (Double.isNaN(v)) return;
+        ensureCapacity(store, namespace);
         store.computeIfAbsent(namespace, ignored -> new DoubleAdder()).add(v);
         if (samples != null) {
+            ensureCapacity(samples, namespace);
             samples.computeIfAbsent(namespace, ignored -> new LongAdder()).increment();
         }
     }

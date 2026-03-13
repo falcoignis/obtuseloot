@@ -1,10 +1,12 @@
 package obtuseloot.telemetry;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,12 +25,13 @@ public class EcosystemHistoryArchive {
         }
         try {
             Files.createDirectories(archivePath.getParent());
-            StringBuilder buffer = new StringBuilder(events.size() * 64);
+            try (Writer writer = Files.newBufferedWriter(archivePath, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
             for (EcosystemTelemetryEvent event : events) {
-                buffer.append(encode(event)).append('\n');
+                    writer.write(encode(event));
+                    writer.write('\n');
+                }
             }
-            Files.writeString(archivePath, buffer.toString(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to append ecosystem telemetry", ex);
         }
@@ -40,10 +43,12 @@ public class EcosystemHistoryArchive {
         }
         try {
             List<EcosystemTelemetryEvent> events = new ArrayList<>();
-            for (String line : Files.readAllLines(archivePath, StandardCharsets.UTF_8)) {
+            try (var lines = Files.lines(archivePath, StandardCharsets.UTF_8)) {
+                lines.forEach(line -> {
                 if (!line.isBlank()) {
                     events.add(decode(line));
                 }
+                });
             }
             return List.copyOf(events);
         } catch (IOException ex) {
@@ -55,11 +60,40 @@ public class EcosystemHistoryArchive {
         if (maxEvents <= 0) {
             return List.of();
         }
-        List<EcosystemTelemetryEvent> all = readAll();
-        if (all.size() <= maxEvents) {
-            return all;
+        if (!Files.exists(archivePath)) {
+            return List.of();
         }
-        return List.copyOf(all.subList(all.size() - maxEvents, all.size()));
+        try {
+            ArrayDeque<EcosystemTelemetryEvent> ring = new ArrayDeque<>(maxEvents);
+            try (var lines = Files.lines(archivePath, StandardCharsets.UTF_8)) {
+                lines.forEach(line -> {
+                    if (line.isBlank()) {
+                        return;
+                    }
+                    if (ring.size() == maxEvents) {
+                        ring.removeFirst();
+                    }
+                    ring.addLast(decode(line));
+                });
+            }
+            return List.copyOf(ring);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to read recent ecosystem telemetry", ex);
+        }
+    }
+
+    public synchronized void copyTo(Path outputPath) {
+        try {
+            Files.createDirectories(outputPath.getParent());
+            if (!Files.exists(archivePath)) {
+                Files.writeString(outputPath, "", StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+                return;
+            }
+            Files.copy(archivePath, outputPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to copy ecosystem telemetry archive", ex);
+        }
     }
 
     private String encode(EcosystemTelemetryEvent event) {
