@@ -653,35 +653,23 @@ public class WorldSimulationHarness {
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
 
         List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
-        Map<String, Object> rollupHistoryJson = new LinkedHashMap<>();
-        List<Map<String, Object>> rollupSnapshots = new ArrayList<>();
-        for (int i = 0; i < rollups.size(); i++) {
-            TelemetryRollupSnapshot rollup = rollups.get(i);
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("window_index", i + 1);
-            item.put("created_at_ms", rollup.createdAtMs());
-            item.put("snapshot", rollup.ecosystemSnapshot());
-            rollupSnapshots.add(item);
-        }
-        rollupHistoryJson.put("rollup_snapshots", rollupSnapshots);
-        data.put("rollup_history", rollupHistoryJson);
+        Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
+        rollupHistorySummary.put("rollup_count", rollups.size());
+        rollupHistorySummary.put("latest_created_at_ms", rollups.isEmpty() ? 0L : rollups.get(rollups.size() - 1).createdAtMs());
+        data.put("rollup_history", rollupHistorySummary);
 
         if (config.validationProfile()) {
             data.put("validation_profile", true);
             data.remove("phase6_experiment_outputs");
+            data.remove("initial_seed_pool");
         }
         writeJsonFile(out.resolve("world-sim-data.json"), data);
-        if (!config.validationProfile()) {
-            List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
-            Files.writeString(out.resolve("telemetry-events.log"), String.join("\n", telemetryEvents.stream().map(Object::toString).toList()));
-        }
         Path telemetryOutDir = out.resolve("telemetry");
         Path rollupOutDir = out.resolve("rollup_history");
         Files.createDirectories(telemetryOutDir);
         Files.createDirectories(rollupOutDir);
         if (!config.validationProfile()) {
-            List<EcosystemTelemetryEvent> telemetryEvents = telemetryArchive.readAll();
-            new EcosystemHistoryArchive(telemetryOutDir.resolve("ecosystem-events.log")).append(telemetryEvents);
+            telemetryArchive.copyTo(telemetryOutDir.resolve("ecosystem-events.log"));
         }
         new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
                 .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
@@ -695,7 +683,7 @@ public class WorldSimulationHarness {
                         + "rollup_history_windows=" + rollups.size() + "\n"
                         + "rollup_history_dir=rollup_history\n"
                         + "validation_profile=" + config.validationProfile() + "\n");
-        writeJsonFile(out.resolve("rollup-snapshots.json"), rollupHistoryJson);
+        writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         if (!config.validationProfile()) {
             Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
@@ -2441,6 +2429,27 @@ public class WorldSimulationHarness {
     }
 
 
+
+    private void writeRollupSnapshotsJson(Path path, List<TelemetryRollupSnapshot> rollups) throws IOException {
+        Files.createDirectories(path.getParent());
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+            writer.write("{\n  \"rollup_snapshots\": [\n");
+            for (int i = 0; i < rollups.size(); i++) {
+                if (i > 0) {
+                    writer.write(",\n");
+                }
+                writer.write("    {\"window_index\": ");
+                writer.write(String.valueOf(i + 1));
+                writer.write(", \"created_at_ms\": ");
+                writer.write(String.valueOf(rollups.get(i).createdAtMs()));
+                writer.write(", \"snapshot\": ");
+                JsonOutputContract.writeJson(writer, rollups.get(i).ecosystemSnapshot());
+                writer.write("}");
+            }
+            writer.write("\n  ]\n}\n");
+        }
+    }
+
     private void appendSeasonSnapshot(Map<String, Object> seasonSnapshot) {
         seasonalSnapshots.add(seasonSnapshot);
         if (seasonalSnapshots.size() > maxSeasonSnapshotsInMemory) {
@@ -2468,8 +2477,10 @@ public class WorldSimulationHarness {
                 + " heap_used_mb=" + usedMb
                 + " heap_max_mb=" + maxMb
                 + " telemetry_buffer_size=" + telemetryBuffer.pendingCount()
-                + " rollup_history_count=" + rollupHistory.size()
-                + " artifact_population=" + artifactPopulation);
+                + " in_memory_rollup_count=" + rollupHistory.size()
+                + " active_artifact_count=" + artifactPopulation
+                + " lineage_count=" + lineageRegistry.lineages().size()
+                + " branch_count=" + metrics.branches().size());
     }
 
     private void writeJsonFile(Path path, Object value) throws IOException {

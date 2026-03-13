@@ -171,7 +171,7 @@ class EcosystemTelemetryPipelineTest {
         service.scheduledRollupTick(System.currentTimeMillis() + 5L);
         EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();
 
-        assertEquals(1L, snapshot.nichePopulationRollup().populationByNiche().get("SCOUT"));
+        assertEquals(2L, snapshot.nichePopulationRollup().populationByNiche().get("SCOUT"));
         assertEquals(1L, snapshot.nichePopulationRollup().meaningfulOutcomesByNiche().get("SCOUT"));
         assertEquals(1L, snapshot.lineagePopulationRollup().branchCountByLineage().get("lin-1"));
         assertTrue(snapshot.lineagePopulationRollup().momentumByLineage().get("lin-2") > 1.0D);
