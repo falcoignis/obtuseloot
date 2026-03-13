@@ -1,0 +1,5 @@
+explorer-heavy	1	 at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)
+ritualist-heavy	1	 at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)
+gatherer-heavy	1	 at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)
+mixed	1	 at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)
+random-baseline	1	 at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)

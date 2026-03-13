@@ -1,0 +1,5 @@
+Exception in thread "main" java.lang.IllegalArgumentException: Harness dataset missing telemetry archive at telemetry/ecosystem-events.log
+	at obtuseloot.analytics.ecosystem.HarnessOutputAdapter.adapt(HarnessOutputAdapter.java:21)
+	at obtuseloot.analytics.ecosystem.TelemetryDatasetContract.resolve(TelemetryDatasetContract.java:43)
+	at obtuseloot.analytics.ecosystem.AnalyticsCliMain.runAnalyze(AnalyticsCliMain.java:38)
+	at obtuseloot.analytics.ecosystem.AnalyticsCliMain.main(AnalyticsCliMain.java:22)
