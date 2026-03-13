@@ -60,7 +60,7 @@ class WorldSimulationHarnessValidationProfileTest {
         assertTrue(Files.exists(telemetryArchive));
         assertTrue(Files.exists(rollupSnapshot));
         assertTrue(Files.exists(rollupSnapshotsJson));
-        assertTrue(Files.exists(output.resolve("rollup_history")));
+        assertFalse(Files.exists(output.resolve("rollup_history")));
         assertTrue(Files.exists(scenarioMetadata));
 
         assertTrue(Files.getLastModifiedTime(telemetryArchive).toMillis()
@@ -87,7 +87,7 @@ class WorldSimulationHarnessValidationProfileTest {
         contract.validate(dataset);
         assertEquals(AnalyticsInputDataset.SourceKind.HARNESS, dataset.sourceKind());
         assertEquals(output.resolve("telemetry").resolve("ecosystem-events.log"), dataset.telemetryArchivePath());
-        assertEquals(output.resolve("rollup_history"), dataset.rollupSnapshotDirectory());
+        assertEquals(output.resolve("telemetry"), dataset.rollupSnapshotDirectory());
     }
 
     @Test
