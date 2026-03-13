@@ -25,11 +25,11 @@ SECTION 4: TELEMETRY SAMPLING CONFIRMATION
 - random-baseline: metadata telemetry_sampling_rate=0.25, world-sim-data telemetry.sampling_rate=0.25, rollup_history_windows=3
 
 SECTION 5: RUNTIME STABILITY
-- explorer-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=61 => stable
-- ritualist-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=48 => stable
-- gatherer-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=60 => stable
-- mixed: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=70 => stable
-- random-baseline: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=51 => stable
+- explorer-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=69 => stable
+- ritualist-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=58 => stable
+- gatherer-heavy: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=61 => stable
+- mixed: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=63 => stable
+- random-baseline: monitor_alerts=none, telemetry.buffer_dropped=0, telemetry.buffer_max=512, branch_formation_events=71 => stable
 
 SECTION 6: EXECUTION VERDICT
 SUCCESS
