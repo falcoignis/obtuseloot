@@ -85,6 +85,15 @@ public class EcosystemHistoryArchive {
     public synchronized void copyTo(Path outputPath) {
         try {
             Files.createDirectories(outputPath.getParent());
+            Path normalizedArchive = archivePath.toAbsolutePath().normalize();
+            Path normalizedOutput = outputPath.toAbsolutePath().normalize();
+            if (normalizedArchive.equals(normalizedOutput)) {
+                if (!Files.exists(archivePath)) {
+                    Files.writeString(archivePath, "", StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+                }
+                return;
+            }
             if (!Files.exists(archivePath)) {
                 Files.writeString(outputPath, "", StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);

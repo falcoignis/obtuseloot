@@ -66,6 +66,27 @@ class EcosystemTelemetryPipelineTest {
     }
 
 
+
+    @Test
+    void copyToSamePathPreservesExistingArchiveContent() {
+        Path archivePath = tempDir.resolve("same-path-events.log");
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
+        archive.append(List.of(new EcosystemTelemetryEvent(
+                System.currentTimeMillis(),
+                EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                9L,
+                "lin-9",
+                "SCOUT",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                        Map.of("niche", "SCOUT", "lineage_id", "lin-9", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS")))));
+
+        archive.copyTo(archivePath);
+
+        List<EcosystemTelemetryEvent> events = archive.readAll();
+        assertEquals(1, events.size());
+        assertEquals(9L, events.getFirst().artifactSeed());
+    }
+
     @Test
     void startupRehydrationRestoresRollupStateFromSnapshotWithoutFullReplay() {
         Path archivePath = tempDir.resolve("rehydrate-events.log");
