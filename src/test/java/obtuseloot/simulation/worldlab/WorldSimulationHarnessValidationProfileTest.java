@@ -53,10 +53,27 @@ class WorldSimulationHarnessValidationProfileTest {
 
         assertTrue(Files.exists(output.resolve("world-sim-data.json")));
         assertTrue(Files.exists(output.resolve("world-sim-report.md")));
-        assertTrue(Files.exists(output.resolve("telemetry").resolve("ecosystem-events.log")));
-        assertTrue(Files.exists(output.resolve("telemetry").resolve("rollup-snapshot.properties")));
+        Path telemetryArchive = output.resolve("telemetry").resolve("ecosystem-events.log");
+        Path rollupSnapshot = output.resolve("telemetry").resolve("rollup-snapshot.properties");
+        Path rollupSnapshotsJson = output.resolve("rollup-snapshots.json");
+        Path scenarioMetadata = output.resolve("scenario-metadata.properties");
+        assertTrue(Files.exists(telemetryArchive));
+        assertTrue(Files.exists(rollupSnapshot));
+        assertTrue(Files.exists(rollupSnapshotsJson));
         assertTrue(Files.exists(output.resolve("rollup_history")));
-        assertTrue(Files.exists(output.resolve("scenario-metadata.properties")));
+        assertTrue(Files.exists(scenarioMetadata));
+
+        assertTrue(Files.getLastModifiedTime(telemetryArchive).toMillis()
+                <= Files.getLastModifiedTime(rollupSnapshot).toMillis());
+        assertTrue(Files.getLastModifiedTime(rollupSnapshot).toMillis()
+                <= Files.getLastModifiedTime(rollupSnapshotsJson).toMillis());
+        assertTrue(Files.getLastModifiedTime(rollupSnapshotsJson).toMillis()
+                <= Files.getLastModifiedTime(scenarioMetadata).toMillis());
+
+        String archiveContent = Files.readString(telemetryArchive);
+        assertTrue(archiveContent.contains("lifecycle_state="));
+        assertTrue(archiveContent.contains("survival_score="));
+        assertTrue(archiveContent.contains("maintenance_cost="));
 
         String worldData = Files.readString(output.resolve("world-sim-data.json"));
         assertTrue(worldData.contains("\"validation_profile\": true"));
@@ -71,6 +88,61 @@ class WorldSimulationHarnessValidationProfileTest {
         assertEquals(AnalyticsInputDataset.SourceKind.HARNESS, dataset.sourceKind());
         assertEquals(output.resolve("telemetry").resolve("ecosystem-events.log"), dataset.telemetryArchivePath());
         assertEquals(output.resolve("rollup_history"), dataset.rollupSnapshotDirectory());
+    }
+
+    @Test
+    void minimalReportsStillEmitsTelemetryArchiveAndContractArtifacts() throws Exception {
+        String previous = System.getProperty("world.minimalReports");
+        System.setProperty("world.minimalReports", "true");
+        try {
+            Path output = tempDir.resolve("world-minimal");
+            WorldSimulationConfig config = new WorldSimulationConfig(
+                    99L,
+                    3,
+                    2,
+                    2,
+                    1,
+                    0.1D,
+                    2,
+                    0.05D,
+                    0.05D,
+                    0.7D,
+                    0.7D,
+                    output.toString(),
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    FitnessSharingConfig.defaults(),
+                    SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig.defaults(),
+                    SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig.defaults(),
+                    SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig.defaults(),
+                    AdaptiveNicheCapacityConfig.defaults(),
+                    OpportunityWeightedMutationConfig.defaults(),
+                    false,
+                    obtuseloot.abilities.ScoringMode.PROJECTION_WITH_CACHE,
+                    "");
+
+            new WorldSimulationHarness(config).runAndWriteOutputs();
+
+            assertTrue(Files.exists(output.resolve("telemetry").resolve("ecosystem-events.log")));
+            assertTrue(Files.exists(output.resolve("telemetry").resolve("rollup-snapshot.properties")));
+            assertTrue(Files.exists(output.resolve("rollup-snapshots.json")));
+            assertTrue(Files.exists(output.resolve("scenario-metadata.properties")));
+
+            TelemetryDatasetContract contract = new TelemetryDatasetContract();
+            AnalyticsInputDataset dataset = contract.resolve(output);
+            contract.validate(dataset);
+        } finally {
+            if (previous == null) {
+                System.clearProperty("world.minimalReports");
+            } else {
+                System.setProperty("world.minimalReports", previous);
+            }
+        }
     }
 
     @Test
