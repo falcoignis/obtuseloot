@@ -77,6 +77,7 @@ public final class WorldSimulationRunner {
                         doubleProp("world.opportunityWeightedMutation.capacityWeight", defaults.opportunityWeightedMutation().capacityWeight()),
                         doubleProp("world.opportunityWeightedMutation.interactionWeight", defaults.opportunityWeightedMutation().interactionWeight())
                 ).bounded(),
+                boolProp("world.validationProfile", defaults.validationProfile()),
                 ScoringMode.fromString(System.getProperty("world.scoringMode"), defaults.scoringMode()),
                 System.getProperty("world.scenarioConfigPath", defaults.scenarioConfigPath())
         );

@@ -3,16 +3,17 @@ package obtuseloot.telemetry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.LongAdder;
 
 public class TelemetryAggregationBuffer {
+    private final int maxPendingEvents;
     private final ConcurrentLinkedQueue<EcosystemTelemetryEvent> pending = new ConcurrentLinkedQueue<>();
-    private final Map<String, Set<Long>> nicheArtifacts = new ConcurrentHashMap<>();
-    private final Map<String, Set<Long>> lineageArtifacts = new ConcurrentHashMap<>();
-    private final Set<Long> activeArtifacts = ConcurrentHashMap.newKeySet();
+    private final LongAdder droppedEvents = new LongAdder();
+    private final Map<String, LongAdder> nicheArtifactCounts = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> lineageArtifactCounts = new ConcurrentHashMap<>();
+    private final LongAdder activeArtifactCount = new LongAdder();
     private final Map<EcosystemTelemetryEventType, LongAdder> typeCounts = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> meaningfulByNiche = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> utilityDensityByNiche = new ConcurrentHashMap<>();
@@ -21,7 +22,7 @@ public class TelemetryAggregationBuffer {
     private final Map<String, DoubleAdder> opportunityShareByNiche = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> specializationPressureByNiche = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> branchContributionByNiche = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> branchIdsByLineage = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> branchCountByLineage = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> utilityDensityByLineage = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> utilityDensitySamplesByLineage = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> momentumByLineage = new ConcurrentHashMap<>();
@@ -39,17 +40,29 @@ public class TelemetryAggregationBuffer {
     private volatile long baselineBranchBirthCount;
     private volatile long baselineBranchCollapseCount;
 
+    public TelemetryAggregationBuffer() {
+        this(4096);
+    }
+
+    public TelemetryAggregationBuffer(int maxPendingEvents) {
+        this.maxPendingEvents = Math.max(64, maxPendingEvents);
+    }
+
     public void enqueue(EcosystemTelemetryEvent event) {
+        if (pending.size() >= maxPendingEvents) {
+            pending.poll();
+            droppedEvents.increment();
+        }
         pending.add(event);
         typeCounts.computeIfAbsent(event.type(), ignored -> new LongAdder()).increment();
         if (event.artifactSeed() > 0L) {
-            activeArtifacts.add(event.artifactSeed());
+            activeArtifactCount.increment();
         }
         if (present(event.niche())) {
-            nicheArtifacts.computeIfAbsent(event.niche(), ignored -> ConcurrentHashMap.newKeySet()).add(event.artifactSeed());
+            nicheArtifactCounts.computeIfAbsent(event.niche(), ignored -> new LongAdder()).increment();
         }
         if (present(event.lineageId())) {
-            lineageArtifacts.computeIfAbsent(event.lineageId(), ignored -> ConcurrentHashMap.newKeySet()).add(event.artifactSeed());
+            lineageArtifactCounts.computeIfAbsent(event.lineageId(), ignored -> new LongAdder()).increment();
         }
         String niche = normalized(event.attributes().get("niche"), event.niche());
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
@@ -77,9 +90,8 @@ public class TelemetryAggregationBuffer {
             if (present(niche)) {
                 branchContributionByNiche.computeIfAbsent(niche, ignored -> new LongAdder()).increment();
             }
-            String branchId = event.attributes().get("branch_id");
-            if (present(lineage) && present(branchId)) {
-                branchIdsByLineage.computeIfAbsent(lineage, ignored -> ConcurrentHashMap.newKeySet()).add(branchId);
+            if (present(lineage)) {
+                branchCountByLineage.computeIfAbsent(lineage, ignored -> new LongAdder()).increment();
             }
         }
         if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE
@@ -106,8 +118,10 @@ public class TelemetryAggregationBuffer {
     }
 
     public int pendingCount() { return pending.size(); }
-    public Map<String, Long> nichePopulationSnapshot() { return mergeLongMaps(baselineNichePopulation, sizeSnapshot(nicheArtifacts)); }
-    public Map<String, Long> lineagePopulationSnapshot() { return mergeLongMaps(baselineLineagePopulation, sizeSnapshot(lineageArtifacts)); }
+    public int maxPendingEvents() { return maxPendingEvents; }
+    public long droppedEvents() { return droppedEvents.sum(); }
+    public Map<String, Long> nichePopulationSnapshot() { return mergeLongMaps(baselineNichePopulation, longSnapshot(nicheArtifactCounts)); }
+    public Map<String, Long> lineagePopulationSnapshot() { return mergeLongMaps(baselineLineagePopulation, longSnapshot(lineageArtifactCounts)); }
     public Map<EcosystemTelemetryEventType, Long> typeCountsSnapshot() {
         Map<EcosystemTelemetryEventType, Long> out = new ConcurrentHashMap<>();
         out.putAll(baselineTypeCounts);
@@ -120,11 +134,7 @@ public class TelemetryAggregationBuffer {
     public Map<String, Double> opportunityShareByNicheSnapshot() { return doubleSnapshot(opportunityShareByNiche); }
     public Map<String, Double> specializationPressureByNicheSnapshot() { return doubleSnapshot(specializationPressureByNiche); }
     public Map<String, Long> branchContributionByNicheSnapshot() { return longSnapshot(branchContributionByNiche); }
-    public Map<String, Long> branchCountByLineageSnapshot() {
-        Map<String, Long> out = new ConcurrentHashMap<>();
-        branchIdsByLineage.forEach((k, v) -> out.put(k, (long) v.size()));
-        return Map.copyOf(out);
-    }
+    public Map<String, Long> branchCountByLineageSnapshot() { return longSnapshot(branchCountByLineage); }
     public Map<String, Double> utilityDensityByLineageSnapshot() { return avgSnapshot(utilityDensityByLineage, utilityDensitySamplesByLineage); }
     public Map<String, Double> momentumByLineageSnapshot() { return doubleSnapshot(momentumByLineage); }
     public Map<String, Double> specializationTrajectoryByLineageSnapshot() { return doubleSnapshot(specializationTrajectoryByLineage); }
@@ -135,7 +145,7 @@ public class TelemetryAggregationBuffer {
     }
     public Map<String, Double> driftWindowByLineageSnapshot() { return doubleSnapshot(driftWindowByLineage); }
     public Map<String, Double> branchDivergenceByLineageSnapshot() { return doubleSnapshot(branchDivergenceByLineage); }
-    public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifacts.size(); }
+    public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifactCount.sum(); }
     public long branchBirthCountSnapshot() { return baselineBranchBirthCount + branchBirthCount.sum(); }
     public long branchCollapseCountSnapshot() { return baselineBranchCollapseCount + branchCollapseCount.sum(); }
     public Map<String, Long> competitionPressureDistributionSnapshot() { return longSnapshot(competitionPressureDistribution); }
@@ -169,20 +179,14 @@ public class TelemetryAggregationBuffer {
         }
     }
 
-    private Map<String, Long> sizeSnapshot(Map<String, Set<Long>> source) {
-        Map<String, Long> out = new ConcurrentHashMap<>();
-        source.forEach((k, v) -> out.put(k, (long) v.size()));
-        return Map.copyOf(out);
-    }
-
     private <K> Map<K, Long> mergeLongMaps(Map<K, Long> baseline, Map<K, Long> live) {
         Map<K, Long> out = new ConcurrentHashMap<>(baseline);
         live.forEach((k, v) -> out.merge(k, v, Long::sum));
         return Map.copyOf(out);
     }
 
-    private Map<String, Long> longSnapshot(Map<String, LongAdder> source) {
-        Map<String, Long> out = new ConcurrentHashMap<>();
+    private <K> Map<K, Long> longSnapshot(Map<K, LongAdder> source) {
+        Map<K, Long> out = new ConcurrentHashMap<>();
         source.forEach((k, v) -> out.put(k, v.sum()));
         return Map.copyOf(out);
     }
