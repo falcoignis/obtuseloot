@@ -3,6 +3,7 @@ package obtuseloot.analytics;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.evolution.UtilityHistoryRollup;
 import obtuseloot.lineage.ArtifactLineage;
+import obtuseloot.lineage.BranchLifecycleState;
 import obtuseloot.lineage.LineageBiasDimension;
 
 import java.util.Collection;
@@ -25,6 +26,11 @@ public class LineageInheritanceAnalytics {
         Map<String, Double> specializationTrend = new LinkedHashMap<>();
         Map<String, Double> adaptationVsEcology = new LinkedHashMap<>();
         Map<String, String> lineageState = new LinkedHashMap<>();
+        Map<String, Double> averageBranchSurvivalScore = new LinkedHashMap<>();
+        Map<String, Double> averageBranchMaintenanceCost = new LinkedHashMap<>();
+        Map<String, Double> birthToCollapseRatio = new LinkedHashMap<>();
+        Map<String, Long> unstableBranchCount = new LinkedHashMap<>();
+        Map<String, Long> collapsingBranchCount = new LinkedHashMap<>();
 
         for (ArtifactLineage lineage : lineages) {
             branchCounts.put(lineage.lineageId(), lineage.branches().size());
@@ -38,6 +44,17 @@ public class LineageInheritanceAnalytics {
             specializationTrend.put(lineage.lineageId(), trend(lineage.specializationTrajectory()));
             adaptationVsEcology.put(lineage.lineageId(), adaptationDelta(lineage.specializationTrajectory(), lineage.ecologicalPressureHistory()));
             lineageState.put(lineage.lineageId(), lifecycleState(lineage));
+            averageBranchSurvivalScore.put(lineage.lineageId(), lineage.branches().values().stream()
+                    .mapToDouble(b -> b.lastSurvivalScore()).average().orElse(0.0D));
+            averageBranchMaintenanceCost.put(lineage.lineageId(), lineage.branches().values().stream()
+                    .mapToDouble(b -> b.lastMaintenanceCost()).average().orElse(0.0D));
+            birthToCollapseRatio.put(lineage.lineageId(), lineage.branchCollapses() <= 0
+                    ? lineage.branchBirths() <= 0 ? 0.0D : lineage.branchBirths()
+                    : lineage.branchBirths() / (double) lineage.branchCollapses());
+            unstableBranchCount.put(lineage.lineageId(), lineage.branches().values().stream()
+                    .filter(b -> b.lifecycleState() == BranchLifecycleState.UNSTABLE).count());
+            collapsingBranchCount.put(lineage.lineageId(), lineage.branches().values().stream()
+                    .filter(b -> b.lifecycleState() == BranchLifecycleState.COLLAPSING).count());
         }
 
         Map<String, double[]> utilityAcc = new LinkedHashMap<>();
@@ -81,7 +98,8 @@ public class LineageInheritanceAnalytics {
         LineagePopulationMetrics populationMetrics = new LineagePopulationMetrics(lineagePopulation, lineageNicheDistribution, lineageNicheCrowding);
         LineageSpecializationTracker specializationTracker = new LineageSpecializationTracker(specializationCurrent, specializationTrend, adaptationVsEcology);
         LineageLifecycleStats lifecycleStats = new LineageLifecycleStats(descendantsObserved, branchBirths, branchCollapses, branchSurvivors, lineageState);
-        BranchEvolutionMetrics branchEvolutionMetrics = new BranchEvolutionMetrics(branchCounts, branchSurvivalRates, driftWindowRemaining);
+        BranchEvolutionMetrics branchEvolutionMetrics = new BranchEvolutionMetrics(branchCounts, branchSurvivalRates, driftWindowRemaining,
+                averageBranchSurvivalScore, averageBranchMaintenanceCost, birthToCollapseRatio);
 
         summary.put("lineageUtilityDensity", utilityDensityByLineage);
         summary.put("lineageUtilityDensityOverTime", lineages.stream().collect(java.util.stream.Collectors.toMap(
@@ -95,6 +113,11 @@ public class LineageInheritanceAnalytics {
         summary.put("lineageBranchCounts", branchEvolutionMetrics.branchCounts());
         summary.put("lineageBranchSurvivalRates", branchEvolutionMetrics.branchSurvivalRates());
         summary.put("lineageDriftWindowRemaining", branchEvolutionMetrics.driftWindowRemaining());
+        summary.put("lineageBranchAverageSurvivalScore", branchEvolutionMetrics.averageSurvivalScore());
+        summary.put("lineageBranchAverageMaintenanceCost", branchEvolutionMetrics.averageMaintenanceCost());
+        summary.put("lineageBranchBirthToCollapseRatio", branchEvolutionMetrics.birthToCollapseRatio());
+        summary.put("lineageUnstableBranchCount", unstableBranchCount);
+        summary.put("lineageCollapsingBranchCount", collapsingBranchCount);
         summary.put("lineageSpecializationCurrent", specializationTracker.specializationCurrent());
         summary.put("lineageSpecializationTrend", specializationTracker.specializationTrend());
         summary.put("lineageAdaptationVsEcology", specializationTracker.adaptationVsEcology());

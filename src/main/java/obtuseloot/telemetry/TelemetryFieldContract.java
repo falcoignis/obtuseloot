@@ -51,6 +51,14 @@ public final class TelemetryFieldContract {
         out.put("opportunity_share", NOT_APPLICABLE);
         out.put("specialization_pressure", NOT_APPLICABLE);
         out.put("specialization_trajectory", NOT_APPLICABLE);
+        out.put("survival_score", NOT_APPLICABLE);
+        out.put("maintenance_cost", NOT_APPLICABLE);
+        out.put("lifecycle_state", NOT_APPLICABLE);
+        out.put("lifecycle_from", NOT_APPLICABLE);
+        out.put("grace_window_remaining", NOT_APPLICABLE);
+        out.put("crowding_penalty", NOT_APPLICABLE);
+        out.put("stagnation_penalty", NOT_APPLICABLE);
+        out.put("collapse_reason", NOT_APPLICABLE);
         out.put("rollup_type", NOT_APPLICABLE);
         out.put("rollup_record_count", NOT_APPLICABLE);
         out.put("rollup_window_ms", NOT_APPLICABLE);
