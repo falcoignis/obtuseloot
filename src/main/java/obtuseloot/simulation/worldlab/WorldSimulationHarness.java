@@ -622,19 +622,12 @@ public class WorldSimulationHarness {
         flushTelemetryForExport();
         EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
         List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
-        Path rollupOutDir = out.resolve("rollup_history");
-        Files.createDirectories(rollupOutDir);
-        writeTelemetryArtifacts(out, snapshot, rollups);
-        for (int i = 0; i < rollups.size(); i++) {
-            String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
-            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
-        }
-
         Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
         rollupHistorySummary.put("rollup_count", rollups.size());
         rollupHistorySummary.put("latest_created_at_ms", rollups.isEmpty() ? 0L : rollups.get(rollups.size() - 1).createdAtMs());
 
         if (config.validationProfile()) {
+            writeTelemetryArtifacts(out, snapshot, rollups);
             Map<String, Object> baseData = metrics.asData();
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("world", baseData.get("world"));
@@ -652,6 +645,14 @@ public class WorldSimulationHarness {
             Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
             Files.writeString(out.resolve("world-sim-balance-findings.md"), "# Validation profile enabled\n\nHeavy balance findings are disabled.\n");
             return;
+        }
+
+        Path rollupOutDir = out.resolve("rollup_history");
+        Files.createDirectories(rollupOutDir);
+        writeTelemetryArtifacts(out, snapshot, rollups);
+        for (int i = 0; i < rollups.size(); i++) {
+            String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
+            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
         }
 
         Map<String, Object> data = metrics.asData();
