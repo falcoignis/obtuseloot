@@ -670,6 +670,10 @@ public class WorldSimulationHarness {
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
 
+        if (Boolean.getBoolean("world.minimalReports")) {
+            return;
+        }
+
         TraitInteractionAnalyzer interactionAnalyzer = new TraitInteractionAnalyzer();
         var matrix = interactionAnalyzer.analyze(allArtifacts, lineageRegistry.lineages().values(), seasonalSnapshots);
         new InteractionHeatmapExporter().export(
