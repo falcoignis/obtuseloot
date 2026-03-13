@@ -611,6 +611,52 @@ public class WorldSimulationHarness {
     private void writeReports() throws IOException {
         Path out = Path.of(config.outputDirectory());
         Files.createDirectories(out);
+        WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
+        EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
+        List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
+        Path telemetryOutDir = out.resolve("telemetry");
+        Path rollupOutDir = out.resolve("rollup_history");
+        Files.createDirectories(telemetryOutDir);
+        Files.createDirectories(rollupOutDir);
+        telemetryArchive.copyTo(telemetryOutDir.resolve("ecosystem-events.log"));
+        new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
+                .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
+                        System.currentTimeMillis(), "harness_export", snapshot));
+        for (int i = 0; i < rollups.size(); i++) {
+            String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
+            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
+        }
+        Files.writeString(out.resolve("scenario-metadata.properties"),
+                "scenario=" + scenario.name() + "\n"
+                        + "rollup_history_windows=" + rollups.size() + "\n"
+                        + "rollup_history_dir=rollup_history\n"
+                        + "validation_profile=" + config.validationProfile() + "\n");
+        writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
+
+        Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
+        rollupHistorySummary.put("rollup_count", rollups.size());
+        rollupHistorySummary.put("latest_created_at_ms", rollups.isEmpty() ? 0L : rollups.get(rollups.size() - 1).createdAtMs());
+
+        if (config.validationProfile()) {
+            Map<String, Object> baseData = metrics.asData();
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("world", baseData.get("world"));
+            data.put("player", baseData.get("player"));
+            data.put("artifact", baseData.get("artifact"));
+            data.put("ability", baseData.get("ability"));
+            data.put("lineage", baseData.get("lineage"));
+            data.put("simulation_scenario", Map.of("name", scenario.name(), "artifact_population_size", scenario.artifactPopulationSize(), "generations", scenario.generations(), "mutation_intensity", scenario.mutationIntensity(), "competition_pressure", scenario.competitionPressure(), "ecology_sensitivity", scenario.ecologySensitivity(), "lineage_drift_window", scenario.lineageDriftWindow(), "behavior_mix", scenario.behaviorMix(), "parallel_batches", experimentConfig.parallelBatches()));
+            data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents()));
+            data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
+            data.put("rollup_history", rollupHistorySummary);
+            data.put("validation_profile", true);
+            writeJsonFile(out.resolve("world-sim-data.json"), data);
+            Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
+            Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
+            Files.writeString(out.resolve("world-sim-balance-findings.md"), "# Validation profile enabled\n\nHeavy balance findings are disabled.\n");
+            return;
+        }
+
         Map<String, Object> data = metrics.asData();
         data.put("seasonal_snapshots", seasonalSnapshots);
         data.put("initial_seed_pool", initialSeedPool);
@@ -646,54 +692,16 @@ public class WorldSimulationHarness {
         if (config.enableSelfBalancingAdjustments() || config.enableDiversityPreservation() || config.enableEnvironmentalPressure()) {
             ecosystemEngine.evaluate(profile, report, metrics);
         }
-        WorldSimulationReportBuilder builder = new WorldSimulationReportBuilder();
-        EcosystemSnapshot snapshot = telemetryAnalytics.ecosystemSnapshot();
         data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents()));
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
-
-        List<TelemetryRollupSnapshot> rollups = rollupHistoryView();
-        Map<String, Object> rollupHistorySummary = new LinkedHashMap<>();
-        rollupHistorySummary.put("rollup_count", rollups.size());
-        rollupHistorySummary.put("latest_created_at_ms", rollups.isEmpty() ? 0L : rollups.get(rollups.size() - 1).createdAtMs());
         data.put("rollup_history", rollupHistorySummary);
-
-        if (config.validationProfile()) {
-            data.put("validation_profile", true);
-            data.remove("phase6_experiment_outputs");
-            data.remove("initial_seed_pool");
-        }
         writeJsonFile(out.resolve("world-sim-data.json"), data);
-        Path telemetryOutDir = out.resolve("telemetry");
-        Path rollupOutDir = out.resolve("rollup_history");
-        Files.createDirectories(telemetryOutDir);
-        Files.createDirectories(rollupOutDir);
-        if (!config.validationProfile()) {
-            telemetryArchive.copyTo(telemetryOutDir.resolve("ecosystem-events.log"));
-        }
-        new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
-                .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
-                        System.currentTimeMillis(), "harness_export", snapshot));
-        for (int i = 0; i < rollups.size(); i++) {
-            String file = String.format(Locale.ROOT, "rollup-%03d.properties", i + 1);
-            new TelemetryRollupSnapshotStore(rollupOutDir.resolve(file)).write(rollups.get(i));
-        }
-        Files.writeString(out.resolve("scenario-metadata.properties"),
-                "scenario=" + scenario.name() + "\n"
-                        + "rollup_history_windows=" + rollups.size() + "\n"
-                        + "rollup_history_dir=rollup_history\n"
-                        + "validation_profile=" + config.validationProfile() + "\n");
-        writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
-        if (!config.validationProfile()) {
-            Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
-            Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
-        } else {
-            Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
-            Files.writeString(out.resolve("world-sim-balance-findings.md"), "# Validation profile enabled\n\nHeavy balance findings are disabled.\n");
-        }
+        Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
+        Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
 
-        if (config.validationProfile() || Boolean.getBoolean("world.minimalReports")) {
+        if (Boolean.getBoolean("world.minimalReports")) {
             return;
         }
 
