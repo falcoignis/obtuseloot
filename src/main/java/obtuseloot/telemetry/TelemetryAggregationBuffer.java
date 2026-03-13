@@ -33,6 +33,11 @@ public class TelemetryAggregationBuffer {
     private final Map<String, Map<String, LongAdder>> nicheDistributionByLineage = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> driftWindowByLineage = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> branchDivergenceByLineage = new ConcurrentHashMap<>();
+    private final Map<String, DoubleAdder> survivalScoreByLineage = new ConcurrentHashMap<>();
+    private final Map<String, DoubleAdder> maintenanceCostByLineage = new ConcurrentHashMap<>();
+    private final Map<String, DoubleAdder> graceWindowByLineage = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> unstableTransitionsByLineage = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> collapsingTransitionsByLineage = new ConcurrentHashMap<>();
     private final LongAdder branchBirthCount = new LongAdder();
     private final LongAdder branchCollapseCount = new LongAdder();
     private final Map<String, LongAdder> competitionPressureDistribution = new ConcurrentHashMap<>();
@@ -86,6 +91,9 @@ public class TelemetryAggregationBuffer {
         addDoubleMetric(event.attributes(), "specialization_trajectory", lineage, specializationTrajectoryByLineage, null);
         addDoubleMetric(event.attributes(), "drift_window_remaining", lineage, driftWindowByLineage, null);
         addDoubleMetric(event.attributes(), "branch_divergence", lineage, branchDivergenceByLineage, null);
+        addDoubleMetric(event.attributes(), "survival_score", lineage, survivalScoreByLineage, null);
+        addDoubleMetric(event.attributes(), "maintenance_cost", lineage, maintenanceCostByLineage, null);
+        addDoubleMetric(event.attributes(), "grace_window_remaining", lineage, graceWindowByLineage, null);
 
         if (present(lineage) && present(niche)) {
             Map<String, LongAdder> lineageNicheCounts = boundedMapForLineage(lineage);
@@ -105,6 +113,14 @@ public class TelemetryAggregationBuffer {
         if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE
                 && "branch-collapsed".equalsIgnoreCase(event.attributes().get("event"))) {
             branchCollapseCount.increment();
+        }
+        if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE) {
+            if ("UNSTABLE".equalsIgnoreCase(event.attributes().get("lifecycle_state")) && present(lineage)) {
+                incrementLong(unstableTransitionsByLineage, lineage);
+            }
+            if ("COLLAPSING".equalsIgnoreCase(event.attributes().get("lifecycle_state")) && present(lineage)) {
+                incrementLong(collapsingTransitionsByLineage, lineage);
+            }
         }
         double pressure = parseDouble(event.attributes().get("ecology_pressure"));
         if (!Double.isNaN(pressure)) {
@@ -153,6 +169,11 @@ public class TelemetryAggregationBuffer {
     }
     public Map<String, Double> driftWindowByLineageSnapshot() { return doubleSnapshot(driftWindowByLineage); }
     public Map<String, Double> branchDivergenceByLineageSnapshot() { return doubleSnapshot(branchDivergenceByLineage); }
+    public Map<String, Double> survivalScoreByLineageSnapshot() { return doubleSnapshot(survivalScoreByLineage); }
+    public Map<String, Double> maintenanceCostByLineageSnapshot() { return doubleSnapshot(maintenanceCostByLineage); }
+    public Map<String, Double> graceWindowByLineageSnapshot() { return doubleSnapshot(graceWindowByLineage); }
+    public Map<String, Long> unstableTransitionsByLineageSnapshot() { return longSnapshot(unstableTransitionsByLineage); }
+    public Map<String, Long> collapsingTransitionsByLineageSnapshot() { return longSnapshot(collapsingTransitionsByLineage); }
     public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifactCount.sum(); }
     public long branchBirthCountSnapshot() { return baselineBranchBirthCount + branchBirthCount.sum(); }
     public long branchCollapseCountSnapshot() { return baselineBranchCollapseCount + branchCollapseCount.sum(); }

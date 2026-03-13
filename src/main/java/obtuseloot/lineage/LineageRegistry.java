@@ -93,6 +93,19 @@ public class LineageRegistry {
             artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.LINEAGE, lineage.lineageId() + " [" + branchId + "]"));
             emit(EcosystemTelemetryEventType.BRANCH_FORMATION, artifact, lineage.lineageId(), Map.of("branchId", branchId, "branch_id", branchId));
         }
+        for (BranchLifecycleTransition transition : lineage.consumeRecentBranchTransitions()) {
+            Map<String, String> attrs = new LinkedHashMap<>();
+            attrs.put("event", transition.collapsed() ? "branch-collapsed" : "branch-lifecycle-transition");
+            attrs.put("branch_id", transition.branchId());
+            attrs.put("lifecycle_from", transition.from().name());
+            attrs.put("lifecycle_state", transition.to().name());
+            attrs.put("grace_window_remaining", String.valueOf(transition.graceWindowRemaining()));
+            attrs.put("survival_score", String.valueOf(transition.survivalScore()));
+            attrs.put("maintenance_cost", String.valueOf(transition.maintenanceCost()));
+            attrs.put("collapse_reason", transition.reason());
+            attrs.put("context_tags", transition.collapsed() ? "branch-collapse" : "branch-lifecycle");
+            emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, artifact, lineage.lineageId(), attrs);
+        }
     }
 
     public ArtifactLineage lineageFor(String lineageId) {
