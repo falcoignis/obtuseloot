@@ -1,6 +1,7 @@
 package obtuseloot.simulation.worldlab;
 
 import obtuseloot.analytics.ecosystem.AnalyticsInputDataset;
+import obtuseloot.analytics.ecosystem.AnalyticsCliMain;
 import obtuseloot.analytics.ecosystem.TelemetryDatasetContract;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -68,5 +69,61 @@ class WorldSimulationHarnessValidationProfileTest {
         AnalyticsInputDataset dataset = contract.resolve(output);
         contract.validate(dataset);
         assertEquals(AnalyticsInputDataset.SourceKind.HARNESS, dataset.sourceKind());
+        assertEquals(output.resolve("telemetry").resolve("ecosystem-events.log"), dataset.telemetryArchivePath());
+        assertEquals(output.resolve("rollup_history"), dataset.rollupSnapshotDirectory());
+    }
+
+    @Test
+    void analyticsCliIngestsFreshValidationProfileDataset() throws Exception {
+        Path output = tempDir.resolve("world-cli");
+        Path analyticsOut = tempDir.resolve("analytics-out");
+
+        WorldSimulationConfig config = new WorldSimulationConfig(
+                77L,
+                3,
+                2,
+                2,
+                1,
+                0.1D,
+                2,
+                0.05D,
+                0.05D,
+                0.7D,
+                0.7D,
+                output.toString(),
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                FitnessSharingConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig.defaults(),
+                AdaptiveNicheCapacityConfig.defaults(),
+                OpportunityWeightedMutationConfig.defaults(),
+                true,
+                obtuseloot.abilities.ScoringMode.PROJECTION_WITH_CACHE,
+                "");
+
+        new WorldSimulationHarness(config).runAndWriteOutputs();
+
+        AnalyticsCliMain.main(new String[]{
+                "analyze",
+                "--dataset", output.toString(),
+                "--output", analyticsOut.toString(),
+                "--job-id", "validation-profile-e2e"
+        });
+
+        assertTrue(Files.exists(analyticsOut.resolve("validation-profile-e2e-job-record.properties")));
+        assertTrue(Files.exists(analyticsOut.resolve("validation-profile-e2e-output-manifest.properties")));
+        assertTrue(Files.exists(analyticsOut.resolve("validation-profile-e2e-run-metadata.properties")));
+        assertTrue(Files.exists(analyticsOut.resolve("validation-profile-e2e-analysis-report.txt")));
+        assertTrue(Files.exists(analyticsOut.resolve("recommendation-history.log")));
+
+        String runMetadata = Files.readString(analyticsOut.resolve("validation-profile-e2e-run-metadata.properties"));
+        assertTrue(runMetadata.contains("status=SUCCESS"));
     }
 }

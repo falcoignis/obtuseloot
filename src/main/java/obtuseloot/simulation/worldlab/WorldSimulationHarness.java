@@ -618,7 +618,11 @@ public class WorldSimulationHarness {
         Path rollupOutDir = out.resolve("rollup_history");
         Files.createDirectories(telemetryOutDir);
         Files.createDirectories(rollupOutDir);
-        telemetryArchive.copyTo(telemetryOutDir.resolve("ecosystem-events.log"));
+        Path telemetryArchiveOutput = telemetryOutDir.resolve("ecosystem-events.log");
+        telemetryArchive.copyTo(telemetryArchiveOutput);
+        if (!Files.exists(telemetryArchiveOutput)) {
+            Files.writeString(telemetryArchiveOutput, "");
+        }
         new TelemetryRollupSnapshotStore(telemetryOutDir.resolve("rollup-snapshot.properties"))
                 .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
                         System.currentTimeMillis(), "harness_export", snapshot));
