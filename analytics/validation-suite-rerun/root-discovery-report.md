@@ -1,65 +1,58 @@
-SECTION 1: LATEST RUN POINTER STATUS
+SECTION 1: CANDIDATE DATASET ROOTS FOUND
 
-- `analytics/validation-suite/latest-run.properties`: NOT FOUND.
-- Phase 1 pointer validation result: invalid (pointer file missing), so Phase 2 discovery heuristics were used.
+Discovery criteria applied:
+- Preferred harness markers: `scenario-metadata.properties`, `rollup-snapshots.json`.
+- Freshness evidence: execution reports, run metadata/manifests, and file timestamps.
 
-SECTION 2: CANDIDATE DATASET ROOTS FOUND
+Candidates:
 
-Discovery rules used:
-- Preferred markers: `scenario-metadata.properties`, `rollup-snapshots.json`.
-- Supplemental harness indicators: per-scenario run metadata/manifests, scenario directory matrix, and execution reports.
-- Rejected roots: locations containing only analysis artifacts or CLI logs.
+1) `analytics/validation-suite-rerun/archive-fix-rerun-20260314-005706` (report-referenced)
+- Referenced by `execution-report-20260314-005706.md` as the run root for a successful full matrix rerun.
+- Report states all expected scenario outputs were written under `runs/<scenario>` and include preferred markers.
+- Directory is not present on disk in this repository snapshot.
 
-Candidates identified:
-
-1) `analytics/validation-suite/analysis`
-- Contains all expected scenario directories:
+2) `analytics/validation-suite/analysis` (present on disk)
+- Scenario-complete root with directories for:
   - `explorer-heavy`
   - `ritualist-heavy`
   - `gatherer-heavy`
   - `mixed`
   - `random-baseline`
-- Contains per-scenario harness analysis outputs:
+- Contains per-scenario run metadata and output manifests:
   - `validation-*-run-metadata.properties`
   - `validation-*-output-manifest.properties`
-  - `validation-*-analysis-report.txt`
-- Preferred markers are absent, but this is the only physically present scenario-complete root with run metadata.
+- Does not contain preferred marker filenames at this root.
 
-2) `analytics/validation-suite-fresh/live-analysis-attempt`
-- Contains all expected scenario directories, each with `cli.log`, plus top-level `cli-results.tsv`.
-- Rejected as dataset root candidate for validation because it contains CLI attempt logs rather than harness scenario output artifacts.
+3) `analytics/validation-suite-fresh/live-analysis-attempt` (present on disk)
+- Scenario-complete directory matrix with per-scenario `cli.log` files and top-level `cli-results.tsv`.
+- Classified as CLI-attempt logs, not as harness dataset output root.
 
-3) `analytics/validation-suite-rerun/archive-fix-rerun-20260314-003623`
-- Contains only `execution-report.md` and no scenario output directory tree.
-- Rejected as dataset root candidate.
+SECTION 2: FRESH DATASET ROOT SELECTED
 
-4) Report-referenced but missing on disk:
+Most recent harness run root (by execution report evidence):
 - `analytics/validation-suite-rerun/archive-fix-rerun-20260314-005706`
-- Referenced by `execution-report-20260314-005706.md` as a full successful harness run root, but directory is not present in this repository snapshot.
+- Basis: `execution-report-20260314-005706.md` declares successful completion for all five scenarios and scenario-local output population.
+- Constraint: this root is missing on disk.
 
-SECTION 3: FRESH DATASET ROOT SELECTED
+Repository-local fallback root for validation inputs:
+- `analytics/validation-suite/analysis`
+- Basis: physically present, scenario-complete, and per-scenario metadata indicates `status=SUCCESS` with valid start/finish timestamps.
 
-Selected root: `analytics/validation-suite/analysis`
+SECTION 3: SCENARIO ROOT MAPPING
 
-Why this root was selected:
-- It is present on disk and scenario-complete for the expected five-scenario validation matrix.
-- Per-scenario run metadata indicates successful executions (`status=SUCCESS`) with ordered run timestamps (`startedAtMs`/`finishedAtMs`) across all scenarios.
-- A newer rerun is documented (`execution-report-20260314-005706.md`) and preferred by reported execution time, but its referenced dataset root is missing from disk, so it cannot be selected as the repository-local validation dataset root.
+Using repository-local fallback root `analytics/validation-suite/analysis`:
 
-SECTION 4: SCENARIO ROOT MAPPING
+- explorer-heavy -> `analytics/validation-suite/analysis/explorer-heavy`
+- ritualist-heavy -> `analytics/validation-suite/analysis/ritualist-heavy`
+- gatherer-heavy -> `analytics/validation-suite/analysis/gatherer-heavy`
+- mixed -> `analytics/validation-suite/analysis/mixed`
+- random-baseline -> `analytics/validation-suite/analysis/random-baseline`
 
-explorer-heavy -> `analytics/validation-suite/analysis/explorer-heavy`
-ritualist-heavy -> `analytics/validation-suite/analysis/ritualist-heavy`
-gatherer-heavy -> `analytics/validation-suite/analysis/gatherer-heavy`
-mixed -> `analytics/validation-suite/analysis/mixed`
-random-baseline -> `analytics/validation-suite/analysis/random-baseline`
-
-SECTION 5: ROOT DISCOVERY VERDICT
+SECTION 4: ROOT DISCOVERY VERDICT
 
 PARTIAL
 
-Reason:
-- A repository-local, scenario-complete root was found and mapped.
-- Phase 1 pointer file is missing.
-- Preferred marker files (`scenario-metadata.properties`, `rollup-snapshots.json`, `telemetry/ecosystem-events.log`) are absent from all physically present roots.
-- The report-indicated latest rerun root exists only as a reference in execution reporting and is not present on disk.
+Reasoning:
+- Candidate roots were discovered and mapped to expected scenarios.
+- The freshest harness run root is identifiable from execution reporting but absent from the checked-in filesystem.
+- A scenario-complete fallback root exists locally and can be used for validation, though it lacks preferred marker filenames (`scenario-metadata.properties`, `rollup-snapshots.json`).
