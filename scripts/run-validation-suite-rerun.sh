@@ -8,6 +8,8 @@ BASE_ROOT="analytics/validation-suite-rerun"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 RUN_ID="archive-fix-rerun-${TIMESTAMP}"
 SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
+POINTER_PATH="analytics/validation-suite/latest-run.properties"
+POINTER_EXPECTED_SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -198,6 +200,32 @@ else
 fi
 
 if [[ $run_failed -eq 0 ]]; then
+  pointer_missing=()
+  if [[ ! -d "$OUTPUT_ROOT" ]]; then
+    pointer_missing+=("run output root")
+  fi
+
+  for scenario in "${POINTER_EXPECTED_SCENARIOS[@]}"; do
+    if [[ ! -d "$OUTPUT_ROOT/$scenario" ]]; then
+      pointer_missing+=("$scenario")
+    fi
+  done
+
+  if [[ ${#pointer_missing[@]} -eq 0 ]]; then
+    pointer_tmp="${POINTER_PATH}.tmp"
+    dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
+    created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    {
+      echo "run_id=${RUN_ID}"
+      echo "dataset_root=${dataset_root_abs}"
+      echo "created_at=${created_at}"
+    } > "$pointer_tmp"
+    mv "$pointer_tmp" "$POINTER_PATH"
+  else
+    status_lines+=("- LATEST POINTER: SKIPPED (missing full dataset root contract: ${pointer_missing[*]})")
+    dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
+  fi
+
   report_tmp="$RUN_ROOT/execution-report.md"
   {
     echo "SECTION 1: EXECUTION PATH USED"
