@@ -37,7 +37,28 @@ LOG_ROOT="$RUN_ROOT/logs"
 OUTPUT_ROOT="$RUN_ROOT/runs"
 mkdir -p "$LOG_ROOT" "$OUTPUT_ROOT"
 
-mvn -q -DskipTests compile
+# Build classpath: compiled classes + all JARs from local Maven cache.
+# Direct javac/java bypasses Maven plugin resolution which requires network.
+CLASSES_DIR="$ROOT_DIR/target/classes"
+M2_REPO="${HOME}/.m2/repository"
+COMPILE_CP="$CLASSES_DIR:$(find "$M2_REPO" -name '*.jar' 2>/dev/null | tr '\n' ':')"
+
+# Compile sources directly if target/classes is stale or absent.
+_NEED_COMPILE=0
+if [[ ! -d "$CLASSES_DIR" ]]; then
+  _NEED_COMPILE=1
+elif [[ -z "$(find "$CLASSES_DIR" -name '*.class' 2>/dev/null | head -1)" ]]; then
+  _NEED_COMPILE=1
+fi
+
+if [[ $_NEED_COMPILE -eq 1 ]]; then
+  mkdir -p "$CLASSES_DIR"
+  mapfile -d '' _SOURCES < <(find "$ROOT_DIR/src/main/java" -name '*.java' -print0)
+  javac -J-Xmx1g -source 21 -target 21 \
+    -cp "$(find "$M2_REPO" -name '*.jar' 2>/dev/null | tr '\n' ':')" \
+    -d "$CLASSES_DIR" \
+    "${_SOURCES[@]}" 2>&1
+fi
 
 required_artifacts=(
   "telemetry/ecosystem-events.log"
@@ -88,9 +109,8 @@ for scenario in "${SCENARIOS[@]}"; do
   fi
 
   set +e
-  mvn -q -DskipTests \
-    -Dexec.mainClass=obtuseloot.simulation.worldlab.WorldSimulationRunner \
-    -Dexec.classpathScope=compile \
+  java -Xmx2g \
+    -cp "$COMPILE_CP" \
     -Dworld.outputDirectory="$scenario_root" \
     -Dworld.validationProfile=true \
     -Dworld.telemetrySamplingRate=0.25 \
@@ -100,7 +120,7 @@ for scenario in "${SCENARIOS[@]}"; do
     -Dworld.seasonCount=3 \
     -Dworld.encounterDensity=5 \
     -Dworld.scenarioConfigPath="$config_path" \
-    org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+    obtuseloot.simulation.worldlab.WorldSimulationRunner \
     >"$scenario_log" 2>&1
   exit_code=$?
   set -e
@@ -259,8 +279,12 @@ if [[ $run_failed -eq 0 ]]; then
   } > "$report_tmp"
 
   cp "$report_tmp" "$BASE_ROOT/execution-report-${TIMESTAMP}.md"
+  # Write the run root path so callers can commit the outputs:
+  #   git add "$(cat analytics/validation-suite-rerun/run-root.txt)"
+  printf '%s\n' "$RUN_ROOT" > "$BASE_ROOT/run-root.txt"
   echo "Run complete: ${RUN_ROOT}"
   echo "Execution report: ${BASE_ROOT}/execution-report-${TIMESTAMP}.md"
+  echo "Run root recorded: ${BASE_ROOT}/run-root.txt"
 else
   failure_report="$RUN_ROOT/failure-report.md"
   {

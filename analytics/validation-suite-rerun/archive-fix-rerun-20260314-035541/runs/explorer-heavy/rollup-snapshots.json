@@ -1,0 +1,1326 @@
+{
+  "rollup_snapshots": [
+    {"window_index": 1, "created_at_ms": 1773460544908, "snapshot": {
+  "generatedAtMs": 1773460544880,
+  "eventCounts": {
+    "ABILITY_EXECUTION": 285,
+    "BRANCH_FORMATION": 21,
+    "COMPETITION_ALLOCATION": 15112,
+    "LINEAGE_UPDATE": 83,
+    "MUTATION_EVENT": 284,
+    "NICHE_CLASSIFICATION_CHANGE": 123
+  },
+  "nichePopulationRollup": {
+    "generatedAtMs": 1773460544880,
+    "populationByNiche": {
+      "GENERALIST": 14986,
+      "niche-1": 568,
+      "unassigned": 109
+    },
+    "meaningfulOutcomesByNiche": {
+    },
+    "utilityDensityByNiche": {
+      "niche-1": 22.97128156633775,
+      "unassigned": 7.654624047237722
+    },
+    "saturationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 131.66680944513365,
+      "unassigned": 21.006999999999998
+    },
+    "opportunityShareByNiche": {
+      "GENERALIST": 14986.0
+    },
+    "specializationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 0.0,
+      "unassigned": 0.0
+    },
+    "branchContributionByNiche": {
+    }
+  },
+  "lineagePopulationRollup": {
+    "generatedAtMs": 1773460544880,
+    "populationByLineage": {
+      "ashen": 1995,
+      "gilded": 530,
+      "graveborn": 1176,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 336,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 306,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 272,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 312,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 304,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 313,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 325,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 376,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 275,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 359,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 327,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 291,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 315,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 269,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 261,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 288,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 285,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 297,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 309,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 273,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 300,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 268,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 325,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 303,
+      "mirrored": 292,
+      "stormbound": 2114,
+      "wild-35642": 563,
+      "wild-4233": 813,
+      "wild-65015": 1136
+    },
+    "branchCountByLineage": {
+      "ashen": 3,
+      "gilded": 1,
+      "graveborn": 2,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 1,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 1,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 1,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 1,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 1,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 1,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 1,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 1,
+      "stormbound": 2,
+      "wild-35642": 2,
+      "wild-4233": 1,
+      "wild-65015": 2
+    },
+    "utilityDensityByLineage": {
+      "ashen": 15.371616356128989,
+      "gilded": 18.337768542808988,
+      "graveborn": 15.502512913502821,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 22.133364017067002,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 12.733567513820653,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 16.581723194025276,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 27.374884592142728,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 19.820097205947146,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 5.882945167234528,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 17.016945067012383,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 22.569193118760893,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 13.226754991340298,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 14.449892619912214,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 18.637507449934734,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 21.23935191206925,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 17.216338392602495,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 17.604560709260245,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 12.773894653149387,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 16.94129793152404,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 12.230975918074177,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 23.141231680713492,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 9.28650642714477,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 15.167508522824019,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 17.602300726184236,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 17.98784103542787,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 18.47068284840265,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 23.796386242160516,
+      "mirrored": 11.945136157759725,
+      "stormbound": 16.44190979426106,
+      "wild-35642": 15.026052729378831,
+      "wild-4233": 18.51927807462993,
+      "wild-65015": 15.495899738220146
+    },
+    "momentumByLineage": {
+      "ashen": 126.97299975244616,
+      "gilded": 25.934386344113317,
+      "graveborn": 257.1736036817594,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 21.04871802647824,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 16.222164046623934,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 11.199196746566404,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 33.506434190956966,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 22.520869105673235,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 51.68607530087799,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 19.24332380038004,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 14.760470272879411,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 12.801824626147933,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 17.264868305899665,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 15.940337096673089,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 22.684188717624156,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 15.330364068018865,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 14.947738358982203,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 10.887413347449627,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 21.934421011321973,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 13.89733619273123,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 27.72016168446755,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 12.023077992165694,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 11.753994110149105,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 14.450964244441478,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 17.384567299050822,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 20.34211543621162,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 15.021323927657255,
+      "mirrored": 15.745465407192889,
+      "stormbound": 99.11873040525363,
+      "wild-35642": 82.52643146082606,
+      "wild-4233": 61.31139741224298,
+      "wild-65015": 77.7313773455987
+    },
+    "specializationTrajectoryByLineage": {
+      "ashen": 0.0,
+      "gilded": 0.0,
+      "graveborn": 0.0,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.0,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 0.0,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 0.0,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 0.0,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 10.57499999999999,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 0.0,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 0.0,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.0,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 0.0,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 0.0,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.0,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.0,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.0,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 0.0,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.0,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 0.0,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.0,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 0.0,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.0,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 0.0,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.0,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.0,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 0.0,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.0,
+      "mirrored": 0.0,
+      "stormbound": 0.0,
+      "wild-35642": 0.0,
+      "wild-4233": 0.0,
+      "wild-65015": 0.0
+    },
+    "nicheDistributionByLineage": {
+      "ashen": {
+        "GENERALIST": 1871,
+        "niche-1": 66,
+        "unassigned": 18
+      },
+      "gilded": {
+        "GENERALIST": 488,
+        "niche-1": 29,
+        "unassigned": 4
+      },
+      "graveborn": {
+        "GENERALIST": 1095,
+        "niche-1": 41,
+        "unassigned": 21
+      },
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": {
+        "GENERALIST": 325,
+        "niche-1": 7,
+        "unassigned": 1
+      },
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": {
+        "GENERALIST": 286,
+        "niche-1": 13,
+        "unassigned": 1
+      },
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": {
+        "GENERALIST": 258,
+        "niche-1": 10,
+        "unassigned": 1
+      },
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": {
+        "GENERALIST": 299,
+        "niche-1": 9,
+        "unassigned": 1
+      },
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": {
+        "GENERALIST": 289,
+        "niche-1": 10,
+        "unassigned": 2
+      },
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": {
+        "GENERALIST": 293,
+        "niche-1": 10,
+        "unassigned": 2
+      },
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": {
+        "GENERALIST": 309,
+        "niche-1": 11,
+        "unassigned": 2
+      },
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": {
+        "GENERALIST": 362,
+        "niche-1": 10,
+        "unassigned": 1
+      },
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": {
+        "GENERALIST": 258,
+        "niche-1": 11,
+        "unassigned": 2
+      },
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": {
+        "GENERALIST": 344,
+        "niche-1": 9,
+        "unassigned": 1
+      },
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": {
+        "GENERALIST": 314,
+        "niche-1": 9,
+        "unassigned": 1
+      },
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": {
+        "GENERALIST": 277,
+        "niche-1": 10
+      },
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": {
+        "GENERALIST": 300,
+        "niche-1": 13,
+        "unassigned": 1
+      },
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": {
+        "GENERALIST": 250,
+        "niche-1": 13,
+        "unassigned": 1
+      },
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": {
+        "GENERALIST": 244,
+        "niche-1": 8,
+        "unassigned": 5
+      },
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": {
+        "GENERALIST": 273,
+        "niche-1": 10,
+        "unassigned": 2
+      },
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": {
+        "GENERALIST": 269,
+        "niche-1": 8,
+        "unassigned": 4
+      },
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": {
+        "GENERALIST": 279,
+        "niche-1": 14,
+        "unassigned": 1
+      },
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": {
+        "GENERALIST": 285,
+        "niche-1": 14,
+        "unassigned": 3
+      },
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": {
+        "GENERALIST": 262,
+        "niche-1": 7,
+        "unassigned": 1
+      },
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": {
+        "GENERALIST": 285,
+        "niche-1": 10
+      },
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": {
+        "GENERALIST": 252,
+        "niche-1": 11,
+        "unassigned": 1
+      },
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": {
+        "GENERALIST": 304,
+        "niche-1": 15,
+        "unassigned": 2
+      },
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": {
+        "GENERALIST": 285,
+        "niche-1": 15,
+        "unassigned": 1
+      },
+      "mirrored": {
+        "GENERALIST": 278,
+        "niche-1": 9,
+        "unassigned": 2
+      },
+      "stormbound": {
+        "GENERALIST": 2000,
+        "niche-1": 68,
+        "unassigned": 14
+      },
+      "wild-35642": {
+        "GENERALIST": 523,
+        "niche-1": 23,
+        "unassigned": 2
+      },
+      "wild-4233": {
+        "GENERALIST": 758,
+        "niche-1": 40,
+        "unassigned": 1
+      },
+      "wild-65015": {
+        "GENERALIST": 1071,
+        "niche-1": 35,
+        "unassigned": 10
+      }
+    },
+    "driftWindowRemainingByLineage": {
+      "ashen": 71.77660310363852,
+      "gilded": 32.12157270436444,
+      "graveborn": 51.30338603908426,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 7.071490865402686,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 7.169360013611516,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 11.031318691441404,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 6.031351543410083,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 10.032070729546364,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 4.230492979950621,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 11.077211027224621,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 10.062428852125556,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 4.097238208096645,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 3.092408432175899,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.033344910667540445,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 14.092687309941285,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 14.0,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 13.09253212716623,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 6.117771525390538,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 7.062831704776046,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 4.103523037594877,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 20.07062001742738,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 7.186745323071287,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 3.0738682455184407,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 10.097503202622839,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 4.096092529076754,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 13.075200699953403,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 10.036021980422278,
+      "mirrored": 4.066653349639986,
+      "stormbound": 70.668654734357,
+      "wild-35642": 27.24894360653125,
+      "wild-4233": 28.274566530711176,
+      "wild-65015": 17.31616559140773
+    },
+    "branchDivergenceByLineage": {
+      "ashen": 2.436875285177469,
+      "gilded": 0.5442971993153238,
+      "graveborn": 1.222603747729647,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.2514277636297186,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 0.4792603936080125,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 0.2172788435297966,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 0.16801497922971617,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 0.17664223741136953,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 0.584588592383914,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 0.17392221064762964,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.11911160732619022,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 0.33682636818032446,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 0.4201284957104935,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.2517977444226045,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.23020897001522742,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.0,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 0.46683306960448734,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.15146277286397125,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 0.24764689768849932,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.30406222019127505,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 0.10249939633274327,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.5491657603516417,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 0.13349852279601693,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.3864445180806311,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.3026408068926721,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 0.2515954200452397,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.04978775531028305,
+      "mirrored": 0.20720773863712036,
+      "stormbound": 1.8260862587357969,
+      "wild-35642": 1.265963290253879,
+      "wild-4233": 0.9591707084474618,
+      "wild-65015": 1.4729402251198156
+    }
+  },
+  "activeArtifactCount": 8487,
+  "carryingCapacityUtilization": 0.9996466431095407,
+  "diversityIndex": 3.534817956875221E-4,
+  "turnoverRate": 0.0032991634264168727,
+  "branchBirthCount": 21,
+  "branchCollapseCount": 7,
+  "competitionPressureDistribution": {
+    "high": 284,
+    "low": 15112
+  }
+}},
+    {"window_index": 2, "created_at_ms": 1773460547773, "snapshot": {
+  "generatedAtMs": 1773460547747,
+  "eventCounts": {
+    "ABILITY_EXECUTION": 660,
+    "BRANCH_FORMATION": 43,
+    "COMPETITION_ALLOCATION": 29575,
+    "LINEAGE_UPDATE": 136,
+    "MUTATION_EVENT": 562,
+    "NICHE_CLASSIFICATION_CHANGE": 258
+  },
+  "nichePopulationRollup": {
+    "generatedAtMs": 1773460547747,
+    "populationByNiche": {
+      "GENERALIST": 29317,
+      "niche-1": 1338,
+      "unassigned": 109
+    },
+    "meaningfulOutcomesByNiche": {
+    },
+    "utilityDensityByNiche": {
+      "niche-1": 37.33531582849445,
+      "unassigned": 7.654624047237722
+    },
+    "saturationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 267.1258381062465,
+      "unassigned": 21.006999999999998
+    },
+    "opportunityShareByNiche": {
+      "GENERALIST": 29317.0
+    },
+    "specializationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 3.63113653714937,
+      "unassigned": 0.0
+    },
+    "branchContributionByNiche": {
+    }
+  },
+  "lineagePopulationRollup": {
+    "generatedAtMs": 1773460547747,
+    "populationByLineage": {
+      "ashen": 3988,
+      "gilded": 1111,
+      "graveborn": 2287,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 661,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 616,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 560,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 635,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 617,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 603,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 552,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 679,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 545,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 636,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 612,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 585,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 616,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 546,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 531,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 596,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 547,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 600,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 598,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 546,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 591,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 550,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 633,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 575,
+      "mirrored": 513,
+      "stormbound": 4085,
+      "wild-35642": 1120,
+      "wild-4233": 1619,
+      "wild-65015": 2281
+    },
+    "branchCountByLineage": {
+      "ashen": 5,
+      "gilded": 1,
+      "graveborn": 5,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 1,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 1,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 2,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 1,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 1,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 1,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 1,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 1,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 1,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 2,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 2,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 1,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 2,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 1,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 2,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 1,
+      "mirrored": 1,
+      "stormbound": 2,
+      "wild-35642": 3,
+      "wild-4233": 3,
+      "wild-65015": 2
+    },
+    "utilityDensityByLineage": {
+      "ashen": 26.535061538992682,
+      "gilded": 31.581870747616428,
+      "graveborn": 27.602225730325944,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 38.728536773132944,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 18.562221626927023,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 25.113037971605316,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 33.63981545738314,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 27.85074541272466,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 25.756524572675644,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 27.254592293723707,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 31.423114468609892,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 19.473531767909687,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 21.88825503726876,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 29.960498749210984,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 36.27742275594122,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 22.04330130235011,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 31.172839077175507,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 31.440498262980118,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 14.234862092619913,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 24.557770819197074,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 31.736347982957128,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 21.534781373400484,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 32.17928064924735,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 27.93973054708157,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 40.03563210538439,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 26.910627630565596,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 32.77312925140762,
+      "mirrored": 35.56776347962106,
+      "stormbound": 27.586568376413226,
+      "wild-35642": 25.030844699779667,
+      "wild-4233": 28.6000802715326,
+      "wild-65015": 30.103641948774932
+    },
+    "momentumByLineage": {
+      "ashen": 182.2152034944392,
+      "gilded": 53.533681530732494,
+      "graveborn": 299.51135772829036,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 34.68547597910036,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 30.236351959310745,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 23.538672475628466,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 46.458639898262746,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 36.44375659525558,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 65.22480770263266,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 29.620194563897144,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 26.97875250971995,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 23.673958107100706,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 28.614807585253615,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 26.188239591814877,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 43.060628979051195,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 28.468724993287758,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 29.173804356482684,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 26.34174808886379,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 32.299933811007705,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 24.11115840903072,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 41.20791860747752,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 26.831180140146508,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 24.828721555749595,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 27.85091775920416,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 35.189785400983034,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 35.84055426320239,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 33.216032278088065,
+      "mirrored": 35.01492823602248,
+      "stormbound": 155.6464825598402,
+      "wild-35642": 102.83223885433796,
+      "wild-4233": 88.20365925943449,
+      "wild-65015": 117.969794263246
+    },
+    "specializationTrajectoryByLineage": {
+      "ashen": 0.6132586151630086,
+      "gilded": 0.3550444614101629,
+      "graveborn": 2.535736384457926,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.08069192304776429,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 0.06455353843821143,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 0.09683030765731715,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 12.530691923047783,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 28.671830307657387,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 0.1936606153146343,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 0.11296869226687001,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.09683030765731715,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 0.06455353843821143,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 0.11296869226687001,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.16138384609552858,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.24207576914329287,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.048415153828658575,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 11.67910707687644,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.11296869226687001,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 0.016138384609552858,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.11296869226687001,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 5.196830307657319,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.11296869226687001,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 0.1936606153146343,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.14524546148597572,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.24207576914329287,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 0.14524546148597572,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.14524546148597572,
+      "mirrored": 0.17752223070508144,
+      "stormbound": 0.8069192304776429,
+      "wild-35642": 0.22593738453374002,
+      "wild-4233": 21.081629307581473,
+      "wild-65015": 0.5487050767247972
+    },
+    "nicheDistributionByLineage": {
+      "ashen": {
+        "GENERALIST": 3757,
+        "niche-1": 150,
+        "unassigned": 18
+      },
+      "gilded": {
+        "GENERALIST": 1034,
+        "niche-1": 60,
+        "unassigned": 4
+      },
+      "graveborn": {
+        "GENERALIST": 2125,
+        "niche-1": 96,
+        "unassigned": 21
+      },
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": {
+        "GENERALIST": 634,
+        "niche-1": 23,
+        "unassigned": 1
+      },
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": {
+        "GENERALIST": 580,
+        "niche-1": 21,
+        "unassigned": 1
+      },
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": {
+        "GENERALIST": 525,
+        "niche-1": 26,
+        "unassigned": 1
+      },
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": {
+        "GENERALIST": 599,
+        "niche-1": 24,
+        "unassigned": 1
+      },
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": {
+        "GENERALIST": 584,
+        "niche-1": 22,
+        "unassigned": 2
+      },
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": {
+        "GENERALIST": 562,
+        "niche-1": 28,
+        "unassigned": 2
+      },
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": {
+        "GENERALIST": 521,
+        "niche-1": 24,
+        "unassigned": 2
+      },
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": {
+        "GENERALIST": 647,
+        "niche-1": 25,
+        "unassigned": 1
+      },
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": {
+        "GENERALIST": 515,
+        "niche-1": 19,
+        "unassigned": 2
+      },
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": {
+        "GENERALIST": 603,
+        "niche-1": 21,
+        "unassigned": 1
+      },
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": {
+        "GENERALIST": 578,
+        "niche-1": 27,
+        "unassigned": 1
+      },
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": {
+        "GENERALIST": 547,
+        "niche-1": 30
+      },
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": {
+        "GENERALIST": 585,
+        "niche-1": 26,
+        "unassigned": 1
+      },
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": {
+        "GENERALIST": 507,
+        "niche-1": 27,
+        "unassigned": 1
+      },
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": {
+        "GENERALIST": 498,
+        "niche-1": 23,
+        "unassigned": 5
+      },
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": {
+        "GENERALIST": 569,
+        "niche-1": 14,
+        "unassigned": 2
+      },
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": {
+        "GENERALIST": 510,
+        "niche-1": 26,
+        "unassigned": 4
+      },
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": {
+        "GENERALIST": 566,
+        "niche-1": 27,
+        "unassigned": 1
+      },
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": {
+        "GENERALIST": 560,
+        "niche-1": 26,
+        "unassigned": 3
+      },
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": {
+        "GENERALIST": 508,
+        "niche-1": 24,
+        "unassigned": 1
+      },
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": {
+        "GENERALIST": 553,
+        "niche-1": 28
+      },
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": {
+        "GENERALIST": 505,
+        "niche-1": 37,
+        "unassigned": 1
+      },
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": {
+        "GENERALIST": 590,
+        "niche-1": 32,
+        "unassigned": 2
+      },
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": {
+        "GENERALIST": 533,
+        "niche-1": 34,
+        "unassigned": 1
+      },
+      "mirrored": {
+        "GENERALIST": 480,
+        "niche-1": 27,
+        "unassigned": 2
+      },
+      "stormbound": {
+        "GENERALIST": 3846,
+        "niche-1": 168,
+        "unassigned": 14
+      },
+      "wild-35642": {
+        "GENERALIST": 1048,
+        "niche-1": 46,
+        "unassigned": 2
+      },
+      "wild-4233": {
+        "GENERALIST": 1511,
+        "niche-1": 75,
+        "unassigned": 1
+      },
+      "wild-65015": {
+        "GENERALIST": 2137,
+        "niche-1": 102,
+        "unassigned": 10
+      }
+    },
+    "driftWindowRemainingByLineage": {
+      "ashen": 95.25615109900737,
+      "gilded": 42.211686208012246,
+      "graveborn": 63.72863155785817,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 9.071490865402687,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 12.325494685583534,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 13.177302367459408,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 7.092267276888234,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 13.218336826368619,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 13.303248125274575,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 14.15203734966513,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 12.156753845193782,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 5.248385482675865,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 7.182408432175899,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 5.065765066700048,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 19.182868062653277,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 14.06313242831374,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 17.195536693651952,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 10.156860216630593,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 7.222433610298755,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 7.2003675698560325,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 25.1131791128976,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 11.248358386194873,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 6.223391632124439,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 13.191083924209007,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 8.204106887134039,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 20.143125286852328,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 11.189308676156443,
+      "mirrored": 9.066653349639985,
+      "stormbound": 101.73821400820817,
+      "wild-35642": 30.51119329931957,
+      "wild-4233": 43.51791091190588,
+      "wild-65015": 32.829774763819245
+    },
+    "branchDivergenceByLineage": {
+      "ashen": 4.1064597747403075,
+      "gilded": 0.9999574554229334,
+      "graveborn": 2.92031341527022,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.3052223789948946,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 1.03706192084115,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 0.6054785301518114,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 0.7247310491087895,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 0.735022449290563,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 1.0109465747279538,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 0.3531491502624235,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.35704904563569295,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 0.5567767405393785,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 0.7904668476848007,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.47567552007538966,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.5814835547258044,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.21397485074228967,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 1.2128178280772874,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.28310323271537235,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 0.939156448359333,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.5206933831622105,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 0.38849977816250836,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.6887171796303049,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 0.9679531055315773,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.727441958845067,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.5262533890571695,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 0.667885476861682,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.4136033607118337,
+      "mirrored": 0.3827954543880736,
+      "stormbound": 3.274631810431159,
+      "wild-35642": 1.8141530970103985,
+      "wild-4233": 2.348542720219348,
+      "wild-65015": 2.211779857751491
+    }
+  },
+  "activeArtifactCount": 16828,
+  "carryingCapacityUtilization": 0.9998217574713326,
+  "diversityIndex": 1.7827430473021154E-4,
+  "turnoverRate": 0.0037437603993344427,
+  "branchBirthCount": 43,
+  "branchCollapseCount": 20,
+  "competitionPressureDistribution": {
+    "high": 562,
+    "low": 29575
+  }
+}},
+    {"window_index": 3, "created_at_ms": 1773460550976, "snapshot": {
+  "generatedAtMs": 1773460550951,
+  "eventCounts": {
+    "ABILITY_EXECUTION": 1089,
+    "BRANCH_FORMATION": 53,
+    "COMPETITION_ALLOCATION": 44259,
+    "LINEAGE_UPDATE": 199,
+    "MUTATION_EVENT": 819,
+    "NICHE_CLASSIFICATION_CHANGE": 394
+  },
+  "nichePopulationRollup": {
+    "generatedAtMs": 1773460550951,
+    "populationByNiche": {
+      "GENERALIST": 43859,
+      "niche-1": 2164,
+      "unassigned": 109
+    },
+    "meaningfulOutcomesByNiche": {
+    },
+    "utilityDensityByNiche": {
+      "niche-1": 51.25410171749496,
+      "unassigned": 7.654624047237722
+    },
+    "saturationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 390.9025095076148,
+      "unassigned": 21.006999999999998
+    },
+    "opportunityShareByNiche": {
+      "GENERALIST": 43859.0
+    },
+    "specializationPressureByNiche": {
+      "GENERALIST": 0.0,
+      "niche-1": 8.354772564558578,
+      "unassigned": 0.0
+    },
+    "branchContributionByNiche": {
+    }
+  },
+  "lineagePopulationRollup": {
+    "generatedAtMs": 1773460550951,
+    "populationByLineage": {
+      "ashen": 5946,
+      "gilded": 1663,
+      "graveborn": 3467,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 950,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 933,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 877,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 932,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 913,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 846,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 839,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 998,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 835,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 919,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 892,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 875,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 882,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 819,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 786,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 937,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 834,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 887,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 913,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 832,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 908,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 815,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 978,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 883,
+      "mirrored": 762,
+      "stormbound": 6029,
+      "wild-35642": 1724,
+      "wild-4233": 2520,
+      "wild-65015": 3419
+    },
+    "branchCountByLineage": {
+      "ashen": 7,
+      "gilded": 2,
+      "graveborn": 5,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 2,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 1,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 2,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 1,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 1,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 1,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 1,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 2,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 1,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 1,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 1,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 2,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 2,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 1,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 2,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 1,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 2,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 1,
+      "mirrored": 1,
+      "stormbound": 2,
+      "wild-35642": 6,
+      "wild-4233": 3,
+      "wild-65015": 2
+    },
+    "utilityDensityByLineage": {
+      "ashen": 38.97036418664376,
+      "gilded": 38.65027745702331,
+      "graveborn": 38.45491168406625,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 47.425921691192194,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 32.85702927510929,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 48.650259566861074,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 42.92835200378144,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 37.68432191857279,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 35.19631879849826,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 38.56354268083625,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 48.334589344194995,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 34.30211471596786,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 35.855652334498856,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 50.01313662952652,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 41.80604764481481,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 35.58418020068704,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 40.00630313071412,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 41.707639627614874,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 40.60572002004823,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 35.081224026789876,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 48.88129037723513,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 38.887790165174124,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 42.33154158755126,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 35.650528659030435,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 48.31725966804388,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 37.90582938203365,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 38.08773977447965,
+      "mirrored": 43.52857528996072,
+      "stormbound": 38.65541831814951,
+      "wild-35642": 39.17287074592691,
+      "wild-4233": 44.349836284009214,
+      "wild-65015": 40.92652514187694
+    },
+    "momentumByLineage": {
+      "ashen": 265.7668105772621,
+      "gilded": 80.53527357490091,
+      "graveborn": 353.79908857570894,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 56.051105998029406,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 44.037293397657656,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 40.12533985042492,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 56.03097592645679,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 43.333080804825215,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 76.45762927303403,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 53.837778059587315,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 47.166039135346146,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 40.730320757589915,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 42.28416797687464,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 44.22325492981879,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 52.78377507180998,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 37.83167768802664,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 42.67556238298946,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 46.011947502503105,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 51.331181944575874,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 40.705297415666315,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 59.425376735495504,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 47.27580396574905,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 40.63168102531295,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 40.135277223559626,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 53.74832034758663,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 56.4441702797206,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 45.1443409922251,
+      "mirrored": 46.48475210183073,
+      "stormbound": 233.16599889872788,
+      "wild-35642": 136.0093078305521,
+      "wild-4233": 128.28273013859334,
+      "wild-65015": 160.73971459891484
+    },
+    "specializationTrajectoryByLineage": {
+      "ashen": 1.53019972636596,
+      "gilded": 0.6051193099200587,
+      "graveborn": 9.973442217860162,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.22656891801187018,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 0.3354679576572652,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 32.53438644403961,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 12.634889776593576,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 32.90938644403976,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 0.3186980395695822,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 3.558845687230974,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.24270730262142304,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 12.597911821274861,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 0.30052482864929186,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.3906191238962664,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.3462736226890828,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.17345257808360648,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 11.783304930422233,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.2588456872309759,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 0.26621323311944867,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.2380061165218179,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 5.384386444039738,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.32136439935844985,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 0.36037718098789817,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.27028288574092363,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.38795276410739876,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 0.35364116857755556,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.22860374432260766,
+      "mirrored": 0.32339922566918733,
+      "stormbound": 1.8280581952263841,
+      "wild-35642": 0.5802100865894257,
+      "wild-4233": 1.5442977167287713,
+      "wild-65015": 1.0905339151629048
+    },
+    "nicheDistributionByLineage": {
+      "ashen": {
+        "GENERALIST": 5603,
+        "niche-1": 235,
+        "unassigned": 18
+      },
+      "gilded": {
+        "GENERALIST": 1555,
+        "niche-1": 84,
+        "unassigned": 4
+      },
+      "graveborn": {
+        "GENERALIST": 3225,
+        "niche-1": 158,
+        "unassigned": 21
+      },
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": {
+        "GENERALIST": 904,
+        "niche-1": 37,
+        "unassigned": 1
+      },
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": {
+        "GENERALIST": 869,
+        "niche-1": 44,
+        "unassigned": 1
+      },
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": {
+        "GENERALIST": 824,
+        "niche-1": 42,
+        "unassigned": 1
+      },
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": {
+        "GENERALIST": 883,
+        "niche-1": 35,
+        "unassigned": 1
+      },
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": {
+        "GENERALIST": 859,
+        "niche-1": 37,
+        "unassigned": 2
+      },
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": {
+        "GENERALIST": 783,
+        "niche-1": 44,
+        "unassigned": 2
+      },
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": {
+        "GENERALIST": 786,
+        "niche-1": 43,
+        "unassigned": 2
+      },
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": {
+        "GENERALIST": 950,
+        "niche-1": 39,
+        "unassigned": 1
+      },
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": {
+        "GENERALIST": 784,
+        "niche-1": 34,
+        "unassigned": 2
+      },
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": {
+        "GENERALIST": 866,
+        "niche-1": 36,
+        "unassigned": 1
+      },
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": {
+        "GENERALIST": 839,
+        "niche-1": 44,
+        "unassigned": 1
+      },
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": {
+        "GENERALIST": 823,
+        "niche-1": 38
+      },
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": {
+        "GENERALIST": 833,
+        "niche-1": 40,
+        "unassigned": 1
+      },
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": {
+        "GENERALIST": 763,
+        "niche-1": 39,
+        "unassigned": 1
+      },
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": {
+        "GENERALIST": 736,
+        "niche-1": 37,
+        "unassigned": 5
+      },
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": {
+        "GENERALIST": 885,
+        "niche-1": 32,
+        "unassigned": 2
+      },
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": {
+        "GENERALIST": 777,
+        "niche-1": 44,
+        "unassigned": 4
+      },
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": {
+        "GENERALIST": 828,
+        "niche-1": 48,
+        "unassigned": 1
+      },
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": {
+        "GENERALIST": 858,
+        "niche-1": 41,
+        "unassigned": 3
+      },
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": {
+        "GENERALIST": 771,
+        "niche-1": 42,
+        "unassigned": 1
+      },
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": {
+        "GENERALIST": 853,
+        "niche-1": 41
+      },
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": {
+        "GENERALIST": 757,
+        "niche-1": 48,
+        "unassigned": 1
+      },
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": {
+        "GENERALIST": 908,
+        "niche-1": 51,
+        "unassigned": 2
+      },
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": {
+        "GENERALIST": 821,
+        "niche-1": 48,
+        "unassigned": 1
+      },
+      "mirrored": {
+        "GENERALIST": 710,
+        "niche-1": 41,
+        "unassigned": 2
+      },
+      "stormbound": {
+        "GENERALIST": 5659,
+        "niche-1": 284,
+        "unassigned": 14
+      },
+      "wild-35642": {
+        "GENERALIST": 1593,
+        "niche-1": 84,
+        "unassigned": 2
+      },
+      "wild-4233": {
+        "GENERALIST": 2354,
+        "niche-1": 126,
+        "unassigned": 1
+      },
+      "wild-65015": {
+        "GENERALIST": 3200,
+        "niche-1": 168,
+        "unassigned": 10
+      }
+    },
+    "driftWindowRemainingByLineage": {
+      "ashen": 154.8860781634181,
+      "gilded": 52.30172460741752,
+      "graveborn": 105.18264464715563,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 13.272062569685732,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 29.387063246616204,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 31.177302367459408,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 11.122267276888234,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 31.35421581659824,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 26.433804724773065,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 18.223705391597935,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 30.219836117451642,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 14.399539985302145,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 23.2424084321759,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 15.09827397975913,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 34.27286806265328,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 22.094887426410303,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 17.228086908853022,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 15.27102561646221,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 16.28718875914363,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 11.264796177008899,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 33.201121176580486,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 25.309985583918255,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 11.319157338773355,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 18.28503299822397,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 13.271162479257104,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 29.299716865350707,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 20.362508366566466,
+      "mirrored": 18.13974646793135,
+      "stormbound": 180.37892450769857,
+      "wild-35642": 52.825468818669016,
+      "wild-4233": 92.72992740353114,
+      "wild-65015": 74.21725675675935
+    },
+    "branchDivergenceByLineage": {
+      "ashen": 5.993552043165895,
+      "gilded": 1.4643904689128824,
+      "graveborn": 3.8979264576193002,
+      "lineage-07e608cb-d2b0-34d7-924f-548ecffd9f35": 0.5987719734047862,
+      "lineage-0ab99986-7bb4-3ce9-915f-0e906d4bf167": 1.5918865473432868,
+      "lineage-19540046-ee53-3c11-bd45-a13ac629d839": 0.8596098961720707,
+      "lineage-285fbb9b-75d4-3eb6-9af9-ab26d4661772": 0.8531440276795433,
+      "lineage-2d5d46e6-617e-3e3a-9395-b126f2b2f283": 1.202775286254505,
+      "lineage-55a25fe1-0597-3808-a62b-c9f8ae342b4d": 1.4479685376928493,
+      "lineage-6f249383-9997-3836-aaa7-03394a8a45bb": 0.5787543903685091,
+      "lineage-7490ea86-5041-3a5a-a956-7372461bdbdc": 0.5730645733977562,
+      "lineage-7da9fb81-ea4d-3d77-bca9-f64ad5b1d3ee": 1.0251558554751405,
+      "lineage-7f0ade8a-c96a-3df1-8ac2-97f165f2e29b": 1.2513205434124572,
+      "lineage-80f7ed28-694e-36de-bd96-9497b7e773d6": 0.6688972665095246,
+      "lineage-9b32de39-cd77-31e0-90a4-8ab14b445f8a": 0.9249148880778698,
+      "lineage-9eefb117-6850-31aa-baaa-9ef49efef6fe": 0.5104274112983739,
+      "lineage-9f58ae2b-5fe3-3649-b5c4-6fa44b99ddc3": 1.5379566652996115,
+      "lineage-a771676c-0140-34a6-b8dd-d6a722f5f63c": 0.45325926499290337,
+      "lineage-b510b1fd-22e9-3526-9361-6241c3332f73": 1.4250076589812317,
+      "lineage-baf0b3e5-0ac8-36a8-8be5-b750a756d885": 0.6575189231076493,
+      "lineage-c444b2c3-1988-3a0d-b220-749415acd783": 0.6647692259228324,
+      "lineage-c82eb7a5-eb56-3148-8136-0ac85aad92e2": 0.8720330238466586,
+      "lineage-c93cbe7a-2de5-38f7-ad59-b0f3062d72fe": 1.2237386321884802,
+      "lineage-e58a3735-aebb-3417-af6c-6277b5b7fcf2": 0.9527860409995953,
+      "lineage-ed3b6c4c-f41c-3099-9ee5-c7f43240084a": 0.6471972680764522,
+      "lineage-f78d2fe6-58f5-3681-bef5-4fd8735e3ceb": 1.2101191421712492,
+      "lineage-f9854eac-628b-3d8c-9a87-7de1859085b0": 0.8397693343670697,
+      "mirrored": 0.699967848870199,
+      "stormbound": 4.424610090228899,
+      "wild-35642": 3.583149538551724,
+      "wild-4233": 3.049247980968236,
+      "wild-65015": 2.871263654599424
+    }
+  },
+  "activeArtifactCount": 25306,
+  "carryingCapacityUtilization": 0.9998814650914695,
+  "diversityIndex": 1.1854896072077768E-4,
+  "turnoverRate": 0.003833083063305145,
+  "branchBirthCount": 53,
+  "branchCollapseCount": 44,
+  "competitionPressureDistribution": {
+    "high": 819,
+    "low": 44259
+  }
+}}
+  ]
+}
