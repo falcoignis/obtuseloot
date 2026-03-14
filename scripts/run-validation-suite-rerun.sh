@@ -34,9 +34,9 @@ done
 
 RUN_ROOT="$BASE_ROOT/$RUN_ID"
 LOG_ROOT="$RUN_ROOT/logs"
-# Keep datasets in a stable workspace path so execution reports cannot point to
-# a transient per-run archive directory that may be absent in later checkouts.
-OUTPUT_ROOT="$BASE_ROOT/runs"
+# Keep datasets in the same run root referenced by run_id so dataset_root does
+# not require callers to reconstruct paths by joining pointer fields.
+OUTPUT_ROOT="$RUN_ROOT/runs"
 mkdir -p "$LOG_ROOT" "$OUTPUT_ROOT"
 
 mvn -q -DskipTests compile
