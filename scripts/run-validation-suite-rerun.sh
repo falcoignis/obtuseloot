@@ -48,6 +48,69 @@ required_artifacts=(
   "scenario-metadata.properties"
 )
 
+is_analysis_only_root() {
+  local dataset_root="$1"
+  [[ "$dataset_root" == *"/analysis" ]] || [[ "$dataset_root" == *"/analysis/"* ]]
+}
+
+is_cli_log_only_root() {
+  local dataset_root="$1"
+  shift
+  local scenarios=("$@")
+  local scenario
+  for scenario in "${scenarios[@]}"; do
+    local scenario_dir="$dataset_root/$scenario"
+    if [[ -d "$scenario_dir" ]] && [[ -s "$scenario_dir/cli.log" ]]; then
+      local has_required=0
+      local rel
+      for rel in "${required_artifacts[@]}"; do
+        if [[ -s "$scenario_dir/$rel" ]]; then
+          has_required=1
+          break
+        fi
+      done
+      if [[ $has_required -eq 0 ]]; then
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+is_report_only_root() {
+  local dataset_root="$1"
+  shift
+  local scenarios=("$@")
+  local scenario
+  for scenario in "${scenarios[@]}"; do
+    local scenario_dir="$dataset_root/$scenario"
+    if [[ -d "$scenario_dir" ]]; then
+      shopt -s nullglob
+      local report_files=(
+        "$scenario_dir"/*analysis-report.txt
+        "$scenario_dir"/*output-manifest.properties
+        "$scenario_dir"/*job-record.properties
+        "$scenario_dir"/*run-metadata.properties
+      )
+      shopt -u nullglob
+      if [[ ${#report_files[@]} -gt 0 ]]; then
+        local has_required=0
+        local rel
+        for rel in "${required_artifacts[@]}"; do
+          if [[ -s "$scenario_dir/$rel" ]]; then
+            has_required=1
+            break
+          fi
+        done
+        if [[ $has_required -eq 0 ]]; then
+          return 0
+        fi
+      fi
+    fi
+  done
+  return 1
+}
+
 is_true_harness_dataset_root() {
   local dataset_root="$1"
   shift
@@ -58,7 +121,15 @@ is_true_harness_dataset_root() {
   fi
 
   # Never point latest-run.properties at analysis-only directories.
-  if [[ "$dataset_root" == *"/analysis" ]] || [[ "$dataset_root" == *"/analysis/"* ]]; then
+  if is_analysis_only_root "$dataset_root"; then
+    return 1
+  fi
+
+  # Explicitly reject roots that only contain CLI logs or analytics reports.
+  if is_cli_log_only_root "$dataset_root" "${scenarios[@]}"; then
+    return 1
+  fi
+  if is_report_only_root "$dataset_root" "${scenarios[@]}"; then
     return 1
   fi
 
