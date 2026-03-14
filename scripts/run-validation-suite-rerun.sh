@@ -48,6 +48,36 @@ required_artifacts=(
   "scenario-metadata.properties"
 )
 
+is_true_harness_dataset_root() {
+  local dataset_root="$1"
+  shift
+  local scenarios=("$@")
+
+  if [[ -z "$dataset_root" ]] || [[ ! -d "$dataset_root" ]]; then
+    return 1
+  fi
+
+  # Never point latest-run.properties at analysis-only directories.
+  if [[ "$dataset_root" == *"/analysis" ]] || [[ "$dataset_root" == *"/analysis/"* ]]; then
+    return 1
+  fi
+
+  local scenario rel
+  for scenario in "${scenarios[@]}"; do
+    if [[ ! -d "$dataset_root/$scenario" ]]; then
+      return 1
+    fi
+
+    for rel in "${required_artifacts[@]}"; do
+      if [[ ! -s "$dataset_root/$scenario/$rel" ]]; then
+        return 1
+      fi
+    done
+  done
+
+  return 0
+}
+
 status_lines=()
 dataset_lines=()
 completed_scenarios=()
@@ -202,18 +232,7 @@ else
 fi
 
 if [[ $run_failed -eq 0 ]]; then
-  pointer_missing=()
-  if [[ ! -d "$OUTPUT_ROOT" ]]; then
-    pointer_missing+=("run output root")
-  fi
-
-  for scenario in "${POINTER_EXPECTED_SCENARIOS[@]}"; do
-    if [[ ! -d "$OUTPUT_ROOT/$scenario" ]]; then
-      pointer_missing+=("$scenario")
-    fi
-  done
-
-  if [[ ${#pointer_missing[@]} -eq 0 ]]; then
+  if is_true_harness_dataset_root "$OUTPUT_ROOT" "${POINTER_EXPECTED_SCENARIOS[@]}"; then
     pointer_tmp="${POINTER_PATH}.tmp"
     dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
     created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -224,7 +243,7 @@ if [[ $run_failed -eq 0 ]]; then
     } > "$pointer_tmp"
     mv "$pointer_tmp" "$POINTER_PATH"
   else
-    status_lines+=("- LATEST POINTER: SKIPPED (missing full dataset root contract: ${pointer_missing[*]})")
+    status_lines+=("- LATEST POINTER: SKIPPED (selected dataset root failed strict harness contract: ${OUTPUT_ROOT})")
     dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
   fi
 
