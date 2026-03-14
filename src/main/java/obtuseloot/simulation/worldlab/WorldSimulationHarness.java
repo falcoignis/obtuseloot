@@ -741,6 +741,10 @@ public class WorldSimulationHarness {
     private void writeTelemetryArtifacts(Path out,
                                          EcosystemSnapshot snapshot,
                                          List<TelemetryRollupSnapshot> rollups) throws IOException {
+        // Validation-profile exports may short-circuit immediately after artifact writing,
+        // so force a final flush at the point of export to guarantee archive durability.
+        flushTelemetryForExport();
+
         Path telemetryOutDir = out.resolve("telemetry");
         Files.createDirectories(telemetryOutDir);
 
