@@ -213,11 +213,10 @@ if [[ $run_failed -eq 0 ]]; then
 
   if [[ ${#pointer_missing[@]} -eq 0 ]]; then
     pointer_tmp="${POINTER_PATH}.tmp"
-    dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
     created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     {
       echo "run_id=${RUN_ID}"
-      echo "dataset_root=${dataset_root_abs}"
+      echo "dataset_root=${OUTPUT_ROOT}"
       echo "created_at=${created_at}"
     } > "$pointer_tmp"
     mv "$pointer_tmp" "$POINTER_PATH"
