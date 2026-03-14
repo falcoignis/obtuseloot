@@ -49,6 +49,11 @@ dataset_lines=()
 completed_scenarios=()
 run_failed=0
 
+if [[ ${#SCENARIOS[@]} -eq 0 ]] || [[ -z "${SCENARIOS[*]// }" ]]; then
+  echo "No scenarios were provided; refusing to run with an empty scenario list." >&2
+  exit 2
+fi
+
 resolve_config_path() {
   local scenario="$1"
   local candidates=(
@@ -105,6 +110,14 @@ for scenario in "${SCENARIOS[@]}"; do
     continue
   fi
 
+  expected_log_marker="World simulation outputs written to ${scenario_root}"
+  if ! grep -Fq "$expected_log_marker" "$scenario_log"; then
+    status_lines+=("- ${scenario}: FAILED (harness exited 0 but completion marker not found in log; expected '${expected_log_marker}'; log=${scenario_log})")
+    dataset_lines+=("- ${scenario}: FAILED dataset verification (missing harness completion marker)")
+    run_failed=1
+    continue
+  fi
+
   missing=()
   stale=()
   for rel in "${required_artifacts[@]}"; do
@@ -139,11 +152,31 @@ for scenario in "${SCENARIOS[@]}"; do
   completed_scenarios+=("$scenario")
 done
 
-# Re-verify all successful scenario roots right before writing a success report so
-# the execution report cannot be emitted if required dataset artifacts disappear
-# or were written outside the expected scenario-local output roots.
-for scenario in "${completed_scenarios[@]}"; do
+# Re-verify all expected scenario roots right before writing a success report so
+# the execution report cannot be emitted if required dataset artifacts disappear,
+# output roots are deleted, or files were written outside scenario-local roots.
+if [[ ! -d "$OUTPUT_ROOT" ]]; then
+  status_lines+=("- RUN ROOT CHECK: FAILED (output root missing at report time: ${OUTPUT_ROOT})")
+  dataset_lines+=("- RUN ROOT CHECK: FAILED dataset verification (output root missing)")
+  run_failed=1
+fi
+
+for scenario in "${SCENARIOS[@]}"; do
   scenario_root="$OUTPUT_ROOT/$scenario"
+  if [[ ! -d "$scenario_root" ]]; then
+    status_lines+=("- ${scenario}: FAILED post-run verification (scenario root missing at report time: ${scenario_root})")
+    dataset_lines+=("- ${scenario}: FAILED dataset verification (scenario root missing)")
+    run_failed=1
+    continue
+  fi
+
+  if [[ ! " ${completed_scenarios[*]} " =~ " ${scenario} " ]]; then
+    status_lines+=("- ${scenario}: FAILED post-run verification (scenario did not complete successfully)")
+    dataset_lines+=("- ${scenario}: FAILED dataset verification (scenario not completed)")
+    run_failed=1
+    continue
+  fi
+
   missing=()
   for rel in "${required_artifacts[@]}"; do
     target="$scenario_root/$rel"
