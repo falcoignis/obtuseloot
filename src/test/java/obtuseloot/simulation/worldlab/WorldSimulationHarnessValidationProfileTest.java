@@ -145,6 +145,78 @@ class WorldSimulationHarnessValidationProfileTest {
         }
     }
 
+
+
+    @Test
+    void validationSuiteStyleScenarioRootWritesArchiveBeforeContractArtifacts() throws Exception {
+        Path output = tempDir.resolve("analytics").resolve("validation-suite").resolve("runs").resolve("explorer-heavy");
+        Files.createDirectories(output.getParent());
+
+        WorldSimulationConfig config = new WorldSimulationConfig(
+                123L,
+                3,
+                2,
+                2,
+                1,
+                0.1D,
+                2,
+                0.05D,
+                0.05D,
+                0.7D,
+                0.7D,
+                output.toString(),
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                FitnessSharingConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.BehavioralProjectionConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.RoleBasedRepulsionConfig.defaults(),
+                SpeciesNicheAnalyticsEngine.MinimumRoleSeparationConfig.defaults(),
+                AdaptiveNicheCapacityConfig.defaults(),
+                OpportunityWeightedMutationConfig.defaults(),
+                true,
+                obtuseloot.abilities.ScoringMode.PROJECTION_WITH_CACHE,
+                "analytics/validation-suite/configs/explorer-heavy-run.properties");
+
+        new WorldSimulationHarness(config).runAndWriteOutputs();
+
+        Path telemetryArchive = output.resolve("telemetry").resolve("ecosystem-events.log");
+        Path rollupSnapshot = output.resolve("telemetry").resolve("rollup-snapshot.properties");
+        Path rollupSnapshotsJson = output.resolve("rollup-snapshots.json");
+        Path scenarioMetadata = output.resolve("scenario-metadata.properties");
+
+        assertTrue(Files.size(telemetryArchive) > 0L);
+        assertTrue(Files.getLastModifiedTime(telemetryArchive).toMillis()
+                <= Files.getLastModifiedTime(rollupSnapshot).toMillis());
+        assertTrue(Files.getLastModifiedTime(rollupSnapshot).toMillis()
+                <= Files.getLastModifiedTime(rollupSnapshotsJson).toMillis());
+        assertTrue(Files.getLastModifiedTime(rollupSnapshotsJson).toMillis()
+                <= Files.getLastModifiedTime(scenarioMetadata).toMillis());
+
+        String archiveContent = Files.readString(telemetryArchive);
+        assertTrue(archiveContent.contains("lifecycle_state="));
+        assertTrue(archiveContent.contains("survival_score="));
+        assertTrue(archiveContent.contains("maintenance_cost="));
+
+        Path analyticsOut = tempDir.resolve("analytics").resolve("validation-suite").resolve("analysis").resolve("explorer-heavy");
+        AnalyticsCliMain.main(new String[]{
+                "analyze",
+                "--dataset", output.toString(),
+                "--output", analyticsOut.toString(),
+                "--job-id", "validation-suite-style"
+        });
+
+        String runMetadata = Files.readString(analyticsOut.resolve("validation-suite-style-run-metadata.properties"));
+        assertTrue(runMetadata.contains("status=SUCCESS"));
+        assertTrue(runMetadata.contains("sourceKind=harness"));
+
+        assertFalse(Files.exists(output.resolve("rollup_history")));
+    }
+
     @Test
     void analyticsCliIngestsFreshValidationProfileDataset() throws Exception {
         Path output = tempDir.resolve("world-cli");
