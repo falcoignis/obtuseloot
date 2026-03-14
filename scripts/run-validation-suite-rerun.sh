@@ -46,6 +46,7 @@ required_artifacts=(
 
 status_lines=()
 dataset_lines=()
+completed_scenarios=()
 run_failed=0
 
 resolve_config_path() {
@@ -135,6 +136,26 @@ for scenario in "${SCENARIOS[@]}"; do
 
   status_lines+=("- ${scenario}: SUCCESS (exit code 0; log=${scenario_log})")
   dataset_lines+=("- ${scenario}: VERIFIED (${required_artifacts[*]})")
+  completed_scenarios+=("$scenario")
+done
+
+# Re-verify all successful scenario roots right before writing a success report so
+# the execution report cannot be emitted if required dataset artifacts disappear
+# or were written outside the expected scenario-local output roots.
+for scenario in "${completed_scenarios[@]}"; do
+  scenario_root="$OUTPUT_ROOT/$scenario"
+  missing=()
+  for rel in "${required_artifacts[@]}"; do
+    target="$scenario_root/$rel"
+    if [[ ! -s "$target" ]]; then
+      missing+=("$rel")
+    fi
+  done
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    status_lines+=("- ${scenario}: FAILED post-run verification (required artifacts missing at report time: ${missing[*]})")
+    dataset_lines+=("- ${scenario}: FAILED dataset verification (post-run missing ${missing[*]})")
+    run_failed=1
+  fi
 done
 
 if [[ $run_failed -eq 0 ]]; then
