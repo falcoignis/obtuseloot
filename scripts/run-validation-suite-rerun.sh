@@ -68,7 +68,9 @@ resolve_config_path() {
 for scenario in "${SCENARIOS[@]}"; do
   scenario_root="$OUTPUT_ROOT/$scenario"
   scenario_log="$LOG_ROOT/$scenario.log"
+  rm -rf "$scenario_root"
   mkdir -p "$scenario_root"
+  scenario_started_epoch="$(date +%s)"
 
   if ! config_path="$(resolve_config_path "$scenario")"; then
     status_lines+=("- ${scenario}: FAILED (missing scenario config file)")
@@ -103,16 +105,30 @@ for scenario in "${SCENARIOS[@]}"; do
   fi
 
   missing=()
+  stale=()
   for rel in "${required_artifacts[@]}"; do
     target="$scenario_root/$rel"
     if [[ ! -s "$target" ]]; then
       missing+=("$rel")
+      continue
+    fi
+
+    artifact_epoch="$(stat -c %Y "$target")"
+    if [[ "$artifact_epoch" -lt "$scenario_started_epoch" ]]; then
+      stale+=("$rel")
     fi
   done
 
   if [[ ${#missing[@]} -gt 0 ]]; then
     status_lines+=("- ${scenario}: FAILED (harness exited 0 but required artifacts missing: ${missing[*]}; log=${scenario_log})")
     dataset_lines+=("- ${scenario}: FAILED dataset verification (missing ${missing[*]})")
+    run_failed=1
+    continue
+  fi
+
+  if [[ ${#stale[@]} -gt 0 ]]; then
+    status_lines+=("- ${scenario}: FAILED (harness exited 0 but required artifacts were stale from an earlier run: ${stale[*]}; log=${scenario_log})")
+    dataset_lines+=("- ${scenario}: FAILED dataset verification (stale artifacts ${stale[*]})")
     run_failed=1
     continue
   fi
@@ -127,42 +143,61 @@ else
   verdict="FAILED"
 fi
 
-report_tmp="$RUN_ROOT/execution-report.md"
-{
-  echo "SECTION 1: EXECUTION PATH USED"
-  echo "- Harness entrypoint: obtuseloot.simulation.worldlab.WorldSimulationRunner via Maven exec plugin"
-  echo "- Run root: ${RUN_ROOT}"
-  echo "- Logs root: ${LOG_ROOT}"
-  echo "- Outputs root: ${OUTPUT_ROOT}"
-  echo
-  echo "SECTION 2: SCENARIOS EXECUTED"
-  for scenario in "${SCENARIOS[@]}"; do
-    echo "- ${scenario}"
-  done
-  echo
-  echo "SECTION 3: RUNTIME SETTINGS USED"
-  echo "- validationProfile=true"
-  echo "- world.players=18"
-  echo "- world.artifactsPerPlayer=3"
-  echo "- world.sessionsPerSeason=2"
-  echo "- world.seasonCount=3"
-  echo "- world.encounterDensity=5"
-  echo "- world.telemetrySamplingRate=0.25"
-  echo
-  echo "SECTION 4: PER-SCENARIO COMPLETION STATUS"
-  printf '%s\n' "${status_lines[@]}"
-  echo
-  echo "SECTION 5: DATASET CONTRACT VERIFICATION"
-  printf '%s\n' "${dataset_lines[@]}"
-  echo
-  echo "SECTION 6: EXECUTION VERDICT"
-  echo "$verdict"
-} > "$report_tmp"
+if [[ $run_failed -eq 0 ]]; then
+  report_tmp="$RUN_ROOT/execution-report.md"
+  {
+    echo "SECTION 1: EXECUTION PATH USED"
+    echo "- Harness entrypoint: obtuseloot.simulation.worldlab.WorldSimulationRunner via Maven exec plugin"
+    echo "- Run root: ${RUN_ROOT}"
+    echo "- Logs root: ${LOG_ROOT}"
+    echo "- Outputs root: ${OUTPUT_ROOT}"
+    echo
+    echo "SECTION 2: SCENARIOS EXECUTED"
+    for scenario in "${SCENARIOS[@]}"; do
+      echo "- ${scenario}"
+    done
+    echo
+    echo "SECTION 3: RUNTIME SETTINGS USED"
+    echo "- validationProfile=true"
+    echo "- world.players=18"
+    echo "- world.artifactsPerPlayer=3"
+    echo "- world.sessionsPerSeason=2"
+    echo "- world.seasonCount=3"
+    echo "- world.encounterDensity=5"
+    echo "- world.telemetrySamplingRate=0.25"
+    echo
+    echo "SECTION 4: PER-SCENARIO COMPLETION STATUS"
+    printf '%s\n' "${status_lines[@]}"
+    echo
+    echo "SECTION 5: DATASET CONTRACT VERIFICATION"
+    printf '%s\n' "${dataset_lines[@]}"
+    echo
+    echo "SECTION 6: EXECUTION VERDICT"
+    echo "$verdict"
+  } > "$report_tmp"
 
-cp "$report_tmp" "$BASE_ROOT/execution-report-${TIMESTAMP}.md"
-
-echo "Run complete: ${RUN_ROOT}"
-echo "Execution report: ${BASE_ROOT}/execution-report-${TIMESTAMP}.md"
-if [[ $run_failed -ne 0 ]]; then
+  cp "$report_tmp" "$BASE_ROOT/execution-report-${TIMESTAMP}.md"
+  echo "Run complete: ${RUN_ROOT}"
+  echo "Execution report: ${BASE_ROOT}/execution-report-${TIMESTAMP}.md"
+else
+  failure_report="$RUN_ROOT/failure-report.md"
+  {
+    echo "SECTION 1: RUN FAILURE SUMMARY"
+    echo "- Harness entrypoint: obtuseloot.simulation.worldlab.WorldSimulationRunner via Maven exec plugin"
+    echo "- Run root: ${RUN_ROOT}"
+    echo "- Outputs root: ${OUTPUT_ROOT}"
+    echo "- Execution report intentionally not written because dataset verification failed."
+    echo
+    echo "SECTION 2: PER-SCENARIO COMPLETION STATUS"
+    printf '%s\n' "${status_lines[@]}"
+    echo
+    echo "SECTION 3: DATASET CONTRACT VERIFICATION"
+    printf '%s\n' "${dataset_lines[@]}"
+    echo
+    echo "SECTION 4: EXECUTION VERDICT"
+    echo "$verdict"
+  } > "$failure_report"
+  echo "Run failed: ${RUN_ROOT}"
+  echo "Failure report: ${failure_report}"
   exit 1
 fi
