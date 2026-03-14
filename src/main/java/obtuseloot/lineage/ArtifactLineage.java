@@ -197,13 +197,13 @@ public class ArtifactLineage {
                     0.0D,
                     1.0D);
             double contributionStrength = bounded(branch.stabilizationCount() / (double) Math.max(1, descendantsObserved), 0.0D, 1.0D);
-            double crowdingPenalty = bounded(Math.max(0.0D, branchCount - 2) * 0.08D * (1.0D - recentUtility)
+            double crowdingPenalty = bounded(Math.max(0.0D, branchCount - 2) * 0.088D * (1.0D - recentUtility)
                     + averageSimilarityPenalty(branch), 0.0D, 0.85D);
             double stagnationPenalty = bounded(branch.windowsSinceLastContribution() * 0.05D, 0.0D, 0.75D);
             double maintenanceCost = bounded(
                     ageCoupledCost(branch.ageWindows(), recentUtility)
-                            + (branchCount > 2 ? Math.max(0.0D, branchCount - 2) * 0.04D * (1.0D - contributionStrength) : 0.0D)
-                            + crowdingPenalty * 0.35D
+                            + (branchCount > 2 ? Math.max(0.0D, branchCount - 2) * 0.045D * (1.0D - contributionStrength) : 0.0D)
+                            + crowdingPenalty * 0.38D
                             + Math.max(0.0D, 0.25D - specializationStrength) * 0.30D
                             + Math.max(0.0D, 0.30D - lineageMomentum) * 0.30D,
                     0.0D,
@@ -329,7 +329,7 @@ public class ArtifactLineage {
 
     private double ageCoupledCost(int ageWindows, double recentUtility) {
         double ageFactor = bounded(ageWindows / 18.0D, 0.0D, 1.0D);
-        return ageFactor * Math.max(0.0D, 0.58D - recentUtility) * 0.55D;
+        return ageFactor * Math.max(0.0D, 0.58D - recentUtility) * 0.60D;
     }
 
     private double avgTail(Deque<Double> values, int window) {
