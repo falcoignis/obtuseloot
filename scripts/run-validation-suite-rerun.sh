@@ -303,7 +303,19 @@ else
 fi
 
 if [[ $run_failed -eq 0 ]]; then
-  if is_true_harness_dataset_root "$OUTPUT_ROOT" "${POINTER_EXPECTED_SCENARIOS[@]}"; then
+  pointer_contract_ok=1
+  if ! is_true_harness_dataset_root "$OUTPUT_ROOT" "${SCENARIOS[@]}"; then
+    pointer_contract_ok=0
+    status_lines+=("- LATEST POINTER: SKIPPED (selected dataset root failed strict harness contract for executed scenarios: ${OUTPUT_ROOT})")
+    dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
+  fi
+  if [[ $pointer_contract_ok -eq 1 ]] && ! is_true_harness_dataset_root "$OUTPUT_ROOT" "${POINTER_EXPECTED_SCENARIOS[@]}"; then
+    pointer_contract_ok=0
+    status_lines+=("- LATEST POINTER: SKIPPED (selected dataset root failed strict harness contract for constrained matrix scenarios: ${OUTPUT_ROOT})")
+    dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
+  fi
+
+  if [[ $pointer_contract_ok -eq 1 ]]; then
     pointer_tmp="${POINTER_PATH}.tmp"
     dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
     created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -313,9 +325,10 @@ if [[ $run_failed -eq 0 ]]; then
       echo "created_at=${created_at}"
     } > "$pointer_tmp"
     mv "$pointer_tmp" "$POINTER_PATH"
+    status_lines+=("- LATEST POINTER: UPDATED (${POINTER_PATH} -> ${dataset_root_abs})")
+    dataset_lines+=("- LATEST POINTER: VERIFIED (${POINTER_EXPECTED_SCENARIOS[*]})")
   else
-    status_lines+=("- LATEST POINTER: SKIPPED (selected dataset root failed strict harness contract: ${OUTPUT_ROOT})")
-    dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
+    :
   fi
 
   report_tmp="$RUN_ROOT/execution-report.md"
