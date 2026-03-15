@@ -58,28 +58,40 @@ public class BranchSurvivalHalfLifeAnalyzer {
             }
             double threshold = size * 0.5D;
             Integer halfLifeAge = null;
+            List<Integer> activeByWindow = new ArrayList<>();
+            List<Integer> collapsedByWindow = new ArrayList<>();
             for (int window = cohortWindow; window <= lastWindow; window++) {
                 int active = 0;
+                int collapsed = 0;
                 for (String branch : cohort) {
                     Integer collapseWindow = collapseWindowByBranch.get(branch);
                     if (collapseWindow == null || collapseWindow > window) {
                         active++;
+                    } else {
+                        collapsed++;
                     }
                 }
+                activeByWindow.add(active);
+                collapsedByWindow.add(collapsed);
                 if (active <= threshold) {
                     halfLifeAge = (window - cohortWindow) + 1;
                     break;
                 }
             }
             boolean censored = halfLifeAge == null;
-            double observed = censored ? (lastWindow - cohortWindow) + 1 : halfLifeAge;
-            estimates.add(new CohortHalfLifeEstimate(cohortWindow, size, observed, censored));
+            double observed = censored ? Double.NaN : halfLifeAge;
+            estimates.add(new CohortHalfLifeEstimate(cohortWindow, size, observed, censored,
+                    List.copyOf(activeByWindow), List.copyOf(collapsedByWindow)));
         }
 
         if (estimates.isEmpty()) {
             return new BranchSurvivalHalfLifeReport(Double.NaN, 0, 0, List.of());
         }
-        double aggregate = estimates.stream().mapToDouble(CohortHalfLifeEstimate::halfLifeWindows).average().orElse(Double.NaN);
+        double aggregate = estimates.stream()
+                .filter(e -> !e.censored())
+                .mapToDouble(CohortHalfLifeEstimate::halfLifeWindows)
+                .average()
+                .orElse(Double.NaN);
         int censoredCount = (int) estimates.stream().filter(CohortHalfLifeEstimate::censored).count();
         return new BranchSurvivalHalfLifeReport(aggregate, estimates.size(), censoredCount, List.copyOf(estimates));
     }
@@ -93,4 +105,3 @@ public class BranchSurvivalHalfLifeAnalyzer {
         return windows.size();
     }
 }
-

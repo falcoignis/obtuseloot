@@ -27,6 +27,8 @@ class BranchSurvivalHalfLifeAnalyzerTest {
         assertEquals(0, report.censoredCohorts());
         assertEquals(2.0D, report.branchSurvivalHalfLife(), 1.0E-9D);
         assertEquals(2.0D, report.cohortEstimates().getFirst().halfLifeWindows(), 1.0E-9D);
+        assertEquals(List.of(2, 1), report.cohortEstimates().getFirst().activeByWindow());
+        assertEquals(List.of(0, 1), report.cohortEstimates().getFirst().collapsedByWindow());
     }
 
     @Test
@@ -42,8 +44,11 @@ class BranchSurvivalHalfLifeAnalyzerTest {
 
         assertEquals(1, report.cohortsMeasured());
         assertEquals(1, report.censoredCohorts());
-        assertEquals(3.0D, report.branchSurvivalHalfLife(), 1.0E-9D);
+        assertTrue(Double.isNaN(report.branchSurvivalHalfLife()));
+        assertTrue(Double.isNaN(report.cohortEstimates().getFirst().halfLifeWindows()));
         assertTrue(report.cohortEstimates().getFirst().censored());
+        assertEquals(List.of(2, 2, 2), report.cohortEstimates().getFirst().activeByWindow());
+        assertEquals(List.of(0, 0, 0), report.cohortEstimates().getFirst().collapsedByWindow());
     }
 
     private TelemetryRollupSnapshot snapshot(long ts) {
@@ -53,4 +58,3 @@ class BranchSurvivalHalfLifeAnalyzerTest {
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
     }
 }
-

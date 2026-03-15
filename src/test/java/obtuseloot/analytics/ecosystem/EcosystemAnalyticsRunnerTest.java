@@ -57,6 +57,7 @@ class EcosystemAnalyticsRunnerTest {
         assertTrue(Files.exists(bundle.reportPath()));
         String reportText = Files.readString(bundle.reportPath());
         assertTrue(reportText.contains("branch_survival_half_life="));
+        assertTrue(reportText.contains("branch_survival_half_life_censored_or_complete="));
         assertTrue(Files.exists(bundle.recommendationHistoryPath()));
         assertTrue(Files.exists(bundle.jobRecordPath()));
         assertTrue(Files.exists(bundle.runMetadataPath()));

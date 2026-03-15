@@ -129,10 +129,24 @@ public class EcosystemAnalyticsRunner {
                     + "branch_survival_half_life=" + String.format(Locale.ROOT, "%.3f", report.branchSurvivalHalfLifeReport().branchSurvivalHalfLife()) + "\n"
                     + "branch_survival_half_life_cohorts=" + report.branchSurvivalHalfLifeReport().cohortsMeasured() + "\n"
                     + "branch_survival_half_life_censored=" + report.branchSurvivalHalfLifeReport().censoredCohorts() + "\n"
+                    + "branch_survival_half_life_censored_or_complete=" + censoredOrComplete(report.branchSurvivalHalfLifeReport()) + "\n"
                     + "long_term_summary=" + report.longTermEvolutionReport().summary() + "\n";
             Files.writeString(reportPath, text, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to persist analytics report", ex);
         }
+    }
+
+    private String censoredOrComplete(BranchSurvivalHalfLifeReport report) {
+        if (report.cohortsMeasured() == 0) {
+            return "none";
+        }
+        if (report.censoredCohorts() == 0) {
+            return "complete";
+        }
+        if (report.censoredCohorts() == report.cohortsMeasured()) {
+            return "censored";
+        }
+        return "mixed";
     }
 }
