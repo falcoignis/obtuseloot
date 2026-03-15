@@ -8,8 +8,10 @@ BASE_ROOT="analytics/validation-suite-rerun"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 RUN_ID="archive-fix-rerun-${TIMESTAMP}"
 SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
+REQUIRED_COMPLETION_SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
 POINTER_PATH="analytics/validation-suite/latest-run.properties"
 POINTER_EXPECTED_SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
+COMPLETION_MARKER_NAME=".dataset-complete.properties"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -145,6 +147,27 @@ is_true_harness_dataset_root() {
       fi
     done
   done
+
+  return 0
+}
+
+can_write_completion_marker() {
+  local run_root="$1"
+  local dataset_root="$2"
+  shift 2
+  local scenarios=("$@")
+
+  if [[ -z "$run_root" ]] || [[ ! -d "$run_root" ]]; then
+    return 1
+  fi
+
+  if [[ -z "$dataset_root" ]] || [[ ! -d "$dataset_root" ]]; then
+    return 1
+  fi
+
+  if ! is_true_harness_dataset_root "$dataset_root" "${scenarios[@]}"; then
+    return 1
+  fi
 
   return 0
 }
@@ -303,7 +326,47 @@ else
 fi
 
 if [[ $run_failed -eq 0 ]]; then
+  completion_marker_path="$RUN_ROOT/$COMPLETION_MARKER_NAME"
+  completion_marker_written=0
+  if can_write_completion_marker "$RUN_ROOT" "$OUTPUT_ROOT" "${REQUIRED_COMPLETION_SCENARIOS[@]}"; then
+    completion_tmp="${completion_marker_path}.tmp"
+    created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
+    {
+      echo "run_id=${RUN_ID}"
+      echo "dataset_root=${dataset_root_abs}"
+      echo "created_at=${created_at}"
+      echo "required_scenarios=${REQUIRED_COMPLETION_SCENARIOS[*]}"
+      echo "status=complete"
+    } > "$completion_tmp"
+    mv "$completion_tmp" "$completion_marker_path"
+    completion_marker_written=1
+    status_lines+=("- DATASET COMPLETION MARKER: WRITTEN (${completion_marker_path})")
+    dataset_lines+=("- DATASET COMPLETION MARKER: VERIFIED (${REQUIRED_COMPLETION_SCENARIOS[*]})")
+  else
+    status_lines+=("- DATASET COMPLETION MARKER: SKIPPED (required scenario matrix incomplete or artifacts missing)")
+    dataset_lines+=("- DATASET COMPLETION MARKER: SKIPPED (${COMPLETION_MARKER_NAME} not written)")
+    run_failed=1
+    verdict="FAILED"
+  fi
+
+  if [[ $completion_marker_written -eq 1 ]] && [[ ! -s "$completion_marker_path" ]]; then
+    status_lines+=("- DATASET COMPLETION MARKER: FAILED (${completion_marker_path} missing after write)")
+    dataset_lines+=("- DATASET COMPLETION MARKER: FAILED (missing completion marker)")
+    run_failed=1
+    verdict="FAILED"
+  fi
+
+fi
+
+if [[ $run_failed -eq 0 ]]; then
   pointer_contract_ok=1
+  completion_marker_path="$RUN_ROOT/$COMPLETION_MARKER_NAME"
+  if [[ ! -s "$completion_marker_path" ]]; then
+    pointer_contract_ok=0
+    status_lines+=("- LATEST POINTER: SKIPPED (completion marker missing: ${completion_marker_path})")
+    dataset_lines+=("- LATEST POINTER: SKIPPED (latest-run.properties not updated)")
+  fi
   if ! is_true_harness_dataset_root "$OUTPUT_ROOT" "${SCENARIOS[@]}"; then
     pointer_contract_ok=0
     status_lines+=("- LATEST POINTER: SKIPPED (selected dataset root failed strict harness contract for executed scenarios: ${OUTPUT_ROOT})")
@@ -331,41 +394,54 @@ if [[ $run_failed -eq 0 ]]; then
     :
   fi
 
-  report_tmp="$RUN_ROOT/execution-report.md"
-  {
-    echo "SECTION 1: EXECUTION PATH USED"
-    echo "- Harness entrypoint: obtuseloot.simulation.worldlab.WorldSimulationRunner via Maven exec plugin"
-    echo "- Run root: ${RUN_ROOT}"
-    echo "- Logs root: ${LOG_ROOT}"
-    echo "- Outputs root: ${OUTPUT_ROOT}"
-    echo
-    echo "SECTION 2: SCENARIOS EXECUTED"
-    for scenario in "${SCENARIOS[@]}"; do
-      echo "- ${scenario}"
-    done
-    echo
-    echo "SECTION 3: RUNTIME SETTINGS USED"
-    echo "- validationProfile=true"
-    echo "- world.players=18"
-    echo "- world.artifactsPerPlayer=3"
-    echo "- world.sessionsPerSeason=2"
-    echo "- world.seasonCount=3"
-    echo "- world.encounterDensity=5"
-    echo "- world.telemetrySamplingRate=0.25"
-    echo
-    echo "SECTION 4: PER-SCENARIO COMPLETION STATUS"
-    printf '%s\n' "${status_lines[@]}"
-    echo
-    echo "SECTION 5: DATASET CONTRACT VERIFICATION"
-    printf '%s\n' "${dataset_lines[@]}"
-    echo
-    echo "SECTION 6: EXECUTION VERDICT"
-    echo "$verdict"
-  } > "$report_tmp"
+fi
 
-  cp "$report_tmp" "$BASE_ROOT/execution-report-${TIMESTAMP}.md"
-  echo "Run complete: ${RUN_ROOT}"
-  echo "Execution report: ${BASE_ROOT}/execution-report-${TIMESTAMP}.md"
+if [[ $run_failed -eq 0 ]]; then
+  completion_marker_path="$RUN_ROOT/$COMPLETION_MARKER_NAME"
+  if [[ ! -s "$completion_marker_path" ]]; then
+    run_failed=1
+    verdict="FAILED"
+    status_lines+=("- EXECUTION REPORT: SKIPPED (completion marker missing: ${completion_marker_path})")
+    dataset_lines+=("- EXECUTION REPORT: SKIPPED (cannot finalize without completion marker)")
+  fi
+fi
+
+if [[ $run_failed -eq 0 ]]; then
+    report_tmp="$RUN_ROOT/execution-report.md"
+    {
+      echo "SECTION 1: EXECUTION PATH USED"
+      echo "- Harness entrypoint: obtuseloot.simulation.worldlab.WorldSimulationRunner via Maven exec plugin"
+      echo "- Run root: ${RUN_ROOT}"
+      echo "- Logs root: ${LOG_ROOT}"
+      echo "- Outputs root: ${OUTPUT_ROOT}"
+      echo
+      echo "SECTION 2: SCENARIOS EXECUTED"
+      for scenario in "${SCENARIOS[@]}"; do
+        echo "- ${scenario}"
+      done
+      echo
+      echo "SECTION 3: RUNTIME SETTINGS USED"
+      echo "- validationProfile=true"
+      echo "- world.players=18"
+      echo "- world.artifactsPerPlayer=3"
+      echo "- world.sessionsPerSeason=2"
+      echo "- world.seasonCount=3"
+      echo "- world.encounterDensity=5"
+      echo "- world.telemetrySamplingRate=0.25"
+      echo
+      echo "SECTION 4: PER-SCENARIO COMPLETION STATUS"
+      printf '%s\n' "${status_lines[@]}"
+      echo
+      echo "SECTION 5: DATASET CONTRACT VERIFICATION"
+      printf '%s\n' "${dataset_lines[@]}"
+      echo
+      echo "SECTION 6: EXECUTION VERDICT"
+      echo "$verdict"
+    } > "$report_tmp"
+
+    cp "$report_tmp" "$BASE_ROOT/execution-report-${TIMESTAMP}.md"
+    echo "Run complete: ${RUN_ROOT}"
+    echo "Execution report: ${BASE_ROOT}/execution-report-${TIMESTAMP}.md"
 else
   failure_report="$RUN_ROOT/failure-report.md"
   {
