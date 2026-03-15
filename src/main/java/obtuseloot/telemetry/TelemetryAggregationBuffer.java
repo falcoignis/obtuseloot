@@ -38,6 +38,7 @@ public class TelemetryAggregationBuffer {
     private final Map<String, DoubleAdder> graceWindowByLineage = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> unstableTransitionsByLineage = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> collapsingTransitionsByLineage = new ConcurrentHashMap<>();
+    private final Map<String, String> lastKnownNicheByLineage = new ConcurrentHashMap<>();
     private final LongAdder branchBirthCount = new LongAdder();
     private final LongAdder branchCollapseCount = new LongAdder();
     private final Map<String, LongAdder> competitionPressureDistribution = new ConcurrentHashMap<>();
@@ -79,7 +80,13 @@ public class TelemetryAggregationBuffer {
         }
         String niche = normalized(event.attributes().get("niche"), event.niche());
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
-        if (present(niche) && "true".equalsIgnoreCase(event.attributes().get("meaningful"))) {
+        if (present(lineage) && present(niche)) {
+            lastKnownNicheByLineage.put(lineage, niche);
+        }
+
+        boolean meaningfulOutcome = "true".equalsIgnoreCase(event.attributes().get("meaningful"))
+                || "MEANINGFUL".equalsIgnoreCase(event.attributes().get("outcome_classification"));
+        if (present(niche) && meaningfulOutcome) {
             incrementLong(meaningfulByNiche, niche);
         }
         addDoubleMetric(event.attributes(), "utility_density", niche, utilityDensityByNiche, utilityDensitySamplesByNiche);
@@ -103,6 +110,9 @@ public class TelemetryAggregationBuffer {
         }
         if (event.type() == EcosystemTelemetryEventType.BRANCH_FORMATION) {
             branchBirthCount.increment();
+            if (!present(niche) && present(lineage)) {
+                niche = lastKnownNicheByLineage.get(lineage);
+            }
             if (present(niche)) {
                 incrementLong(branchContributionByNiche, niche);
             }
