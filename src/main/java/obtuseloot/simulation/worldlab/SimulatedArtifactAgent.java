@@ -8,6 +8,7 @@ public class SimulatedArtifactAgent {
     private final Artifact artifact;
     private final ArtifactReputation reputation;
     private AbilityProfile abilityProfile;
+    private final EvolutionaryAbilityRuntimeState evolutionaryAbilityState = new EvolutionaryAbilityRuntimeState();
 
     public SimulatedArtifactAgent(Artifact artifact) {
         this.artifact = artifact;
@@ -28,5 +29,9 @@ public class SimulatedArtifactAgent {
 
     public void setAbilityProfile(AbilityProfile abilityProfile) {
         this.abilityProfile = abilityProfile;
+    }
+
+    public EvolutionaryAbilityRuntimeState evolutionaryAbilityState() {
+        return evolutionaryAbilityState;
     }
 }

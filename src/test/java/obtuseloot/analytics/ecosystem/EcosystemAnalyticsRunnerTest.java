@@ -55,6 +55,8 @@ class EcosystemAnalyticsRunnerTest {
         assertFalse(bundle.report().anomalyReport().runawayLineages().isEmpty());
         assertEquals(RecommendationDecision.PROPOSED, bundle.recommendationRecord().decision());
         assertTrue(Files.exists(bundle.reportPath()));
+        String reportText = Files.readString(bundle.reportPath());
+        assertTrue(reportText.contains("branch_survival_half_life="));
         assertTrue(Files.exists(bundle.recommendationHistoryPath()));
         assertTrue(Files.exists(bundle.jobRecordPath()));
         assertTrue(Files.exists(bundle.runMetadataPath()));

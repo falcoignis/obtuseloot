@@ -33,6 +33,7 @@ import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.fusion.FusionEngine;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
+import obtuseloot.lineage.ArtifactLineage;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageMutation;
 import obtuseloot.lineage.LineageRegistry;
@@ -88,6 +89,7 @@ public class WorldSimulationHarness {
     private final SpeciesNicheAnalyticsEngine speciesNicheEngine;
     private final EcologicalMemoryEngine ecologicalMemoryEngine = new EcologicalMemoryEngine();
     private final OpportunityWeightedMutationEngine opportunityMutationEngine;
+    private final EvolutionaryAbilityEngine evolutionaryAbilityEngine;
     private final Map<String, Integer> seasonSpeciesCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonNicheCounts = new LinkedHashMap<>();
     private final Map<String, Integer> seasonBranchCounts = new LinkedHashMap<>();
@@ -135,6 +137,7 @@ public class WorldSimulationHarness {
                 : null;
         this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.roleBasedRepulsion(), config.minimumRoleSeparation(), config.adaptiveNicheCapacity());
         this.opportunityMutationEngine = new OpportunityWeightedMutationEngine(config.opportunityWeightedMutation());
+        this.evolutionaryAbilityEngine = new EvolutionaryAbilityEngine();
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,
@@ -334,6 +337,28 @@ public class WorldSimulationHarness {
         boolean mutationBiasDrift = agent.artifact().getDriftLevel() > 0 || random.nextDouble() < (((memoryFeedback.mutationBias() - 1.0D) * 0.6D) + opportunityDriftBias);
         AbilityMutationResult mutationResult = mutationEngine.mutate(agent.artifact(), abilityProfile.abilities(), memory, mutationBiasDrift);
         List<AbilityDefinition> finalDefinitions = mutationResult.abilities();
+        ArtifactLineage lineage = lineageRegistry.assignLineage(agent.artifact());
+        EvolutionaryAbilityEngine.AbilityEffects abilityEffects = evolutionaryAbilityEngine.apply(
+                currentGeneration,
+                agent,
+                finalDefinitions,
+                lineage,
+                penaltyResult.nicheId(),
+                penaltyResult.crowdingPenalty(),
+                telemetryEmitter);
+        double boundedDriftBias = Math.max(-0.12D, Math.min(0.18D, abilityEffects.mutationDriftBias()));
+        mutationBiasDrift = mutationBiasDrift || random.nextDouble() < Math.max(0.0D, boundedDriftBias);
+        double effectiveUtilityScore = evolvedScore * abilityEffects.utilityMultiplier();
+        effectiveUtilityScore = Math.max(1.0D, effectiveUtilityScore - (abilityEffects.utilityTradeoffPenalty() * 10.0D));
+        if (abilityEffects.ritualCoherence()) {
+            agent.artifact().setLastMemoryInfluence("ritual-coherence");
+        }
+        if (abilityEffects.collapseGraceDelta() > 0.0D) {
+            lineage.applyMutation(new LineageMutation("lineage-fortification", "survival", 0.01D));
+        }
+        if (abilityEffects.mutationDriftBias() > 0.0D) {
+            lineage.applyMutation(new LineageMutation("entropy-pulse", "mutation", 0.01D));
+        }
         if (!finalDefinitions.isEmpty()) {
             var tree = branchResolver.resolveTree(finalDefinitions.get(0).id(), agent.artifact(), memory, stage, encounter.type().name());
             agent.artifact().setLastAbilityBranchPath(tree.selectedBranch());
@@ -342,12 +367,12 @@ public class WorldSimulationHarness {
         agent.artifact().setLastTriggerProfile(finalDefinitions.stream().map(d -> d.trigger().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.artifact().setLastMechanicProfile(finalDefinitions.stream().map(d -> d.mechanic().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.setAbilityProfile(new AbilityProfile(abilityProfile.profileId(), finalDefinitions));
-        emitAbilityExecutions(agent, trigger, finalDefinitions, penaltyResult.nicheId(), evolvedScore);
+        emitAbilityExecutions(agent, trigger, finalDefinitions, penaltyResult.nicheId(), effectiveUtilityScore + abilityEffects.nicheUtilityDelta());
         var resolvedSpecies = lineageRegistry.evaluateSpeciation(agent.artifact());
         boolean successful = rep.getTotalScore() >= 30;
-        speciesNicheEngine.observeArtifact(agent.artifact(), resolvedSpecies, agent.abilityProfile(), successful, Math.max(1, seasonalSnapshots.size() + 1), penaltyResult.crowdingPenalty());
-        emitNicheAndCompetitionTelemetry(agent, penaltyResult.nicheId(), opportunitySignal, evolvedScore);
-        telemetryEmitter.emit(EcosystemTelemetryEventType.MUTATION_EVENT, agent.artifact().getArtifactSeed(), agent.artifact().getLatentLineage(), penaltyResult.nicheId(), Map.of("generation", String.valueOf(currentGeneration), "mutation_influence", String.valueOf(memoryFeedback.mutationBias()), "drift_window_remaining", String.valueOf(Math.max(1, 5 - (currentGeneration % 5))), "branch_divergence", String.valueOf(opportunitySignal.mutationBias() - 1.0D), "specialization_trajectory", String.valueOf(opportunitySignal.latentBias() - 1.0D), "utility_density", String.valueOf(evolvedScore), "ecology_pressure", String.valueOf(penaltyResult.crowdingPenalty())));
+        speciesNicheEngine.observeArtifact(agent.artifact(), resolvedSpecies, agent.abilityProfile(), successful, Math.max(1, seasonalSnapshots.size() + 1), penaltyResult.crowdingPenalty() + abilityEffects.crowdingPressureDelta());
+        emitNicheAndCompetitionTelemetry(agent, penaltyResult.nicheId(), opportunitySignal, effectiveUtilityScore + abilityEffects.nicheUtilityDelta());
+        telemetryEmitter.emit(EcosystemTelemetryEventType.MUTATION_EVENT, agent.artifact().getArtifactSeed(), agent.artifact().getLatentLineage(), penaltyResult.nicheId(), Map.of("generation", String.valueOf(currentGeneration), "mutation_influence", String.valueOf(memoryFeedback.mutationBias()), "drift_window_remaining", String.valueOf(Math.max(1, 5 - (currentGeneration % 5))), "branch_divergence", String.valueOf(opportunitySignal.mutationBias() - 1.0D), "specialization_trajectory", String.valueOf(opportunitySignal.latentBias() - 1.0D), "utility_density", String.valueOf(effectiveUtilityScore + abilityEffects.nicheUtilityDelta()), "ecology_pressure", String.valueOf(penaltyResult.crowdingPenalty() + abilityEffects.crowdingPressureDelta())));
         tallySeasonSignals(agent, resolvedSpecies.speciesId());
         metrics.recordAbilityProfile(agent.abilityProfile());
     }

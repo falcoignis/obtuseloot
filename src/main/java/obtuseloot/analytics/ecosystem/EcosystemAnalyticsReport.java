@@ -5,6 +5,7 @@ public record EcosystemAnalyticsReport(
         LineageSuccessReport lineageSuccessReport,
         EcosystemAnomalyReport anomalyReport,
         TuningProfileRecommendation tuningProfileRecommendation,
-        LongTermEvolutionReport longTermEvolutionReport
+        LongTermEvolutionReport longTermEvolutionReport,
+        BranchSurvivalHalfLifeReport branchSurvivalHalfLifeReport
 ) {
 }
