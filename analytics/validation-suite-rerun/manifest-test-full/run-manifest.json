@@ -1,0 +1,67 @@
+{
+  "run_id": "manifest-test-full",
+  "dataset_root": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full",
+  "created_at": "2026-03-15T17:26:58Z",
+  "updated_at": "2026-03-15T17:26:58Z",
+  "status": "READY_FOR_ANALYSIS",
+  "stages": {
+    "matrix_execution":   {"status": "PASSED", "updated_at": "2026-03-15T17:26:58Z"},
+    "dataset_contract":   {"status": "PASSED", "updated_at": "2026-03-15T17:26:58Z"},
+    "completion_marker":  {"status": "PASSED", "updated_at": "2026-03-15T17:26:58Z"},
+    "latest_run_pointer": {"status": "PASSED", "updated_at": "2026-03-15T17:26:58Z"},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "ritualist-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full/ritualist-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "gatherer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full/gatherer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "mixed": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full/mixed",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "random-baseline": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-full/random-baseline",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    }
+  }
+}
