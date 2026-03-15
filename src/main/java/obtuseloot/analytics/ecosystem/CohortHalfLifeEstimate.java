@@ -8,6 +8,6 @@ public record CohortHalfLifeEstimate(
         double halfLifeWindows,
         boolean censored,
         List<Integer> activeByWindow,
-        List<Integer> collapsedByWindow
+        List<Integer> inactiveOrDeadByWindow
 ) {
 }

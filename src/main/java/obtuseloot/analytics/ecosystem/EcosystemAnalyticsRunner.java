@@ -127,9 +127,10 @@ public class EcosystemAnalyticsRunner {
                     + "recommendation_id=" + recommendation.recommendationId() + "\n"
                     + "decision=" + recommendation.decision() + "\n"
                     + "branch_survival_half_life=" + String.format(Locale.ROOT, "%.3f", report.branchSurvivalHalfLifeReport().branchSurvivalHalfLife()) + "\n"
-                    + "branch_survival_half_life_cohorts=" + report.branchSurvivalHalfLifeReport().cohortsMeasured() + "\n"
+                    + "cohorts_measured=" + report.branchSurvivalHalfLifeReport().cohortsMeasured() + "\n"
                     + "branch_survival_half_life_censored=" + report.branchSurvivalHalfLifeReport().censoredCohorts() + "\n"
-                    + "branch_survival_half_life_censored_or_complete=" + censoredOrComplete(report.branchSurvivalHalfLifeReport()) + "\n"
+                    + "estimate_status=" + report.branchSurvivalHalfLifeReport().estimateStatus() + "\n"
+                    + "branch_survival_half_life_censored_or_complete=" + report.branchSurvivalHalfLifeReport().estimateStatus() + "\n"
                     + "long_term_summary=" + report.longTermEvolutionReport().summary() + "\n";
             Files.writeString(reportPath, text, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
         } catch (IOException ex) {
@@ -137,16 +138,4 @@ public class EcosystemAnalyticsRunner {
         }
     }
 
-    private String censoredOrComplete(BranchSurvivalHalfLifeReport report) {
-        if (report.cohortsMeasured() == 0) {
-            return "none";
-        }
-        if (report.censoredCohorts() == 0) {
-            return "complete";
-        }
-        if (report.censoredCohorts() == report.cohortsMeasured()) {
-            return "censored";
-        }
-        return "mixed";
-    }
 }
