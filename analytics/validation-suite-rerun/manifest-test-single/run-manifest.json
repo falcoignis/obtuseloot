@@ -1,0 +1,27 @@
+{
+  "run_id": "manifest-test-single",
+  "dataset_root": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-single",
+  "created_at": "2026-03-15T17:26:38Z",
+  "updated_at": "2026-03-15T17:26:38Z",
+  "status": "FAILED",
+  "stages": {
+    "matrix_execution":   {"status": "PASSED", "updated_at": "2026-03-15T17:26:38Z"},
+    "dataset_contract":   {"status": "PASSED", "updated_at": "2026-03-15T17:26:38Z"},
+    "completion_marker":  {"status": "PASSED", "updated_at": "2026-03-15T17:26:38Z"},
+    "latest_run_pointer": {"status": "FAILED", "updated_at": "2026-03-15T17:26:38Z"},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/manifest-test-single/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    }
+  }
+}
