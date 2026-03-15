@@ -3,6 +3,7 @@ package obtuseloot.analytics.ecosystem;
 import obtuseloot.telemetry.EcosystemTelemetryEvent;
 import obtuseloot.telemetry.EcosystemTelemetryEventType;
 import obtuseloot.telemetry.TelemetryRollupSnapshot;
+import obtuseloot.lineage.BranchLifecycleState;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +25,7 @@ public class BranchSurvivalHalfLifeAnalyzer {
         Map<Integer, List<String>> cohorts = new LinkedHashMap<>();
         Map<String, Integer> birthWindowByBranch = new LinkedHashMap<>();
         Map<String, Integer> collapseWindowByBranch = new LinkedHashMap<>();
+        Map<String, Integer> firstInactiveWindowByBranch = new LinkedHashMap<>();
 
         List<EcosystemTelemetryEvent> sorted = telemetryEvents.stream()
                 .sorted(Comparator.comparingLong(EcosystemTelemetryEvent::timestampMs))
@@ -42,9 +44,14 @@ public class BranchSurvivalHalfLifeAnalyzer {
                     cohorts.computeIfAbsent(window, ignored -> new ArrayList<>()).add(branchKey);
                 }
             }
-            if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE
-                    && "branch-collapsed".equalsIgnoreCase(event.attributes().get("event"))) {
-                collapseWindowByBranch.putIfAbsent(branchKey, window);
+            if (event.type() == EcosystemTelemetryEventType.LINEAGE_UPDATE) {
+                if ("branch-collapsed".equalsIgnoreCase(event.attributes().get("event"))) {
+                    collapseWindowByBranch.putIfAbsent(branchKey, window);
+                }
+                BranchLifecycleState state = parseLifecycleState(event.attributes().get("lifecycle_state"));
+                if (state != null && state != BranchLifecycleState.STABLE) {
+                    firstInactiveWindowByBranch.putIfAbsent(branchKey, window);
+                }
             }
         }
 
@@ -59,20 +66,23 @@ public class BranchSurvivalHalfLifeAnalyzer {
             double threshold = size * 0.5D;
             Integer halfLifeAge = null;
             List<Integer> activeByWindow = new ArrayList<>();
-            List<Integer> collapsedByWindow = new ArrayList<>();
+            List<Integer> inactiveOrDeadByWindow = new ArrayList<>();
             for (int window = cohortWindow; window <= lastWindow; window++) {
                 int active = 0;
-                int collapsed = 0;
+                int inactiveOrDead = 0;
                 for (String branch : cohort) {
                     Integer collapseWindow = collapseWindowByBranch.get(branch);
-                    if (collapseWindow == null || collapseWindow > window) {
+                    Integer inactiveWindow = firstInactiveWindowByBranch.get(branch);
+                    boolean collapsed = collapseWindow != null && collapseWindow <= window;
+                    boolean inactive = inactiveWindow != null && inactiveWindow <= window;
+                    if (!collapsed && !inactive) {
                         active++;
                     } else {
-                        collapsed++;
+                        inactiveOrDead++;
                     }
                 }
                 activeByWindow.add(active);
-                collapsedByWindow.add(collapsed);
+                inactiveOrDeadByWindow.add(inactiveOrDead);
                 if (active <= threshold) {
                     halfLifeAge = (window - cohortWindow) + 1;
                     break;
@@ -81,7 +91,7 @@ public class BranchSurvivalHalfLifeAnalyzer {
             boolean censored = halfLifeAge == null;
             double observed = censored ? Double.NaN : halfLifeAge;
             estimates.add(new CohortHalfLifeEstimate(cohortWindow, size, observed, censored,
-                    List.copyOf(activeByWindow), List.copyOf(collapsedByWindow)));
+                    List.copyOf(activeByWindow), List.copyOf(inactiveOrDeadByWindow)));
         }
 
         if (estimates.isEmpty()) {
@@ -94,6 +104,17 @@ public class BranchSurvivalHalfLifeAnalyzer {
                 .orElse(Double.NaN);
         int censoredCount = (int) estimates.stream().filter(CohortHalfLifeEstimate::censored).count();
         return new BranchSurvivalHalfLifeReport(aggregate, estimates.size(), censoredCount, List.copyOf(estimates));
+    }
+
+    private BranchLifecycleState parseLifecycleState(String rawState) {
+        if (rawState == null || rawState.isBlank()) {
+            return null;
+        }
+        try {
+            return BranchLifecycleState.valueOf(rawState.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private int resolveWindowIndex(long timestampMs, List<Long> windows) {
