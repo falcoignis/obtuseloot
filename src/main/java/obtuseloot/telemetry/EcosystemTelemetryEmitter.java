@@ -50,7 +50,7 @@ public class EcosystemTelemetryEmitter {
             return true;
         }
         String contextTags = attributes == null ? "" : attributes.getOrDefault("context_tags", "").toLowerCase();
-        return contextTags.contains("anomaly") || contextTags.contains("branch-collapse") || contextTags.contains("lifecycle");
+        return contextTags.contains("anomaly") || contextTags.contains("branch-collapse") || contextTags.contains("lifecycle") || contextTags.contains("meaningful-outcome");
     }
 
     public void flush() {
