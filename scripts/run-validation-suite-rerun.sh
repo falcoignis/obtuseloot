@@ -36,9 +36,9 @@ done
 
 RUN_ROOT="$BASE_ROOT/$RUN_ID"
 LOG_ROOT="$RUN_ROOT/logs"
-# Keep datasets in the same run root referenced by run_id so dataset_root does
-# not require callers to reconstruct paths by joining pointer fields.
-OUTPUT_ROOT="$RUN_ROOT/runs"
+# Scenario outputs written directly under the run root so paths resolve as
+# analytics/validation-suite-rerun/<run-id>/<scenario>.
+OUTPUT_ROOT="$RUN_ROOT"
 mkdir -p "$LOG_ROOT" "$OUTPUT_ROOT"
 
 mvn -q -DskipTests compile
