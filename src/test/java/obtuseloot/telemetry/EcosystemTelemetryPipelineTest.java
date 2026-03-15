@@ -199,6 +199,28 @@ class EcosystemTelemetryPipelineTest {
         assertEquals(snapshot.eventCounts().get(EcosystemTelemetryEventType.BRANCH_FORMATION), snapshot.branchBirthCount());
     }
 
+
+    @Test
+    void branchAndMeaningfulAttributionUseNicheContextAcrossEvents() {
+        TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
+        ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
+        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
+                new EcosystemHistoryArchive(tempDir.resolve("niche-attribution.log")), rollups, 32);
+
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 3L, "lin-ctx", "SCOUT",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                        Map.of("niche", "SCOUT", "lineage_id", "lin-ctx", "outcome_classification", "MEANINGFUL", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.BRANCH_FORMATION, 3L, "lin-ctx", TelemetryFieldContract.NOT_APPLICABLE,
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.BRANCH_FORMATION,
+                        Map.of("lineage_id", "lin-ctx", "branch_id", "b-ctx", "branch_divergence", "0.3"))));
+
+        service.scheduledRollupTick(System.currentTimeMillis() + 5L);
+        EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();
+
+        assertEquals(1L, snapshot.nichePopulationRollup().meaningfulOutcomesByNiche().get("SCOUT"));
+        assertEquals(1L, snapshot.nichePopulationRollup().branchContributionByNiche().get("SCOUT"));
+    }
+
     @Test
     void aggregationBufferOperationsRemainBoundedWithActiveArtifacts() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
