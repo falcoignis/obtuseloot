@@ -665,6 +665,7 @@ public class WorldSimulationHarness {
             data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
             data.put("rollup_history", rollupHistorySummary);
             data.put("validation_profile", true);
+            data.put("fusion_diagnostics", fusionEngine.diagnosticCounters());
             writeJsonFile(out.resolve("world-sim-data.json"), data);
             Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
             Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
@@ -717,6 +718,7 @@ public class WorldSimulationHarness {
         }
         data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents(), "sampling_rate", telemetrySamplingRate));
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
+        data.put("fusion_diagnostics", fusionEngine.diagnosticCounters());
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
         data.put("rollup_history", rollupHistorySummary);
         writeJsonFile(out.resolve("world-sim-data.json"), data);
