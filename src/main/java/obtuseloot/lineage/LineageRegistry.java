@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import obtuseloot.evolution.AdaptiveSupportBudget;
 import obtuseloot.evolution.LineageCompetitionModel;
@@ -33,6 +34,7 @@ public class LineageRegistry {
     private final LineageSpeciationEngine speciationEngine = new LineageSpeciationEngine();
     private final SpeciesSignatureResolver signatureResolver = new SpeciesSignatureResolver();
     private final InheritanceBranchingHeuristics branchingHeuristics = new InheritanceBranchingHeuristics();
+    private final Map<Long, String> telemetryNicheContextByArtifact = new ConcurrentHashMap<>();
     private volatile int driftWindowDurationTicks = 5;
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
 
@@ -42,6 +44,17 @@ public class LineageRegistry {
 
     public void setDriftWindowDurationTicks(int driftWindowDurationTicks) {
         this.driftWindowDurationTicks = Math.max(1, driftWindowDurationTicks);
+    }
+
+    public void updateTelemetryNicheContext(long artifactSeed, String nicheId) {
+        if (artifactSeed <= 0L) {
+            return;
+        }
+        if (nicheId == null || nicheId.isBlank()) {
+            telemetryNicheContextByArtifact.remove(artifactSeed);
+            return;
+        }
+        telemetryNicheContextByArtifact.put(artifactSeed, nicheId);
     }
 
     public ArtifactLineage assignLineage(Artifact artifact) {
@@ -181,7 +194,8 @@ public class LineageRegistry {
                     enriched.put("specialization_trajectory", String.valueOf(lineage.specializationTrajectoryDelta()));
                 }
             }
-            emitter.emit(type, artifact.getArtifactSeed(), lineageId, "", enriched);
+            String niche = enriched.getOrDefault("niche", telemetryNicheContextByArtifact.getOrDefault(artifact.getArtifactSeed(), ""));
+            emitter.emit(type, artifact.getArtifactSeed(), lineageId, niche, enriched);
         }
     }
 }

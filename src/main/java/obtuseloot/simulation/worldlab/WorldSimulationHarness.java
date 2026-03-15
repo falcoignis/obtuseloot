@@ -318,6 +318,7 @@ public class WorldSimulationHarness {
         }
 
         SpeciesNicheAnalyticsEngine.PenaltyResult penaltyResult = speciesNicheEngine.applyCrowdingPenalty(agent.artifact(), rep.getTotalScore());
+        lineageRegistry.updateTelemetryNicheContext(agent.artifact().getArtifactSeed(), penaltyResult.nicheId());
         double evolvedScore = penaltyResult.effectiveScore();
         if (config.enableCoEvolution()) {
             SpeciesNicheAnalyticsEngine.CoEvolutionPressureResult coEvolutionResult = speciesNicheEngine.applyCoEvolutionPressure(agent.artifact(), evolvedScore);
@@ -426,6 +427,7 @@ public class WorldSimulationHarness {
                             "ability_id", definition.id(),
                             "execution_status", AbilityExecutionStatus.SUCCESS.name(),
                             "outcome_classification", "MEANINGFUL",
+                            "context_tags", "meaningful-outcome",
                             "niche_tags", String.join("|", definition.metadata() == null ? java.util.Set.of("general") : definition.metadata().utilityDomains()),
                             "utility_score", String.valueOf(utilityScore),
                             "utility_density", String.valueOf(Math.max(0.0D, utilityScore / Math.max(1.0D, definitions.size())))
