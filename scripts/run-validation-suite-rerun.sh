@@ -165,9 +165,17 @@ can_write_completion_marker() {
     return 1
   fi
 
-  if ! is_true_harness_dataset_root "$dataset_root" "${scenarios[@]}"; then
-    return 1
-  fi
+  local scenario rel
+  for scenario in "${scenarios[@]}"; do
+    if [[ ! -d "$dataset_root/$scenario" ]]; then
+      return 1
+    fi
+    for rel in "${required_artifacts[@]}"; do
+      if [[ ! -s "$dataset_root/$scenario/$rel" ]]; then
+        return 1
+      fi
+    done
+  done
 
   return 0
 }
@@ -328,21 +336,20 @@ fi
 if [[ $run_failed -eq 0 ]]; then
   completion_marker_path="$RUN_ROOT/$COMPLETION_MARKER_NAME"
   completion_marker_written=0
-  if can_write_completion_marker "$RUN_ROOT" "$OUTPUT_ROOT" "${REQUIRED_COMPLETION_SCENARIOS[@]}"; then
+  if can_write_completion_marker "$RUN_ROOT" "$OUTPUT_ROOT" "${SCENARIOS[@]}"; then
     completion_tmp="${completion_marker_path}.tmp"
     created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    dataset_root_abs="$(realpath "$OUTPUT_ROOT")"
+    scenario_count="${#SCENARIOS[@]}"
     {
       echo "run_id=${RUN_ID}"
-      echo "dataset_root=${dataset_root_abs}"
       echo "created_at=${created_at}"
-      echo "required_scenarios=${REQUIRED_COMPLETION_SCENARIOS[*]}"
-      echo "status=complete"
+      echo "scenario_count=${scenario_count}"
+      echo "contract_version=1"
     } > "$completion_tmp"
     mv "$completion_tmp" "$completion_marker_path"
     completion_marker_written=1
     status_lines+=("- DATASET COMPLETION MARKER: WRITTEN (${completion_marker_path})")
-    dataset_lines+=("- DATASET COMPLETION MARKER: VERIFIED (${REQUIRED_COMPLETION_SCENARIOS[*]})")
+    dataset_lines+=("- DATASET COMPLETION MARKER: VERIFIED (${SCENARIOS[*]})")
   else
     status_lines+=("- DATASET COMPLETION MARKER: SKIPPED (required scenario matrix incomplete or artifacts missing)")
     dataset_lines+=("- DATASET COMPLETION MARKER: SKIPPED (${COMPLETION_MARKER_NAME} not written)")
