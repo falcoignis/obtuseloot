@@ -37,4 +37,4 @@ jobs:
           name: obtuseloot-nightly-reports
           path: |
             analytics/**
-            target/ObtuseLoot-0.9.5.jar
+            target/ObtuseLoot-*.jar
