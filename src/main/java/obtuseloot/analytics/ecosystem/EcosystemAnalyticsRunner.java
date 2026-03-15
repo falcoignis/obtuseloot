@@ -33,7 +33,8 @@ public class EcosystemAnalyticsRunner {
         Path runMetadataPath = null;
         try {
             AnalysisPipelineContext context = jobOrchestrator.prepare(job);
-            EcosystemAnalyticsReport report = analyticsOrchestrator.analyze(context.selectedWindow(), context.rollupHistory());
+            EcosystemAnalyticsReport report = analyticsOrchestrator.analyze(
+                    context.telemetryEvents(), context.selectedWindow(), context.rollupHistory());
 
             long now = System.currentTimeMillis();
             String recId = job.jobId() + "-" + UUID.randomUUID();
@@ -125,6 +126,9 @@ public class EcosystemAnalyticsRunner {
                     + "severity=" + String.format(Locale.ROOT, "%.3f", report.anomalyReport().anomalySeverityScore()) + "\n"
                     + "recommendation_id=" + recommendation.recommendationId() + "\n"
                     + "decision=" + recommendation.decision() + "\n"
+                    + "branch_survival_half_life=" + String.format(Locale.ROOT, "%.3f", report.branchSurvivalHalfLifeReport().branchSurvivalHalfLife()) + "\n"
+                    + "branch_survival_half_life_cohorts=" + report.branchSurvivalHalfLifeReport().cohortsMeasured() + "\n"
+                    + "branch_survival_half_life_censored=" + report.branchSurvivalHalfLifeReport().censoredCohorts() + "\n"
                     + "long_term_summary=" + report.longTermEvolutionReport().summary() + "\n";
             Files.writeString(reportPath, text, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
         } catch (IOException ex) {
