@@ -145,6 +145,16 @@ public final class TelemetryFieldContract {
                         optional("world", "dimension", "niche", "lineage_id"),
                         absent("artifact_id", "artifact_seed", "ability_id", "mechanic", "execution_status", "mutation_influence", "drift_window_remaining", "branch_divergence", "reinforcement_multiplier")));
 
+        map.put(EcosystemTelemetryEventType.NICHE_BIFURCATION,
+                new SchemaContract(
+                        required("event_type", "context_tags"),
+                        optional("niche", "parent_niche", "child_niche_a", "child_niche_b",
+                                "saturation_pressure_at_creation", "specialization_pressure_at_creation",
+                                "timestamp_ms"),
+                        absent("ability_id", "trigger", "mechanic", "execution_status", "budget_cost",
+                                "reinforcement_multiplier", "lineage_momentum", "mutation_influence",
+                                "drift_window_remaining", "branch_divergence")));
+
         return Map.copyOf(map);
     }
 
