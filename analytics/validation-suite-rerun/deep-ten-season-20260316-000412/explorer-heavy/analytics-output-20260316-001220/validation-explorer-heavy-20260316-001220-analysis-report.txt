@@ -1,0 +1,15 @@
+job=validation-explorer-heavy-20260316-001220
+rollups_loaded=1
+window_size=1
+telemetry_events=367078
+runaway_lineages=[]
+niche_collapse=[]
+severity=0.000
+recommendation_id=validation-explorer-heavy-20260316-001220-331ed86c-2f4c-444a-9c72-ce4307258300
+decision=PROPOSED
+branch_survival_half_life=1.000
+cohorts_measured=1
+branch_survival_half_life_censored=0
+estimate_status=complete
+branch_survival_half_life_censored_or_complete=complete
+long_term_summary=Insufficient historical rollups for long-term analysis.

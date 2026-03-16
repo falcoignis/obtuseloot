@@ -1,0 +1,15 @@
+job=deep-mixed
+rollups_loaded=10
+window_size=10
+telemetry_events=408291
+runaway_lineages=[lineage-403903f7-fc12-3aeb-85ea-84ba3696f10c, lineage-b45fd643-074f-3f16-94b9-3e65dcf309da, lineage-5bf41c27-2203-307d-83b6-4ddfd0f5026b, lineage-67d1a8ee-81e0-3f8b-b769-09f62dc43b3e, lineage-84ad7f83-232d-3dab-8603-facae651b815, lineage-c913059a-de18-368a-87be-4d0fc3b25e9c, lineage-2718730a-abcb-33e2-a06d-90258a12f31a, graveborn, wild-35642, lineage-06572098-bef0-38b0-9c12-c07356daea7c, lineage-6b089f6b-e569-3277-99d1-f0716a25141b, lineage-7e54b6d6-4b1b-3786-9423-40690d95b162, lineage-9a4a4c73-00ce-3403-899f-667c669186bc, lineage-9175e444-eeba-39be-80c1-7b17afc5505b, mirrored, ashen, lineage-09e4bab1-6988-344d-8d9f-2602d0defdc8, lineage-14c5ba69-7725-3dcd-bd81-aea97de26c0c, lineage-30f61d11-3264-3351-b568-62156622a736, lineage-d2070c3c-3900-34f8-8734-e317da232f72, lineage-947384ca-5d46-3bf2-8725-431344a07645, lineage-6f9c17c8-b340-3a19-906f-b9acc04be22e, wild-65015, stormbound, lineage-311d1c9c-5cc4-38f6-8a54-ec8354854317, lineage-66f3625f-5980-386d-9634-8fe1d39d511d, gilded, lineage-93b5beb2-4343-38ce-a4ea-9f2f4bada1ee, lineage-6712040d-9814-3865-b59c-90f5fce195d7, lineage-b4e200ba-8958-32b1-a211-f79af7a187b0, wild-4233, lineage-bec0eabe-bcbd-327d-a283-aaf3e3037093]
+niche_collapse=[]
+severity=1.269
+recommendation_id=deep-mixed-df95f52e-95b9-4769-ac67-4be8dbda8773
+decision=PROPOSED
+branch_survival_half_life=1.167
+cohorts_measured=6
+branch_survival_half_life_censored=0
+estimate_status=complete
+branch_survival_half_life_censored_or_complete=complete
+long_term_summary=window=rolling_window, retention=1, turnover=0.003, adaptationCycleStrength=-0.001, recentDelta=-0.000/-0.000, emergingNiches=[]
