@@ -215,6 +215,9 @@ public class TelemetryAggregationBuffer {
     public java.util.List<String> dynamicNichesSnapshot() { return java.util.List.copyOf(dynamicNiches); }
     public long bifurcationCountSnapshot() { return bifurcationCount.sum(); }
     public Map<String, Long> dynamicNichePopulationSnapshot() { return longSnapshot(dynamicNichePopulation); }
+    public long totalRecordedEventsSnapshot() {
+        return typeCountsSnapshot().values().stream().mapToLong(Long::longValue).sum();
+    }
 
     public synchronized void rehydrateFrom(EcosystemSnapshot snapshot) {
         if (snapshot == null) {
