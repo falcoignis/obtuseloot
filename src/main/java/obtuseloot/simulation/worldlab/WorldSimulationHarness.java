@@ -2548,6 +2548,7 @@ public class WorldSimulationHarness {
                 + " heap_used_mb=" + usedMb
                 + " heap_max_mb=" + maxMb
                 + " telemetry_buffer_size=" + telemetryBuffer.pendingCount()
+                + " telemetry_total_recorded=" + telemetryBuffer.totalRecordedEventsSnapshot()
                 + " in_memory_rollup_count=" + rollupHistory.size()
                 + " active_artifact_count=" + artifactPopulation
                 + " lineage_count=" + lineageRegistry.lineages().size()
