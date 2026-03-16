@@ -101,7 +101,9 @@ public class ArtifactUsageTracker {
 
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
         if (emitter != null) {
-            ArtifactNicheProfile niche = nichePopulationTracker.nicheProfile(artifact.getArtifactSeed());
+            // Use effectiveNicheName so artifacts assigned to dynamic child niches
+            // are attributed to those child niches in telemetry.
+            String effectiveNiche = nichePopulationTracker.effectiveNicheName(artifact.getArtifactSeed());
             String outcomeClassification = result.meaningfulOutcome() ? "MEANINGFUL"
                     : (result.outcomeType() == obtuseloot.abilities.AbilityOutcomeType.FLAVOR_ONLY ? "FLAVOR_ONLY" : "NO_OP");
             String nicheTags = definition.metadata() == null ? "general" : String.join("|", definition.metadata().utilityDomains());
@@ -131,7 +133,7 @@ public class ArtifactUsageTracker {
             emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
                     artifact.getArtifactSeed(),
                     artifact.getLatentLineage(),
-                    niche.dominantNiche().name(),
+                    effectiveNiche,
                     attributes);
         }
     }
