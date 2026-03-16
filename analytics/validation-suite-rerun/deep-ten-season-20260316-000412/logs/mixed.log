@@ -1,0 +1,12 @@
+Picked up JAVA_TOOL_OPTIONS: 
+[world-sim][memory] generation=4 heap_used_mb=36 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=1 active_artifact_count=60 lineage_count=32 branch_count=20
+[world-sim][memory] generation=8 heap_used_mb=127 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=2 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=12 heap_used_mb=211 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=3 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=16 heap_used_mb=260 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=4 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=20 heap_used_mb=140 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=5 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=24 heap_used_mb=90 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=6 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=28 heap_used_mb=74 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=7 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=32 heap_used_mb=330 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=8 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=36 heap_used_mb=158 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=9 active_artifact_count=60 lineage_count=32 branch_count=21
+[world-sim][memory] generation=40 heap_used_mb=264 heap_max_mb=4022 telemetry_buffer_size=0 in_memory_rollup_count=10 active_artifact_count=60 lineage_count=32 branch_count=21
+World simulation outputs written to analytics/validation-suite-rerun/deep-ten-season-20260316-000412/mixed
