@@ -77,7 +77,7 @@ class BranchSurvivalHalfLifeAnalyzerTest {
     private TelemetryRollupSnapshot snapshot(long ts) {
         NichePopulationRollup niche = new NichePopulationRollup(ts, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         LineagePopulationRollup lineage = new LineagePopulationRollup(ts, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
-        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(), niche, lineage, 0L, 0.0D, 0.0D, 0.0D, 0L, 0L, Map.of());
+        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(), niche, lineage, 0L, 0.0D, 0.0D, 0.0D, 0L, 0L, Map.of(), List.of(), 0L, Map.of());
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
     }
 }

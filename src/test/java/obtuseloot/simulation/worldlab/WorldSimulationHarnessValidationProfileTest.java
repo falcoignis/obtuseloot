@@ -74,6 +74,12 @@ class WorldSimulationHarnessValidationProfileTest {
         assertTrue(archiveContent.contains("lifecycle_state="));
         assertTrue(archiveContent.contains("survival_score="));
         assertTrue(archiveContent.contains("maintenance_cost="));
+        assertTrue(archiveContent.contains("abilityId="), "abilityId should be emitted by ArtifactUsageTracker telemetry path");
+
+        String rollupSnapshots = Files.readString(rollupSnapshotsJson);
+        assertTrue(rollupSnapshots.contains("\"dynamicNiches\""));
+        assertTrue(rollupSnapshots.contains("\"bifurcationCount\""));
+        assertTrue(rollupSnapshots.contains("\"dynamicNichePopulation\""));
 
         String worldData = Files.readString(output.resolve("world-sim-data.json"));
         assertTrue(worldData.contains("\"validation_profile\": true"));

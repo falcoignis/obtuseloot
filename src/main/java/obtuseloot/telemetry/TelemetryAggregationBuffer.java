@@ -42,6 +42,9 @@ public class TelemetryAggregationBuffer {
     private final LongAdder branchBirthCount = new LongAdder();
     private final LongAdder branchCollapseCount = new LongAdder();
     private final Map<String, LongAdder> competitionPressureDistribution = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> dynamicNichePopulation = new ConcurrentHashMap<>();
+    private final java.util.Set<String> dynamicNiches = ConcurrentHashMap.newKeySet();
+    private final LongAdder bifurcationCount = new LongAdder();
     private final Map<String, Long> baselineNichePopulation = new ConcurrentHashMap<>();
     private final Map<String, Long> baselineLineagePopulation = new ConcurrentHashMap<>();
     private final Map<EcosystemTelemetryEventType, Long> baselineTypeCounts = new ConcurrentHashMap<>();
@@ -132,6 +135,27 @@ public class TelemetryAggregationBuffer {
                 incrementLong(collapsingTransitionsByLineage, lineage);
             }
         }
+        if (event.type() == EcosystemTelemetryEventType.NICHE_BIFURCATION) {
+            String eventType = event.attributes().get("event_type");
+            if ("niche_bifurcation".equalsIgnoreCase(eventType)) {
+                bifurcationCount.increment();
+                String childA = event.attributes().get("child_niche_a");
+                String childB = event.attributes().get("child_niche_b");
+                if (present(childA)) {
+                    dynamicNiches.add(childA);
+                }
+                if (present(childB)) {
+                    dynamicNiches.add(childB);
+                }
+            }
+            String emittedNiche = normalized(event.niche(), event.attributes().get("niche"));
+            if (present(emittedNiche) && ("niche_bifurcation_child".equalsIgnoreCase(eventType) || dynamicNiches.contains(emittedNiche))) {
+                dynamicNiches.add(emittedNiche);
+            }
+        }
+        if (present(niche) && dynamicNiches.contains(niche)) {
+            incrementLong(dynamicNichePopulation, niche);
+        }
         double pressure = parseDouble(event.attributes().get("ecology_pressure"));
         if (!Double.isNaN(pressure)) {
             String bucket = pressure < 0.33D ? "low" : pressure < 0.66D ? "medium" : "high";
@@ -188,6 +212,9 @@ public class TelemetryAggregationBuffer {
     public long branchBirthCountSnapshot() { return baselineBranchBirthCount + branchBirthCount.sum(); }
     public long branchCollapseCountSnapshot() { return baselineBranchCollapseCount + branchCollapseCount.sum(); }
     public Map<String, Long> competitionPressureDistributionSnapshot() { return longSnapshot(competitionPressureDistribution); }
+    public java.util.List<String> dynamicNichesSnapshot() { return java.util.List.copyOf(dynamicNiches); }
+    public long bifurcationCountSnapshot() { return bifurcationCount.sum(); }
+    public Map<String, Long> dynamicNichePopulationSnapshot() { return longSnapshot(dynamicNichePopulation); }
 
     public synchronized void rehydrateFrom(EcosystemSnapshot snapshot) {
         if (snapshot == null) {

@@ -49,6 +49,9 @@ public class TelemetryRollupSnapshotStore {
         writeDoubleMap(p, "lineage.driftWindow.", eco.lineagePopulationRollup().driftWindowRemainingByLineage());
         writeDoubleMap(p, "lineage.branchDivergence.", eco.lineagePopulationRollup().branchDivergenceByLineage());
         writeLongMap(p, "competitionPressure.", eco.competitionPressureDistribution());
+        p.setProperty("snapshot.bifurcationCount", String.valueOf(eco.bifurcationCount()));
+        writeList(p, "dynamicNiches.", eco.dynamicNiches());
+        writeLongMap(p, "dynamicNichePopulation.", eco.dynamicNichePopulation());
         writeNestedLongMap(p, "lineage.nicheDistribution.", eco.lineagePopulationRollup().nicheDistributionByLineage());
 
         try {
@@ -111,7 +114,10 @@ public class TelemetryRollupSnapshotStore {
                 Double.parseDouble(p.getProperty("snapshot.turnoverRate", "0.0")),
                 Long.parseLong(p.getProperty("snapshot.branchBirthCount", "0")),
                 Long.parseLong(p.getProperty("snapshot.branchCollapseCount", "0")),
-                readLongMap(p, "competitionPressure."));
+                readLongMap(p, "competitionPressure."),
+                readList(p, "dynamicNiches."),
+                Long.parseLong(p.getProperty("snapshot.bifurcationCount", "0")),
+                readLongMap(p, "dynamicNichePopulation."));
 
         return Optional.of(new TelemetryRollupSnapshot(version, createdAt, mode, eco));
     }
@@ -122,6 +128,21 @@ public class TelemetryRollupSnapshotStore {
 
     private void writeDoubleMap(Properties p, String prefix, Map<String, Double> map) {
         map.forEach((k, v) -> p.setProperty(prefix + escape(k), String.valueOf(v)));
+    }
+
+
+    private void writeList(Properties p, String prefix, java.util.List<String> values) {
+        for (int i = 0; i < values.size(); i++) {
+            p.setProperty(prefix + i, escape(values.get(i)));
+        }
+    }
+
+    private java.util.List<String> readList(Properties p, String prefix) {
+        return p.stringPropertyNames().stream()
+                .filter(k -> k.startsWith(prefix))
+                .sorted(java.util.Comparator.comparingInt(k -> Integer.parseInt(k.substring(prefix.length()))))
+                .map(k -> unescape(p.getProperty(k)))
+                .toList();
     }
 
     private void writeNestedLongMap(Properties p, String prefix, Map<String, Map<String, Long>> nested) {

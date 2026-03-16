@@ -1,5 +1,6 @@
 package obtuseloot.telemetry;
 
+import java.util.List;
 import java.util.Map;
 
 public record EcosystemSnapshot(
@@ -13,6 +14,9 @@ public record EcosystemSnapshot(
         double turnoverRate,
         long branchBirthCount,
         long branchCollapseCount,
-        Map<String, Long> competitionPressureDistribution
+        Map<String, Long> competitionPressureDistribution,
+        List<String> dynamicNiches,
+        long bifurcationCount,
+        Map<String, Long> dynamicNichePopulation
 ) {
 }

@@ -368,7 +368,7 @@ public class WorldSimulationHarness {
         agent.artifact().setLastTriggerProfile(finalDefinitions.stream().map(d -> d.trigger().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.artifact().setLastMechanicProfile(finalDefinitions.stream().map(d -> d.mechanic().name().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.joining(",")));
         agent.setAbilityProfile(new AbilityProfile(abilityProfile.profileId(), finalDefinitions));
-        emitAbilityExecutions(agent, trigger, finalDefinitions, penaltyResult.nicheId(), effectiveUtilityScore + abilityEffects.nicheUtilityDelta());
+        emitAbilityExecutions(agent, rep, trigger, finalDefinitions, penaltyResult.nicheId(), effectiveUtilityScore + abilityEffects.nicheUtilityDelta());
         var resolvedSpecies = lineageRegistry.evaluateSpeciation(agent.artifact());
         boolean successful = rep.getTotalScore() >= 30;
         speciesNicheEngine.observeArtifact(agent.artifact(), resolvedSpecies, agent.abilityProfile(), successful, Math.max(1, seasonalSnapshots.size() + 1), penaltyResult.crowdingPenalty() + abilityEffects.crowdingPressureDelta());
@@ -411,27 +411,30 @@ public class WorldSimulationHarness {
     }
 
     private void emitAbilityExecutions(SimulatedArtifactAgent agent,
+                                       obtuseloot.reputation.ArtifactReputation reputation,
                                        AbilityTrigger trigger,
                                        List<AbilityDefinition> definitions,
                                        String nicheId,
                                        double utilityScore) {
         for (AbilityDefinition definition : definitions) {
-            telemetryEmitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
-                    agent.artifact().getArtifactSeed(),
-                    agent.artifact().getLatentLineage(),
-                    nicheId,
-                    Map.of(
-                            "generation", String.valueOf(currentGeneration),
-                            "trigger", definition.trigger().name(),
-                            "mechanic", definition.mechanic().name(),
-                            "ability_id", definition.id(),
-                            "execution_status", AbilityExecutionStatus.SUCCESS.name(),
-                            "outcome_classification", "MEANINGFUL",
-                            "context_tags", "meaningful-outcome",
-                            "niche_tags", String.join("|", definition.metadata() == null ? java.util.Set.of("general") : definition.metadata().utilityDomains()),
-                            "utility_score", String.valueOf(utilityScore),
-                            "utility_density", String.valueOf(Math.max(0.0D, utilityScore / Math.max(1.0D, definitions.size())))
-                    ));
+            AbilityEventContext context = new AbilityEventContext(
+                    trigger,
+                    agent.artifact(),
+                    reputation,
+                    utilityScore,
+                    "world-harness");
+            AbilityExecutionResult result = new AbilityExecutionResult(
+                    definition.id(),
+                    definition.mechanic(),
+                    definition.trigger(),
+                    agent.artifact().getArtifactStorageKey(),
+                    agent.artifact().getOwnerId(),
+                    AbilityExecutionStatus.SUCCESS,
+                    AbilityOutcomeType.WORLD_INTERACTION,
+                    true,
+                    "",
+                    "world-harness-simulated-outcome");
+            usageTracker.trackAbilityExecution(agent.artifact(), context, result, definition);
         }
     }
 
@@ -481,6 +484,9 @@ public class WorldSimulationHarness {
         out.put("branch_pruning_diagnostics", buildBranchPruningDiagnostics(snapshot, branchLifecycleTimeline));
         out.put("behavior_model_separation", buildBehaviorModelSeparationDiagnostics());
         out.put("turnover_rates", Map.of("rollup", snapshot.turnoverRate(), "dead_branch_rate", dataRate(metrics.asData(), "world", "dead_branch_rate")));
+        out.put("dynamic_niches", snapshot.dynamicNiches());
+        out.put("bifurcation_count", snapshot.bifurcationCount());
+        out.put("dynamic_niche_population", snapshot.dynamicNichePopulation());
         return out;
     }
 
