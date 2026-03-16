@@ -38,13 +38,15 @@ class EcosystemSaturationModelTest {
         Optional<NicheBifurcation> firstWindow = registry.evaluateBifurcation(
                 MechanicNicheTag.NAVIGATION.name(),
                 pressure.saturationPenalty(),
-                pressure.specializationPressure(),
+                0.60D,
+                0.36D,
                 navigation.activeArtifacts(),
                 1_000L);
         Optional<NicheBifurcation> secondWindow = registry.evaluateBifurcation(
                 MechanicNicheTag.NAVIGATION.name(),
                 pressure.saturationPenalty(),
-                pressure.specializationPressure(),
+                0.60D,
+                0.36D,
                 navigation.activeArtifacts(),
                 1_001L);
 

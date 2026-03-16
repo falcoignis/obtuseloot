@@ -4,8 +4,8 @@ import java.util.Map;
 
 public class EcosystemSaturationModel {
 
-    static final double SATURATION_THRESHOLD = 0.20D;
-    static final double SPECIALIZATION_THRESHOLD = 0.079D;
+    static final double SATURATION_THRESHOLD = 0.14D;
+    static final double SPECIALIZATION_THRESHOLD = 0.070D;
 
     public RolePressureMetrics pressureFor(MechanicNicheTag niche,
                                            NicheUtilityRollup nicheRollup,

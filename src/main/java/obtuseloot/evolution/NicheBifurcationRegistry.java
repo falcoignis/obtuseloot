@@ -32,25 +32,35 @@ public class NicheBifurcationRegistry {
     // ---------- public thresholds (readable from tests) ----------
 
     /** saturationPenalty must reach this value to count as "high saturation". */
-    public static final double SATURATION_THRESHOLD = 0.15D;
+    public static final double SATURATION_THRESHOLD = 0.08D;
 
     /** specializationPressure must reach this value to count as "high specialization". */
-    public static final double SPECIALIZATION_THRESHOLD = 0.10D;
+    public static final double SPECIALIZATION_THRESHOLD = 0.00D;
 
     /** Minimum active-artifact count in a niche before bifurcation is considered. */
     public static final int MIN_ARTIFACT_COUNT = 2;
 
+    /** Parent-niche share floor before bifurcation pressure can accumulate. */
+    public static final double MIN_PARENT_NICHE_SHARE = 0.08D;
+
+    /** Minimum active artifacts required for a child niche to remain viable. */
+    public static final int MIN_CHILD_ARTIFACT_COUNT = 2;
+
     // ---------- defaults (overridable via constructor) ----------
 
     static final int  DEFAULT_MAX_DYNAMIC_NICHES  = 8;
+    static final int  DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT = 4;
     static final long DEFAULT_COOLDOWN_MS          = 60_000L;  // 60 s
     static final int  DEFAULT_SUSTAINED_WINDOWS    = 2;        // two consecutive windows
+    static final int  DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE = 2;
 
     // ---------- configuration ----------
 
     private final int  maxDynamicNiches;
+    private final int  maxDynamicNichesPerParent;
     private final long cooldownMs;
     private final int  sustainedWindowsRequired;
+    private final int  childZeroWindowsToCollapse;
 
     // ---------- state ----------
 
@@ -68,6 +78,8 @@ public class NicheBifurcationRegistry {
 
     /** Last bifurcation timestamp per parent niche (for cooldown enforcement). */
     private final Map<String, Long> lastBifurcationTimeByNiche = new ConcurrentHashMap<>();
+    private volatile long lastGlobalBifurcationTimeMs = Long.MIN_VALUE;
+    private final Map<String, AtomicInteger> zeroPopulationWindowsByChild = new ConcurrentHashMap<>();
 
     /** Monotonically-increasing sequence counter used to produce unique child names. */
     private final AtomicInteger sequence = new AtomicInteger(0);
@@ -75,13 +87,31 @@ public class NicheBifurcationRegistry {
     // ---------- constructors ----------
 
     public NicheBifurcationRegistry() {
-        this(DEFAULT_MAX_DYNAMIC_NICHES, DEFAULT_COOLDOWN_MS, DEFAULT_SUSTAINED_WINDOWS);
+        this(DEFAULT_MAX_DYNAMIC_NICHES,
+                DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT,
+                DEFAULT_COOLDOWN_MS,
+                DEFAULT_SUSTAINED_WINDOWS,
+                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE);
     }
 
     public NicheBifurcationRegistry(int maxDynamicNiches, long cooldownMs, int sustainedWindowsRequired) {
+        this(maxDynamicNiches,
+                DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT,
+                cooldownMs,
+                sustainedWindowsRequired,
+                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE);
+    }
+
+    public NicheBifurcationRegistry(int maxDynamicNiches,
+                                    int maxDynamicNichesPerParent,
+                                    long cooldownMs,
+                                    int sustainedWindowsRequired,
+                                    int childZeroWindowsToCollapse) {
         this.maxDynamicNiches      = Math.max(0, maxDynamicNiches);
+        this.maxDynamicNichesPerParent = Math.max(2, maxDynamicNichesPerParent);
         this.cooldownMs            = Math.max(0L, cooldownMs);
         this.sustainedWindowsRequired = Math.max(1, sustainedWindowsRequired);
+        this.childZeroWindowsToCollapse = Math.max(1, childZeroWindowsToCollapse);
     }
 
     // ---------- main API ----------
@@ -102,11 +132,17 @@ public class NicheBifurcationRegistry {
             String parentNiche,
             double saturationPressure,
             double specializationPressure,
+            double nichePopulationShare,
             int activeArtifacts,
             long nowMs) {
 
         // Guard: global niche cap (counts pairs, so headroom must be >= 2)
         if (dynamicNiches.size() + 2 > maxDynamicNiches) {
+            return Optional.empty();
+        }
+
+        // Guard: per-parent cap
+        if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
             return Optional.empty();
         }
 
@@ -116,12 +152,18 @@ public class NicheBifurcationRegistry {
             return Optional.empty();
         }
 
+        // Guard: global cooldown to prevent rapid cross-niche cascades
+        if (lastGlobalBifurcationTimeMs != Long.MIN_VALUE && (nowMs - lastGlobalBifurcationTimeMs) < cooldownMs) {
+            return Optional.empty();
+        }
+
         // Pressure gate
         boolean highSaturation    = saturationPressure    >= SATURATION_THRESHOLD;
         boolean highSpecialization = specializationPressure >= SPECIALIZATION_THRESHOLD;
         boolean sufficientPop      = activeArtifacts >= MIN_ARTIFACT_COUNT;
+        boolean sufficientShare    = nichePopulationShare >= MIN_PARENT_NICHE_SHARE;
 
-        if (!highSaturation || !highSpecialization || !sufficientPop) {
+        if (!highSaturation || !highSpecialization || !sufficientPop || !sufficientShare) {
             // Pressure dropped — reset sustained-pressure counter
             highPressureWindowsByNiche.remove(parentNiche);
             return Optional.empty();
@@ -156,7 +198,10 @@ public class NicheBifurcationRegistry {
         childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childB);
         dynamicNiches.add(childA);
         dynamicNiches.add(childB);
+        zeroPopulationWindowsByChild.put(childA, new AtomicInteger(0));
+        zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
+        lastGlobalBifurcationTimeMs = nowMs;
 
         return Optional.of(event);
     }
@@ -209,5 +254,28 @@ public class NicheBifurcationRegistry {
     /** Total number of currently-registered dynamic niche names. */
     public int dynamicNicheCount() {
         return dynamicNiches.size();
+    }
+
+    /**
+     * Collapses child niches that remain under-populated for sustained windows.
+     */
+    public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild) {
+        for (String child : Set.copyOf(dynamicNiches)) {
+            long population = dynamicPopulationByChild.getOrDefault(child, 0L);
+            AtomicInteger zeroWindows = zeroPopulationWindowsByChild.computeIfAbsent(child, k -> new AtomicInteger(0));
+            if (population < MIN_CHILD_ARTIFACT_COUNT) {
+                if (zeroWindows.incrementAndGet() >= childZeroWindowsToCollapse) {
+                    retireChild(child);
+                }
+            } else {
+                zeroWindows.set(0);
+            }
+        }
+    }
+
+    private void retireChild(String childNiche) {
+        dynamicNiches.remove(childNiche);
+        zeroPopulationWindowsByChild.remove(childNiche);
+        childrenByParent.values().forEach(children -> children.remove(childNiche));
     }
 }

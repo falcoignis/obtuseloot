@@ -129,10 +129,16 @@ public class NichePopulationTracker {
             return;
         }
 
+        int totalPopulation = allRollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum();
+        boolean bifurcatedThisCycle = false;
         for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : allRollups.entrySet()) {
+            if (bifurcatedThisCycle) {
+                continue;
+            }
             MechanicNicheTag nicheTag = entry.getKey();
             NicheUtilityRollup nicheRollup = entry.getValue();
             String nicheName = nicheTag.name();
+            double nicheShare = totalPopulation <= 0 ? 0.0D : nicheRollup.activeArtifacts() / (double) totalPopulation;
 
             RolePressureMetrics pressure = saturationModel.pressureFor(nicheTag, nicheRollup, allRollups);
             // Use mean artifact specialization score as the "specialization" dimension.
@@ -144,6 +150,7 @@ public class NichePopulationTracker {
                     nicheName,
                     pressure.saturationPenalty(),
                     meanSpecialization,
+                    nicheShare,
                     nicheRollup.activeArtifacts(),
                     nowMs);
 
@@ -157,7 +164,15 @@ public class NichePopulationTracker {
                     }
                 }
             });
+            if (maybeBifurcation.isPresent()) {
+                bifurcatedThisCycle = true;
+            }
         }
+
+        Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
+        dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
+        bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation);
+        dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
     }
 
     /**
