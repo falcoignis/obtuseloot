@@ -13,8 +13,8 @@ public class EcosystemSaturationModel {
         double meanUtilityDensity = allRollups.values().stream().mapToDouble(NicheUtilityRollup::utilityDensity).average().orElse(0.0D);
         double utilityDelta = nicheRollup.utilityDensity() - meanUtilityDensity;
 
-        double saturationPenalty = share > 0.20D && nicheRollup.utilityDensity() < meanUtilityDensity
-                ? clamp((share - 0.20D) * 1.8D, 0.0D, 0.45D)
+        double saturationPenalty = share > 0.10D && nicheRollup.utilityDensity() < meanUtilityDensity
+                ? clamp((share - 0.10D) * 1.8D, 0.0D, 0.45D)
                 : 0.0D;
         double scarcityBonus = share < 0.10D && utilityDelta > 0.0D
                 ? clamp((0.10D - share) * 2.4D + utilityDelta * 0.30D, 0.0D, 0.40D)

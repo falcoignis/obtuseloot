@@ -10,7 +10,7 @@ public class ScheduledEcosystemRollups {
     private final AtomicReference<NichePopulationRollup> nicheRollup = new AtomicReference<>(emptyNiche(0L));
     private final AtomicReference<LineagePopulationRollup> lineageRollup = new AtomicReference<>(emptyLineage(0L));
     private final AtomicReference<EcosystemSnapshot> snapshot = new AtomicReference<>(
-            new EcosystemSnapshot(0L, Map.of(), nicheRollup.get(), lineageRollup.get(), 0L, 0.0D, 0.0D, 0.0D, 0L, 0L, Map.of()));
+            new EcosystemSnapshot(0L, Map.of(), nicheRollup.get(), lineageRollup.get(), 0L, 0.0D, 0.0D, 0.0D, 0L, 0L, Map.of(), java.util.List.of(), 0L, Map.of()));
 
     public ScheduledEcosystemRollups(TelemetryAggregationBuffer buffer, long minIntervalMs) {
         this.buffer = buffer;
@@ -68,7 +68,10 @@ public class ScheduledEcosystemRollups {
                 turnover,
                 branchBirthCount,
                 branchCollapseCount,
-                buffer.competitionPressureDistributionSnapshot());
+                buffer.competitionPressureDistributionSnapshot(),
+                buffer.dynamicNichesSnapshot(),
+                buffer.bifurcationCountSnapshot(),
+                buffer.dynamicNichePopulationSnapshot());
         nicheRollup.set(niche);
         lineageRollup.set(lineage);
         snapshot.set(next);

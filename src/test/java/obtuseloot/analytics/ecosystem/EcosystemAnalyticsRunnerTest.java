@@ -96,7 +96,10 @@ class EcosystemAnalyticsRunnerTest {
                 turnover,
                 lineageBranches.values().stream().mapToLong(Long::longValue).sum(),
                 0L,
-                pressure);
+                pressure,
+                List.of(),
+                0L,
+                Map.of());
 
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
     }

@@ -121,7 +121,7 @@ class AnalyticsOperationalCliTest {
     private TelemetryRollupSnapshot snapshot(long ts, double diversity, double turnover) {
         NichePopulationRollup niche = new NichePopulationRollup(ts, Map.of("SCOUT", 10L), Map.of("SCOUT", 10L), Map.of("SCOUT", 1.0D), Map.of(), Map.of(), Map.of(), Map.of());
         LineagePopulationRollup lineage = new LineagePopulationRollup(ts, Map.of("lin-a", 10L), Map.of("lin-a", 2L), Map.of(), Map.of(), Map.of("lin-a", 0.02D), Map.of(), Map.of(), Map.of());
-        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(EcosystemTelemetryEventType.ABILITY_EXECUTION, 10L), niche, lineage, 10L, 0.5D, diversity, turnover, 2L, 0L, Map.of("SCOUT", 1L));
+        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(EcosystemTelemetryEventType.ABILITY_EXECUTION, 10L), niche, lineage, 10L, 0.5D, diversity, turnover, 2L, 0L, Map.of("SCOUT", 1L), List.of(), 0L, Map.of());
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
     }
 }

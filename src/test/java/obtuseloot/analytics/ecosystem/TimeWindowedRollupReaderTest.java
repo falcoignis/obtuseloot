@@ -32,7 +32,7 @@ class TimeWindowedRollupReaderTest {
     private TelemetryRollupSnapshot snapshot(long ts) {
         NichePopulationRollup niche = new NichePopulationRollup(ts, Map.of("SCOUT", 1L), Map.of("SCOUT", 1L), Map.of("SCOUT", 1.0D), Map.of(), Map.of(), Map.of(), Map.of());
         LineagePopulationRollup lineage = new LineagePopulationRollup(ts, Map.of("lin", 1L), Map.of("lin", 1L), Map.of(), Map.of(), Map.of("lin", 0.01D), Map.of(), Map.of(), Map.of());
-        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(EcosystemTelemetryEventType.ABILITY_EXECUTION, 1L), niche, lineage, 1L, 0.5D, 0.5D, 0.1D, 1L, 0L, Map.of());
+        EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(EcosystemTelemetryEventType.ABILITY_EXECUTION, 1L), niche, lineage, 1L, 0.5D, 0.5D, 0.1D, 1L, 0L, Map.of(), List.of(), 0L, Map.of());
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
     }
 }
