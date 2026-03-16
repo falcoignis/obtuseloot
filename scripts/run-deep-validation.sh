@@ -250,7 +250,6 @@ for scenario in "${SCENARIOS[@]}"; do
 
   set +e
   JAVA_TOOL_OPTIONS="" mvn -q -DskipTests \
-    --offline \
     -Dexec.mainClass=obtuseloot.simulation.worldlab.WorldSimulationRunner \
     -Dexec.classpathScope=compile \
     -Dworld.outputDirectory="$scenario_root" \
@@ -382,7 +381,7 @@ write_manifest "READY_FOR_ANALYSIS"
 # ---------------------------------------------------------------------------
 {
   echo "SECTION 1: EXECUTION PATH USED"
-  echo "- Harness: obtuseloot.simulation.worldlab.WorldSimulationRunner (offline Maven exec)"
+  echo "- Harness: obtuseloot.simulation.worldlab.WorldSimulationRunner (Maven exec)"
   echo "- Run root: ${RUN_ROOT}"
   echo ""
   echo "SECTION 2: RUNTIME SETTINGS (DEEP RUN)"
