@@ -20,3 +20,4 @@ analytics/**/scratch/
 
 # generated visualization artifacts (do not commit binaries)
 analytics/visualizations/*.png
+analytics/validation-suite-rerun/**/telemetry/ecosystem-events.log

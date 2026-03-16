@@ -1,0 +1,68 @@
+{
+  "run_id": "deep-ten-season-20260315-235918",
+  "dataset_root": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918",
+  "created_at": "2026-03-15T23:59:18Z",
+  "updated_at": "2026-03-15T23:59:18Z",
+  "status": "IN_PROGRESS",
+  "deep_run_config": {"seasons": 10, "sessionsPerSeason": 4, "players": 18, "artifactsPerPlayer": 3, "encounterDensity": 5, "telemetrySamplingRate": 0.25},
+  "stages": {
+    "matrix_execution":   {"status": "IN_PROGRESS", "updated_at": "2026-03-15T23:59:18Z"},
+    "dataset_contract":   {"status": "PENDING", "updated_at": ""},
+    "completion_marker":  {"status": "PENDING", "updated_at": ""},
+    "latest_run_pointer": {"status": "PENDING", "updated_at": ""},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": false,
+        "telemetry/rollup-snapshot.properties": false,
+        "rollup-snapshots.json": false,
+        "scenario-metadata.properties": false
+      },
+      "complete": false
+    },
+    "ritualist-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918/ritualist-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": false,
+        "telemetry/rollup-snapshot.properties": false,
+        "rollup-snapshots.json": false,
+        "scenario-metadata.properties": false
+      },
+      "complete": false
+    },
+    "gatherer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918/gatherer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": false,
+        "telemetry/rollup-snapshot.properties": false,
+        "rollup-snapshots.json": false,
+        "scenario-metadata.properties": false
+      },
+      "complete": false
+    },
+    "mixed": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918/mixed",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": false,
+        "telemetry/rollup-snapshot.properties": false,
+        "rollup-snapshots.json": false,
+        "scenario-metadata.properties": false
+      },
+      "complete": false
+    },
+    "random-baseline": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-ten-season-20260315-235918/random-baseline",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": false,
+        "telemetry/rollup-snapshot.properties": false,
+        "rollup-snapshots.json": false,
+        "scenario-metadata.properties": false
+      },
+      "complete": false
+    }
+  }
+}
