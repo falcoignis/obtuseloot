@@ -1,382 +1,314 @@
 # ObtuseLoot
 
-`pre-release` `Bukkit/Purpur plugin` `Java 21` `persistent progression`
+## Overview
+ObtuseLoot is a Java 21 Minecraft plugin (Purpur/Bukkit API target `1.21`) focused on persistent, behavior-driven artifact progression, with evolution, drift, awakening, fusion, memory, lineage/species modeling, and telemetry-backed ecosystem analytics.
 
-test
+The repository also contains an extensive offline analytics + simulation toolchain (world-lab, open-endedness experiments, CLI analyzers, validation harness scripts) that is built and executed through Maven-based workflows.
 
-ObtuseLoot is a Java plugin for Bukkit-compatible servers (targeting Purpur 1.21 API) that tracks per-player artifact progression through combat behavior.
+## Current Status
+- **Version in source:** `0.9.6` (`pom.xml` + `plugin.yml`).
+- **Packaging:** Single-module Maven `jar` project (no multi-module reactor).
+- **Runtime target:** Purpur API `1.21.1-R0.1-SNAPSHOT`.
+- **Maturity profile:** Active runtime plugin with large analytics/experiment surface and substantial test coverage under `src/test/java`.
 
-Each player has a persistent artifact profile with hidden seed affinities and evolving paths. Reputation is not just a flat XP bar: combat patterns (damage style, mobility, low-health survival, kill chains, boss kills, and chaos signals) feed multiple dimensions that drive evolution outcomes.
+## Core Features
+- Persistent per-player artifact state and reputation.
+- Multi-axis progression engine (`precision`, `brutality`, `survival`, `mobility`, `chaos`, `consistency`, kill/boss-chain signals).
+- Evolution + niche/ecology-informed fitness scoring.
+- Drift, awakening, fusion, lore, and memory systems.
+- Ability runtime with trigger subscriptions, projection matrices, and non-combat trigger listeners.
+- Telemetry archive + rollup pipeline with replay/hydration.
+- Ecosystem dashboard generation and optional embedded web server.
+- Offline simulation/analytics runners and validation pipelines.
 
-The progression stack is behavior-driven and stateful: evolution resolves from **effective weighted stats** (raw reputation + seed affinity + drift bias + awakening bias), drift applies mutation over time, awakening introduces additional bias/multiplier effects, and fusion unlocks higher-order progression states.
+## Architecture
+ObtuseLoot is organized as one plugin runtime plus adjacent analysis/simulation subsystems.
 
-This repository is in active pre-release development. It includes practical debug tooling for rapid QA (inspection, reputation edits, forced evolution/drift/awakening/fusion, persistence controls, and reset paths).
+### High-level subsystem map
+```mermaid
+graph TD
+  PluginBootstrap[ObtuseLoot JavaPlugin] --> Persistence
+  PluginBootstrap --> RuntimeConfig
+  PluginBootstrap --> CommandSurface
+  PluginBootstrap --> EventRuntime
+  PluginBootstrap --> SchedulerSurface
+  PluginBootstrap --> Dashboard
+  PluginBootstrap --> Telemetry
 
-## Key Features
+  EventRuntime --> ArtifactProcessor
+  ArtifactProcessor --> Reputation
+  ArtifactProcessor --> Artifacts
+  ArtifactProcessor --> Evolution
+  ArtifactProcessor --> Drift
+  ArtifactProcessor --> Awakening
+  ArtifactProcessor --> Fusion
+  ArtifactProcessor --> Lore
+  ArtifactProcessor --> AbilityRuntime
+  ArtifactProcessor --> Memory
 
-- Behavior-driven, multi-axis reputation (`precision`, `brutality`, `survival`, `mobility`, `chaos`, `consistency` + kill/boss/chain state)
-- Hidden seed affinities and latent lineage generated per artifact
-- Evolution pathing based on effective weighted stats, with archetype inertia and switch margins
-- Drift mutation system with profile-based bias adjustments and timed instability states
-- Awakening profiles that apply bias adjustments, gain multipliers, and traits
-- Fusion recipes as higher-order progression milestones
-- Lore/history tracking for archetype/evolution/drift/awakening/fusion transitions
-- Per-player YAML persistence with autosave, join-load, quit-save-unload, and disable-save
-- Integrated admin/debug command suite for QA and balancing
+  Evolution --> Ecosystem
+  Evolution --> Lineage
+  Lineage --> Species
+  AbilityRuntime --> Telemetry
+  Ecosystem --> Telemetry
 
-## Gameplay Loop
-
-```text
-combat behavior
-  -> reputation dimensions
-    -> archetype + evolution evaluation
-      -> drift mutation chance
-        -> awakening gate
-          -> fusion recipe check
-            -> lore/history updates
-              -> persisted player state
+  Telemetry --> AnalyticsCli
+  Telemetry --> WorldLab
+  WorldLab --> Reports
+  AnalyticsCli --> Reports
 ```
 
-## System Overview
+### Subsystem dependency view
+```mermaid
+graph LR
+  Plugin --> Commands
+  Plugin --> Listeners
+  Plugin --> EngineScheduler
+  Plugin --> Persistence
+  Plugin --> Dashboard
+  Plugin --> Telemetry
 
-### Reputation
-- Reputation is fed by combat events and context, not a single score source.
-- Signals include combat hits, movement during combat windows, low-health survival, kill chains, boss kills, and multi-target chaos.
-- Volatile stats decay on a scheduler to keep progression responsive to current behavior.
+  Listeners --> ArtifactProcessor
+  ArtifactProcessor --> CoreEngines
+  CoreEngines --> Models
+  CoreEngines --> Registries
 
-### Evolution
-- Evolution starts after threshold gates and resolves archetypes from effective stat values.
-- Effective stat formula includes raw rep + seed affinity + drift bias + awakening bias.
-- Archetype inertia and switch margin reduce noisy flapping between paths.
-
-### Drift
-- Drift chance scales from base chance with chaos and consistency modifiers.
-- Drift applies profile-specific bias mutations, increments drift counters, and writes drift/lore history.
-- Drift can set temporary instability, later cleaned up by scheduled expiry.
-
-### Awakening
-- Awakening resolves profile-based outcomes from archetype + reputation criteria.
-- Applied awakening adds stat bias adjustments, reputation gain multipliers, and traits.
-
-### Fusion
-- Fusion evaluates recipes once awakening is active and score/boss conditions are met.
-- Successful fusion sets a fusion path and can override evolution pathing.
-
-### Lore
-- Lore lines are generated from lineage, drift, awakening, instability, reputation snapshot, and recent history.
-- State transitions are recorded into lore/notable event history.
-
-### Persistence
-- Artifact and reputation state are stored per player UUID in YAML files.
-- Save paths include autosave scheduler, explicit debug save, manager unload, and plugin disable.
-
-### Debug
-- `/obtuseloot debug ...` provides deterministic control over progression state for QA.
-- Current codebase includes forced progression operations, stat editing, path overrides, and persistence/reload controls.
-
-## Architecture Overview
-
-Primary runtime components:
-
-- `ArtifactManager` — in-memory artifact cache + lifecycle/save operations
-- `ReputationManager` — in-memory reputation cache + lifecycle/save operations
-- `CombatContext` / `CombatContextManager` — transient combat behavior context
-- `PlayerStateStore` / `YamlPlayerStateStore` — persistence abstraction + YAML storage backend
-- `EvolutionEngine` — archetype/evolution resolution
-- `DriftEngine` — drift profile resolution + mutation application
-- `AwakeningEngine` — awakening profile resolution/application
-- `FusionEngine` — recipe matching and fusion transitions
-- `LoreEngine` — action bar summary + lore/history formatting
-- `EngineScheduler` — autosave, rep decay, context cleanup, instability cleanup
-
-```text
-Bukkit Events
-  -> ReputationFeedListener / CombatCore / EventCore
-    -> ArtifactProcessor
-      -> EvolutionEngine -> DriftEngine -> AwakeningEngine -> FusionEngine
-        -> LoreEngine
-          -> ArtifactManager/ReputationManager
-            -> YamlPlayerStateStore (playerdata/<uuid>.yml)
+  Telemetry --> Analytics
+  Analytics --> Simulation
+  Simulation --> Validation
 ```
 
-## Installation & Local Development
+### Subsystems (fingerprinted from code)
+- **Plugin bootstrap:** `obtuseloot.ObtuseLoot`.
+- **Command system:** `commands` package (`ObtuseLootCommand`, `DebugCommand`, `DashboardCommandExecutor`, completers).
+- **Event/listener runtime:** `obtuseengine.ObtuseEngine` + listener classes in `combat` and `events`.
+- **Core progression engines:** `evolution`, `drift`, `awakening`, `fusion`, `lore`, `memory`.
+- **Artifact and reputation core:** `artifacts`, `reputation`, `combat`.
+- **Ability execution system:** `abilities` (+ genome/projection/trigger budgeting and indexing).
+- **Ecology/lineage/species systems:** `ecosystem`, `lineage`, `species`.
+- **Telemetry + rollups:** `telemetry` package.
+- **Dashboard subsystem:** `dashboard` package and analytics output writers.
+- **Persistence subsystem:** `persistence` package (YAML/SQLite/MySQL providers + migration).
+- **Simulation + analytics tooling:** `simulation/worldlab`, `analytics/*`, `scripts/*`, CLI mains in `analytics/ecosystem`.
 
-### Requirements
-- Java 21
-- Maven
-- Bukkit-compatible server (project targets Purpur API `1.21.1-R0.1-SNAPSHOT`)
+## Execution Flow
+```mermaid
+flowchart TD
+  A[Server start] --> B[onEnable in ObtuseLoot]
+  B --> C[Load config + RuntimeSettings + Evolution parameters]
+  C --> D[Init telemetry archive/buffer/rollups + hydration]
+  D --> E[Init persistence provider and managers]
+  E --> F[Construct engines/services]
+  F --> G[Bind /obtuseloot executor + tab completer]
+  G --> H[Write startup analytics reports]
+  H --> I[Start scheduled tasks]
+  I --> J[Initialize ObtuseEngine listeners]
+  J --> K[Start EngineScheduler tasks]
 
-### Build
+  K --> L[Runtime events]
+  L --> M[ArtifactProcessor updates progression]
+  M --> N[Lore/abilities/telemetry updates]
+  N --> O[Periodic save + decay + cleanup + rollups]
+
+  O --> P[onDisable]
+  P --> Q[Stop scheduler/tasks + flush/save + shutdown web/engine]
+```
+
+## Repository Structure
+```text
+.
+├── pom.xml
+├── src/
+│   ├── main/java/obtuseloot/
+│   │   ├── ObtuseLoot.java
+│   │   ├── commands/            # command executors + completers
+│   │   ├── obtuseengine/        # listener wiring + scheduler
+│   │   ├── events/ combat/      # listeners/event ingestion
+│   │   ├── artifacts/ reputation/ persistence/
+│   │   ├── evolution/ ecosystem/ lineage/ species/
+│   │   ├── abilities/ telemetry/ dashboard/ simulation/
+│   │   └── ...
+│   ├── main/resources/
+│   │   ├── plugin.yml
+│   │   └── config.yml
+│   └── test/java/obtuseloot/    # architecture, engine, analytics, telemetry tests
+├── scripts/                     # Maven-based build/sim/validation helpers
+├── analytics/                   # generated reports, datasets, visualizations
+├── simulation/                  # scenario/readme folders
+├── docs/                        # audits and operational documents
+├── releases/                    # release notes packages
+└── .github/workflows/           # CI/benchmark/world-lab/release pipelines
+```
+
+## Requirements
+- JDK **21+**
+- Maven **3.9+** recommended
+- Purpur/Bukkit-compatible server for plugin runtime
+
+## Installation
+1. Build the plugin jar with Maven.
+2. Copy `target/ObtuseLoot-<version>.jar` to your server `plugins/` directory.
+3. Start server once to generate/update `plugins/ObtuseLoot/config.yml`.
+
+## Build (Maven)
 ```bash
 mvn clean package
 ```
 
-Output jar:
-```text
-target/ObtuseLoot-0.9.6.jar
-```
-This JAR is a local/CI build artifact and is not committed to source control.
-
-
-### Build Troubleshooting
-If you see this Maven error:
-```text
-Fatal error compiling: error: release version 21 not supported
-```
-Your `JAVA_HOME` points to an older JDK (commonly 17). Switch to JDK 21+ and rebuild:
+Alternative helper script:
 ```bash
-export JAVA_HOME=/path/to/jdk-21
-export PATH="$JAVA_HOME/bin:$PATH"
-java -version
-mvn clean package
+./scripts/build.sh
 ```
 
-### Install on Server
-1. Copy the built jar into your server `plugins/` directory.
-2. Start the server once to generate plugin data/config files.
+## Running / Deployment
+- **Plugin runtime:** deploy built jar to server `plugins/` and start server.
+- **Dashboard web server:** disabled by default; enable via `dashboard.webServerEnabled` in config.
+- **Offline simulation runner:**
+  ```bash
+  mvn -DskipTests -Dexec.mainClass=obtuseloot.simulation.worldlab.WorldSimulationRunner -Dexec.classpathScope=compile org.codehaus.mojo:exec-maven-plugin:3.5.0:java
+  ```
+- **Ecosystem analytics CLI main:**
+  ```bash
+  mvn -DskipTests -Dexec.mainClass=obtuseloot.analytics.ecosystem.AnalyticsCliMain -Dexec.classpathScope=compile org.codehaus.mojo:exec-maven-plugin:3.5.0:java -Dexec.args="analyze --dataset <path> --output <path>"
+  ```
 
-Runtime data locations:
-- Config: `plugins/ObtuseLoot/config.yml`
-- Per-player state: `plugins/ObtuseLoot/playerdata/<player-uuid>.yml`
+## Configuration
+Primary runtime config is `src/main/resources/config.yml` (copied to plugin data folder). Major sections:
 
+- `storage`, `sqlite`, `mysql`, `persistence`
+- `reputation`, `evolution`, `drift`, `combat`
+- `runtime` (feature toggles such as trigger subscription indexing and active artifact cache)
+- `dashboard`
+- `analytics.ecology.*`
+- `ecosystem.parameters.*` (includes telemetry flush/rollup/rehydration tuning)
 
-## CI/CD Workflows (GitHub Actions)
+## Commands and Permissions
 
-ObtuseLoot includes a CI/CD suite for continuous validation and simulation-lab operations via **Actions** artifacts (no binary build outputs are committed to the repository).
+### Command Surface (verified)
+| Command | Aliases | Description | Usage | Permission | Notes |
+|---|---|---|---|---|---|
+| `/obtuseloot` | `ol` | Root admin/debug command | multi-line in `plugin.yml` | mixed (subcommand-dependent) | Registered in `plugin.yml`; executor/tab completer set in `onEnable`. |
+| `help` | - | Show command list | `/obtuseloot help` | `obtuseloot.help` | - |
+| `info` | - | Runtime status | `/obtuseloot info` | `obtuseloot.info` | - |
+| `inspect` | - | Inspect player artifact state | `/obtuseloot inspect [player]` | `obtuseloot.inspect` | - |
+| `refresh` | - | Regenerate player artifact profile | `/obtuseloot refresh [player]` | `obtuseloot.admin` | - |
+| `reset` | - | Clear tracked state | `/obtuseloot reset [player]` | `obtuseloot.admin` | - |
+| `reload` | - | Reload config/runtime snapshots | `/obtuseloot reload` | `obtuseloot.admin` | - |
+| `dashboard` | - | Ecosystem health/dashboard summary | `/obtuseloot dashboard` | `obtuseloot.info` | Routed through `DashboardCommandExecutor`. |
+| `ecosystem` | - | Dashboard/health/map/environment operations | `/obtuseloot ecosystem ...` | `obtuseloot.info` | Includes `environment`, `map`, and dashboard forms. |
+| `addname` | - | Add entry to name pool | `/obtuseloot addname <pool> <value>` | `obtuseloot.edit` or scoped node | Scoped checks: `obtuseloot.edit.<pool>`. |
+| `removename` | - | Remove entry from name pool | `/obtuseloot removename <pool> <value>` | `obtuseloot.edit` or scoped node | Scoped checks: `obtuseloot.edit.<pool>`. |
+| `debug ...` | - | Debug/admin surface | `/obtuseloot debug <subcommand>` | `obtuseloot.debug` | Includes inspect/rep/evolve/drift/awaken/fuse/lore/reset/save/reload/instability/archetype/path/seed/simulate/ability/memory/persistence/ecosystem/lineage/genome/projection/subscriptions/artifact. |
 
-- **Build ObtuseLoot** (`build.yml`)
-  - Triggers on pushes to `main` and all pull requests.
-  - Runs `mvn -B -ntp clean package`.
-  - Uploads `target/*.jar` as `obtuseloot-build` and uploads `analytics/` when present.
-- **Benchmark ObtuseLoot** (`benchmark.yml`)
-  - Manual (`workflow_dispatch`) benchmark runner.
-  - Executes benchmark-oriented scripts and uploads `analytics/performance`, `analytics/meta`, and `analytics/population` as `benchmark-results`.
-- **World Lab Simulation** (`world-lab.yml`)
-  - Manual world simulation harness run with optional input labels.
-  - Generates and uploads `analytics/world-lab/` and `analytics/dashboard/` artifacts.
-- **Open Endedness Experiment** (`open-endedness.yml`)
-  - Manual matrix run for four comparison modes:
-    - `full-system`
-    - `no-ede`
-    - `no-bias-diversity`
-    - `no-trait-interactions`
-  - Uploads per-mode artifacts and a combined `open-endedness-results` bundle.
-- **Dashboard Regeneration** (`dashboard.yml`)
-  - Manual dashboard/visualization regeneration.
-  - Uploads `analytics/dashboard/` and `analytics/visualizations/`.
-- **Release ObtuseLoot** (`release.yml`)
-  - Triggers on tags matching `v*`.
-  - Builds with Maven, creates a GitHub Release, and attaches `target/*.jar`.
-  - Uses only the built-in `secrets.GITHUB_TOKEN`.
+### Permission Surface
+| Permission Node | Description | Default | Notes |
+|---|---|---|---|
+| `obtuseloot.help` | Allows `/obtuseloot help` | `true` | Declared in `plugin.yml`. |
+| `obtuseloot.info` | Allows `/obtuseloot info` | `op`? no: `true` | Declared in `plugin.yml`; also gates dashboard/ecosystem root commands in code. |
+| `obtuseloot.inspect` | Allows inspect | `op` | Declared in `plugin.yml`. |
+| `obtuseloot.admin` | Allows refresh/reset/reload | `op` | Declared in `plugin.yml`. |
+| `obtuseloot.edit` | Allows add/remove name | `op` | Declared in `plugin.yml`; code also supports scoped edit permissions. |
+| `obtuseloot.debug` | Allows debug surface | `op` | Declared in `plugin.yml`; enforced in debug executor paths. |
+| `obtuseloot.edit.prefixes` / `.suffixes` / `.generic` | Scoped pool editing | not specified | **Checked in code but not declared in `plugin.yml`.** |
 
-### Analytics history
+### Descriptor ↔ Code inconsistencies
+- `plugin.yml` usage text does not enumerate all implemented debug subcommands (`subscriptions`, `artifact/storage` etc.).
+- `plugin.yml` usage shows many debug forms, but code currently includes additional runtime-only variants.
+- Scoped permission nodes (`obtuseloot.edit.<pool>`) are code-checked but not declared in descriptor.
 
-Analytics history is preserved as versioned **workflow artifacts** per run. This keeps the default branch clean while still allowing download/comparison across builds from the Actions UI.
+## Listener and Runtime Surface
 
-### Release flow
+### Registered listeners (verified runtime wiring)
+| Listener/Class | Registered From | Purpose | Notes |
+|---|---|---|---|
+| `ReputationFeedListener` | `ObtuseEngine.initialize()` | Ingest combat/movement/kill-style reputation signals | Registered at plugin startup. |
+| `CombatCore` | `ObtuseEngine.initialize()` | Combat event forwarding into processing path | - |
+| `EventCore` | `ObtuseEngine.initialize()` | Kill/death path hooks and progression updates | - |
+| `PlayerJoinLoadListener` | `ObtuseEngine.initialize()` | Load/cache player progression state on join | - |
+| `PlayerStateCleanupListener` | `ObtuseEngine.initialize()` | Save/unload player state on disconnect | - |
+| `ArtifactItemStorageListener` | `ObtuseEngine.initialize()` | Artifact item metadata/storage synchronization | - |
+| `NonCombatAbilityListener` | `ObtuseEngine.initialize()` | Non-combat trigger dispatch (movement/chunk/context/etc.) | Includes coalesced trigger scheduling internally. |
 
-1. Bump version in `pom.xml`.
-2. Commit and push to `main`.
-3. Create and push a version tag:
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-4. GitHub Actions runs `release.yml` and publishes the release automatically.
+### Scheduled/runtime tasks (verified)
+| Task/Method | Registered From | Trigger/Frequency | Purpose | Notes |
+|---|---|---|---|---|
+| Environment pressure periodic update | `ObtuseLoot.onEnable()` | every `24,000` ticks | Advances seasons and rewrites `analytics/environment-pressure-report.md` | Bukkit sync repeating task. |
+| Telemetry flush/rollup tick | `ObtuseLoot.onEnable()` | `telemetryFlushIntervalTicks` from config | Flush telemetry aggregation pipeline | Async repeating task via `TelemetryFlushScheduler`. |
+| Autosave task | `EngineScheduler.startAutosaveTask()` | `autosaveIntervalSeconds * 20` | Save artifact + reputation stores | Started by `engineScheduler.startAll()`. |
+| Reputation volatile decay task | `EngineScheduler.startDecayTask()` | `volatileDecayIntervalSeconds * 20` | Decay volatile stats + soft floor | - |
+| Combat context cleanup task | `EngineScheduler.startCombatCleanupTask()` | `contextCleanupSeconds * 20` | Remove stale combat contexts | - |
+| Instability cleanup task | `EngineScheduler.startInstabilityCleanupTask()` | every `100` ticks | Clear expired instability and mark artifacts dirty | - |
+| Ecosystem map render loop (per-player) | `EcosystemMapRenderer.start(...)` | every `60` ticks after initial 1 tick | Push periodic map visualization updates | Started only by command-driven map session. |
 
-## Configuration Overview
+## Analytics and Simulation
 
-Current `config.yml` sections:
-
-- `reputation`
-  - Combat windowing, low-health threshold, mobility threshold
-  - Kill-chain and chaos thresholds
-  - Boss entity list
-  - Volatile stat decay interval/factor
-  - Combat context cleanup interval
-- `combat`
-  - Precision-hit damage threshold used in combat reputation logic
-- `evolution`
-  - Archetype/evolution score thresholds
-  - Archetype switch margin + inertia tuning
-- `drift`
-  - Base/max drift chance and chaos/consistency modifiers
-  - Instability duration
-- `persistence`
-  - Autosave interval
-- `naming`
-  - Prefix/suffix roll chance and deterministic owner seed toggle
-
-## Commands
-
-Root command: `/obtuseloot` (alias: `/ol`)
-
-### Core Commands
-
-| Command | Description |
-|---|---|
-| `/obtuseloot help` | Show top-level command help. |
-| `/obtuseloot info` | Show plugin runtime status. |
-| `/obtuseloot inspect [player]` | Inspect tracked artifact state summary. |
-| `/obtuseloot refresh [player]` | Unload and regenerate the player's artifact profile. |
-| `/obtuseloot reset [player]` | Clear tracked artifact + reputation state. |
-| `/obtuseloot reload` | Reload config/runtime settings and name pools. |
-| `/obtuseloot addname <prefixes\|suffixes\|generic> <value>` | Add an entry to a naming pool. |
-| `/obtuseloot removename <prefixes\|suffixes\|generic> <value>` | Remove an entry from a naming pool. |
-
-### Debug Commands
-
-| Command | Description |
-|---|---|
-| `/obtuseloot debug inspect [player]` | Full debug dump of artifact/reputation state. |
-| `/obtuseloot debug rep set <stat> <value> [player]` | Set one reputation stat value. |
-| `/obtuseloot debug rep add <stat> <value> [player]` | Add (or subtract) from a reputation stat. |
-| `/obtuseloot debug rep reset [player]` | Reset reputation object. |
-| `/obtuseloot debug evolve [player]` | Force evolution evaluation. |
-| `/obtuseloot debug drift [player]` | Force one drift mutation and reevaluate evolution. |
-| `/obtuseloot debug awaken [player]` | Force awakening application if dormant. |
-| `/obtuseloot debug fuse [player]` | Force fusion recipe evaluation. |
-| `/obtuseloot debug lore [player]` | Print actionbar/lore lines to chat for inspection. |
-| `/obtuseloot debug reset [player]` | Recreate artifact, reset reputation, clear combat context. |
-| `/obtuseloot debug save [player]` | Save artifact + reputation to disk. |
-| `/obtuseloot debug reload` | Reload config and runtime name pools. |
-| `/obtuseloot debug instability clear [player]` | Clear active instability state. |
-| `/obtuseloot debug archetype set <archetype> [player]` | Override archetype path. |
-| `/obtuseloot debug path set <evolutionPath> [player]` | Override evolution path. |
-
-> The debug surface includes `/obtuseloot debug`, `/obtuseloot debug simulate`, and `/obtuseloot debug seed` for deterministic QA and progression simulation.
-
-## Debug / QA Workflow
-
-Quick manual QA cycle:
-
-```bash
-/ol debug inspect
-/ol debug rep set precision 20
-/ol debug rep add chaos 8
-/ol debug evolve
-/ol debug drift
-/ol debug awaken
-/ol debug fuse
-/ol debug lore
-/ol debug save
-/ol debug reset
-/ol debug reload
+### Runtime telemetry and analytics flow
+```mermaid
+flowchart LR
+  Events[Runtime events + processors] --> Emitter[EcosystemTelemetryEmitter]
+  Emitter --> Buffer[TelemetryAggregationBuffer]
+  Buffer --> Rollups[ScheduledEcosystemRollups]
+  Rollups --> Archive[analytics/telemetry/ecosystem-events.log]
+  Rollups --> Snapshot[rollup-snapshot.properties]
+  Snapshot --> Hydrator[RollupStateHydrator]
+  Archive --> Hydrator
+  Rollups --> Reports[dashboard + analytics reports]
 ```
 
-Suggested approach:
-1. Use `inspect` before/after each step.
-2. Shape rep with `rep set/add` to hit intended thresholds.
-3. Force `evolve`, then `drift`, then `awaken`, then `fuse`.
-4. Verify lore/history output with `debug lore`.
-5. Persist using `debug save`; validate reload behavior with `debug reload`.
+### Offline pipeline flow
+```mermaid
+flowchart LR
+  ScenarioConfig[Scenario/system properties] --> Runner[WorldSimulationRunner / OpenEndednessTestRunner]
+  Runner --> TelemetryArtifacts[world-lab data + telemetry snapshots]
+  TelemetryArtifacts --> Cli[AnalyticsCliMain analyze/run-spec/decide]
+  Cli --> RecommendationHistory[recommendation history + accepted profile exports]
+  TelemetryArtifacts --> ValidationScripts[scripts/run-*validation*.sh]
+  ValidationScripts --> Reports[analytics/* reports + dashboard outputs]
+```
 
-## Persistence Model
+### Tooling entrypoints
+- **CLI main:** `obtuseloot.analytics.ecosystem.AnalyticsCliMain`
+  - commands: `analyze`, `run-spec`, `decide`, `export-accepted`
+- **Simulation mains:**
+  - `obtuseloot.simulation.worldlab.WorldSimulationRunner`
+  - `obtuseloot.simulation.worldlab.OpenEndednessTestRunner`
+- **Other CLI/export mains:**
+  - `obtuseloot.analytics.VisualizationExporter`
+  - `obtuseloot.analytics.performance.TraitScoringBenchmarkMain`
+- **Operational scripts:** `scripts/run-world-simulation.sh`, `scripts/run-open-endedness-test.sh`, `scripts/run-validation-suite-rerun.sh`, `scripts/run-world-lab-validation.sh`, and related helpers.
 
-- Storage backend: `YamlPlayerStateStore`
-- File model: one YAML file per player UUID under `playerdata/`
-- Loaded lazily on access/join via managers
-- Save behavior:
-  - scheduled autosave (`EngineScheduler`)
-  - explicit debug save command
-  - manager `unload(...)` (used on player quit/reset flows)
-  - plugin disable (`saveAll` for artifacts + reputations)
+## Development Notes
+- Build and test with Maven only.
+- `maven-enforcer-plugin` requires Java 21+.
+- Purpur API dependency is `provided`; plugin jar should not shade server APIs.
+- Repository contains both source and significant generated analytics artifacts under `analytics/`.
 
-## Project Status
+### Circular dependency and coupling observations (evidence-based)
+- `ArtifactProcessor` orchestrates many subsystems directly (evolution, drift, awakening, fusion, lore, memory, ability, telemetry via managers), making it a high-coupling integration hub.
+- `ObtuseLoot` bootstrap constructs and stores many subsystem singletons, then exposes broad getters; this centralizes wiring but increases global coupling.
+- No hard compile-time cyclic package import loop was confirmed from a static scan, but there is strong runtime bidirectional influence among evolution ↔ ecosystem ↔ telemetry signals.
 
-ObtuseLoot is pre-release and under active iteration. Systems and thresholds are still being tuned for behavior quality and progression balance. Expect ongoing changes to formulas, thresholds, and command ergonomics during development.
+## Contributor Onboarding
+1. **Build:** `mvn clean package`.
+2. **Plugin entrypoint:** start at `src/main/java/obtuseloot/ObtuseLoot.java`.
+3. **Command handling:** inspect `src/main/java/obtuseloot/commands/`.
+4. **Listener wiring:** inspect `src/main/java/obtuseloot/obtuseengine/ObtuseEngine.java`.
+5. **Scheduled tasks:** inspect `EngineScheduler` and task registration in `ObtuseLoot.onEnable()`.
+6. **Core engine logic:** `artifacts`, `reputation`, `evolution`, `drift`, `awakening`, `fusion`, `lore`, `memory`, `abilities`.
+7. **Analytics/simulation:** `src/main/java/obtuseloot/analytics`, `src/main/java/obtuseloot/simulation`, plus `scripts/` and `analytics/` output directories.
+
+### Stable vs experimental (practical guidance)
+- **Relatively stable runtime core:** bootstrap, command root, persistence providers, core progression path.
+- **More experimental / research-heavy:** world-lab/open-endedness analysis layers, telemetry aggregation analytics, ecology balancing experiments and report-generation flows.
+
+## Limitations / Caveats
+- Permission descriptor does not fully enumerate scoped code-checked nodes (`obtuseloot.edit.<pool>`).
+- Command usage text in descriptor lags behind all implemented debug subcommands.
+- Analytics folders include generated data and historical reruns; not all artifacts are guaranteed to represent current runtime defaults.
+- No Git tags were visible in the local clone during this audit.
+
+## Releases
+Release notes and build/QA docs are stored under `releases/` (e.g., `releases/v0.9.6/`).
 
 ## License
-
-This project includes a repository `LICENSE` file.
-
-
-### Simulation debug commands
-
-- `/obtuseloot debug simulate hit <damage> [player]`
-- `/obtuseloot debug simulate move <distance> [player]`
-- `/obtuseloot debug simulate lowhp [player]`
-- `/obtuseloot debug simulate kill [player]`
-- `/obtuseloot debug simulate multikill <count> [player]`
-- `/obtuseloot debug simulate bosses <count> [player]`
-- `/obtuseloot debug simulate chaos [player]`
-- `/obtuseloot debug simulate cycle [player]`
-- `/obtuseloot debug simulate resetcontext [player]`
-- `/obtuseloot debug seed show|reroll|set|export|import [args]`
-
-
-## Internal Testing Repository Layout
-
-- `analytics/` generated reports (`evolution/`, `population/`, `meta/`, `review/`, `world-lab/`).
-- `simulation/` harness scaffolds (`gameplay-simulator/`, `chaos-tests/`, `population-simulator/`, `world-simulation-lab/`).
-- `releases/` release records (`v0.9.2/`, `v0.9.3/`, `v0.9.5/`, `nightly/`).
-- `scripts/` automation entrypoints for build and analytics.
-- `codex/` local orchestration utilities used by scripts.
-
-## Analytics + Simulation Pipeline
-
-Run in order:
-
-```bash
-./scripts/build.sh clean package
-./scripts/run-chaos-tests.sh
-./scripts/run-population-simulation.sh
-./scripts/run-meta-analysis.sh
-./scripts/run-world-simulation.sh
-```
-
-The pipeline writes deterministic report artifacts under `analytics/` and keeps binary plugin JAR output in `target/` only. Build output binaries (for example `target/ObtuseLoot-0.9.5.jar`) are runtime artifacts and are intentionally not committed.
-
-## Commentation Audit Notes
-
-- Script wrappers in `scripts/` are expected to include a short header comment explaining purpose and output intent.
-- Internal generators (for example `codex/run_internal_pipeline.py`) should keep function docstrings focused on report intent rather than implementation detail.
-- When touching existing files, prefer clarifying or tightening comments over adding noisy line-by-line narration.
-- Keep operational docs in this README synchronized with script responsibilities whenever tooling comments are updated.
-
-## Multi-backend persistence (YAML / SQLite / MySQL)
-
-ObtuseLoot now supports three persistence backends selected by configuration:
-
-- `yaml` (default) — file-based player state in `plugins/ObtuseLoot/playerdata`
-- `sqlite` — embedded local DB file for single-server deployments
-- `mysql` — external database for shared or larger deployments
-
-Example config:
-
-```yaml
-storage:
-  backend: yaml
-  fallbackToYamlOnFailure: false
-
-sqlite:
-  file: plugins/ObtuseLoot/data/obtuseloot.db
-
-mysql:
-  host: localhost
-  port: 3306
-  database: obtuseloot
-  username: root
-  password: change-me
-  useSsl: false
-  connectionPool:
-    enabled: false
-    maxPoolSize: 10
-```
-
-### Backend behavior
-- Startup selects backend via `storage.backend`.
-- If SQL backend startup fails:
-  - with `fallbackToYamlOnFailure: true` → plugin falls back to YAML.
-  - with `fallbackToYamlOnFailure: false` → plugin disables startup with a clear error.
-
-### Migration commands
-- `/obtuseloot debug persistence migrate yaml-to-sqlite`
-- `/obtuseloot debug persistence migrate yaml-to-mysql`
-
-### Persistence debug commands
-- `/obtuseloot debug persistence`
-- `/obtuseloot debug persistence backend`
-- `/obtuseloot debug persistence test`
-
-Simulation and world-lab flows remain YAML-friendly by default unless backend is explicitly changed.
+No explicit top-level LICENSE file was found in this repository snapshot.
