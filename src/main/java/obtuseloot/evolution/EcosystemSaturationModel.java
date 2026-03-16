@@ -4,6 +4,9 @@ import java.util.Map;
 
 public class EcosystemSaturationModel {
 
+    static final double SATURATION_THRESHOLD = 0.20D;
+    static final double SPECIALIZATION_THRESHOLD = 0.079D;
+
     public RolePressureMetrics pressureFor(MechanicNicheTag niche,
                                            NicheUtilityRollup nicheRollup,
                                            Map<MechanicNicheTag, NicheUtilityRollup> allRollups) {
@@ -13,15 +16,14 @@ public class EcosystemSaturationModel {
         double meanUtilityDensity = allRollups.values().stream().mapToDouble(NicheUtilityRollup::utilityDensity).average().orElse(0.0D);
         double utilityDelta = nicheRollup.utilityDensity() - meanUtilityDensity;
 
-        double saturationPenalty = share > 0.10D && nicheRollup.utilityDensity() < meanUtilityDensity
-                ? clamp((share - 0.10D) * 1.8D, 0.0D, 0.45D)
-                : 0.0D;
+        double saturationPenalty = clamp(share - SATURATION_THRESHOLD, 0.0D, 0.45D);
         double scarcityBonus = share < 0.10D && utilityDelta > 0.0D
                 ? clamp((0.10D - share) * 2.4D + utilityDelta * 0.30D, 0.0D, 0.40D)
                 : 0.0D;
-        double specializationPressure = share > 0.20D && utilityDelta >= 0.0D
-                ? clamp((share - 0.20D) * 1.3D + nicheRollup.outcomeYield() * 0.25D, 0.0D, 0.35D)
-                : 0.0D;
+
+        // Internal differentiation signal, intentionally independent from utility-density comparisons.
+        double specializationScore = clamp(nicheRollup.outcomeYield(), 0.0D, 1.0D);
+        double specializationPressure = clamp(specializationScore - SPECIALIZATION_THRESHOLD, 0.0D, 0.35D);
 
         double diversityIncentive = clamp((1.0D - share) * 0.08D, 0.0D, 0.08D);
         double ecologicalRepulsion = share > 0.18D && nicheRollup.outcomeYield() < 0.25D
