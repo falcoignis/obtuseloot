@@ -1,0 +1,68 @@
+{
+  "run_id": "deep-mild-adoption-calibration",
+  "dataset_root": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration",
+  "created_at": "2026-03-17T11:35:36Z",
+  "updated_at": "2026-03-17T11:44:40Z",
+  "status": "READY_FOR_ANALYSIS",
+  "deep_run_config": {"seasons": 10, "sessionsPerSeason": 4, "players": 18, "artifactsPerPlayer": 3, "encounterDensity": 5, "telemetrySamplingRate": 0.25},
+  "stages": {
+    "matrix_execution":   {"status": "PASSED", "updated_at": "2026-03-17T11:44:39Z"},
+    "dataset_contract":   {"status": "PASSED", "updated_at": "2026-03-17T11:44:39Z"},
+    "completion_marker":  {"status": "PASSED", "updated_at": "2026-03-17T11:44:39Z"},
+    "latest_run_pointer": {"status": "PASSED", "updated_at": "2026-03-17T11:44:40Z"},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "ritualist-heavy": {
+      "path": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration/ritualist-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "gatherer-heavy": {
+      "path": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration/gatherer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "mixed": {
+      "path": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration/mixed",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "random-baseline": {
+      "path": "/workspace/obtuseloot/analytics/validation-suite-rerun/deep-mild-adoption-calibration/random-baseline",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    }
+  }
+}

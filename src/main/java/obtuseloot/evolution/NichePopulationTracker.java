@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NichePopulationTracker {
-    private static final double INVERSION_PARENT_MULTIPLIER = 0.93D;
-    private static final double INVERSION_CHILD_MULTIPLIER = 1.12D;
+    private static final double INVERSION_PARENT_MULTIPLIER = 0.88D;
+    private static final double INVERSION_CHILD_MULTIPLIER = 1.30D;
     private static final int INVERSION_DECAY_WINDOWS = 5;
     private static final long INVERSION_WINDOW_MS = 5_000L;
     private static final double INVERSION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD;
@@ -46,12 +46,12 @@ public class NichePopulationTracker {
     private final Map<String, Long> birthMsByChildNiche = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Double>> lineageAffinityByParent = new ConcurrentHashMap<>();
     private final Random migrationRandom = new Random(0xC0FFEE1234ABCDEFL);
-    private static final double FORCED_MIGRATION_RATE = 0.40D;
-    private static final double FORCED_MIGRATION_MIN_RATE = 0.30D;
-    private static final double FORCED_MIGRATION_MAX_RATE = 0.50D;
-    private static final int NICHE_LOCK_MIN_WINDOWS = 2;
-    private static final int NICHE_LOCK_MAX_WINDOWS = 4;
-    private static final double NICHE_LOCK_UTILITY_BOOST = 1.12D;
+    private static final double FORCED_MIGRATION_RATE = 0.58D;
+    private static final double FORCED_MIGRATION_MIN_RATE = 0.50D;
+    private static final double FORCED_MIGRATION_MAX_RATE = 0.70D;
+    private static final int NICHE_LOCK_MIN_WINDOWS = 4;
+    private static final int NICHE_LOCK_MAX_WINDOWS = 6;
+    private static final double NICHE_LOCK_UTILITY_BOOST = 1.30D;
     private final Map<Long, NicheLockState> lockStateByArtifact = new ConcurrentHashMap<>();
 
     /**
@@ -351,7 +351,7 @@ public class NichePopulationTracker {
             return baseline;
         }
         String underrepresented = populationA < populationB ? childA : childB;
-        return migrationRandom.nextDouble() < 0.65D ? underrepresented : baseline;
+        return migrationRandom.nextDouble() < 0.85D ? underrepresented : baseline;
     }
 
     private String chooseChildNiche(String parentName, String dominantSubniche, String lineageId, long artifactSeed) {
@@ -448,7 +448,7 @@ public class NichePopulationTracker {
             }
         }
         int migrated = 0;
-        int migrationCap = Math.max(1, (int) Math.round(activeArtifacts.size() * 0.04D));
+        int migrationCap = Math.max(1, (int) Math.round(activeArtifacts.size() * 0.08D));
         for (Long seed : activeArtifacts) {
             if (migrated >= migrationCap) {
                 break;
@@ -469,7 +469,7 @@ public class NichePopulationTracker {
                     })
                     .count();
             double parentShare = parentPopulation / (double) Math.max(1, activeArtifacts.size());
-            if (parentShare < 0.22D) {
+            if (parentShare < 0.20D) {
                 continue;
             }
             double meanUtility = meanDensityByParent.getOrDefault(parentName, 0.0D);
@@ -488,7 +488,7 @@ public class NichePopulationTracker {
             if (weakerChild.equals(currentChild)) {
                 continue;
             }
-            double migrationChance = clamp((parentShare - 0.20D) * 1.6D + (meanUtility - utility) * 0.4D, 0.02D, 0.18D);
+            double migrationChance = clamp((parentShare - 0.17D) * 1.9D + (meanUtility - utility) * 0.50D, 0.04D, 0.30D);
             if (migrationRandom.nextDouble() < migrationChance) {
                 dynamicNicheByArtifact.put(seed, weakerChild);
                 applyMigrationLock(seed, weakerChild);
@@ -534,7 +534,7 @@ public class NichePopulationTracker {
         NicheLockState lockState = lockStateByArtifact.get(artifactSeed);
         if (lockState != null && bifurcationRegistry.isDynamicNiche(lockState.lockedNiche())) {
             String parent = parentByChildNiche.get(lockState.lockedNiche());
-            return clamp(inversionMultiplier(parent, true) * NICHE_LOCK_UTILITY_BOOST, 1.05D, 1.20D);
+            return clamp(inversionMultiplier(parent, true) * NICHE_LOCK_UTILITY_BOOST, 1.10D, 1.35D);
         }
         String childNiche = dynamicNicheByArtifact.get(artifactSeed);
         if (childNiche != null && bifurcationRegistry.isDynamicNiche(childNiche)) {
@@ -593,8 +593,8 @@ public class NichePopulationTracker {
         double target = childArtifact ? INVERSION_CHILD_MULTIPLIER : INVERSION_PARENT_MULTIPLIER;
         double multiplier = 1.0D + ((target - 1.0D) * decayFactor);
         return childArtifact
-                ? clamp(multiplier, 1.05D, 1.15D)
-                : clamp(multiplier, 0.90D, 0.97D);
+                ? clamp(multiplier, 1.10D, 1.32D)
+                : clamp(multiplier, 0.86D, 0.95D);
     }
 
     private boolean isParentSaturationHigh(String parentNiche) {

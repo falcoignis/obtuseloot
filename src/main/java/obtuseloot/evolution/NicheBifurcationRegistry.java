@@ -32,7 +32,7 @@ public class NicheBifurcationRegistry {
     // ---------- public thresholds (readable from tests) ----------
 
     /** saturationPenalty must reach this value to count as "high saturation". */
-    public static final double SATURATION_THRESHOLD = 0.08D;
+    public static final double SATURATION_THRESHOLD = 0.06D;
 
     /** specializationPressure must reach this value to count as "high specialization". */
     public static final double SPECIALIZATION_THRESHOLD = 0.00D;
@@ -41,7 +41,7 @@ public class NicheBifurcationRegistry {
     public static final int MIN_ARTIFACT_COUNT = 2;
 
     /** Parent-niche share floor before bifurcation pressure can accumulate. */
-    public static final double MIN_PARENT_NICHE_SHARE = 0.08D;
+    public static final double MIN_PARENT_NICHE_SHARE = 0.06D;
 
     /** Minimum active artifacts required for a child niche to remain viable. */
     public static final int MIN_CHILD_ARTIFACT_COUNT = 2;
@@ -52,7 +52,7 @@ public class NicheBifurcationRegistry {
     static final int  DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT = 4;
     static final long DEFAULT_COOLDOWN_MS          = 60_000L;  // 60 s
     static final int  DEFAULT_SUSTAINED_WINDOWS    = 2;        // two consecutive windows
-    static final int  DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE = 2;
+    static final int  DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE = 3;
 
     // ---------- configuration ----------
 
