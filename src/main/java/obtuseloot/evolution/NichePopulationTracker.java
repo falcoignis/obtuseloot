@@ -18,6 +18,9 @@ public class NichePopulationTracker {
     private static final int INVERSION_DECAY_WINDOWS = 5;
     private static final long INVERSION_WINDOW_MS = 5_000L;
     private static final double INVERSION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD;
+    private static final double COMPETITION_SHARE_WEIGHT = 3.0D;
+    private static final double COMPETITION_SATURATION_WEIGHT = 1.0D;
+    private static final double COMPETITION_DENSITY_WEIGHT = 0.60D;
 
     private final EcosystemRoleClassifier classifier;
     private final EcosystemSaturationModel saturationModel;
@@ -537,6 +540,28 @@ public class NichePopulationTracker {
             return 1.0D;
         }
         return inversionMultiplier(parent, false);
+    }
+
+    public double nicheCompetitionFactor(long artifactSeed) {
+        ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+        if (profile == null) {
+            return 1.0D;
+        }
+        Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
+        NicheUtilityRollup nicheRollup = allRollups.get(profile.dominantNiche());
+        if (nicheRollup == null) {
+            return 1.0D;
+        }
+        int totalPopulation = Math.max(1, allRollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum());
+        double nicheShare = nicheRollup.activeArtifacts() / (double) totalPopulation;
+        RolePressureMetrics pressure = saturationModel.pressureFor(profile.dominantNiche(), nicheRollup, allRollups);
+        double saturationPressure = clamp(pressure.saturationPenalty(), 0.0D, 1.0D);
+        double artifactDensity = clamp(nicheRollup.attempts() / Math.max(1.0D, nicheRollup.activeArtifacts() * 12.0D), 0.0D, 1.0D);
+        double competitionFactor = 1.0D
+                + (nicheShare * COMPETITION_SHARE_WEIGHT)
+                + (saturationPressure * COMPETITION_SATURATION_WEIGHT)
+                + (artifactDensity * COMPETITION_DENSITY_WEIGHT);
+        return clamp(competitionFactor, 1.0D, 5.0D);
     }
 
     private double inversionMultiplier(String parentNiche, boolean childArtifact) {
