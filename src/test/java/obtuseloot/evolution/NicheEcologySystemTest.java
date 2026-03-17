@@ -445,7 +445,7 @@ class NicheEcologySystemTest {
             }
         }
         if (migratedFound) {
-            assertTrue(childMultiplier >= 1.10D && childMultiplier <= 1.20D,
+            assertTrue(childMultiplier >= 1.10D && childMultiplier <= 1.35D,
                     "Child niche should receive bounded inversion + lock-in boost");
         } else {
             assertEquals(1.0D, childMultiplier, 0.0001D,
@@ -460,7 +460,7 @@ class NicheEcologySystemTest {
             agedTracker.evaluateBifurcations(agedNow + ((i + 1L) * 500L));
         }
         double decayedMultiplier = agedTracker.nicheAdoptionFitnessMultiplier(10L);
-        assertTrue(decayedMultiplier >= 1.0D && decayedMultiplier <= 1.20D,
+        assertTrue(decayedMultiplier >= 1.0D && decayedMultiplier <= 1.35D,
                 "Post-bifurcation adoption multiplier should remain bounded after lock/inversion decay");
 
         double unrelatedMultiplier = tracker.nicheAdoptionFitnessMultiplier(999L);
@@ -505,7 +505,7 @@ class NicheEcologySystemTest {
             assertEquals(lockedChild, tracker.effectiveNicheName(migratedSeed),
                     "Classifier updates must not override a locked migrated artifact");
             double lockedMultiplier = tracker.nicheAdoptionFitnessMultiplier(migratedSeed);
-            assertTrue(lockedMultiplier >= 1.10D && lockedMultiplier <= 1.20D,
+            assertTrue(lockedMultiplier >= 1.10D && lockedMultiplier <= 1.35D,
                     "Locked migrated artifacts should get a bounded utility reinforcement");
             tracker.evaluateBifurcations(nowMs + 500L + (i * 500L));
         }

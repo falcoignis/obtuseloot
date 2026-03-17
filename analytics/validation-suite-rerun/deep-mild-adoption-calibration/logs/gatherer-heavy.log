@@ -1,0 +1,16 @@
+Picked up JAVA_TOOL_OPTIONS: 
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/root/.local/share/mise/installs/maven/3.9.10/apache-maven-3.9.10/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[world-sim][memory] generation=4 heap_used_mb=359 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=34892 in_memory_rollup_count=1 active_artifact_count=54 lineage_count=28 branch_count=19
+[world-sim][memory] generation=8 heap_used_mb=119 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=68988 in_memory_rollup_count=2 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=12 heap_used_mb=627 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=103439 in_memory_rollup_count=3 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=16 heap_used_mb=529 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=137883 in_memory_rollup_count=4 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=20 heap_used_mb=491 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=172247 in_memory_rollup_count=5 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=24 heap_used_mb=510 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=206731 in_memory_rollup_count=6 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=28 heap_used_mb=632 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=241282 in_memory_rollup_count=7 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=32 heap_used_mb=227 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=276490 in_memory_rollup_count=8 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=36 heap_used_mb=482 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=311439 in_memory_rollup_count=9 active_artifact_count=54 lineage_count=28 branch_count=21
+[world-sim][memory] generation=40 heap_used_mb=191 heap_max_mb=4096 telemetry_buffer_size=0 telemetry_total_recorded=346855 in_memory_rollup_count=10 active_artifact_count=54 lineage_count=28 branch_count=21
+World simulation outputs written to analytics/validation-suite-rerun/deep-mild-adoption-calibration/gatherer-heavy
