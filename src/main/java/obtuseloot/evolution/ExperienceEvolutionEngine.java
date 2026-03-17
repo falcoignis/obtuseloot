@@ -80,9 +80,10 @@ public class ExperienceEvolutionEngine {
         ArtifactUsageProfile usage = usageTracker.profileForSeed(artifactSeed);
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         double nicheAdoptionMultiplier = usageTracker.nichePopulationTracker().nicheAdoptionFitnessMultiplier(artifactSeed);
+        double nicheCompetitionFactor = usageTracker.nichePopulationTracker().nicheCompetitionFactor(artifactSeed);
         AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
         double fitness = fitnessEvaluator.evaluate(usage);
-        double effectiveFitness = fitnessEvaluator.effectiveFitness(fitnessEvaluator.effectiveFitness(fitness, nichePopulation), pressure);
+        double effectiveFitness = fitnessEvaluator.effectiveFitness(fitness / Math.max(1.0D, nicheCompetitionFactor), pressure);
         effectiveFitness *= support.reinforcementMultiplier() * profile.lineageMomentumInfluence();
         effectiveFitness *= nicheAdoptionMultiplier;
         double normalized = normalizeFitness(effectiveFitness);

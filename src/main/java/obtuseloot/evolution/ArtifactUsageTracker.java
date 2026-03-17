@@ -79,7 +79,9 @@ public class ArtifactUsageTracker {
         TriggerBudgetProfile budgetProfile = budgetResolver.resolve(definition, context);
         boolean intentional = (context.runtimeContext() != null && context.runtimeContext().intentional())
                 || budgetProfile.intentionalPreferred();
-        double relevance = contextualRelevance(definition, result, intentional)
+        double baseRelevance = contextualRelevance(definition, result, intentional);
+        double competitionFactor = nichePopulationTracker.nicheCompetitionFactor(artifact.getArtifactSeed());
+        double relevance = (baseRelevance / competitionFactor)
                 * nichePopulationTracker.nicheAdoptionFitnessMultiplier(artifact.getArtifactSeed());
         double budgetCost = budgetProfile.triggerCost() + budgetProfile.evaluationCost();
 
