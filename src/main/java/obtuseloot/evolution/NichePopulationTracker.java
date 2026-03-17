@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NichePopulationTracker {
-    private static final double INVERSION_PARENT_MULTIPLIER = 0.85D;
-    private static final double INVERSION_CHILD_MULTIPLIER = 1.25D;
+    private static final double INVERSION_PARENT_MULTIPLIER = 0.93D;
+    private static final double INVERSION_CHILD_MULTIPLIER = 1.12D;
     private static final int INVERSION_DECAY_WINDOWS = 5;
     private static final long INVERSION_WINDOW_MS = 5_000L;
     private static final double INVERSION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD;
@@ -43,6 +43,9 @@ public class NichePopulationTracker {
     private final Map<String, Long> birthMsByChildNiche = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Double>> lineageAffinityByParent = new ConcurrentHashMap<>();
     private final Random migrationRandom = new Random(0xC0FFEE1234ABCDEFL);
+    private static final double FORCED_MIGRATION_RATE = 0.40D;
+    private static final double FORCED_MIGRATION_MIN_RATE = 0.30D;
+    private static final double FORCED_MIGRATION_MAX_RATE = 0.50D;
 
     /**
      * Throttle: bifurcation evaluation is only run when at least this many
@@ -193,6 +196,9 @@ public class NichePopulationTracker {
 
         Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
+        applyForcedDisplacement();
+        dynamicPopulation.clear();
+        dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         applySoftMigrationPressure(dynamicPopulation);
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
@@ -230,11 +236,90 @@ public class NichePopulationTracker {
             dynamicNicheByArtifact.remove(artifactSeed);
             return;
         }
-        String lineageId = lineageByArtifact.get(artifactSeed);
-        String child = chooseChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed);
-        if (child != null) {
-            dynamicNicheByArtifact.put(artifactSeed, child);
+        String existing = dynamicNicheByArtifact.get(artifactSeed);
+        if (existing != null && bifurcationRegistry.isDynamicNiche(existing)) {
+            return;
         }
+    }
+
+    private void applyForcedDisplacement() {
+        Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
+        if (allRollups.isEmpty()) {
+            return;
+        }
+        for (MechanicNicheTag parentTag : MechanicNicheTag.values()) {
+            String parentName = parentTag.name();
+            List<String> children = bifurcationRegistry.childrenOf(parentName);
+            if (children.size() < 2) {
+                continue;
+            }
+            NicheUtilityRollup parentRollup = allRollups.get(parentTag);
+            if (parentRollup == null) {
+                continue;
+            }
+            RolePressureMetrics pressure = saturationModel.pressureFor(parentTag, parentRollup, allRollups);
+            if (pressure.saturationPenalty() < NicheBifurcationRegistry.SATURATION_THRESHOLD) {
+                continue;
+            }
+            List<Long> parentArtifacts = activeArtifacts.stream()
+                    .filter(seed -> {
+                        ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+                        return profile != null && profile.dominantNiche() == parentTag;
+                    })
+                    .toList();
+            if (parentArtifacts.isEmpty()) {
+                continue;
+            }
+            double meanUtility = parentArtifacts.stream()
+                    .mapToDouble(this::utilityDensityFor)
+                    .average()
+                    .orElse(0.0D);
+            List<Long> belowMean = parentArtifacts.stream()
+                    .filter(seed -> utilityDensityFor(seed) < meanUtility)
+                    .sorted(java.util.Comparator.comparingDouble(this::utilityDensityFor))
+                    .toList();
+            if (belowMean.isEmpty()) {
+                continue;
+            }
+            int minMigrants = Math.max(1, (int) Math.ceil(parentArtifacts.size() * FORCED_MIGRATION_MIN_RATE));
+            int maxMigrants = Math.max(minMigrants, (int) Math.floor(parentArtifacts.size() * FORCED_MIGRATION_MAX_RATE));
+            int targetMigrants = (int) Math.round(parentArtifacts.size() * FORCED_MIGRATION_RATE);
+            int selectedCount = Math.max(minMigrants, Math.min(maxMigrants, targetMigrants));
+            selectedCount = Math.min(selectedCount, belowMean.size());
+
+            for (int i = 0; i < selectedCount; i++) {
+                Long artifactSeed = belowMean.get(i);
+                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+                if (profile == null) {
+                    continue;
+                }
+                String lineageId = lineageByArtifact.get(artifactSeed);
+                String child = chooseBalancedChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed, children);
+                if (child != null) {
+                    dynamicNicheByArtifact.put(artifactSeed, child);
+                }
+            }
+            for (int i = selectedCount; i < belowMean.size(); i++) {
+                dynamicNicheByArtifact.remove(belowMean.get(i));
+            }
+        }
+    }
+
+    private String chooseBalancedChildNiche(String parentName,
+                                            String dominantSubniche,
+                                            String lineageId,
+                                            long artifactSeed,
+                                            List<String> children) {
+        String baseline = chooseChildNiche(parentName, dominantSubniche, lineageId, artifactSeed);
+        String childA = children.get(children.size() - 2);
+        String childB = children.get(children.size() - 1);
+        long populationA = dynamicNicheByArtifact.values().stream().filter(childA::equals).count();
+        long populationB = dynamicNicheByArtifact.values().stream().filter(childB::equals).count();
+        if (Math.abs(populationA - populationB) <= 1L) {
+            return baseline;
+        }
+        String underrepresented = populationA < populationB ? childA : childB;
+        return migrationRandom.nextDouble() < 0.65D ? underrepresented : baseline;
     }
 
     private String chooseChildNiche(String parentName, String dominantSubniche, String lineageId, long artifactSeed) {
@@ -444,8 +529,8 @@ public class NichePopulationTracker {
         double target = childArtifact ? INVERSION_CHILD_MULTIPLIER : INVERSION_PARENT_MULTIPLIER;
         double multiplier = 1.0D + ((target - 1.0D) * decayFactor);
         return childArtifact
-                ? clamp(multiplier, 1.10D, 1.25D)
-                : clamp(multiplier, 0.85D, 0.95D);
+                ? clamp(multiplier, 1.05D, 1.15D)
+                : clamp(multiplier, 0.90D, 0.97D);
     }
 
     private boolean isParentSaturationHigh(String parentNiche) {
