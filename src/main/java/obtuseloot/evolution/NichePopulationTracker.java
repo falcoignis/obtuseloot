@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +32,11 @@ public class NichePopulationTracker {
      * emitted on its behalf use the child niche name rather than the parent enum name.
      */
     private final Map<Long, String> dynamicNicheByArtifact = new ConcurrentHashMap<>();
+    private final Map<Long, String> lineageByArtifact = new ConcurrentHashMap<>();
+    private final Map<String, String> parentByChildNiche = new ConcurrentHashMap<>();
+    private final Map<String, Long> birthMsByChildNiche = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Double>> lineageAffinityByParent = new ConcurrentHashMap<>();
+    private final Random migrationRandom = new Random(0xC0FFEE1234ABCDEFL);
 
     /**
      * Throttle: bifurcation evaluation is only run when at least this many
@@ -67,11 +73,19 @@ public class NichePopulationTracker {
         activeArtifacts.remove(artifactSeed);
         specializationScoreByArtifact.remove(artifactSeed);
         dynamicNicheByArtifact.remove(artifactSeed);
+        lineageByArtifact.remove(artifactSeed);
     }
 
     public void recordTelemetry(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
+        recordTelemetry(artifactSeed, null, signals);
+    }
+
+    public void recordTelemetry(long artifactSeed, String lineageId, Map<String, MechanicUtilitySignal> signals) {
         if (signals == null || signals.isEmpty()) {
             return;
+        }
+        if (lineageId != null && !lineageId.isBlank()) {
+            lineageByArtifact.put(artifactSeed, lineageId);
         }
         activeArtifacts.add(artifactSeed);
         ArtifactNicheProfile previous = nicheProfilesByArtifact.get(artifactSeed);
@@ -156,6 +170,8 @@ public class NichePopulationTracker {
 
             maybeBifurcation.ifPresent(bifurcation -> {
                 emitBifurcationEvent(bifurcation);
+                registerChildNicheMetadata(bifurcation, nowMs);
+                seedLineageAffinityForBifurcation(nicheTag, bifurcation);
                 // Re-assign all artifacts in the parent niche to one of the two children
                 for (Long seed : activeArtifacts) {
                     ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
@@ -170,6 +186,9 @@ public class NichePopulationTracker {
         }
 
         Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
+        dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
+        applySoftMigrationPressure(dynamicPopulation);
+        dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation);
         dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
@@ -205,10 +224,169 @@ public class NichePopulationTracker {
             dynamicNicheByArtifact.remove(artifactSeed);
             return;
         }
-        String child = bifurcationRegistry.assignChildNiche(parentName, profile.specialization().dominantSubniche());
+        String lineageId = lineageByArtifact.get(artifactSeed);
+        String child = chooseChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed);
         if (child != null) {
             dynamicNicheByArtifact.put(artifactSeed, child);
         }
+    }
+
+    private String chooseChildNiche(String parentName, String dominantSubniche, String lineageId, long artifactSeed) {
+        String baseline = bifurcationRegistry.assignChildNiche(parentName, dominantSubniche);
+        List<String> children = bifurcationRegistry.childrenOf(parentName);
+        if (children.size() < 2 || lineageId == null || lineageId.isBlank()) {
+            return baseline;
+        }
+        Map<String, Double> affinity = lineageAffinityByParent
+                .getOrDefault(parentName, Map.of())
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().startsWith(lineageId + "|"))
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (affinity.isEmpty()) {
+            return baseline;
+        }
+        String childA = children.get(children.size() - 2);
+        String childB = children.get(children.size() - 1);
+        double affinityA = affinity.getOrDefault(lineageId + "|" + childA, 0.0D);
+        double affinityB = affinity.getOrDefault(lineageId + "|" + childB, 0.0D);
+        if (Math.abs(affinityA - affinityB) < 0.10D) {
+            return baseline;
+        }
+        String preferred = affinityA >= affinityB ? childA : childB;
+        double confidence = clamp(0.55D + (Math.abs(affinityA - affinityB) * 0.45D), 0.55D, 0.90D);
+        long seed = Math.abs((artifactSeed * 31L) ^ preferred.hashCode());
+        double roll = (seed % 10_000L) / 10_000.0D;
+        return roll < confidence ? preferred : baseline;
+    }
+
+    private void registerChildNicheMetadata(NicheBifurcation bifurcation, long nowMs) {
+        parentByChildNiche.put(bifurcation.childNicheA(), bifurcation.parentNiche());
+        parentByChildNiche.put(bifurcation.childNicheB(), bifurcation.parentNiche());
+        birthMsByChildNiche.putIfAbsent(bifurcation.childNicheA(), nowMs);
+        birthMsByChildNiche.putIfAbsent(bifurcation.childNicheB(), nowMs);
+    }
+
+    private void seedLineageAffinityForBifurcation(MechanicNicheTag parent, NicheBifurcation bifurcation) {
+        String parentName = parent.name();
+        Map<String, Integer> lineagePopulation = new LinkedHashMap<>();
+        Map<String, Integer> lineageToChildA = new LinkedHashMap<>();
+        for (Long seed : activeArtifacts) {
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+            if (profile == null || profile.dominantNiche() != parent) {
+                continue;
+            }
+            String lineageId = lineageByArtifact.get(seed);
+            if (lineageId == null || lineageId.isBlank()) {
+                continue;
+            }
+            lineagePopulation.merge(lineageId, 1, Integer::sum);
+            String candidate = bifurcationRegistry.assignChildNiche(parentName, profile.specialization().dominantSubniche());
+            if (bifurcation.childNicheA().equals(candidate)) {
+                lineageToChildA.merge(lineageId, 1, Integer::sum);
+            }
+        }
+        if (lineagePopulation.isEmpty()) {
+            return;
+        }
+        Map<String, Double> affinity = lineageAffinityByParent.computeIfAbsent(parentName, ignored -> new ConcurrentHashMap<>());
+        for (Map.Entry<String, Integer> entry : lineagePopulation.entrySet()) {
+            String lineageId = entry.getKey();
+            int total = entry.getValue();
+            double aShare = lineageToChildA.getOrDefault(lineageId, 0) / (double) Math.max(1, total);
+            double bShare = 1.0D - aShare;
+            affinity.put(lineageId + "|" + bifurcation.childNicheA(), aShare);
+            affinity.put(lineageId + "|" + bifurcation.childNicheB(), bShare);
+        }
+    }
+
+    private void applySoftMigrationPressure(Map<String, Long> dynamicPopulation) {
+        if (activeArtifacts.size() < 10 || dynamicPopulation.isEmpty()) {
+            return;
+        }
+        Map<String, Double> meanDensityByParent = new LinkedHashMap<>();
+        for (MechanicNicheTag parent : MechanicNicheTag.values()) {
+            String parentName = parent.name();
+            List<String> children = bifurcationRegistry.childrenOf(parentName);
+            if (children.isEmpty()) {
+                continue;
+            }
+            double totalDensity = 0.0D;
+            int count = 0;
+            for (Long seed : activeArtifacts) {
+                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+                if (profile != null && profile.dominantNiche() == parent) {
+                    totalDensity += utilityDensityFor(seed);
+                    count++;
+                }
+            }
+            if (count > 0) {
+                meanDensityByParent.put(parentName, totalDensity / count);
+            }
+        }
+        int migrated = 0;
+        int migrationCap = Math.max(1, (int) Math.round(activeArtifacts.size() * 0.04D));
+        for (Long seed : activeArtifacts) {
+            if (migrated >= migrationCap) {
+                break;
+            }
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+            if (profile == null) {
+                continue;
+            }
+            String parentName = profile.dominantNiche().name();
+            List<String> children = bifurcationRegistry.childrenOf(parentName);
+            if (children.size() < 2) {
+                continue;
+            }
+            long parentPopulation = activeArtifacts.stream()
+                    .filter(id -> {
+                        ArtifactNicheProfile p = nicheProfilesByArtifact.get(id);
+                        return p != null && p.dominantNiche().name().equals(parentName);
+                    })
+                    .count();
+            double parentShare = parentPopulation / (double) Math.max(1, activeArtifacts.size());
+            if (parentShare < 0.22D) {
+                continue;
+            }
+            double meanUtility = meanDensityByParent.getOrDefault(parentName, 0.0D);
+            double utility = utilityDensityFor(seed);
+            if (utility >= meanUtility) {
+                continue;
+            }
+            String currentChild = dynamicNicheByArtifact.get(seed);
+            String weakerChild = children.get(children.size() - 2);
+            String strongerChild = children.get(children.size() - 1);
+            if (dynamicPopulation.getOrDefault(weakerChild, 0L) > dynamicPopulation.getOrDefault(strongerChild, 0L)) {
+                String swap = weakerChild;
+                weakerChild = strongerChild;
+                strongerChild = swap;
+            }
+            if (weakerChild.equals(currentChild)) {
+                continue;
+            }
+            double migrationChance = clamp((parentShare - 0.20D) * 1.6D + (meanUtility - utility) * 0.4D, 0.02D, 0.18D);
+            if (migrationRandom.nextDouble() < migrationChance) {
+                dynamicNicheByArtifact.put(seed, weakerChild);
+                dynamicPopulation.merge(weakerChild, 1L, Long::sum);
+                if (currentChild != null) {
+                    dynamicPopulation.merge(currentChild, -1L, Long::sum);
+                }
+                migrated++;
+            }
+        }
+    }
+
+    private double utilityDensityFor(long artifactSeed) {
+        Map<String, MechanicUtilitySignal> signals = signalsByArtifact.get(artifactSeed);
+        if (signals == null || signals.isEmpty()) {
+            return 0.0D;
+        }
+        double total = 0.0D;
+        for (MechanicUtilitySignal signal : signals.values()) {
+            total += signal.utilityDensity();
+        }
+        return total / signals.size();
     }
 
     /**
@@ -222,6 +400,31 @@ public class NichePopulationTracker {
             return dynamic;
         }
         return nicheProfile(artifactSeed).dominantNiche().name();
+    }
+
+    public double nicheAdoptionFitnessMultiplier(long artifactSeed) {
+        String childNiche = dynamicNicheByArtifact.get(artifactSeed);
+        if (childNiche == null || !bifurcationRegistry.isDynamicNiche(childNiche)) {
+            return 1.0D;
+        }
+        String parent = parentByChildNiche.get(childNiche);
+        if (parent == null) {
+            return 1.0D;
+        }
+        long parentPop = activeArtifacts.stream()
+                .filter(seed -> {
+                    ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+                    return profile != null && profile.dominantNiche().name().equals(parent);
+                })
+                .count();
+        double parentShare = parentPop / (double) Math.max(1, activeArtifacts.size());
+        long childPop = dynamicNicheByArtifact.values().stream().filter(childNiche::equals).count();
+        double childShare = childPop / (double) Math.max(1, activeArtifacts.size());
+        double crowdingLift = clamp((parentShare - 0.15D) * 0.30D, 0.0D, 0.08D);
+        double scarcityLift = childShare < 0.20D ? 0.04D : 0.0D;
+        long ageMs = System.currentTimeMillis() - birthMsByChildNiche.getOrDefault(childNiche, System.currentTimeMillis());
+        double youthLift = ageMs < 180_000L ? 0.03D : 0.0D;
+        return clamp(1.0D + crowdingLift + scarcityLift + youthLift, 1.0D, 1.16D);
     }
 
     // ---------- existing API (unchanged) ----------
@@ -283,7 +486,12 @@ public class NichePopulationTracker {
         Map<String, Long> dynamicPop = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPop.merge(childNiche, 1L, Long::sum));
         out.put("dynamicNichePopulation", dynamicPop);
+        out.put("lineageAffinity", Map.copyOf(lineageAffinityByParent));
         return out;
+    }
+
+    private static double clamp(double v, double min, double max) {
+        return Math.max(min, Math.min(max, v));
     }
 
     /** Exposes the bifurcation registry for inspection (e.g., in tests). */

@@ -97,7 +97,7 @@ public class ArtifactUsageTracker {
                 System.currentTimeMillis()
         ));
         Map<String, MechanicUtilitySignal> signals = signalCache.getOrCompute(artifact.getArtifactSeed(), profile::utilitySignalsByMechanic);
-        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), signals);
+        nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), artifact.getLatentLineage(), signals);
 
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
         if (emitter != null) {
