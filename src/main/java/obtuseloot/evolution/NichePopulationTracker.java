@@ -46,9 +46,9 @@ public class NichePopulationTracker {
     private final Map<String, Long> birthMsByChildNiche = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Double>> lineageAffinityByParent = new ConcurrentHashMap<>();
     private final Random migrationRandom = new Random(0xC0FFEE1234ABCDEFL);
-    private static final double FORCED_MIGRATION_RATE = 0.58D;
-    private static final double FORCED_MIGRATION_MIN_RATE = 0.50D;
-    private static final double FORCED_MIGRATION_MAX_RATE = 0.70D;
+    private static final double STRUCTURAL_CHILD_PARTITION_TARGET = 0.15D;
+    private static final double STRUCTURAL_CHILD_PARTITION_MIN = 0.10D;
+    private static final double STRUCTURAL_CHILD_PARTITION_MAX = 0.20D;
     private static final int NICHE_LOCK_MIN_WINDOWS = 4;
     private static final int NICHE_LOCK_MAX_WINDOWS = 6;
     private static final double NICHE_LOCK_UTILITY_BOOST = 1.30D;
@@ -209,6 +209,8 @@ public class NichePopulationTracker {
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         applySoftMigrationPressure(dynamicPopulation);
+        // Re-apply structural partition bounds so soft migration cannot stack child occupancy past cap.
+        applyForcedDisplacement();
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation);
@@ -255,15 +257,8 @@ public class NichePopulationTracker {
             dynamicNicheByArtifact.remove(artifactSeed);
             return;
         }
-        String lineageId = lineageByArtifact.get(artifactSeed);
-        String child = chooseBalancedChildNiche(parentName,
-                profile.specialization().dominantSubniche(),
-                lineageId,
-                artifactSeed,
-                children);
-        if (child != null) {
-            dynamicNicheByArtifact.put(artifactSeed, child);
-        } else {
+        String existingChild = dynamicNicheByArtifact.get(artifactSeed);
+        if (existingChild == null || !children.contains(existingChild)) {
             dynamicNicheByArtifact.remove(artifactSeed);
         }
     }
@@ -296,38 +291,79 @@ public class NichePopulationTracker {
             if (parentArtifacts.isEmpty()) {
                 continue;
             }
-            double meanUtility = parentArtifacts.stream()
-                    .mapToDouble(this::utilityDensityFor)
-                    .average()
-                    .orElse(0.0D);
-            List<Long> belowMean = parentArtifacts.stream()
-                    .filter(seed -> utilityDensityFor(seed) < meanUtility)
+            List<Long> lowUtilityOrdered = parentArtifacts.stream()
                     .sorted(java.util.Comparator.comparingDouble(this::utilityDensityFor))
                     .toList();
-            if (belowMean.isEmpty()) {
+            if (lowUtilityOrdered.isEmpty()) {
                 continue;
             }
-            int minMigrants = Math.max(1, (int) Math.ceil(parentArtifacts.size() * FORCED_MIGRATION_MIN_RATE));
-            int maxMigrants = Math.max(minMigrants, (int) Math.floor(parentArtifacts.size() * FORCED_MIGRATION_MAX_RATE));
-            int targetMigrants = (int) Math.round(parentArtifacts.size() * FORCED_MIGRATION_RATE);
-            int selectedCount = Math.max(minMigrants, Math.min(maxMigrants, targetMigrants));
-            selectedCount = Math.min(selectedCount, belowMean.size());
 
-            for (int i = 0; i < selectedCount; i++) {
-                Long artifactSeed = belowMean.get(i);
-                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
-                if (profile == null) {
-                    continue;
-                }
-                String lineageId = lineageByArtifact.get(artifactSeed);
-                String child = chooseBalancedChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed, children);
-                if (child != null) {
-                    dynamicNicheByArtifact.put(artifactSeed, child);
-                    applyMigrationLock(artifactSeed, child);
+            int minPartition = Math.max(1, (int) Math.ceil(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_MIN));
+            int maxPartition = Math.max(minPartition, (int) Math.floor(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_MAX));
+            int targetPartition = (int) Math.round(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_TARGET);
+            int boundedTarget = Math.max(minPartition, Math.min(maxPartition, targetPartition));
+
+            java.util.Set<Long> parentArtifactSet = java.util.Set.copyOf(parentArtifacts);
+            List<Long> assignedChildren = parentArtifacts.stream()
+                    .filter(seed -> {
+                        String child = dynamicNicheByArtifact.get(seed);
+                        return child != null && children.contains(child);
+                    })
+                    .toList();
+
+            if (assignedChildren.size() < boundedTarget) {
+                int lowerHalfCutoff = Math.max(1, (int) Math.ceil(lowUtilityOrdered.size() * 0.5D));
+                List<Long> lowerHalf = lowUtilityOrdered.subList(0, lowerHalfCutoff);
+                int needed = boundedTarget - assignedChildren.size();
+                for (Long artifactSeed : lowerHalf) {
+                    if (needed <= 0) {
+                        break;
+                    }
+                    if (!parentArtifactSet.contains(artifactSeed)) {
+                        continue;
+                    }
+                    String existing = dynamicNicheByArtifact.get(artifactSeed);
+                    if (existing != null && children.contains(existing)) {
+                        continue;
+                    }
+                    ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+                    if (profile == null) {
+                        continue;
+                    }
+                    String lineageId = lineageByArtifact.get(artifactSeed);
+                    String child = chooseBalancedChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed, children);
+                    if (child != null) {
+                        dynamicNicheByArtifact.put(artifactSeed, child);
+                        applyMigrationLock(artifactSeed, child);
+                        needed--;
+                    }
                 }
             }
-            for (int i = selectedCount; i < belowMean.size(); i++) {
-                Long artifactSeed = belowMean.get(i);
+
+            List<Long> currentAssignedChildren = parentArtifacts.stream()
+                    .filter(seed -> {
+                        String child = dynamicNicheByArtifact.get(seed);
+                        return child != null && children.contains(child);
+                    })
+                    .toList();
+
+            if (currentAssignedChildren.size() > maxPartition) {
+                List<Long> demotionOrder = currentAssignedChildren.stream()
+                        .sorted(java.util.Comparator.comparingDouble(this::utilityDensityFor).reversed())
+                        .toList();
+                int toDemote = currentAssignedChildren.size() - maxPartition;
+                for (int i = 0; i < toDemote && i < demotionOrder.size(); i++) {
+                    Long artifactSeed = demotionOrder.get(i);
+                    dynamicNicheByArtifact.remove(artifactSeed);
+                    lockStateByArtifact.remove(artifactSeed);
+                }
+            }
+
+            for (Long artifactSeed : lowUtilityOrdered) {
+                String assigned = dynamicNicheByArtifact.get(artifactSeed);
+                if (assigned != null && children.contains(assigned)) {
+                    continue;
+                }
                 lockStateByArtifact.remove(artifactSeed);
                 ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
                 if (profile != null) {
