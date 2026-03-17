@@ -16,7 +16,9 @@ public class TelemetryAggregationBuffer {
     private final LongAdder droppedEvents = new LongAdder();
     private final Map<String, LongAdder> nicheArtifactCounts = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> lineageArtifactCounts = new ConcurrentHashMap<>();
-    private final LongAdder activeArtifactCount = new LongAdder();
+    private final Map<Long, String> nicheByArtifactSeed = new ConcurrentHashMap<>();
+    private final Map<Long, String> lineageByArtifactSeed = new ConcurrentHashMap<>();
+    private final java.util.Set<Long> activeArtifactSeeds = ConcurrentHashMap.newKeySet();
     private final Map<EcosystemTelemetryEventType, LongAdder> typeCounts = new ConcurrentHashMap<>();
     private final Map<String, LongAdder> meaningfulByNiche = new ConcurrentHashMap<>();
     private final Map<String, DoubleAdder> utilityDensityByNiche = new ConcurrentHashMap<>();
@@ -72,20 +74,19 @@ public class TelemetryAggregationBuffer {
         }
         pending.add(event);
         typeCounts.computeIfAbsent(event.type(), ignored -> new LongAdder()).increment();
-        if (event.artifactSeed() > 0L) {
-            activeArtifactCount.increment();
-        }
-        if (present(event.niche())) {
-            incrementLong(nicheArtifactCounts, event.niche());
-        }
-        if (present(event.lineageId())) {
-            incrementLong(lineageArtifactCounts, event.lineageId());
+        long artifactSeed = event.artifactSeed();
+        if (artifactSeed > 0L) {
+            activeArtifactSeeds.add(artifactSeed);
         }
         // Prefer the emitted event niche over any legacy attribute-level niche.
         // Ability telemetry may include coarse labels (e.g., "RITUAL") in attributes,
         // while the event niche contains the effective dynamic niche (e.g., "RITUAL_A1").
         String niche = normalized(event.niche(), event.attributes().get("niche"));
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
+        if (artifactSeed > 0L) {
+            updateArtifactNamespace(artifactSeed, niche, nicheByArtifactSeed, nicheArtifactCounts);
+            updateArtifactNamespace(artifactSeed, lineage, lineageByArtifactSeed, lineageArtifactCounts);
+        }
         if (present(lineage) && present(niche)) {
             lastKnownNicheByLineage.put(lineage, niche);
         }
@@ -211,7 +212,7 @@ public class TelemetryAggregationBuffer {
     public Map<String, Double> graceWindowByLineageSnapshot() { return doubleSnapshot(graceWindowByLineage); }
     public Map<String, Long> unstableTransitionsByLineageSnapshot() { return longSnapshot(unstableTransitionsByLineage); }
     public Map<String, Long> collapsingTransitionsByLineageSnapshot() { return longSnapshot(collapsingTransitionsByLineage); }
-    public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifactCount.sum(); }
+    public long activeArtifactCountSnapshot() { return baselineActiveArtifactCount + activeArtifactSeeds.size(); }
     public long branchBirthCountSnapshot() { return baselineBranchBirthCount + branchBirthCount.sum(); }
     public long branchCollapseCountSnapshot() { return baselineBranchCollapseCount + branchCollapseCount.sum(); }
     public Map<String, Long> competitionPressureDistributionSnapshot() { return longSnapshot(competitionPressureDistribution); }
@@ -244,6 +245,26 @@ public class TelemetryAggregationBuffer {
         }
         ensureCapacity(store, key);
         store.computeIfAbsent(key, ignored -> new LongAdder()).increment();
+    }
+
+    private void updateArtifactNamespace(long artifactSeed,
+                                         String namespace,
+                                         Map<Long, String> namespaceByArtifact,
+                                         Map<String, LongAdder> populationByNamespace) {
+        if (!present(namespace)) {
+            return;
+        }
+        String previous = namespaceByArtifact.put(artifactSeed, namespace);
+        if (namespace.equals(previous)) {
+            return;
+        }
+        if (present(previous)) {
+            LongAdder previousCount = populationByNamespace.get(previous);
+            if (previousCount != null) {
+                previousCount.add(-1L);
+            }
+        }
+        incrementLong(populationByNamespace, namespace);
     }
 
     private Map<String, LongAdder> boundedMapForLineage(String lineage) {

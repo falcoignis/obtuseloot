@@ -380,6 +380,14 @@ class NicheEcologySystemTest {
         tracker.setTelemetryEmitter(emitter);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
+        for (long seed = 10L; seed < 16L; seed++) {
+            String niche = tracker.effectiveNicheName(seed);
+            emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                    seed,
+                    "lineage-test",
+                    niche,
+                    Map.of("ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"));
+        }
         emitter.flushAll();
 
         // Force a rollup to capture the current buffer state

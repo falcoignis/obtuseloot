@@ -192,7 +192,7 @@ class EcosystemTelemetryPipelineTest {
         service.scheduledRollupTick(System.currentTimeMillis() + 5L);
         EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();
 
-        assertEquals(2L, snapshot.nichePopulationRollup().populationByNiche().get("SCOUT"));
+        assertEquals(1L, snapshot.nichePopulationRollup().populationByNiche().get("SCOUT"));
         assertEquals(1L, snapshot.nichePopulationRollup().meaningfulOutcomesByNiche().get("SCOUT"));
         assertEquals(1L, snapshot.lineagePopulationRollup().branchCountByLineage().get("lin-1"));
         assertTrue(snapshot.lineagePopulationRollup().momentumByLineage().get("lin-2") > 1.0D);
@@ -219,6 +219,31 @@ class EcosystemTelemetryPipelineTest {
 
         assertEquals(1L, snapshot.nichePopulationRollup().meaningfulOutcomesByNiche().get("SCOUT"));
         assertEquals(1L, snapshot.nichePopulationRollup().branchContributionByNiche().get("SCOUT"));
+    }
+
+    @Test
+    void populationRollupTracksLatestArtifactNicheInsteadOfEventVolume() {
+        TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
+        ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
+        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
+                new EcosystemHistoryArchive(tempDir.resolve("population-latest-niche.log")), rollups, 32);
+
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 42L, "lin-move", "NAVIGATION",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                        Map.of("niche", "NAVIGATION", "lineage_id", "lin-move", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 42L, "lin-move", "NAVIGATION_A1",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                        Map.of("niche", "NAVIGATION", "lineage_id", "lin-move", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
+
+        service.scheduledRollupTick(System.currentTimeMillis() + 5L);
+        EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();
+
+        assertEquals(1L, snapshot.nichePopulationRollup().populationByNiche().get("NAVIGATION_A1"));
+        assertEquals(1L, snapshot.activeArtifactCount());
+        assertEquals(1L, snapshot.lineagePopulationRollup().populationByLineage().get("lin-move"));
+        assertFalse(snapshot.nichePopulationRollup().populationByNiche().containsKey("NAVIGATION")
+                        && snapshot.nichePopulationRollup().populationByNiche().get("NAVIGATION") > 0L,
+                "artifact should be counted only in its latest effective niche");
     }
 
     @Test
