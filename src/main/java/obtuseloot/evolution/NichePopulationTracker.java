@@ -13,6 +13,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NichePopulationTracker {
+    private static final double INVERSION_PARENT_MULTIPLIER = 0.85D;
+    private static final double INVERSION_CHILD_MULTIPLIER = 1.25D;
+    private static final int INVERSION_DECAY_WINDOWS = 5;
+    private static final long INVERSION_WINDOW_MS = 5_000L;
+    private static final double INVERSION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD;
+
     private final EcosystemRoleClassifier classifier;
     private final EcosystemSaturationModel saturationModel;
     private final Map<Long, ArtifactNicheProfile> nicheProfilesByArtifact = new ConcurrentHashMap<>();
@@ -404,27 +410,76 @@ public class NichePopulationTracker {
 
     public double nicheAdoptionFitnessMultiplier(long artifactSeed) {
         String childNiche = dynamicNicheByArtifact.get(artifactSeed);
-        if (childNiche == null || !bifurcationRegistry.isDynamicNiche(childNiche)) {
+        if (childNiche != null && bifurcationRegistry.isDynamicNiche(childNiche)) {
+            String parent = parentByChildNiche.get(childNiche);
+            return inversionMultiplier(parent, true);
+        }
+
+        ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+        if (profile == null) {
             return 1.0D;
         }
-        String parent = parentByChildNiche.get(childNiche);
-        if (parent == null) {
+
+        String parent = profile.dominantNiche().name();
+        if (bifurcationRegistry.childrenOf(parent).isEmpty()) {
             return 1.0D;
         }
-        long parentPop = activeArtifacts.stream()
-                .filter(seed -> {
-                    ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
-                    return profile != null && profile.dominantNiche().name().equals(parent);
-                })
-                .count();
-        double parentShare = parentPop / (double) Math.max(1, activeArtifacts.size());
-        long childPop = dynamicNicheByArtifact.values().stream().filter(childNiche::equals).count();
-        double childShare = childPop / (double) Math.max(1, activeArtifacts.size());
-        double crowdingLift = clamp((parentShare - 0.15D) * 0.30D, 0.0D, 0.08D);
-        double scarcityLift = childShare < 0.20D ? 0.04D : 0.0D;
-        long ageMs = System.currentTimeMillis() - birthMsByChildNiche.getOrDefault(childNiche, System.currentTimeMillis());
-        double youthLift = ageMs < 180_000L ? 0.03D : 0.0D;
-        return clamp(1.0D + crowdingLift + scarcityLift + youthLift, 1.0D, 1.16D);
+        return inversionMultiplier(parent, false);
+    }
+
+    private double inversionMultiplier(String parentNiche, boolean childArtifact) {
+        if (parentNiche == null || !isParentSaturationHigh(parentNiche)) {
+            return 1.0D;
+        }
+        NicheBifurcation latest = latestBifurcation(parentNiche);
+        if (latest == null) {
+            return 1.0D;
+        }
+        long ageMs = Math.max(0L, System.currentTimeMillis() - latest.timestampMs());
+        long decayHorizonMs = INVERSION_DECAY_WINDOWS * INVERSION_WINDOW_MS;
+        double decayFactor = clamp(1.0D - (ageMs / (double) Math.max(1L, decayHorizonMs)), 0.0D, 1.0D);
+        if (decayFactor <= 0.0D) {
+            return 1.0D;
+        }
+        double target = childArtifact ? INVERSION_CHILD_MULTIPLIER : INVERSION_PARENT_MULTIPLIER;
+        double multiplier = 1.0D + ((target - 1.0D) * decayFactor);
+        return childArtifact
+                ? clamp(multiplier, 1.10D, 1.25D)
+                : clamp(multiplier, 0.85D, 0.95D);
+    }
+
+    private boolean isParentSaturationHigh(String parentNiche) {
+        MechanicNicheTag tag = nicheTagByName(parentNiche);
+        if (tag == null) {
+            return false;
+        }
+        Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
+        NicheUtilityRollup parentRollup = allRollups.get(tag);
+        if (parentRollup == null) {
+            return false;
+        }
+        RolePressureMetrics pressure = saturationModel.pressureFor(tag, parentRollup, allRollups);
+        return pressure.saturationPenalty() >= INVERSION_SATURATION_GATE;
+    }
+
+    private NicheBifurcation latestBifurcation(String parentNiche) {
+        List<NicheBifurcation> events = bifurcationRegistry.bifurcations();
+        for (int i = events.size() - 1; i >= 0; i--) {
+            NicheBifurcation event = events.get(i);
+            if (parentNiche.equals(event.parentNiche())) {
+                return event;
+            }
+        }
+        return null;
+    }
+
+    private MechanicNicheTag nicheTagByName(String name) {
+        for (MechanicNicheTag tag : MechanicNicheTag.values()) {
+            if (tag.name().equals(name)) {
+                return tag;
+            }
+        }
+        return null;
     }
 
     // ---------- existing API (unchanged) ----------

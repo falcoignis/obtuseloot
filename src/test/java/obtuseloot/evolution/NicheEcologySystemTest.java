@@ -398,7 +398,7 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void bifurcationSeedsLineageAffinityAndBoostsChildFitnessTemporarily() {
+    void bifurcationSeedsLineageAffinityAndAppliesBoundedFitnessInversion() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
         NichePopulationTracker tracker = new NichePopulationTracker(
                 new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
@@ -420,9 +420,20 @@ class NicheEcologySystemTest {
         tracker.evaluateBifurcations(System.currentTimeMillis());
 
         assertEquals(1, registry.bifurcations().size(), "Expected one bifurcation");
-        double adoptionMultiplier = tracker.nicheAdoptionFitnessMultiplier(100L);
-        assertTrue(adoptionMultiplier > 1.0D && adoptionMultiplier <= 1.16D,
-                "Child niche should receive bounded temporary reinforcement");
+        double childMultiplier = tracker.nicheAdoptionFitnessMultiplier(100L);
+        assertTrue(childMultiplier >= 1.10D && childMultiplier <= 1.25D,
+                "Child niche should receive bounded inversion boost");
+
+        NicheBifurcationRegistry agedRegistry = new NicheBifurcationRegistry(8, 0L, 1);
+        NichePopulationTracker agedTracker = buildSaturatedNavigationEcosystem(agedRegistry);
+        agedTracker.evaluateBifurcations(System.currentTimeMillis() - 25_000L);
+        double decayedMultiplier = agedTracker.nicheAdoptionFitnessMultiplier(10L);
+        assertEquals(1.0D, decayedMultiplier, 0.0001D,
+                "Inversion boost should decay fully after the configured window horizon");
+
+        double unrelatedMultiplier = tracker.nicheAdoptionFitnessMultiplier(999L);
+        assertEquals(1.0D, unrelatedMultiplier, 0.0001D,
+                "Unrelated niches must not inherit inversion effects");
 
         @SuppressWarnings("unchecked")
         Map<String, Map<String, Double>> affinity = (Map<String, Map<String, Double>>) tracker.analyticsSnapshot().get("lineageAffinity");
