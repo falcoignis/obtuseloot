@@ -222,6 +222,28 @@ class EcosystemTelemetryPipelineTest {
     }
 
     @Test
+    void aggregationPrefersEventNicheOverLegacyAttributeNicheForDynamicChildren() {
+        TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
+        ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
+        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
+                new EcosystemHistoryArchive(tempDir.resolve("dynamic-child-niche.log")), rollups, 32);
+
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.NICHE_BIFURCATION, 0L, "", "RITUAL_STRANGE_UTILITY",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.NICHE_BIFURCATION,
+                        Map.of("event_type", "niche_bifurcation", "parent_niche", "RITUAL_STRANGE_UTILITY", "child_niche_a", "RITUAL_A1", "child_niche_b", "RITUAL_B1", "context_tags", "niche-bifurcation lifecycle"))));
+
+        service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 99L, "lin-child", "RITUAL_A1",
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                        Map.of("niche", "RITUAL", "lineage_id", "lin-child", "meaningful", "true", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
+
+        service.scheduledRollupTick(System.currentTimeMillis() + 5L);
+        EcosystemSnapshot snapshot = rollups.ecosystemSnapshot();
+
+        assertEquals(1L, snapshot.nichePopulationRollup().meaningfulOutcomesByNiche().get("RITUAL_A1"));
+        assertEquals(1L, snapshot.dynamicNichePopulation().get("RITUAL_A1"));
+    }
+
+    @Test
     void aggregationBufferOperationsRemainBoundedWithActiveArtifacts() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         int events = 2500;
