@@ -49,6 +49,7 @@ public class NichePopulationTracker {
     private static final double STRUCTURAL_CHILD_PARTITION_TARGET = 0.15D;
     private static final double STRUCTURAL_CHILD_PARTITION_MIN = 0.10D;
     private static final double STRUCTURAL_CHILD_PARTITION_MAX = 0.20D;
+    private static final double STRUCTURAL_ACTIVATION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD * 0.90D;
     private static final int NICHE_LOCK_MIN_WINDOWS = 4;
     private static final int NICHE_LOCK_MAX_WINDOWS = 6;
     private static final double NICHE_LOCK_UTILITY_BOOST = 1.30D;
@@ -279,7 +280,7 @@ public class NichePopulationTracker {
                 continue;
             }
             RolePressureMetrics pressure = saturationModel.pressureFor(parentTag, parentRollup, allRollups);
-            if (pressure.saturationPenalty() < NicheBifurcationRegistry.SATURATION_THRESHOLD) {
+            if (pressure.saturationPenalty() < STRUCTURAL_ACTIVATION_SATURATION_GATE) {
                 continue;
             }
             List<Long> parentArtifacts = activeArtifacts.stream()
@@ -505,7 +506,7 @@ public class NichePopulationTracker {
                     })
                     .count();
             double parentShare = parentPopulation / (double) Math.max(1, activeArtifacts.size());
-            if (parentShare < 0.20D) {
+            if (parentShare < 0.17D) {
                 continue;
             }
             double meanUtility = meanDensityByParent.getOrDefault(parentName, 0.0D);
