@@ -215,25 +215,33 @@ class NicheEcologySystemTest {
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
 
-        // After bifurcation, forced displacement should move a meaningful low-performing
-        // subset into child niches while leaving the parent represented.
+        // After bifurcation, classifier output should split assignments across child niches.
         assertEquals(1, registry.bifurcations().size());
         NicheBifurcation bifurcation = registry.bifurcations().get(0);
         String childA = bifurcation.childNicheA();
         String childB = bifurcation.childNicheB();
 
-        int assigned = 0;
+        int assignedToChildren = 0;
+        int assignedToChildA = 0;
+        int assignedToChildB = 0;
         for (long seed = 10L; seed < 16L; seed++) {
             String effective = tracker.effectiveNicheName(seed);
-            if (effective.equals(childA) || effective.equals(childB)) {
-                assigned++;
+            if (effective.equals(childA)) {
+                assignedToChildren++;
+                assignedToChildA++;
+            } else if (effective.equals(childB)) {
+                assignedToChildren++;
+                assignedToChildB++;
             } else {
-                assertEquals("NAVIGATION", effective,
-                        "Non-migrated artifacts should remain in the parent niche");
+                fail("Parent niche should not dominate classification when children exist; got " + effective);
             }
         }
-        assertTrue(assigned >= 2 && assigned <= 3,
-                "Expected ~40% forced displacement (2-3 of 6 NAVIGATION artifacts), got " + assigned);
+        assertEquals(6, assignedToChildren,
+                "All NAVIGATION artifacts should be partitioned into bifurcated child niches");
+        assertTrue(assignedToChildA > 0,
+                "Child A should receive a non-zero share of the parent population");
+        assertTrue(assignedToChildB > 0,
+                "Child B should receive a non-zero share of the parent population");
     }
 
     @Test

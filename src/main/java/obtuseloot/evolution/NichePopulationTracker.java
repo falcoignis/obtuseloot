@@ -249,15 +249,23 @@ public class NichePopulationTracker {
             lockStateByArtifact.remove(artifactSeed);
         }
         String parentName = profile.dominantNiche().name();
-        if (bifurcationRegistry.childrenOf(parentName).isEmpty()) {
+        List<String> children = bifurcationRegistry.childrenOf(parentName);
+        if (children.isEmpty()) {
             // No bifurcation for this niche yet — clear any stale assignment
             dynamicNicheByArtifact.remove(artifactSeed);
             return;
         }
-        // Outside of an explicit migration lock, classification is authoritative.
-        // Dynamic-child assignment must be re-established by migration pressure, not
-        // retained indefinitely once lock windows have elapsed.
-        dynamicNicheByArtifact.remove(artifactSeed);
+        String lineageId = lineageByArtifact.get(artifactSeed);
+        String child = chooseBalancedChildNiche(parentName,
+                profile.specialization().dominantSubniche(),
+                lineageId,
+                artifactSeed,
+                children);
+        if (child != null) {
+            dynamicNicheByArtifact.put(artifactSeed, child);
+        } else {
+            dynamicNicheByArtifact.remove(artifactSeed);
+        }
     }
 
     private void applyForcedDisplacement() {
@@ -319,8 +327,12 @@ public class NichePopulationTracker {
                 }
             }
             for (int i = selectedCount; i < belowMean.size(); i++) {
-                dynamicNicheByArtifact.remove(belowMean.get(i));
-                lockStateByArtifact.remove(belowMean.get(i));
+                Long artifactSeed = belowMean.get(i);
+                lockStateByArtifact.remove(artifactSeed);
+                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+                if (profile != null) {
+                    refreshDynamicNicheAssignment(artifactSeed, profile);
+                }
             }
         }
     }
