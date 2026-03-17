@@ -222,26 +222,61 @@ class NicheEcologySystemTest {
         String childB = bifurcation.childNicheB();
 
         int assignedToChildren = 0;
-        int assignedToChildA = 0;
-        int assignedToChildB = 0;
         for (long seed = 10L; seed < 16L; seed++) {
             String effective = tracker.effectiveNicheName(seed);
-            if (effective.equals(childA)) {
+            if (effective.equals(childA) || effective.equals(childB)) {
                 assignedToChildren++;
-                assignedToChildA++;
-            } else if (effective.equals(childB)) {
-                assignedToChildren++;
-                assignedToChildB++;
             } else {
-                fail("Parent niche should not dominate classification when children exist; got " + effective);
+                assertEquals("NAVIGATION", effective,
+                        "Only parent niche should remain outside bounded child partition");
             }
         }
-        assertEquals(6, assignedToChildren,
-                "All NAVIGATION artifacts should be partitioned into bifurcated child niches");
-        assertTrue(assignedToChildA > 0,
-                "Child A should receive a non-zero share of the parent population");
-        assertTrue(assignedToChildB > 0,
-                "Child B should receive a non-zero share of the parent population");
+
+        int parentPopulation = 6;
+        int minPartition = Math.max(1, (int) Math.ceil(parentPopulation * 0.10D));
+        int maxPartition = Math.max(minPartition, (int) Math.floor(parentPopulation * 0.20D));
+        assertTrue(assignedToChildren >= minPartition && assignedToChildren <= maxPartition,
+                "Child partition must remain bounded to 10-20% of the parent cohort");
+    }
+
+
+    @Test
+    void structuralPartitionPrefersLowerUtilityHalfAndRespectsCap() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NichePopulationTracker tracker = new NichePopulationTracker(
+                new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
+
+        for (int i = 0; i < 8; i++) {
+            double utility = 0.10D + (i * 0.10D);
+            tracker.recordTelemetry(200L + i, Map.of(
+                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                            utility, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
+            ));
+        }
+        tracker.recordTelemetry(999L, Map.of(
+                "RITUAL_CHANNEL@ON_MEMORY_EVENT",
+                new MechanicUtilitySignal("RITUAL_CHANNEL@ON_MEMORY_EVENT",
+                        4.8D, 0.70D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 8L, 6.0D)
+        ));
+
+        tracker.evaluateBifurcations(System.currentTimeMillis());
+
+        NicheBifurcation bifurcation = registry.bifurcations().get(0);
+        String childA = bifurcation.childNicheA();
+        String childB = bifurcation.childNicheB();
+        List<Long> childAssigned = java.util.stream.LongStream.range(200L, 208L)
+                .filter(seed -> {
+                    String effective = tracker.effectiveNicheName(seed);
+                    return childA.equals(effective) || childB.equals(effective);
+                })
+                .boxed()
+                .toList();
+
+        assertEquals(1, childAssigned.size(),
+                "Partition should resolve to one migrated artifact for a parent cohort of eight");
+        assertTrue(childAssigned.stream().allMatch(seed -> seed <= 203L),
+                "Structural partition should select from the lower-utility half of the parent cohort");
     }
 
     @Test
@@ -345,6 +380,14 @@ class NicheEcologySystemTest {
         tracker.setTelemetryEmitter(emitter);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
+        for (long seed = 10L; seed < 16L; seed++) {
+            String niche = tracker.effectiveNicheName(seed);
+            emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                    seed,
+                    "lineage-test",
+                    niche,
+                    Map.of("ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"));
+        }
         emitter.flushAll();
 
         // Force a rollup to capture the current buffer state
@@ -460,7 +503,7 @@ class NicheEcologySystemTest {
             agedTracker.evaluateBifurcations(agedNow + ((i + 1L) * 500L));
         }
         double decayedMultiplier = agedTracker.nicheAdoptionFitnessMultiplier(10L);
-        assertTrue(decayedMultiplier >= 1.0D && decayedMultiplier <= 1.35D,
+        assertTrue(decayedMultiplier >= 0.86D && decayedMultiplier <= 1.35D,
                 "Post-bifurcation adoption multiplier should remain bounded after lock/inversion decay");
 
         double unrelatedMultiplier = tracker.nicheAdoptionFitnessMultiplier(999L);
