@@ -419,21 +419,15 @@ class NicheEcologySystemTest {
 
     @Test
     void sustainedPressureRequirementPreventsEarlyBifurcation() {
-        // sustainedWindowsRequired=2: first window builds up, second triggers
+        // sustainedWindowsRequired=2 with parent-share below adaptive threshold:
+        // first window builds up, second triggers.
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 2);
-        NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         long nowMs = System.currentTimeMillis();
-
-        // First evaluation: pressure is high but only 1 window accumulated
-        tracker.evaluateBifurcations(nowMs);
-        assertEquals(0, registry.bifurcations().size(),
-                "No bifurcation after only 1 high-pressure window (requires 2)");
-
-        // Second evaluation: 2nd consecutive high-pressure window → bifurcation
-        tracker.evaluateBifurcations(nowMs + 100L);
-        assertEquals(1, registry.bifurcations().size(),
-                "Bifurcation should trigger after 2 sustained high-pressure windows");
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs).isEmpty(),
+                "No bifurcation after only 1 high-pressure window when parent share is below adaptive fast-path");
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs + 100L).isPresent(),
+                "Bifurcation should trigger after 2 sustained windows when parent share is below adaptive fast-path");
     }
 
     @Test

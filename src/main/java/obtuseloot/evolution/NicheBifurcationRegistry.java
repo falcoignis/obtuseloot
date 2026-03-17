@@ -32,7 +32,7 @@ public class NicheBifurcationRegistry {
     // ---------- public thresholds (readable from tests) ----------
 
     /** saturationPenalty must reach this value to count as "high saturation". */
-    public static final double SATURATION_THRESHOLD = 0.06D;
+    public static final double SATURATION_THRESHOLD = 0.05D;
 
     /** specializationPressure must reach this value to count as "high specialization". */
     public static final double SPECIALIZATION_THRESHOLD = 0.00D;
@@ -41,7 +41,7 @@ public class NicheBifurcationRegistry {
     public static final int MIN_ARTIFACT_COUNT = 2;
 
     /** Parent-niche share floor before bifurcation pressure can accumulate. */
-    public static final double MIN_PARENT_NICHE_SHARE = 0.06D;
+    public static final double MIN_PARENT_NICHE_SHARE = 0.05D;
 
     /** Minimum active artifacts required for a child niche to remain viable. */
     public static final int MIN_CHILD_ARTIFACT_COUNT = 2;
@@ -174,7 +174,11 @@ public class NicheBifurcationRegistry {
                 .computeIfAbsent(parentNiche, k -> new AtomicInteger(0))
                 .incrementAndGet();
 
-        if (windows < sustainedWindowsRequired) {
+        int effectiveSustainedWindows = nichePopulationShare >= 0.10D
+                ? Math.max(1, sustainedWindowsRequired - 1)
+                : sustainedWindowsRequired;
+
+        if (windows < effectiveSustainedWindows) {
             return Optional.empty();
         }
 
