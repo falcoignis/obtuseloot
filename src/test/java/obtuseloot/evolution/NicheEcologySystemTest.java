@@ -396,4 +396,39 @@ class NicheEcologySystemTest {
         assertEquals(1, registry.bifurcations().size(),
                 "No further bifurcation when niche cap is reached");
     }
+
+    @Test
+    void bifurcationSeedsLineageAffinityAndBoostsChildFitnessTemporarily() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NichePopulationTracker tracker = new NichePopulationTracker(
+                new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
+
+        for (int i = 0; i < 8; i++) {
+            String lineage = i < 4 ? "lineage-alpha" : "lineage-beta";
+            tracker.recordTelemetry(100L + i, lineage, Map.of(
+                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                            0.35D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
+            ));
+        }
+        tracker.recordTelemetry(999L, "lineage-ritual", Map.of(
+                "RITUAL_CHANNEL@ON_MEMORY_EVENT",
+                new MechanicUtilitySignal("RITUAL_CHANNEL@ON_MEMORY_EVENT",
+                        5.0D, 0.80D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 9L, 6.0D)
+        ));
+
+        tracker.evaluateBifurcations(System.currentTimeMillis());
+
+        assertEquals(1, registry.bifurcations().size(), "Expected one bifurcation");
+        double adoptionMultiplier = tracker.nicheAdoptionFitnessMultiplier(100L);
+        assertTrue(adoptionMultiplier > 1.0D && adoptionMultiplier <= 1.16D,
+                "Child niche should receive bounded temporary reinforcement");
+
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Double>> affinity = (Map<String, Map<String, Double>>) tracker.analyticsSnapshot().get("lineageAffinity");
+        assertNotNull(affinity);
+        assertTrue(affinity.containsKey("NAVIGATION"), "Parent niche should include affinity map");
+        assertTrue(affinity.get("NAVIGATION").keySet().stream().anyMatch(k -> k.startsWith("lineage-alpha|")));
+        assertTrue(affinity.get("NAVIGATION").keySet().stream().anyMatch(k -> k.startsWith("lineage-beta|")));
+    }
 }
