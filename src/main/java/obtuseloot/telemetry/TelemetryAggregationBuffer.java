@@ -81,7 +81,10 @@ public class TelemetryAggregationBuffer {
         if (present(event.lineageId())) {
             incrementLong(lineageArtifactCounts, event.lineageId());
         }
-        String niche = normalized(event.attributes().get("niche"), event.niche());
+        // Prefer the emitted event niche over any legacy attribute-level niche.
+        // Ability telemetry may include coarse labels (e.g., "RITUAL") in attributes,
+        // while the event niche contains the effective dynamic niche (e.g., "RITUAL_A1").
+        String niche = normalized(event.niche(), event.attributes().get("niche"));
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
         if (present(lineage) && present(niche)) {
             lastKnownNicheByLineage.put(lineage, niche);
