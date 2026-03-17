@@ -46,6 +46,10 @@ public class NichePopulationTracker {
     private static final double FORCED_MIGRATION_RATE = 0.40D;
     private static final double FORCED_MIGRATION_MIN_RATE = 0.30D;
     private static final double FORCED_MIGRATION_MAX_RATE = 0.50D;
+    private static final int NICHE_LOCK_MIN_WINDOWS = 2;
+    private static final int NICHE_LOCK_MAX_WINDOWS = 4;
+    private static final double NICHE_LOCK_UTILITY_BOOST = 1.12D;
+    private final Map<Long, NicheLockState> lockStateByArtifact = new ConcurrentHashMap<>();
 
     /**
      * Throttle: bifurcation evaluation is only run when at least this many
@@ -83,6 +87,7 @@ public class NichePopulationTracker {
         specializationScoreByArtifact.remove(artifactSeed);
         dynamicNicheByArtifact.remove(artifactSeed);
         lineageByArtifact.remove(artifactSeed);
+        lockStateByArtifact.remove(artifactSeed);
     }
 
     public void recordTelemetry(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
@@ -147,6 +152,7 @@ public class NichePopulationTracker {
      * drive bifurcation directly without depending on real-time waits.</p>
      */
     public void evaluateBifurcations(long nowMs) {
+        decayNicheLocks();
         Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
         if (allRollups.isEmpty()) {
             return;
@@ -204,6 +210,7 @@ public class NichePopulationTracker {
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation);
         dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
+        lockStateByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue().lockedNiche()));
     }
 
     /**
@@ -230,16 +237,24 @@ public class NichePopulationTracker {
      * the artifact to one of the child niches based on its dominant subniche.
      */
     private void refreshDynamicNicheAssignment(long artifactSeed, ArtifactNicheProfile profile) {
+        NicheLockState lockState = lockStateByArtifact.get(artifactSeed);
+        if (lockState != null) {
+            if (bifurcationRegistry.isDynamicNiche(lockState.lockedNiche())) {
+                dynamicNicheByArtifact.put(artifactSeed, lockState.lockedNiche());
+                return;
+            }
+            lockStateByArtifact.remove(artifactSeed);
+        }
         String parentName = profile.dominantNiche().name();
         if (bifurcationRegistry.childrenOf(parentName).isEmpty()) {
             // No bifurcation for this niche yet — clear any stale assignment
             dynamicNicheByArtifact.remove(artifactSeed);
             return;
         }
-        String existing = dynamicNicheByArtifact.get(artifactSeed);
-        if (existing != null && bifurcationRegistry.isDynamicNiche(existing)) {
-            return;
-        }
+        // Outside of an explicit migration lock, classification is authoritative.
+        // Dynamic-child assignment must be re-established by migration pressure, not
+        // retained indefinitely once lock windows have elapsed.
+        dynamicNicheByArtifact.remove(artifactSeed);
     }
 
     private void applyForcedDisplacement() {
@@ -297,10 +312,12 @@ public class NichePopulationTracker {
                 String child = chooseBalancedChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed, children);
                 if (child != null) {
                     dynamicNicheByArtifact.put(artifactSeed, child);
+                    applyMigrationLock(artifactSeed, child);
                 }
             }
             for (int i = selectedCount; i < belowMean.size(); i++) {
                 dynamicNicheByArtifact.remove(belowMean.get(i));
+                lockStateByArtifact.remove(belowMean.get(i));
             }
         }
     }
@@ -459,6 +476,7 @@ public class NichePopulationTracker {
             double migrationChance = clamp((parentShare - 0.20D) * 1.6D + (meanUtility - utility) * 0.4D, 0.02D, 0.18D);
             if (migrationRandom.nextDouble() < migrationChance) {
                 dynamicNicheByArtifact.put(seed, weakerChild);
+                applyMigrationLock(seed, weakerChild);
                 dynamicPopulation.merge(weakerChild, 1L, Long::sum);
                 if (currentChild != null) {
                     dynamicPopulation.merge(currentChild, -1L, Long::sum);
@@ -486,6 +504,10 @@ public class NichePopulationTracker {
      * returned; otherwise the canonical enum name is used.
      */
     public String effectiveNicheName(long artifactSeed) {
+        NicheLockState lockState = lockStateByArtifact.get(artifactSeed);
+        if (lockState != null && bifurcationRegistry.isDynamicNiche(lockState.lockedNiche())) {
+            return lockState.lockedNiche();
+        }
         String dynamic = dynamicNicheByArtifact.get(artifactSeed);
         if (dynamic != null) {
             return dynamic;
@@ -494,6 +516,11 @@ public class NichePopulationTracker {
     }
 
     public double nicheAdoptionFitnessMultiplier(long artifactSeed) {
+        NicheLockState lockState = lockStateByArtifact.get(artifactSeed);
+        if (lockState != null && bifurcationRegistry.isDynamicNiche(lockState.lockedNiche())) {
+            String parent = parentByChildNiche.get(lockState.lockedNiche());
+            return clamp(inversionMultiplier(parent, true) * NICHE_LOCK_UTILITY_BOOST, 1.05D, 1.20D);
+        }
         String childNiche = dynamicNicheByArtifact.get(artifactSeed);
         if (childNiche != null && bifurcationRegistry.isDynamicNiche(childNiche)) {
             String parent = parentByChildNiche.get(childNiche);
@@ -626,8 +653,26 @@ public class NichePopulationTracker {
         Map<String, Long> dynamicPop = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPop.merge(childNiche, 1L, Long::sum));
         out.put("dynamicNichePopulation", dynamicPop);
+        Map<String, Long> lockedPop = new LinkedHashMap<>();
+        lockStateByArtifact.forEach((seed, lockState) -> lockedPop.merge(lockState.lockedNiche(), 1L, Long::sum));
+        out.put("lockedNichePopulation", lockedPop);
+        out.put("lockedArtifactCount", lockStateByArtifact.size());
         out.put("lineageAffinity", Map.copyOf(lineageAffinityByParent));
         return out;
+    }
+
+    private void applyMigrationLock(long artifactSeed, String childNiche) {
+        if (childNiche == null || !bifurcationRegistry.isDynamicNiche(childNiche)) {
+            lockStateByArtifact.remove(artifactSeed);
+            return;
+        }
+        int duration = NICHE_LOCK_MIN_WINDOWS + migrationRandom.nextInt((NICHE_LOCK_MAX_WINDOWS - NICHE_LOCK_MIN_WINDOWS) + 1);
+        lockStateByArtifact.put(artifactSeed, new NicheLockState(childNiche, duration));
+    }
+
+    private void decayNicheLocks() {
+        lockStateByArtifact.replaceAll((seed, lockState) -> lockState.decayed());
+        lockStateByArtifact.entrySet().removeIf(entry -> entry.getValue().remainingWindows() <= 0);
     }
 
     private static double clamp(double v, double min, double max) {
@@ -692,5 +737,11 @@ public class NichePopulationTracker {
         private long meaningful;
         private double validated;
         private double budget;
+    }
+
+    private record NicheLockState(String lockedNiche, int remainingWindows) {
+        private NicheLockState decayed() {
+            return new NicheLockState(lockedNiche, remainingWindows - 1);
+        }
     }
 }
