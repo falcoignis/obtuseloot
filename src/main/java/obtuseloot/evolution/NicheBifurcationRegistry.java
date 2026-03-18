@@ -44,7 +44,7 @@ public class NicheBifurcationRegistry {
     public static final double MIN_PARENT_NICHE_SHARE = 0.05D;
 
     /** Minimum active artifacts required for a child niche to remain viable. */
-    public static final int MIN_CHILD_ARTIFACT_COUNT = 2;
+    public static final int MIN_CHILD_ARTIFACT_COUNT = 1;
 
     // ---------- defaults (overridable via constructor) ----------
 
@@ -53,6 +53,7 @@ public class NicheBifurcationRegistry {
     static final long DEFAULT_COOLDOWN_MS          = 60_000L;  // 60 s
     static final int  DEFAULT_SUSTAINED_WINDOWS    = 2;        // two consecutive windows
     static final int  DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE = 3;
+    static final int  DEFAULT_GRACE_PERIOD_WINDOWS = 4;        // windows after birth before collapse is allowed
 
     // ---------- configuration ----------
 
@@ -61,6 +62,7 @@ public class NicheBifurcationRegistry {
     private final long cooldownMs;
     private final int  sustainedWindowsRequired;
     private final int  childZeroWindowsToCollapse;
+    private final int  gracePeriodWindows;
 
     // ---------- state ----------
 
@@ -81,6 +83,9 @@ public class NicheBifurcationRegistry {
     private volatile long lastGlobalBifurcationTimeMs = Long.MIN_VALUE;
     private final Map<String, AtomicInteger> zeroPopulationWindowsByChild = new ConcurrentHashMap<>();
 
+    /** Tracks the evaluation window in which each child niche was born. */
+    private final Map<String, Integer> birthWindowByChild = new ConcurrentHashMap<>();
+
     /** Monotonically-increasing sequence counter used to produce unique child names. */
     private final AtomicInteger sequence = new AtomicInteger(0);
 
@@ -91,7 +96,8 @@ public class NicheBifurcationRegistry {
                 DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT,
                 DEFAULT_COOLDOWN_MS,
                 DEFAULT_SUSTAINED_WINDOWS,
-                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE);
+                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE,
+                DEFAULT_GRACE_PERIOD_WINDOWS);
     }
 
     public NicheBifurcationRegistry(int maxDynamicNiches, long cooldownMs, int sustainedWindowsRequired) {
@@ -99,7 +105,8 @@ public class NicheBifurcationRegistry {
                 DEFAULT_MAX_DYNAMIC_NICHES_PER_PARENT,
                 cooldownMs,
                 sustainedWindowsRequired,
-                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE);
+                DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE,
+                DEFAULT_GRACE_PERIOD_WINDOWS);
     }
 
     public NicheBifurcationRegistry(int maxDynamicNiches,
@@ -107,11 +114,26 @@ public class NicheBifurcationRegistry {
                                     long cooldownMs,
                                     int sustainedWindowsRequired,
                                     int childZeroWindowsToCollapse) {
+        this(maxDynamicNiches,
+                maxDynamicNichesPerParent,
+                cooldownMs,
+                sustainedWindowsRequired,
+                childZeroWindowsToCollapse,
+                DEFAULT_GRACE_PERIOD_WINDOWS);
+    }
+
+    public NicheBifurcationRegistry(int maxDynamicNiches,
+                                    int maxDynamicNichesPerParent,
+                                    long cooldownMs,
+                                    int sustainedWindowsRequired,
+                                    int childZeroWindowsToCollapse,
+                                    int gracePeriodWindows) {
         this.maxDynamicNiches      = Math.max(0, maxDynamicNiches);
         this.maxDynamicNichesPerParent = Math.max(2, maxDynamicNichesPerParent);
         this.cooldownMs            = Math.max(0L, cooldownMs);
         this.sustainedWindowsRequired = Math.max(1, sustainedWindowsRequired);
         this.childZeroWindowsToCollapse = Math.max(1, childZeroWindowsToCollapse);
+        this.gracePeriodWindows    = Math.max(0, gracePeriodWindows);
     }
 
     // ---------- main API ----------
@@ -158,12 +180,14 @@ public class NicheBifurcationRegistry {
         }
 
         // Pressure gate
-        boolean highSaturation    = saturationPressure    >= SATURATION_THRESHOLD;
+        boolean highSaturation     = saturationPressure    >= SATURATION_THRESHOLD;
+        // High share alone (>= 0.13) can substitute for saturation pressure
+        boolean highShare          = nichePopulationShare  >= 0.13D;
         boolean highSpecialization = specializationPressure >= SPECIALIZATION_THRESHOLD;
         boolean sufficientPop      = activeArtifacts >= MIN_ARTIFACT_COUNT;
         boolean sufficientShare    = nichePopulationShare >= MIN_PARENT_NICHE_SHARE;
 
-        if (!highSaturation || !highSpecialization || !sufficientPop || !sufficientShare) {
+        if ((!highSaturation && !highShare) || !highSpecialization || !sufficientPop || !sufficientShare) {
             // Pressure dropped — reset sustained-pressure counter
             highPressureWindowsByNiche.remove(parentNiche);
             return Optional.empty();
@@ -262,13 +286,30 @@ public class NicheBifurcationRegistry {
 
     /**
      * Collapses child niches that remain under-populated for sustained windows.
+     * Delegates to the window-aware overload with {@code Integer.MAX_VALUE} so
+     * no child is considered to be in a grace period.
      */
     public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild) {
+        collapseUnderpopulatedChildren(dynamicPopulationByChild, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Collapses child niches that remain under-populated for sustained windows,
+     * but skips the collapse counter for niches still within their grace period.
+     *
+     * @param dynamicPopulationByChild current per-child artifact counts
+     * @param currentWindow            current evaluation-window index (from
+     *                                 {@link obtuseloot.evolution.NichePopulationTracker})
+     */
+    public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild, int currentWindow) {
         for (String child : Set.copyOf(dynamicNiches)) {
             long population = dynamicPopulationByChild.getOrDefault(child, 0L);
             AtomicInteger zeroWindows = zeroPopulationWindowsByChild.computeIfAbsent(child, k -> new AtomicInteger(0));
             if (population < MIN_CHILD_ARTIFACT_COUNT) {
-                if (zeroWindows.incrementAndGet() >= childZeroWindowsToCollapse) {
+                // During grace period reset the counter so collapse can't accumulate
+                if (isInGracePeriod(child, currentWindow)) {
+                    zeroWindows.set(0);
+                } else if (zeroWindows.incrementAndGet() >= childZeroWindowsToCollapse) {
                     retireChild(child);
                 }
             } else {
@@ -277,9 +318,86 @@ public class NicheBifurcationRegistry {
         }
     }
 
+    // ---------- grace-period support ----------
+
+    /**
+     * Records the evaluation window in which a child niche was created so that
+     * the grace period can be enforced.  Called by {@link NichePopulationTracker}
+     * immediately after a bifurcation event fires.
+     */
+    public void setChildBirthWindow(String childNiche, int window) {
+        birthWindowByChild.put(childNiche, window);
+    }
+
+    /**
+     * Returns {@code true} if {@code childNiche} is still within its grace period
+     * (i.e., was created fewer than {@link #gracePeriodWindows} windows ago).
+     */
+    public boolean isInGracePeriod(String childNiche, int currentWindow) {
+        Integer birth = birthWindowByChild.get(childNiche);
+        return birth != null && (currentWindow - birth) < gracePeriodWindows;
+    }
+
+    // ---------- forced bifurcation ----------
+
+    /**
+     * Forces a bifurcation on {@code parentNiche} bypassing pressure and
+     * sustained-window gates, while still respecting the global niche cap,
+     * per-parent cap, and cooldowns.  Used as a last-resort guarantee when no
+     * organic bifurcation has occurred by window {@code N}.
+     */
+    public Optional<NicheBifurcation> forceBifurcation(
+            String parentNiche,
+            double saturationPressure,
+            double specializationPressure,
+            long nowMs) {
+
+        // Guard: global niche cap
+        if (dynamicNiches.size() + 2 > maxDynamicNiches) {
+            return Optional.empty();
+        }
+        // Guard: per-parent cap
+        if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
+            return Optional.empty();
+        }
+        // Guard: per-parent cooldown
+        Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
+        if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
+            return Optional.empty();
+        }
+        // Guard: global cooldown
+        if (lastGlobalBifurcationTimeMs != Long.MIN_VALUE && (nowMs - lastGlobalBifurcationTimeMs) < cooldownMs) {
+            return Optional.empty();
+        }
+
+        // Pressure gates intentionally bypassed — this is the forced path
+        highPressureWindowsByNiche.remove(parentNiche);
+
+        int seq = sequence.incrementAndGet();
+        String childA = parentNiche + "_A" + seq;
+        String childB = parentNiche + "_B" + seq;
+
+        NicheBifurcation event = new NicheBifurcation(
+                parentNiche, childA, childB,
+                saturationPressure, specializationPressure, nowMs);
+
+        bifurcations.add(event);
+        childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childA);
+        childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childB);
+        dynamicNiches.add(childA);
+        dynamicNiches.add(childB);
+        zeroPopulationWindowsByChild.put(childA, new AtomicInteger(0));
+        zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
+        lastBifurcationTimeByNiche.put(parentNiche, nowMs);
+        lastGlobalBifurcationTimeMs = nowMs;
+
+        return Optional.of(event);
+    }
+
     private void retireChild(String childNiche) {
         dynamicNiches.remove(childNiche);
         zeroPopulationWindowsByChild.remove(childNiche);
+        birthWindowByChild.remove(childNiche);
         childrenByParent.values().forEach(children -> children.remove(childNiche));
     }
 }

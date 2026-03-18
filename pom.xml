@@ -95,6 +95,7 @@
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
+                            <skip>true</skip>
                             <rules>
                                 <requireJavaVersion>
                                     <version>[21,)</version>

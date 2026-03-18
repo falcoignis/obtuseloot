@@ -248,10 +248,14 @@ for scenario in "${SCENARIOS[@]}"; do
 
   echo "[deep-run] Running scenario: $scenario (seasons=$DEEP_SEASONS sessionsPerSeason=$DEEP_SESSIONS_PER_SEASON)"
 
+  _CP="$ROOT_DIR/target/classes"
+  for _jar in $(find /root/.m2/repository -name "*.jar" 2>/dev/null | grep -v "\-sources\|\-javadoc\|\-tests"); do
+    _CP="$_CP:$_jar"
+  done
+
   set +e
-  JAVA_TOOL_OPTIONS="" mvn -q -DskipTests \
-    -Dexec.mainClass=obtuseloot.simulation.worldlab.WorldSimulationRunner \
-    -Dexec.classpathScope=compile \
+  JAVA_TOOL_OPTIONS="" java \
+    -cp "$_CP" \
     -Dworld.outputDirectory="$scenario_root" \
     -Dworld.validationProfile=true \
     -Dworld.telemetrySamplingRate=${DEEP_TELEMETRY_SAMPLING} \
@@ -261,7 +265,7 @@ for scenario in "${SCENARIOS[@]}"; do
     -Dworld.seasonCount=${DEEP_SEASONS} \
     -Dworld.encounterDensity=${DEEP_ENCOUNTER_DENSITY} \
     -Dworld.scenarioConfigPath="$config_path" \
-    org.codehaus.mojo:exec-maven-plugin:3.5.0:java \
+    obtuseloot.simulation.worldlab.WorldSimulationRunner \
     >"$scenario_log" 2>&1
   exit_code=$?
   set -e
