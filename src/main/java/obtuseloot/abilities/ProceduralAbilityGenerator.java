@@ -35,10 +35,10 @@ import java.util.Set;
 public class ProceduralAbilityGenerator {
     private static final double NOVELTY_FLOOR = 0.15D;
     private static final double NOVELTY_FLOOR_PENALTY = 0.65D;
-    private static final double HIGH_SIMILARITY_THRESHOLD = 0.82D;
+    private static final double HIGH_SIMILARITY_THRESHOLD = 0.80D;
     private static final double MODERATE_SIMILARITY_THRESHOLD = 0.62D;
-    private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.84D;
-    private static final double GLOBAL_NOVELTY_WEIGHT = 0.16D;
+    private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.68D;
+    private static final double GLOBAL_NOVELTY_WEIGHT = 0.32D;
     private static final double NICHE_WEIGHT_EXPONENT = 1.85D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
@@ -533,18 +533,18 @@ public class ProceduralAbilityGenerator {
 
     private double noveltyBonus(double intraNovelty, double globalNovelty, NicheVariantProfile variantProfile) {
         double pressure = noveltyPressure(variantProfile);
-        double weightedNovelty = (Math.pow(intraNovelty, 0.72D) * SAME_NICHE_NOVELTY_WEIGHT)
-                + (Math.pow(globalNovelty, 0.88D) * GLOBAL_NOVELTY_WEIGHT * crossNicheNoveltyPressure(variantProfile));
+        double weightedNovelty = (Math.pow(intraNovelty, 0.78D) * SAME_NICHE_NOVELTY_WEIGHT)
+                + (Math.pow(globalNovelty, 0.78D) * GLOBAL_NOVELTY_WEIGHT * crossNicheNoveltyPressure(variantProfile));
         return 1.0D + (weightedNovelty * pressure);
     }
 
     private double crossNicheNoveltyPressure(NicheVariantProfile variantProfile) {
         if (variantProfile == null) {
-            return 0.46D;
+            return 0.50D;
         }
         return variantProfile.isAlphaVariant()
-                ? clamp(0.52D + (variantProfile.mutationBias() * 0.10D), 0.45D, 0.64D)
-                : clamp(0.22D + (variantProfile.retentionBias() * 0.08D), 0.18D, 0.32D);
+                ? clamp(0.60D + (variantProfile.mutationBias() * 0.12D), 0.52D, 0.74D)
+                : clamp(0.24D + (variantProfile.retentionBias() * 0.08D), 0.20D, 0.35D);
     }
 
     private double noveltyPressure(NicheVariantProfile variantProfile) {
@@ -565,7 +565,7 @@ public class ProceduralAbilityGenerator {
     private double activePoolSimilarityPenalty(AbilitySimilarityProfile similarityProfile, NicheVariantProfile variantProfile) {
         double sameNiche = similarityProfile.sameNicheSimilarity();
         double crossNiche = similarityProfile.crossNicheSimilarity();
-        double highSimilarityPenalty = variantProfile != null && variantProfile.isAlphaVariant() ? 0.69D : 0.74D;
+        double highSimilarityPenalty = variantProfile != null && variantProfile.isAlphaVariant() ? 0.77D : 0.83D;
         if (sameNiche >= HIGH_SIMILARITY_THRESHOLD) {
             double ratio = clamp((sameNiche - HIGH_SIMILARITY_THRESHOLD) / (1.0D - HIGH_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
             return clamp(1.0D - (ratio * highSimilarityPenalty), 1.0D - highSimilarityPenalty, 1.0D);
@@ -608,8 +608,8 @@ public class ProceduralAbilityGenerator {
             default -> 0.10D;
         };
         double affinityMismatch = affinityMismatch(template, dominant, memoryProfile);
-        double penalty = Math.min(0.24D, (mechanicMismatch * 0.13D) + (triggerMismatch * 0.06D) + (affinityMismatch * 0.04D));
-        return clamp(1.0D - penalty, 0.76D, 1.0D);
+        double penalty = Math.min(0.18D, (mechanicMismatch * 0.09D) + (triggerMismatch * 0.05D) + (affinityMismatch * 0.03D));
+        return clamp(1.0D - penalty, 0.82D, 1.0D);
     }
 
     private double navigationTriggerMismatch(AbilityTrigger trigger) {
