@@ -54,6 +54,9 @@ public class NicheBifurcationRegistry {
     static final int  DEFAULT_SUSTAINED_WINDOWS    = 2;        // two consecutive windows
     static final int  DEFAULT_CHILD_ZERO_WINDOWS_TO_COLLAPSE = 3;
     static final int  DEFAULT_GRACE_PERIOD_WINDOWS = 4;        // windows after birth before collapse is allowed
+    static final int  ESTABLISHED_CHILD_WINDOWS = 4;
+    static final int  COLLAPSE_HYSTERESIS_WINDOWS = 2;
+    static final double STRONG_LINEAGE_AFFINITY_SUPPORT = 0.40D;
 
     // ---------- configuration ----------
 
@@ -85,6 +88,12 @@ public class NicheBifurcationRegistry {
 
     /** Tracks the evaluation window in which each child niche was born. */
     private final Map<String, Integer> birthWindowByChild = new ConcurrentHashMap<>();
+
+    /** Tracks how many windows a child niche has remained active/non-zero. */
+    private final Map<String, AtomicInteger> activeWindowsByChild = new ConcurrentHashMap<>();
+
+    /** Tracks consecutive low-population windows to enforce collapse hysteresis. */
+    private final Map<String, AtomicInteger> consecutiveLowPopulationWindowsByChild = new ConcurrentHashMap<>();
 
     /** Ecological identity profile for each active child niche. */
     private final Map<String, NicheVariantProfile> variantByChildNiche = new ConcurrentHashMap<>();
@@ -171,6 +180,7 @@ public class NicheBifurcationRegistry {
             return Optional.empty();
         }
 
+
         // Guard: per-parent cooldown
         Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
         if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
@@ -231,6 +241,10 @@ public class NicheBifurcationRegistry {
         dynamicNiches.add(childB);
         zeroPopulationWindowsByChild.put(childA, new AtomicInteger(0));
         zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
+        activeWindowsByChild.put(childA, new AtomicInteger(0));
+        activeWindowsByChild.put(childB, new AtomicInteger(0));
+        consecutiveLowPopulationWindowsByChild.put(childA, new AtomicInteger(0));
+        consecutiveLowPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
         lastGlobalBifurcationTimeMs = nowMs;
         storeVariants(parentNiche, childA, childB, seq);
@@ -294,7 +308,7 @@ public class NicheBifurcationRegistry {
      * no child is considered to be in a grace period.
      */
     public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild) {
-        collapseUnderpopulatedChildren(dynamicPopulationByChild, Integer.MAX_VALUE);
+        collapseUnderpopulatedChildren(dynamicPopulationByChild, Map.of(), Integer.MAX_VALUE);
     }
 
     /**
@@ -306,18 +320,43 @@ public class NicheBifurcationRegistry {
      *                                 {@link obtuseloot.evolution.NichePopulationTracker})
      */
     public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild, int currentWindow) {
+        collapseUnderpopulatedChildren(dynamicPopulationByChild, Map.of(), currentWindow);
+    }
+
+    public void collapseUnderpopulatedChildren(Map<String, Long> dynamicPopulationByChild,
+                                               Map<String, Double> lineageSupportByChild,
+                                               int currentWindow) {
         for (String child : Set.copyOf(dynamicNiches)) {
             long population = dynamicPopulationByChild.getOrDefault(child, 0L);
             AtomicInteger zeroWindows = zeroPopulationWindowsByChild.computeIfAbsent(child, k -> new AtomicInteger(0));
-            if (population < MIN_CHILD_ARTIFACT_COUNT) {
-                // During grace period reset the counter so collapse can't accumulate
-                if (isInGracePeriod(child, currentWindow)) {
-                    zeroWindows.set(0);
-                } else if (zeroWindows.incrementAndGet() >= childZeroWindowsToCollapse) {
-                    retireChild(child);
-                }
-            } else {
+            AtomicInteger activeWindows = activeWindowsByChild.computeIfAbsent(child, k -> new AtomicInteger(0));
+            AtomicInteger lowWindows = consecutiveLowPopulationWindowsByChild.computeIfAbsent(child, k -> new AtomicInteger(0));
+            double lineageSupport = lineageSupportByChild.getOrDefault(child, 0.0D);
+            if (population >= MIN_CHILD_ARTIFACT_COUNT) {
+                activeWindows.incrementAndGet();
                 zeroWindows.set(0);
+                lowWindows.set(0);
+                continue;
+            }
+
+            if (isInGracePeriod(child, currentWindow)) {
+                zeroWindows.set(0);
+                lowWindows.set(0);
+                continue;
+            }
+
+            int activeWindowCount = activeWindows.get();
+            boolean established = activeWindowCount >= ESTABLISHED_CHILD_WINDOWS;
+            boolean strongLineageSupport = lineageSupport >= STRONG_LINEAGE_AFFINITY_SUPPORT;
+            int hysteresisTarget = established || strongLineageSupport
+                    ? Math.max(COLLAPSE_HYSTERESIS_WINDOWS + 1, childZeroWindowsToCollapse)
+                    : COLLAPSE_HYSTERESIS_WINDOWS;
+            int zeroTarget = childZeroWindowsToCollapse + (strongLineageSupport ? 1 : 0) + (established ? 1 : 0);
+
+            int lowStreak = lowWindows.incrementAndGet();
+            int zeroStreak = zeroWindows.incrementAndGet();
+            if (lowStreak >= hysteresisTarget && zeroStreak >= zeroTarget) {
+                retireChild(child, currentWindow);
             }
         }
     }
@@ -364,6 +403,7 @@ public class NicheBifurcationRegistry {
         if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
             return Optional.empty();
         }
+
         // Guard: per-parent cooldown
         Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
         if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
@@ -392,6 +432,10 @@ public class NicheBifurcationRegistry {
         dynamicNiches.add(childB);
         zeroPopulationWindowsByChild.put(childA, new AtomicInteger(0));
         zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
+        activeWindowsByChild.put(childA, new AtomicInteger(0));
+        activeWindowsByChild.put(childB, new AtomicInteger(0));
+        consecutiveLowPopulationWindowsByChild.put(childA, new AtomicInteger(0));
+        consecutiveLowPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
         lastGlobalBifurcationTimeMs = nowMs;
         storeVariants(parentNiche, childA, childB, seq);
@@ -417,11 +461,34 @@ public class NicheBifurcationRegistry {
         variantByChildNiche.put(childB, variants[1]);
     }
 
-    private void retireChild(String childNiche) {
+    public boolean isEstablishedChild(String childNiche) {
+        return activeWindowsByChild.getOrDefault(childNiche, new AtomicInteger(0)).get() >= ESTABLISHED_CHILD_WINDOWS;
+    }
+
+    public int activeWindowCount(String childNiche) {
+        return activeWindowsByChild.getOrDefault(childNiche, new AtomicInteger(0)).get();
+    }
+
+    private void retireChild(String childNiche, int currentWindow) {
+        String parent = parentByChild(childNiche);
         dynamicNiches.remove(childNiche);
         zeroPopulationWindowsByChild.remove(childNiche);
+        activeWindowsByChild.remove(childNiche);
+        consecutiveLowPopulationWindowsByChild.remove(childNiche);
         birthWindowByChild.remove(childNiche);
         variantByChildNiche.remove(childNiche);
         childrenByParent.values().forEach(children -> children.remove(childNiche));
+        if (parent != null) {
+            lastBifurcationTimeByNiche.put(parent, System.currentTimeMillis());
+        }
+    }
+
+    private String parentByChild(String childNiche) {
+        for (Map.Entry<String, List<String>> entry : childrenByParent.entrySet()) {
+            if (entry.getValue().contains(childNiche)) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 }
