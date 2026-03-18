@@ -1,0 +1,68 @@
+{
+  "run_id": "deep-lineage-divergence-test",
+  "dataset_root": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test",
+  "created_at": "2026-03-18T03:32:09Z",
+  "updated_at": "2026-03-18T03:38:56Z",
+  "status": "READY_FOR_ANALYSIS",
+  "deep_run_config": {"seasons": 10, "sessionsPerSeason": 4, "players": 18, "artifactsPerPlayer": 3, "encounterDensity": 5, "telemetrySamplingRate": 0.25},
+  "stages": {
+    "matrix_execution":   {"status": "PASSED", "updated_at": "2026-03-18T03:38:56Z"},
+    "dataset_contract":   {"status": "PASSED", "updated_at": "2026-03-18T03:38:56Z"},
+    "completion_marker":  {"status": "PASSED", "updated_at": "2026-03-18T03:38:56Z"},
+    "latest_run_pointer": {"status": "PASSED", "updated_at": "2026-03-18T03:38:56Z"},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "ritualist-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test/ritualist-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "gatherer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test/gatherer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "mixed": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test/mixed",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "random-baseline": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-lineage-divergence-test/random-baseline",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    }
+  }
+}

@@ -488,6 +488,8 @@ public class WorldSimulationHarness {
         out.put("dynamic_niches", snapshot.dynamicNiches());
         out.put("bifurcation_count", snapshot.bifurcationCount());
         out.put("dynamic_niche_population", snapshot.dynamicNichePopulation());
+        out.put("lineage_affinity_by_child_niche",
+                usageTracker.nichePopulationTracker().lineageAffinitySnapshot());
         return out;
     }
 

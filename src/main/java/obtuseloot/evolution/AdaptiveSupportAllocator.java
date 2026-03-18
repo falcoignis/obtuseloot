@@ -112,6 +112,13 @@ public class AdaptiveSupportAllocator {
         if (!variantProfiles.isEmpty()) {
             out.put("nicheVariantProfiles", variantProfiles);
         }
+
+        // Lineage divergence: top-lineage affinity per active child niche
+        Map<String, Map<String, Object>> affinitySnapshot =
+                usageTracker.nichePopulationTracker().lineageAffinitySnapshot();
+        if (!affinitySnapshot.isEmpty()) {
+            out.put("lineageAffinityByChildNiche", affinitySnapshot);
+        }
         return out;
     }
 

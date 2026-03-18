@@ -62,6 +62,17 @@ public class NichePopulationTracker {
     private static final long BIFURCATION_EVAL_INTERVAL_MS = 5_000L;
     private volatile long lastBifurcationEvalMs = 0L;
 
+    // ---------- lineage affinity accumulation ----------
+
+    /** Outcome-quality boost per telemetry update when an artifact succeeds in its child niche. */
+    private static final double LINEAGE_AFFINITY_OUTCOME_BOOST = 0.05D;
+    /** Per-window decay multiplier applied to all lineage-to-child-niche affinity scores. */
+    private static final double LINEAGE_AFFINITY_DECAY_RATE = 0.93D;
+    /** Hard cap on how far any lineage affinity score can accumulate. */
+    private static final double LINEAGE_AFFINITY_MAX = 0.90D;
+    /** Entries below this value are pruned to keep maps compact. */
+    private static final double LINEAGE_AFFINITY_PRUNE_THRESHOLD = 0.005D;
+
     // ---------- guaranteed bifurcation support ----------
 
     /** Monotonically-increasing count of evaluation windows (each call to evaluateBifurcations). */
@@ -129,6 +140,9 @@ public class NichePopulationTracker {
 
         // Refresh dynamic-niche assignment whenever the artifact's dominant niche changes
         refreshDynamicNicheAssignment(artifactSeed, next);
+
+        // Update lineage-to-child-niche affinity from observed outcomes
+        updateLineageAffinityFromSignals(artifactSeed, signals);
 
         if (previous != null && previous.dominantNiche() != next.dominantNiche() && telemetryEmitter != null) {
             telemetryEmitter.emit(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
@@ -246,6 +260,12 @@ public class NichePopulationTracker {
         bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation, evaluationWindowCount);
         dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
         lockStateByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue().lockedNiche()));
+
+        // Decay all lineage affinity scores once per evaluation window
+        decayLineageAffinity();
+
+        // Emit a compact lineage-affinity digest for each active child niche
+        emitLineageAffinityTelemetry();
     }
 
     /**
@@ -640,6 +660,118 @@ public class NichePopulationTracker {
         return total / signals.size();
     }
 
+    // ---------- lineage affinity: accumulation, decay, snapshot ----------
+
+    /**
+     * Updates lineage-to-child-niche affinity based on the outcomes embedded in
+     * {@code signals}.  Called every time an artifact's telemetry is recorded.
+     *
+     * <p>Outcome quality is derived from two signal components:</p>
+     * <ul>
+     *   <li>Yield ratio (meaningfulOutcomes / attempts) — rewards consistent outcomes.</li>
+     *   <li>Normalised utility density — rewards high utility per budget.</li>
+     * </ul>
+     * <p>Only artifacts currently assigned to a dynamic child niche contribute to
+     * affinity accumulation, ensuring the signal is specific to child-niche performance.</p>
+     */
+    private void updateLineageAffinityFromSignals(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
+        String childNiche = dynamicNicheByArtifact.get(artifactSeed);
+        if (childNiche == null || !bifurcationRegistry.isDynamicNiche(childNiche)) {
+            return;
+        }
+        String lineageId = lineageByArtifact.get(artifactSeed);
+        if (lineageId == null || lineageId.isBlank()) {
+            return;
+        }
+        String parentNiche = parentByChildNiche.get(childNiche);
+        if (parentNiche == null) {
+            return;
+        }
+
+        // Compute outcome quality [0, 1] from the aggregate signal
+        long totalMeaningful = 0L;
+        long totalAttempts = 0L;
+        double totalDensity = 0.0D;
+        for (MechanicUtilitySignal s : signals.values()) {
+            totalMeaningful += s.meaningfulOutcomes();
+            totalAttempts   += s.attempts();
+            totalDensity    += s.utilityDensity();
+        }
+        if (totalAttempts == 0L) {
+            return;
+        }
+        double yield         = (double) totalMeaningful / totalAttempts;
+        double avgDensity    = totalDensity / signals.size();
+        // Normalise density into [0, 1] using a soft saturation curve
+        double normDensity   = avgDensity / Math.max(1.0D, avgDensity + 60.0D);
+        double quality       = clamp(yield * 0.60D + normDensity * 0.40D, 0.0D, 1.0D);
+
+        // Only accumulate for genuinely positive outcome signals
+        if (quality < 0.02D) {
+            return;
+        }
+
+        Map<String, Double> affinity = lineageAffinityByParent
+                .computeIfAbsent(parentNiche, ignored -> new ConcurrentHashMap<>());
+        String key = lineageId + "|" + childNiche;
+        double current = affinity.getOrDefault(key, 0.0D);
+        double boost    = LINEAGE_AFFINITY_OUTCOME_BOOST * quality;
+        affinity.put(key, clamp(current + boost, 0.0D, LINEAGE_AFFINITY_MAX));
+    }
+
+    /**
+     * Applies per-window exponential decay to all lineage affinity scores.
+     * Also prunes entries that have fallen below {@link #LINEAGE_AFFINITY_PRUNE_THRESHOLD}
+     * to prevent indefinite map growth.
+     */
+    private void decayLineageAffinity() {
+        for (Map<String, Double> affinityMap : lineageAffinityByParent.values()) {
+            affinityMap.replaceAll((key, value) -> value * LINEAGE_AFFINITY_DECAY_RATE);
+            affinityMap.entrySet().removeIf(e -> e.getValue() < LINEAGE_AFFINITY_PRUNE_THRESHOLD);
+        }
+    }
+
+    /**
+     * Returns a compact snapshot of lineage affinity for inspection and telemetry.
+     *
+     * <p>For each active child niche the snapshot contains:</p>
+     * <ul>
+     *   <li>{@code topLineage} — lineage ID with the highest affinity score.</li>
+     *   <li>{@code topAffinity} — that score [0, 1].</li>
+     *   <li>{@code affinityCount} — number of lineages with non-trivial affinity.</li>
+     * </ul>
+     */
+    public Map<String, Map<String, Object>> lineageAffinitySnapshot() {
+        Map<String, Map<String, Object>> out = new LinkedHashMap<>();
+        for (String childNiche : bifurcationRegistry.dynamicNiches()) {
+            String parentNiche = parentByChildNiche.get(childNiche);
+            if (parentNiche == null) {
+                continue;
+            }
+            Map<String, Double> affinityMap = lineageAffinityByParent.getOrDefault(parentNiche, Map.of());
+
+            String topLineage = null;
+            double topScore   = -1.0D;
+            int    count      = 0;
+            for (Map.Entry<String, Double> entry : affinityMap.entrySet()) {
+                if (!entry.getKey().endsWith("|" + childNiche)) {
+                    continue;
+                }
+                count++;
+                if (entry.getValue() > topScore) {
+                    topScore   = entry.getValue();
+                    topLineage = entry.getKey().replace("|" + childNiche, "");
+                }
+            }
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("topLineage",    topLineage != null ? topLineage : "none");
+            info.put("topAffinity",   topScore < 0.0D ? 0.0D : topScore);
+            info.put("affinityCount", count);
+            out.put(childNiche, info);
+        }
+        return out;
+    }
+
     /**
      * Returns the effective telemetry niche name for an artifact.
      * If the artifact has been assigned to a dynamic child niche, that name is
@@ -867,6 +999,56 @@ public class NichePopulationTracker {
     /** Exposes the bifurcation registry for inspection (e.g., in tests). */
     public NicheBifurcationRegistry bifurcationRegistry() {
         return bifurcationRegistry;
+    }
+
+    /**
+     * Emits a compact NICHE_CLASSIFICATION_CHANGE event per active child niche that
+     * summarises which lineage currently has the highest affinity and how many lineages
+     * are active in that child.  This provides per-window lineage-divergence visibility
+     * without requiring an additional event type.
+     */
+    private void emitLineageAffinityTelemetry() {
+        EcosystemTelemetryEmitter emitter = telemetryEmitter;
+        if (emitter == null) {
+            return;
+        }
+        for (String childNiche : bifurcationRegistry.dynamicNiches()) {
+            String parentNiche = parentByChildNiche.get(childNiche);
+            if (parentNiche == null) {
+                continue;
+            }
+            Map<String, Double> affinityMap = lineageAffinityByParent.getOrDefault(parentNiche, Map.of());
+
+            String topLineage = null;
+            double topScore   = -1.0D;
+            int    count      = 0;
+            for (Map.Entry<String, Double> entry : affinityMap.entrySet()) {
+                if (!entry.getKey().endsWith("|" + childNiche)) {
+                    continue;
+                }
+                count++;
+                if (entry.getValue() > topScore) {
+                    topScore   = entry.getValue();
+                    topLineage = entry.getKey().replace("|" + childNiche, "");
+                }
+            }
+            if (topLineage == null) {
+                continue;
+            }
+            Map<String, String> attrs = new LinkedHashMap<>();
+            attrs.put("event_type",               "lineage_affinity_digest");
+            attrs.put("parent_niche",             parentNiche);
+            attrs.put("child_niche",              childNiche);
+            attrs.put("niche",                    childNiche);
+            attrs.put("top_lineage",              topLineage);
+            attrs.put("top_affinity",             String.valueOf(topScore));
+            attrs.put("affinity_count",           String.valueOf(count));
+            attrs.put("specialization_pressure",  String.valueOf(topScore));
+            attrs.put("specialization_trajectory", "0.0");
+            attrs.put("context_tags",             "lineage-divergence niche-identity");
+            emitter.emit(EcosystemTelemetryEventType.NICHE_CLASSIFICATION_CHANGE,
+                    0L, topLineage, childNiche, attrs);
+        }
     }
 
     // ---------- internal helpers ----------
