@@ -7,8 +7,8 @@
 - Validation profile: true
 
 ## World outcomes
-- Dominant family rate: 0.43593883559692276
-- Branch convergence rate: 0.31979168308569594
+- Dominant family rate: 0.37489317253822046
+- Branch convergence rate: 0.3383352685107165
 - Dead branch rate: 0.0
-- Fusion adoption: 0.9004629629629629
-- Awakening adoption: 0.9037037037037037
+- Fusion adoption: 0.9101851851851852
+- Awakening adoption: 0.913425925925926
