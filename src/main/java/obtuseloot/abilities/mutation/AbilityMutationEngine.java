@@ -139,10 +139,11 @@ public class AbilityMutationEngine {
         if (memoryProfile.mobilityWeight() > 0.8D && mechanic == AbilityMechanic.NAVIGATION_ANCHOR) {
             return AbilityTrigger.ON_WORLD_SCAN;
         }
-        if (variantProfile != null && variantProfile.isAlphaVariant() && random.nextDouble() < 0.28D) {
+        if (variantProfile != null && variantProfile.isAlphaVariant() && random.nextDouble() < 0.36D) {
             return switch (mechanic) {
                 case RITUAL_CHANNEL, REVENANT_TRIGGER -> AbilityTrigger.ON_WITNESS_EVENT;
                 case NAVIGATION_ANCHOR, ECOLOGICAL_PATHING -> AbilityTrigger.ON_STRUCTURE_DISCOVERY;
+                case HARVEST_RELAY, GUARDIAN_PULSE -> AbilityTrigger.ON_PLAYER_GROUP_ACTION;
                 default -> current;
             };
         }
@@ -189,10 +190,10 @@ public class AbilityMutationEngine {
                 return AbilityMechanic.GUARDIAN_PULSE;
             }
         }
-        if (variantProfile != null && variantProfile.isAlphaVariant() && !underrepresentedUsefulMechanics.isEmpty() && random.nextDouble() < (0.34D + (specializationBias * 0.20D))) {
+        if (variantProfile != null && variantProfile.isAlphaVariant() && !underrepresentedUsefulMechanics.isEmpty() && random.nextDouble() < (0.42D + (specializationBias * 0.24D))) {
             return underrepresentedUsefulMechanics.get(random.nextInt(underrepresentedUsefulMechanics.size()));
         }
-        if (variantProfile != null && variantProfile.isAlphaVariant() && random.nextDouble() < 0.28D) {
+        if (variantProfile != null && variantProfile.isAlphaVariant() && random.nextDouble() < 0.36D) {
             return !underrepresentedUsefulMechanics.isEmpty()
                     ? underrepresentedUsefulMechanics.get(random.nextInt(underrepresentedUsefulMechanics.size()))
                     : current;

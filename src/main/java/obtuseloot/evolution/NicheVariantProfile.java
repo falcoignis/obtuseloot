@@ -52,9 +52,9 @@ public record NicheVariantProfile(
         int ha = Math.abs(h);
 
         // A-variant: mutation-heavy, even sub-niche affinity
-        double mutA   = 1.10D + ((ha         % 8) * 0.01D);  // [1.10, 1.17]
-        double retA   = 0.86D + (((ha >>> 4) % 6) * 0.01D);  // [0.86, 0.91]
-        double reinfA = 0.90D + (((ha >>> 8) % 5) * 0.01D);  // [0.90, 0.94]
+        double mutA   = 1.18D + ((ha         % 12) * 0.015D); // [1.18, 1.345]
+        double retA   = 0.84D + (((ha >>> 4) % 6) * 0.01D);   // [0.84, 0.89]
+        double reinfA = 0.86D + (((ha >>> 8) % 5) * 0.01D);   // [0.86, 0.90]
         NicheVariantProfile alpha = new NicheVariantProfile(
                 childA, parentNiche, true, mutA, retA, reinfA, 0);
 
