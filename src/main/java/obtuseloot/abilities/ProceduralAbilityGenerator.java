@@ -4,6 +4,7 @@ import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeMutationEngine;
 import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.lineage.LineageGenomeInheritance;
+import obtuseloot.ObtuseLoot;
 import obtuseloot.evolution.AdaptiveSupportAllocation;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.UtilityHistoryRollup;
@@ -17,6 +18,9 @@ import obtuseloot.lineage.EvolutionaryBiasGenome;
 import obtuseloot.lineage.LineageBiasDimension;
 import obtuseloot.evolution.MechanicNicheTag;
 import obtuseloot.evolution.NicheTaxonomy;
+import obtuseloot.evolution.NicheVariantProfile;
+import obtuseloot.evolution.ArtifactNicheProfile;
+import obtuseloot.evolution.EcosystemRoleClassifier;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +28,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public class ProceduralAbilityGenerator {
 
@@ -52,6 +57,8 @@ public class ProceduralAbilityGenerator {
     private final LatentTraitActivationResolver latentTraitActivationResolver;
     private final NicheTaxonomy nicheTaxonomy;
     private final Map<MechanicNicheTag, Double> nicheTemplatePressure;
+    private final AbilityDiversityIndex diversityIndex;
+    private final EcosystemRoleClassifier roleClassifier;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -120,6 +127,8 @@ public class ProceduralAbilityGenerator {
         this.latentTraitActivationResolver = new LatentTraitActivationResolver();
         this.nicheTaxonomy = new NicheTaxonomy();
         this.nicheTemplatePressure = computeNicheTemplatePressure();
+        this.diversityIndex = AbilityDiversityIndex.instance();
+        this.roleClassifier = new EcosystemRoleClassifier();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -169,17 +178,16 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> gatedCandidates = regulatoryEligibilityFilter.filter(allCandidates, regulatoryProfile);
         List<AbilityTemplate> scoringPool = gatedCandidates.isEmpty() ? allCandidates : gatedCandidates;
         TraitInterferenceSnapshot activeInterference = traitInterferenceResolver.summarizeInterference(scoringPool, genome, traitInterferenceResolver.scoringMode());
+        ArtifactNicheProfile nicheProfile = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
+        NicheVariantProfile variantProfile = resolveVariantProfile(artifact);
+        List<AbilityDiversityIndex.AbilitySignature> activePool = diversityIndex.activePool(artifact.getArtifactSeed());
+        AbilityDiversityIndex.AbilitySignature motifAnchor = diversityIndex.motifAnchor(activePool, nicheProfile.dominantNiche(), lineageId, variantProfile);
 
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
                 ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
         Random random = new Random(seed);
 
-        List<AbilityTemplate> selected = traitInteractionsEnabled
-                ? traitInterferenceResolver.selectTopWithInterferenceShuffle(scoringPool, genome, picks, seed ^ 0x5DEECE66DL, 0.94D, 3)
-                : scoringPool.stream()
-                .sorted(Comparator.comparingDouble((AbilityTemplate t) -> -scoreTemplate(t, artifact, memoryProfile, evolutionStage, utilityHistory, lineage, supportAllocation)))
-                .limit(picks)
-                .toList();
+        List<AbilityTemplate> selected = selectTemplates(scoringPool, artifact, memoryProfile, evolutionStage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, picks, random);
         List<AbilityDefinition> picked = new ArrayList<>();
         artifact.setLastRegulatoryProfile(regulatoryProfile.profileKey());
         artifact.setLastOpenRegulatoryGates(regulatoryProfile.openGatesCsv());
@@ -201,7 +209,7 @@ public class ProceduralAbilityGenerator {
                 if (pool.isEmpty()) {
                     continue;
                 }
-                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random, utilityHistory, lineage, supportAllocation);
+                AbilityTemplate t = pickTemplate(pool, artifact, memoryProfile, evolutionStage, random, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, picked.stream().map(AbilityDefinition::id).collect(java.util.stream.Collectors.toSet()));
                 picked.add(fromTemplate(t, family, evolutionStage));
                 if (picked.size() >= picks) {
                     break;
@@ -209,6 +217,7 @@ public class ProceduralAbilityGenerator {
             }
         }
 
+        diversityIndex.record(artifact.getArtifactSeed(), lineageId, nicheProfile.dominantNiche(), variantProfile, selected);
         if (lineageRegistry != null && lineage != null) {
             EvolutionaryBiasGenome observedBias = deriveObservedBias(selected, memoryProfile, utilityHistory);
             double ecologicalPressure = experienceEvolutionEngine == null ? 1.0D
@@ -229,11 +238,15 @@ public class ProceduralAbilityGenerator {
                 "Awakening/Fusion: " + t.awakeningVariant() + " / " + t.fusionVariant(), "Memory: " + t.memoryVariant());
     }
 
-    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation) {
+    private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, Set<String> excludedIds) {
         double total = 0.0D;
         double[] scores = new double[pool.size()];
         for (int i = 0; i < pool.size(); i++) {
-            scores[i] = Math.max(0.01D, scoreTemplate(pool.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation) * rarityModifier(pool.get(i)));
+            if (excludedIds.contains(pool.get(i).id())) {
+                scores[i] = 0.0D;
+                continue;
+            }
+            scores[i] = Math.max(0.01D, compositeTemplateScore(pool.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, java.util.List.of()) * rarityModifier(pool.get(i)));
             total += scores[i];
         }
         double roll = random.nextDouble() * total;
@@ -385,6 +398,88 @@ public class ProceduralAbilityGenerator {
         return (profileScore * (1.0D - (0.55D * confidence))) + (utilityFamilyBias * (2.2D * confidence));
     }
 
+
+    private List<AbilityTemplate> selectTemplates(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, int picks, Random random) {
+        List<AbilityTemplate> remaining = new ArrayList<>(pool);
+        List<AbilityTemplate> selected = new ArrayList<>();
+        while (!remaining.isEmpty() && selected.size() < picks) {
+            AbilityTemplate best = remaining.stream()
+                    .max(Comparator.comparingDouble(t -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)))
+                    .orElse(null);
+            if (best == null) {
+                break;
+            }
+            selected.add(best);
+            remaining.remove(best);
+            if (traitInteractionsEnabled && remaining.size() > 1) {
+                remaining.sort(Comparator.comparingDouble((AbilityTemplate t) -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected) + (random.nextDouble() * 0.01D)).reversed());
+            }
+        }
+        return selected;
+    }
+
+    private double compositeTemplateScore(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
+        double base = scoreTemplate(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation);
+        AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, template);
+        double nearest = activePool.stream().mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
+        double inSelection = selected.stream().map(sel -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, sel)).mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
+        double noveltyPressure = noveltyPressure(variantProfile);
+        double noveltyBonus = 1.0D + ((1.0D - Math.max(nearest, inSelection)) * noveltyPressure);
+        double nicheBias = nicheWeight(template, nicheProfile, memoryProfile);
+        double lineageBias = lineageCombinationBias(template, lineage);
+        double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
+        return base * noveltyBonus * nicheBias * lineageBias * motifBias;
+    }
+
+    private double noveltyPressure(NicheVariantProfile variantProfile) {
+        if (variantProfile == null) return 0.16D;
+        return variantProfile.isAlphaVariant() ? 0.24D * variantProfile.mutationBias() : 0.13D * variantProfile.retentionBias();
+    }
+
+    private double nicheWeight(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        boolean matches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger()).contains(dominant);
+        double familyBias = switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.10D : 0.96D;
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.10D : 0.96D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.11D : 0.95D;
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.09D : 0.96D;
+            default -> 1.0D;
+        };
+        double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
+        return clamp((matches ? 1.12D : 0.94D) * familyBias * memoryTuning, 0.84D, 1.22D);
+    }
+
+    private double lineageCombinationBias(AbilityTemplate template, ArtifactLineage lineage) {
+        if (lineage == null) return 1.0D;
+        EvolutionaryBiasGenome bias = lineage.evolutionaryBiasGenome();
+        double exploration = bias.tendency(LineageBiasDimension.EXPLORATION_PREFERENCE);
+        double ritual = bias.tendency(LineageBiasDimension.RITUAL_PREFERENCE);
+        double support = bias.tendency(LineageBiasDimension.SUPPORT_PREFERENCE);
+        double weirdness = bias.tendency(LineageBiasDimension.WEIRDNESS);
+        double value = 1.0D;
+        if (template.metadata().affinities().contains("exploration")) value += exploration * 0.09D;
+        if (template.metadata().affinities().contains("ritual")) value += ritual * 0.09D;
+        if (template.metadata().affinities().contains("support")) value += support * 0.08D;
+        if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 0.10D;
+        return clamp(value, 0.88D, 1.18D);
+    }
+
+    private double motifAnchorBias(AbilityDiversityIndex.AbilitySignature candidate, AbilityDiversityIndex.AbilitySignature anchor, NicheVariantProfile variantProfile) {
+        double similarity = AbilityDiversityIndex.similarity(candidate, anchor);
+        if (variantProfile != null && variantProfile.isAlphaVariant()) {
+            return clamp(1.0D + (0.38D - similarity) * 0.22D, 0.94D, 1.10D);
+        }
+        return clamp(1.0D + (0.50D - Math.abs(similarity - 0.50D)) * 0.16D, 0.95D, 1.08D);
+    }
+
+    private NicheVariantProfile resolveVariantProfile(Artifact artifact) {
+        ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin == null || plugin.getArtifactUsageTracker() == null) {
+            return null;
+        }
+        return plugin.getArtifactUsageTracker().nichePopulationTracker().variantFor(artifact.getArtifactSeed());
+    }
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
