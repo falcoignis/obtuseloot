@@ -46,6 +46,16 @@ public class AdaptiveSupportAllocator {
         double reinforcement = clamp(Math.pow(Math.max(0.001D, niche.reinforcementMultiplier() * lineage.templateSelectionWeight()), competitionReinforcementCurve), 0.55D, 1.50D);
         double mutation = clamp(niche.mutationSupport() * lineage.mutationSupportStrength(), 0.50D, 1.50D);
         double retention = clamp(niche.retentionSupport() * lineage.retentionBias(), 0.55D, 1.45D);
+
+        // Apply child niche variant identity biases — A-variants skew toward mutation,
+        // B-variants skew toward retention.  This makes A and B children diverge over time.
+        NicheVariantProfile variant = usageTracker.nichePopulationTracker().variantFor(artifactSeed);
+        if (variant != null) {
+            mutation      = clamp(mutation      * variant.mutationBias(),      0.50D, 1.50D);
+            retention     = clamp(retention     * variant.retentionBias(),     0.55D, 1.45D);
+            reinforcement = clamp(reinforcement * variant.reinforcementBias(), 0.55D, 1.50D);
+        }
+
         double branchPersistence = clamp(lineage.branchPersistenceSupport() * (1.0D + pool.budget().turnoverPressure() * 0.20D), 0.60D, 1.55D);
         double diminishing = clamp(niche.competitionPressure() * 0.45D + (1.0D - lineage.diminishingReturns()) * 0.65D, 0.0D, 0.85D);
 
@@ -90,6 +100,18 @@ public class AdaptiveSupportAllocator {
         out.put("lineageMomentumDistribution", pool.lineageMomentumPool().momentumByLineage().entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue().momentum(), (a, b) -> a, LinkedHashMap::new)));
         out.put("lineageDisplacementPressure", pool.lineageMomentumPool().displacementPressure());
+
+        // Niche identity / variant profiles for all active child niches
+        Map<String, Object> variantProfiles = new LinkedHashMap<>();
+        for (String childNiche : usageTracker.nichePopulationTracker().bifurcationRegistry().dynamicNiches()) {
+            NicheVariantProfile vp = usageTracker.nichePopulationTracker().bifurcationRegistry().variantFor(childNiche);
+            if (vp != null) {
+                variantProfiles.put(childNiche, vp.summary());
+            }
+        }
+        if (!variantProfiles.isEmpty()) {
+            out.put("nicheVariantProfiles", variantProfiles);
+        }
         return out;
     }
 

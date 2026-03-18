@@ -1,0 +1,12 @@
+Picked up JAVA_TOOL_OPTIONS: 
+[world-sim][memory] generation=4 heap_used_mb=119 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=34310 in_memory_rollup_count=1 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=8 heap_used_mb=311 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=68990 in_memory_rollup_count=2 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=12 heap_used_mb=146 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=103766 in_memory_rollup_count=3 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=16 heap_used_mb=89 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=139067 in_memory_rollup_count=4 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=20 heap_used_mb=112 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=174250 in_memory_rollup_count=5 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=24 heap_used_mb=215 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=209469 in_memory_rollup_count=6 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=28 heap_used_mb=333 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=244716 in_memory_rollup_count=7 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=32 heap_used_mb=156 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=280374 in_memory_rollup_count=8 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=36 heap_used_mb=257 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=315666 in_memory_rollup_count=9 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=40 heap_used_mb=124 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=351197 in_memory_rollup_count=10 active_artifact_count=54 lineage_count=31 branch_count=21
+World simulation outputs written to analytics/validation-suite-rerun/deep-niche-identity-test/explorer-heavy
