@@ -1,5 +1,7 @@
 package obtuseloot.abilities;
 
+import obtuseloot.ObtuseLoot;
+
 import obtuseloot.abilities.mutation.AbilityMutationEngine;
 import obtuseloot.abilities.mutation.AbilityMutationResult;
 import obtuseloot.abilities.tree.AbilityBranchResolver;
@@ -13,6 +15,10 @@ import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
+import obtuseloot.evolution.UtilityHistoryRollup;
+import obtuseloot.evolution.NicheVariantProfile;
+import obtuseloot.evolution.ArtifactNicheProfile;
+import obtuseloot.evolution.EcosystemRoleClassifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +31,7 @@ public class SeededAbilityResolver implements AbilityResolver {
     private final ArtifactMemoryEngine memoryEngine;
     private final LineageRegistry lineageRegistry;
     private final LineageInfluenceResolver lineageResolver;
+    private final EcosystemRoleClassifier roleClassifier = new EcosystemRoleClassifier();
 
     public SeededAbilityResolver(AbilityRegistry registry,
                                  ArtifactMemoryEngine memoryEngine,
@@ -53,9 +60,12 @@ public class SeededAbilityResolver implements AbilityResolver {
                     d.effectPattern(), d.evolutionVariant(), d.driftVariant(), d.awakeningVariant(), d.fusionVariant(), d.memoryVariant(), d.supportModifiers(), d.effects(), d.metadata(),
                     d.stage1(), d.stage2() + " [branch=" + branch + "]", d.stage3(), d.stage4(), d.stage5()));
         }
-        AbilityMutationResult mutationResult = mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0);
+        ArtifactNicheProfile nicheProfile = roleClassifier.classify(UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()).signalByMechanicTrigger());
+        NicheVariantProfile variantProfile = ObtuseLoot.get() == null ? null : ObtuseLoot.get().getArtifactUsageTracker().nichePopulationTracker().variantFor(artifact.getArtifactSeed());
+        AbilityMutationResult mutationResult = mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0, UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()), lineageRegistry.assignLineage(artifact), variantProfile);
         boolean mutated = !mutationResult.mutations().isEmpty();
         ArtifactLineage lineage = lineageRegistry.assignLineage(artifact);
+        AbilityDiversityIndex.instance().recordDefinitions(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, mutationResult.abilities());
 
         artifact.setLastAbilityBranchPath(branchPath.toString());
         artifact.setLastTriggerProfile(mutationResult.abilities().stream().map(a -> a.trigger().name()).collect(Collectors.joining(",")));
