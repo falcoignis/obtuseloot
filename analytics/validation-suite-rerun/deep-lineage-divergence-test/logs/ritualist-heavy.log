@@ -1,0 +1,12 @@
+Picked up JAVA_TOOL_OPTIONS: 
+[world-sim][memory] generation=4 heap_used_mb=288 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=34926 in_memory_rollup_count=1 active_artifact_count=54 lineage_count=31 branch_count=19
+[world-sim][memory] generation=8 heap_used_mb=38 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=68878 in_memory_rollup_count=2 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=12 heap_used_mb=263 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=101923 in_memory_rollup_count=3 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=16 heap_used_mb=198 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=135110 in_memory_rollup_count=4 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=20 heap_used_mb=79 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=167841 in_memory_rollup_count=5 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=24 heap_used_mb=225 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=200651 in_memory_rollup_count=6 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=28 heap_used_mb=70 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=233533 in_memory_rollup_count=7 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=32 heap_used_mb=241 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=266306 in_memory_rollup_count=8 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=36 heap_used_mb=72 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=299172 in_memory_rollup_count=9 active_artifact_count=54 lineage_count=31 branch_count=21
+[world-sim][memory] generation=40 heap_used_mb=149 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=331666 in_memory_rollup_count=10 active_artifact_count=54 lineage_count=31 branch_count=21
+World simulation outputs written to analytics/validation-suite-rerun/deep-lineage-divergence-test/ritualist-heavy
