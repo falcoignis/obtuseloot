@@ -419,9 +419,33 @@ class NicheEcologySystemTest {
         assertTrue(registry.isDynamicNiche(bifurcation.childNicheA()), "Established child should survive short collapse streaks");
 
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 22);
+        assertTrue(registry.isDynamicNiche(bifurcation.childNicheA()),
+                "Established supported child should require an extra empty window before collapse");
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 23);
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 24);
-        assertFalse(registry.isDynamicNiche(bifurcation.childNicheA()), "Established child should still collapse after sustained unsupported windows");
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 25);
+        assertFalse(registry.isDynamicNiche(bifurcation.childNicheA()),
+                "Established child should still collapse after the extended supported streak");
+    }
+
+    @Test
+    void reentryStabilizationDelaysImmediateRecollapse() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        long nowMs = System.currentTimeMillis();
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+                .orElseThrow();
+        registry.setChildBirthWindow(bifurcation.childNicheA(), 1);
+
+        registry.collapseUnderpopulatedChildren(Map.of(bifurcation.childNicheA(), 1L), Map.of(), 10);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 11);
+        registry.collapseUnderpopulatedChildren(Map.of(bifurcation.childNicheA(), 1L), Map.of(), 12);
+
+        assertTrue(registry.hasReentryStabilization(bifurcation.childNicheA()),
+                "Child re-entry should start a short stabilization interval");
+
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 13);
+        assertTrue(registry.isDynamicNiche(bifurcation.childNicheA()),
+                "Re-entry stabilization should prevent immediate collapse on the next empty window");
     }
 
     @Test
