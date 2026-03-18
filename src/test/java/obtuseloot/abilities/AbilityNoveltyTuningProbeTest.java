@@ -48,20 +48,28 @@ class AbilityNoveltyTuningProbeTest {
                 nicheDivergence.get("explorer_vs_warden"),
                 nicheDivergence.get("ritualist_vs_warden"));
         System.out.printf("LINEAGE_DIVERGENCE ritual_same_niche=%.4f%n", lineageDivergence);
-        System.out.printf("NOVELTY_METRICS avg_novelty=%.4f min_novelty=%.4f max_novelty=%.4f avg_similarity=%.4f%n",
+        System.out.printf("NOVELTY_METRICS avg_novelty=%.4f min_novelty=%.4f max_novelty=%.4f avg_similarity=%.4f intra_novelty=%.4f global_novelty=%.4f intra_similarity=%.4f global_similarity=%.4f%n",
                 novelty.averageNovelty(),
                 novelty.minimumNovelty(),
                 novelty.maximumNovelty(),
-                novelty.averageSimilarity());
+                novelty.averageSimilarity(),
+                novelty.averageIntraNicheNovelty(),
+                novelty.averageGlobalNovelty(),
+                novelty.averageIntraNicheSimilarity(),
+                novelty.averageGlobalSimilarity());
 
-        assertTrue(novelty.averageNovelty() >= 0.16D,
-                "Average novelty should improve over the prior bounded baseline.");
-        assertTrue(novelty.averageSimilarity() < 0.84D,
-                "Average similarity should improve over the prior bounded baseline.");
-        assertTrue(nicheDivergence.get("explorer_vs_warden") >= 0.10D,
-                "At least one strongly separated niche pair should remain materially distinct.");
-        assertTrue(lineageDivergence >= 0.30D,
-                "Lineage divergence should remain materially separated.");
+        assertTrue(novelty.averageNovelty() >= 0.17D,
+                "Average novelty should remain materially above the pre-tuning baseline.");
+        assertTrue(novelty.averageSimilarity() < 0.83D,
+                "Average similarity should remain below the regressed global-pressure baseline.");
+        assertTrue(novelty.averageIntraNicheNovelty() > novelty.averageGlobalNovelty(),
+                "Intra-niche novelty should dominate cross-niche novelty pressure.");
+        assertTrue(nicheDivergence.get("explorer_vs_ritualist") >= 0.17D
+                        || nicheDivergence.get("explorer_vs_warden") >= 0.17D
+                        || nicheDivergence.get("ritualist_vs_warden") >= 0.17D,
+                "At least one niche pair should recover meaningful separation after novelty gating.");
+        assertTrue(lineageDivergence >= 0.38D,
+                "Lineage divergence should remain at or above the current healthy range.");
     }
 
     private Map<AbilityMechanic, Double> mechanicDistribution(ProceduralAbilityGenerator generator,
@@ -125,6 +133,10 @@ class AbilityNoveltyTuningProbeTest {
         AbilityDiversityIndex diversityIndex = AbilityDiversityIndex.instance();
         List<Double> noveltyScores = new ArrayList<>();
         List<Double> similarityScores = new ArrayList<>();
+        List<Double> intraNoveltyScores = new ArrayList<>();
+        List<Double> globalNoveltyScores = new ArrayList<>();
+        List<Double> intraSimilarityScores = new ArrayList<>();
+        List<Double> globalSimilarityScores = new ArrayList<>();
 
         for (int i = 0; i < artifacts; i++) {
             Artifact artifact = artifact(seedBase + i, null);
@@ -136,19 +148,29 @@ class AbilityNoveltyTuningProbeTest {
 
             List<AbilityDiversityIndex.AbilitySignature> activePoolBefore = diversityIndex.activePool(artifact.getArtifactSeed());
             AbilityProfile profile = generator.generate(artifact, 4, memoryProfile);
+            MechanicNicheTag dominantNiche = dominantNiche(profile);
             for (AbilityDefinition ability : profile.abilities()) {
                 AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromDefinition(
                         artifact.getArtifactSeed(),
                         artifact.getLatentLineage(),
-                        MechanicNicheTag.GENERALIST,
+                        dominantNiche,
                         null,
                         ability);
-                double nearest = activePoolBefore.stream()
+                double nearestSameNiche = activePoolBefore.stream()
+                        .filter(existing -> existing.niche() == dominantNiche)
                         .map(existing -> AbilityDiversityIndex.similarity(candidate, existing))
                         .max(Comparator.naturalOrder())
                         .orElse(0.0D);
-                noveltyScores.add(1.0D - nearest);
-                similarityScores.add(nearest);
+                double nearestGlobal = activePoolBefore.stream()
+                        .map(existing -> AbilityDiversityIndex.similarity(candidate, existing))
+                        .max(Comparator.naturalOrder())
+                        .orElse(0.0D);
+                noveltyScores.add(1.0D - nearestGlobal);
+                similarityScores.add(nearestGlobal);
+                intraNoveltyScores.add(1.0D - nearestSameNiche);
+                globalNoveltyScores.add(1.0D - nearestGlobal);
+                intraSimilarityScores.add(nearestSameNiche);
+                globalSimilarityScores.add(nearestGlobal);
             }
         }
 
@@ -156,8 +178,25 @@ class AbilityNoveltyTuningProbeTest {
                 noveltyScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D),
                 noveltyScores.stream().mapToDouble(Double::doubleValue).min().orElse(0.0D),
                 noveltyScores.stream().mapToDouble(Double::doubleValue).max().orElse(0.0D),
-                similarityScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D)
+                similarityScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D),
+                intraNoveltyScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D),
+                globalNoveltyScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D),
+                intraSimilarityScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D),
+                globalSimilarityScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0D)
         );
+    }
+
+    private MechanicNicheTag dominantNiche(AbilityProfile profile) {
+        Map<MechanicNicheTag, Integer> counts = new EnumMap<>(MechanicNicheTag.class);
+        for (AbilityDefinition ability : profile.abilities()) {
+            for (MechanicNicheTag tag : new obtuseloot.evolution.NicheTaxonomy().nichesFor(ability.mechanic(), ability.trigger())) {
+                counts.merge(tag, 1, Integer::sum);
+            }
+        }
+        return counts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(MechanicNicheTag.GENERALIST);
     }
 
     private double jensenShannonMechanics(Map<AbilityMechanic, Double> left, Map<AbilityMechanic, Double> right) {
@@ -219,6 +258,10 @@ class AbilityNoveltyTuningProbeTest {
     private record NoveltyProbeResult(double averageNovelty,
                                       double minimumNovelty,
                                       double maximumNovelty,
-                                      double averageSimilarity) {
+                                      double averageSimilarity,
+                                      double averageIntraNicheNovelty,
+                                      double averageGlobalNovelty,
+                                      double averageIntraNicheSimilarity,
+                                      double averageGlobalSimilarity) {
     }
 }
