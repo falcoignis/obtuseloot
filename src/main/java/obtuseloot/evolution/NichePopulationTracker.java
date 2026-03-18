@@ -661,12 +661,20 @@ public class NichePopulationTracker {
         NicheLockState lockState = lockStateByArtifact.get(artifactSeed);
         if (lockState != null && bifurcationRegistry.isDynamicNiche(lockState.lockedNiche())) {
             String parent = parentByChildNiche.get(lockState.lockedNiche());
-            return clamp(inversionMultiplier(parent, true) * NICHE_LOCK_UTILITY_BOOST, 1.10D, 1.35D);
+            NicheVariantProfile variant = bifurcationRegistry.variantFor(lockState.lockedNiche());
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+            double variantBoost = (variant != null && profile != null)
+                    ? variant.adoptionBoostFor(profile.specialization().dominantSubniche()) : 1.0D;
+            return clamp(inversionMultiplier(parent, true) * NICHE_LOCK_UTILITY_BOOST * variantBoost, 1.10D, 1.40D);
         }
         String childNiche = dynamicNicheByArtifact.get(artifactSeed);
         if (childNiche != null && bifurcationRegistry.isDynamicNiche(childNiche)) {
             String parent = parentByChildNiche.get(childNiche);
-            return inversionMultiplier(parent, true);
+            NicheVariantProfile variant = bifurcationRegistry.variantFor(childNiche);
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+            double variantBoost = (variant != null && profile != null)
+                    ? variant.adoptionBoostFor(profile.specialization().dominantSubniche()) : 1.0D;
+            return clamp(inversionMultiplier(parent, true) * variantBoost, 1.00D, 1.40D);
         }
 
         ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
@@ -679,6 +687,19 @@ public class NichePopulationTracker {
             return 1.0D;
         }
         return inversionMultiplier(parent, false);
+    }
+
+    /**
+     * Returns the {@link NicheVariantProfile} for the effective child niche of the
+     * given artifact, or {@code null} if the artifact is not currently assigned to
+     * a dynamic child niche.
+     */
+    public NicheVariantProfile variantFor(long artifactSeed) {
+        String effective = effectiveNicheName(artifactSeed);
+        if (!bifurcationRegistry.isDynamicNiche(effective)) {
+            return null;
+        }
+        return bifurcationRegistry.variantFor(effective);
     }
 
     public double nicheCompetitionFactor(long artifactSeed) {
@@ -874,20 +895,38 @@ public class NichePopulationTracker {
 
         // Emit a lightweight registration event for each child so they appear
         // in the buffer's nicheArtifactCounts from the moment of creation.
-        Map<String, String> childAttrsA = Map.of(
-                "event_type", "niche_bifurcation_child",
-                "parent_niche", bifurcation.parentNiche(),
-                "context_tags", "niche-bifurcation lifecycle");
+        // Also include the variant identity profile so it is inspectable in telemetry.
+        NicheVariantProfile variantA = bifurcationRegistry.variantFor(bifurcation.childNicheA());
+        NicheVariantProfile variantB = bifurcationRegistry.variantFor(bifurcation.childNicheB());
+
+        Map<String, String> childAttrsA = new LinkedHashMap<>();
+        childAttrsA.put("event_type", "niche_bifurcation_child");
+        childAttrsA.put("parent_niche", bifurcation.parentNiche());
+        childAttrsA.put("variant_type", "ALPHA");
+        if (variantA != null) {
+            childAttrsA.put("variant_mutation_bias", String.valueOf(variantA.mutationBias()));
+            childAttrsA.put("variant_retention_bias", String.valueOf(variantA.retentionBias()));
+            childAttrsA.put("variant_reinforcement_bias", String.valueOf(variantA.reinforcementBias()));
+            childAttrsA.put("variant_subniche_affinity", variantA.subNicheAffinityParity() == 0 ? "EVEN_HASH" : "ODD_HASH");
+        }
+        childAttrsA.put("context_tags", "niche-bifurcation lifecycle niche-identity");
         emitter.emit(EcosystemTelemetryEventType.NICHE_BIFURCATION,
                 0L,
                 "",
                 bifurcation.childNicheA(),
                 childAttrsA);
 
-        Map<String, String> childAttrsB = Map.of(
-                "event_type", "niche_bifurcation_child",
-                "parent_niche", bifurcation.parentNiche(),
-                "context_tags", "niche-bifurcation lifecycle");
+        Map<String, String> childAttrsB = new LinkedHashMap<>();
+        childAttrsB.put("event_type", "niche_bifurcation_child");
+        childAttrsB.put("parent_niche", bifurcation.parentNiche());
+        childAttrsB.put("variant_type", "BETA");
+        if (variantB != null) {
+            childAttrsB.put("variant_mutation_bias", String.valueOf(variantB.mutationBias()));
+            childAttrsB.put("variant_retention_bias", String.valueOf(variantB.retentionBias()));
+            childAttrsB.put("variant_reinforcement_bias", String.valueOf(variantB.reinforcementBias()));
+            childAttrsB.put("variant_subniche_affinity", variantB.subNicheAffinityParity() == 0 ? "EVEN_HASH" : "ODD_HASH");
+        }
+        childAttrsB.put("context_tags", "niche-bifurcation lifecycle niche-identity");
         emitter.emit(EcosystemTelemetryEventType.NICHE_BIFURCATION,
                 0L,
                 "",

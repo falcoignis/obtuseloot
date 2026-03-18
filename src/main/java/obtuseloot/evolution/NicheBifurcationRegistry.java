@@ -86,6 +86,9 @@ public class NicheBifurcationRegistry {
     /** Tracks the evaluation window in which each child niche was born. */
     private final Map<String, Integer> birthWindowByChild = new ConcurrentHashMap<>();
 
+    /** Ecological identity profile for each active child niche. */
+    private final Map<String, NicheVariantProfile> variantByChildNiche = new ConcurrentHashMap<>();
+
     /** Monotonically-increasing sequence counter used to produce unique child names. */
     private final AtomicInteger sequence = new AtomicInteger(0);
 
@@ -230,6 +233,7 @@ public class NicheBifurcationRegistry {
         zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
         lastGlobalBifurcationTimeMs = nowMs;
+        storeVariants(parentNiche, childA, childB, seq);
 
         return Optional.of(event);
     }
@@ -390,14 +394,34 @@ public class NicheBifurcationRegistry {
         zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
         lastGlobalBifurcationTimeMs = nowMs;
+        storeVariants(parentNiche, childA, childB, seq);
 
         return Optional.of(event);
+    }
+
+    // ---------- variant identity ----------
+
+    /**
+     * Returns the {@link NicheVariantProfile} for {@code childNiche}, or
+     * {@code null} if no variant has been registered (e.g., for retired children
+     * or the parent niche itself).
+     */
+    public NicheVariantProfile variantFor(String childNiche) {
+        return variantByChildNiche.get(childNiche);
+    }
+
+    /** Generates and stores variant profiles for a freshly-created child pair. */
+    private void storeVariants(String parentNiche, String childA, String childB, int seq) {
+        NicheVariantProfile[] variants = NicheVariantProfile.generate(parentNiche, childA, childB, seq);
+        variantByChildNiche.put(childA, variants[0]);
+        variantByChildNiche.put(childB, variants[1]);
     }
 
     private void retireChild(String childNiche) {
         dynamicNiches.remove(childNiche);
         zeroPopulationWindowsByChild.remove(childNiche);
         birthWindowByChild.remove(childNiche);
+        variantByChildNiche.remove(childNiche);
         childrenByParent.values().forEach(children -> children.remove(childNiche));
     }
 }
