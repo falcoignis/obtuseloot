@@ -92,3 +92,32 @@ Interpretation:
   - a full long-horizon simulation rerun was not completed in this pass, so final stability confidence is strong for code correctness but partial for ecosystem-runtime confirmation
 
 ABILITY_EXPANSION_RESULT: PARTIAL
+
+## NOVELTY TUNING PASS
+- Selection pressure in `ProceduralAbilityGenerator` was retuned so novelty contributes as a first-order multiplier instead of behaving like a weak tie-breaker.
+- A soft novelty floor penalty now scales down near-duplicate candidates below `novelty < 0.15` without hard rejection.
+- Motif anchoring was reduced to keep family resemblance while widening the allowable deviation radius.
+- ALPHA variant handling now carries a wider mutation bias range, lower reinforcement anchoring, and stronger exploratory scaling; BETA remains comparatively stable.
+- Active-pool pressure was reshaped so moderate similarity is tolerated more than before, while highly similar candidates are penalized more sharply.
+- Similarity blending in `AbilityDiversityIndex` now emphasizes effect/signature/stat overlap more than broad family/trigger coincidence, improving duplicate sensitivity.
+
+### Validation rerun
+Probe rerun after the tuning pass reported:
+- average novelty score vs active pool: `0.2103`
+- minimum novelty score: `0.1267`
+- maximum novelty score: `0.7481`
+- average nearest-neighbor similarity: `0.7897`
+- niche divergence (family-distribution Jensen-Shannon):
+  - explorer vs ritualist: `0.0580`
+  - explorer vs warden: `0.1150`
+  - ritualist vs warden: `0.0082`
+- lineage divergence (same-niche ritual probe): `0.3887`
+
+### Interpretation
+- Novelty pressure increased materially from the prior `0.1266` average novelty baseline and now sits inside the requested `0.20–0.35` band.
+- Similarity improved from the prior `0.8734` baseline to `0.7897`, but it did not yet clear the `< 0.75` target.
+- Lineage divergence remained healthy and slightly improved over the earlier `0.3534` ritual-lineage probe.
+- Niche identity did not collapse, but the rerun still shows uneven niche separation: explorer vs warden remains distinct, while ritualist-vs-warden separation is still too weak in this pass.
+- Stability remained bounded because the change only retuned scoring weights/scales; ecology and population systems were left untouched.
+
+ABILITY_EXPANSION_TUNING_RESULT: PARTIAL

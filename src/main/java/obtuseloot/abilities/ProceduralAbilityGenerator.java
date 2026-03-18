@@ -31,6 +31,10 @@ import java.util.Random;
 import java.util.Set;
 
 public class ProceduralAbilityGenerator {
+    private static final double NOVELTY_FLOOR = 0.15D;
+    private static final double NOVELTY_FLOOR_PENALTY = 0.65D;
+    private static final double HIGH_SIMILARITY_THRESHOLD = 0.82D;
+    private static final double MODERATE_SIMILARITY_THRESHOLD = 0.62D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -423,17 +427,46 @@ public class ProceduralAbilityGenerator {
         AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, template);
         double nearest = activePool.stream().mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
         double inSelection = selected.stream().map(sel -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, sel)).mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
+        double activeSimilarity = Math.max(nearest, inSelection);
+        double novelty = 1.0D - activeSimilarity;
         double noveltyPressure = noveltyPressure(variantProfile);
-        double noveltyBonus = 1.0D + ((1.0D - Math.max(nearest, inSelection)) * noveltyPressure);
+        double noveltyBonus = 1.0D + (Math.pow(novelty, 0.72D) * noveltyPressure);
+        double noveltyFloorPenalty = noveltyFloorPenalty(novelty);
+        double similarityPenalty = activePoolSimilarityPenalty(activeSimilarity, variantProfile);
         double nicheBias = nicheWeight(template, nicheProfile, memoryProfile);
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
-        return base * noveltyBonus * nicheBias * lineageBias * motifBias;
+        return base * noveltyBonus * noveltyFloorPenalty * similarityPenalty * nicheBias * lineageBias * motifBias;
     }
 
     private double noveltyPressure(NicheVariantProfile variantProfile) {
-        if (variantProfile == null) return 0.16D;
-        return variantProfile.isAlphaVariant() ? 0.24D * variantProfile.mutationBias() : 0.13D * variantProfile.retentionBias();
+        if (variantProfile == null) return 0.58D;
+        return variantProfile.isAlphaVariant()
+                ? 0.72D * variantProfile.mutationBias()
+                : 0.18D * variantProfile.retentionBias();
+    }
+
+    private double noveltyFloorPenalty(double novelty) {
+        if (novelty >= NOVELTY_FLOOR) {
+            return 1.0D;
+        }
+        double ratio = clamp(novelty / NOVELTY_FLOOR, 0.0D, 1.0D);
+        return clamp(NOVELTY_FLOOR_PENALTY + (ratio * ratio * (1.0D - NOVELTY_FLOOR_PENALTY)), NOVELTY_FLOOR_PENALTY, 1.0D);
+    }
+
+    private double activePoolSimilarityPenalty(double similarity, NicheVariantProfile variantProfile) {
+        double highSimilarityPenalty = variantProfile != null && variantProfile.isAlphaVariant() ? 0.62D : 0.68D;
+        if (similarity >= HIGH_SIMILARITY_THRESHOLD) {
+            double ratio = clamp((similarity - HIGH_SIMILARITY_THRESHOLD) / (1.0D - HIGH_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
+            return clamp(1.0D - (ratio * highSimilarityPenalty), 1.0D - highSimilarityPenalty, 1.0D);
+        }
+        if (similarity >= MODERATE_SIMILARITY_THRESHOLD) {
+            double ratio = clamp((similarity - MODERATE_SIMILARITY_THRESHOLD) / (HIGH_SIMILARITY_THRESHOLD - MODERATE_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
+            return clamp(1.01D - (ratio * 0.11D), 0.90D, 1.01D);
+        }
+        double noveltyLift = clamp((MODERATE_SIMILARITY_THRESHOLD - similarity) / MODERATE_SIMILARITY_THRESHOLD, 0.0D, 1.0D);
+        double variantLift = variantProfile != null && variantProfile.isAlphaVariant() ? 0.10D : 0.05D;
+        return clamp(1.0D + (noveltyLift * variantLift), 1.0D, 1.10D);
     }
 
     private double nicheWeight(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
@@ -447,7 +480,7 @@ public class ProceduralAbilityGenerator {
             default -> 1.0D;
         };
         double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
-        return clamp((matches ? 1.12D : 0.94D) * familyBias * memoryTuning, 0.84D, 1.22D);
+        return clamp((matches ? 1.16D : 0.92D) * familyBias * memoryTuning, 0.82D, 1.26D);
     }
 
     private double lineageCombinationBias(AbilityTemplate template, ArtifactLineage lineage) {
@@ -468,9 +501,9 @@ public class ProceduralAbilityGenerator {
     private double motifAnchorBias(AbilityDiversityIndex.AbilitySignature candidate, AbilityDiversityIndex.AbilitySignature anchor, NicheVariantProfile variantProfile) {
         double similarity = AbilityDiversityIndex.similarity(candidate, anchor);
         if (variantProfile != null && variantProfile.isAlphaVariant()) {
-            return clamp(1.0D + (0.38D - similarity) * 0.22D, 0.94D, 1.10D);
+            return clamp(1.0D + ((0.34D - similarity) * 0.12D), 0.97D, 1.05D);
         }
-        return clamp(1.0D + (0.50D - Math.abs(similarity - 0.50D)) * 0.16D, 0.95D, 1.08D);
+        return clamp(1.0D + ((0.42D - Math.abs(similarity - 0.42D)) * 0.09D), 0.98D, 1.04D);
     }
 
     private NicheVariantProfile resolveVariantProfile(Artifact artifact) {
