@@ -59,6 +59,14 @@ public class NicheBifurcationRegistry {
     static final int  REENTRY_STABILIZATION_WINDOWS = 2;
     static final double STRONG_LINEAGE_AFFINITY_SUPPORT = 0.40D;
     static final double CONTINUITY_LINEAGE_SUPPORT_THRESHOLD = 0.20D;
+    /** Number of recent windows averaged to produce a smoothed lineage-support signal. */
+    static final int LINEAGE_SUPPORT_SMOOTHING_WINDOWS = 3;
+    /** Relaxed lineage-support threshold applied to niches older than {@link #PERSISTENCE_WEIGHTED_AGE_WINDOWS}. */
+    static final double PERSISTENCE_WEIGHTED_LINEAGE_THRESHOLD = 0.12D;
+    /** Values below this are treated as effectively zero lineage affinity. */
+    static final double LINEAGE_AFFINITY_EFFECTIVELY_ZERO = 0.005D;
+    /** Window age at which persistence-weighted relaxation kicks in (2× establishment bar). */
+    static final int PERSISTENCE_WEIGHTED_AGE_WINDOWS = ESTABLISHED_CHILD_WINDOWS * 2;
 
     // ---------- configuration ----------
 
@@ -507,8 +515,20 @@ public class NicheBifurcationRegistry {
 
     public void recordChildOccupancy(String childNiche, long population, double lineageSupport, int currentWindow) {
         ChildOccupancyState state = occupancyStateByChild.computeIfAbsent(childNiche, ignored -> new ChildOccupancyState());
+
+        // Advance the rolling window and capture carryover eligibility exactly once per evaluation window.
+        // This ensures that eligiblePreviousWindow reflects the state at the END of the previous window,
+        // even when recordChildOccupancy is called multiple times within a single window.
+        if (currentWindow != state.lastEligibilityUpdateWindow) {
+            state.eligiblePreviousWindow = computeEligibilityFromState(state, childNiche);
+            state.lastEligibilityUpdateWindow = currentWindow;
+            state.recentLineageSupportWindow[state.recentSupportWritePos % LINEAGE_SUPPORT_SMOOTHING_WINDOWS] = lineageSupport;
+            state.recentSupportWritePos++;
+            state.recentSupportFilled = Math.min(state.recentSupportFilled + 1, LINEAGE_SUPPORT_SMOOTHING_WINDOWS);
+        }
+
         state.lineageSupport = lineageSupport;
-        state.hasLineageSupport = lineageSupport >= CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
+        state.hasLineageSupport = state.smoothedLineageSupport() >= CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
         if (population > 0L) {
             state.lastOccupiedWindow = currentWindow;
             state.consecutiveOccupiedWindows += 1;
@@ -517,6 +537,25 @@ public class NicheBifurcationRegistry {
         }
         state.established = state.consecutiveOccupiedWindows >= ESTABLISHED_CHILD_WINDOWS
                 || activeWindowCount(childNiche) >= ESTABLISHED_CHILD_WINDOWS;
+    }
+
+    /**
+     * Computes raw eligibility from an occupancy state without the zero-window collapse guard.
+     * Used only when snapshotting the previous window's eligibility for carryover tracking.
+     */
+    private boolean computeEligibilityFromState(ChildOccupancyState state, String childNiche) {
+        if (!state.established) {
+            return false;
+        }
+        double smoothed = state.smoothedLineageSupport();
+        if (smoothed < LINEAGE_AFFINITY_EFFECTIVELY_ZERO) {
+            return false;
+        }
+        int activeWindows = activeWindowCount(childNiche);
+        double effectiveThreshold = activeWindows >= PERSISTENCE_WEIGHTED_AGE_WINDOWS
+                ? PERSISTENCE_WEIGHTED_LINEAGE_THRESHOLD
+                : CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
+        return smoothed >= effectiveThreshold;
     }
 
     public int lastOccupiedWindow(String childNiche) {
@@ -545,11 +584,34 @@ public class NicheBifurcationRegistry {
         if (state == null) {
             return false;
         }
-        if (!state.established || !state.hasLineageSupport) {
+        // New niches that have not yet established occupancy are never protected.
+        if (!state.established) {
             return false;
         }
+        // Don't extend protection past the collapse threshold — let it retire.
         AtomicInteger zeroWindows = zeroPopulationWindowsByChild.get(childNiche);
-        return zeroWindows == null || zeroWindows.get() < childZeroWindowsToCollapse;
+        if (zeroWindows != null && zeroWindows.get() >= childZeroWindowsToCollapse) {
+            return false;
+        }
+        // Use the smoothed lineage-support signal to avoid flicker from single-window dips.
+        double smoothed = state.smoothedLineageSupport();
+        // Niches with effectively zero lineage affinity are not eligible.
+        if (smoothed < LINEAGE_AFFINITY_EFFECTIVELY_ZERO) {
+            return false;
+        }
+        // Persistence-weighted threshold: older established niches get a relaxed lineage requirement
+        // so that temporary signal erosion does not drop them below the eligibility bar.
+        int activeWindows = activeWindowCount(childNiche);
+        double effectiveThreshold = activeWindows >= PERSISTENCE_WEIGHTED_AGE_WINDOWS
+                ? PERSISTENCE_WEIGHTED_LINEAGE_THRESHOLD
+                : CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
+        // Primary path: smoothed support meets the (possibly relaxed) threshold.
+        if (smoothed >= effectiveThreshold) {
+            return true;
+        }
+        // Carryover path: niche was eligible last window and still has non-trivial affinity.
+        // This prevents eligibility flicker across windows when support briefly dips.
+        return state.eligiblePreviousWindow;
     }
 
     private void retireChild(String childNiche, int currentWindow) {
@@ -586,5 +648,27 @@ public class NicheBifurcationRegistry {
         private boolean established = false;
         private boolean hasLineageSupport = false;
         private double lineageSupport = 0.0D;
+
+        // Rolling window for smoothed lineage-support evaluation (avoids single-dip flicker)
+        private final double[] recentLineageSupportWindow = new double[LINEAGE_SUPPORT_SMOOTHING_WINDOWS];
+        private int recentSupportWritePos = 0;
+        private int recentSupportFilled = 0;
+
+        // Carryover eligibility: was this niche eligible for protection in the previous window?
+        private boolean eligiblePreviousWindow = false;
+        // Tracks which evaluation window the rolling buffer was last advanced in
+        private int lastEligibilityUpdateWindow = -1;
+
+        /** Returns the mean of the rolling lineage-support window, or the raw value if no history yet. */
+        double smoothedLineageSupport() {
+            if (recentSupportFilled == 0) {
+                return lineageSupport;
+            }
+            double sum = 0.0D;
+            for (int i = 0; i < recentSupportFilled; i++) {
+                sum += recentLineageSupportWindow[i];
+            }
+            return sum / recentSupportFilled;
+        }
     }
 }

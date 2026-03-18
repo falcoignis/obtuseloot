@@ -330,8 +330,10 @@ public class NichePopulationTracker {
     }
 
     private boolean qualifiesForContinuityBias(String child, double lineageSupport) {
-        return (bifurcationRegistry.eligibleForContinuityProtection(child)
-                && lineageSupport >= ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT)
+        // eligibleForContinuityProtection now incorporates smoothed lineage-support assessment
+        // (rolling average, persistence-weighted threshold, carryover), so a separate hard
+        // lineage-support gate here would reintroduce the single-window flicker we are fixing.
+        return bifurcationRegistry.eligibleForContinuityProtection(child)
                 || bifurcationRegistry.hasReentryStabilization(child);
     }
 
@@ -386,10 +388,9 @@ public class NichePopulationTracker {
             if (dynamicPopulation.getOrDefault(child, 0L) > 0L) {
                 continue;
             }
+            // eligibleForContinuityProtection already evaluates smoothed lineage support,
+            // persistence-weighted thresholds, and carryover — no separate hard gate needed.
             if (!bifurcationRegistry.eligibleForContinuityProtection(child)) {
-                continue;
-            }
-            if (lineageSupport.getOrDefault(child, 0.0D) < ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT) {
                 continue;
             }
             String parentName = parentByChildNiche.get(child);
