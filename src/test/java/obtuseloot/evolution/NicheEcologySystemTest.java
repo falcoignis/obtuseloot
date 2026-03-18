@@ -402,6 +402,64 @@ class NicheEcologySystemTest {
     }
 
 
+
+    @Test
+    void occupancyStateTracksEstablishedSupportedChildrenAcrossWindows() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        long nowMs = System.currentTimeMillis();
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+                .orElseThrow();
+
+        for (int window = 1; window <= NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS; window++) {
+            registry.recordChildOccupancy(bifurcation.childNicheA(), 1L, 0.25D, window);
+            registry.collapseUnderpopulatedChildren(Map.of(bifurcation.childNicheA(), 1L), Map.of(bifurcation.childNicheA(), 0.25D), window);
+        }
+
+        assertEquals(NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS,
+                registry.consecutiveOccupiedWindows(bifurcation.childNicheA()));
+        assertEquals(NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS,
+                registry.lastOccupiedWindow(bifurcation.childNicheA()));
+        assertTrue(registry.isEstablishedOrHistoricalChild(bifurcation.childNicheA()));
+        assertTrue(registry.hasLineageSupport(bifurcation.childNicheA()));
+        assertTrue(registry.eligibleForContinuityProtection(bifurcation.childNicheA()));
+    }
+
+    @Test
+    void deterministicReconciliationRestoresProtectedChildBeforeZeroWindowRecords() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
+        long nowMs = System.currentTimeMillis();
+
+        tracker.evaluateBifurcations(nowMs);
+        NicheBifurcation bifurcation = registry.bifurcations().get(0);
+        String protectedChild = bifurcation.childNicheA();
+
+        for (int window = 0; window < NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS; window++) {
+            for (long seed = 10L; seed < 16L; seed++) {
+                tracker.recordTelemetry(seed, "lineage-alpha", Map.of(
+                        "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                        new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                                0.35D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
+                ));
+            }
+            tracker.evaluateBifurcations(nowMs + 100L + window);
+        }
+
+        assertTrue(registry.isEstablishedOrHistoricalChild(protectedChild));
+
+        for (long seed = 10L; seed < 16L; seed++) {
+            tracker.recordTelemetry(seed, "lineage-alpha", Map.of(
+                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                            0.35D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
+            ));
+        }
+        tracker.evaluateBifurcations(nowMs + 1_000L);
+
+        assertNotEquals("NAVIGATION", tracker.effectiveNicheName(10L),
+                "A protected child should be deterministically repopulated before the next snapshot window");
+    }
+
     @Test
     void establishedChildrenRequireMultipleEmptyWindowsBeforeCollapse() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);

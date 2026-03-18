@@ -58,6 +58,7 @@ public class NicheBifurcationRegistry {
     static final int  COLLAPSE_HYSTERESIS_WINDOWS = 2;
     static final int  REENTRY_STABILIZATION_WINDOWS = 2;
     static final double STRONG_LINEAGE_AFFINITY_SUPPORT = 0.40D;
+    static final double CONTINUITY_LINEAGE_SUPPORT_THRESHOLD = 0.20D;
 
     // ---------- configuration ----------
 
@@ -100,6 +101,9 @@ public class NicheBifurcationRegistry {
 
     /** Ecological identity profile for each active child niche. */
     private final Map<String, NicheVariantProfile> variantByChildNiche = new ConcurrentHashMap<>();
+
+    /** Persistent occupancy continuity state for each child niche. */
+    private final Map<String, ChildOccupancyState> occupancyStateByChild = new ConcurrentHashMap<>();
 
     /** Monotonically-increasing sequence counter used to produce unique child names. */
     private final AtomicInteger sequence = new AtomicInteger(0);
@@ -250,8 +254,12 @@ public class NicheBifurcationRegistry {
         consecutiveLowPopulationWindowsByChild.put(childB, new AtomicInteger(0));
         reentryStabilizationWindowsByChild.put(childA, new AtomicInteger(0));
         reentryStabilizationWindowsByChild.put(childB, new AtomicInteger(0));
+        occupancyStateByChild.put(childA, new ChildOccupancyState());
+        occupancyStateByChild.put(childB, new ChildOccupancyState());
         lastBifurcationTimeByNiche.put(parentNiche, nowMs);
         lastGlobalBifurcationTimeMs = nowMs;
+        occupancyStateByChild.put(childA, new ChildOccupancyState());
+        occupancyStateByChild.put(childB, new ChildOccupancyState());
         storeVariants(parentNiche, childA, childB, seq);
 
         return Optional.of(event);
@@ -497,6 +505,53 @@ public class NicheBifurcationRegistry {
         return reentryStabilizationWindowsByChild.getOrDefault(childNiche, new AtomicInteger(0)).get() > 0;
     }
 
+    public void recordChildOccupancy(String childNiche, long population, double lineageSupport, int currentWindow) {
+        ChildOccupancyState state = occupancyStateByChild.computeIfAbsent(childNiche, ignored -> new ChildOccupancyState());
+        state.lineageSupport = lineageSupport;
+        state.hasLineageSupport = lineageSupport >= CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
+        if (population > 0L) {
+            state.lastOccupiedWindow = currentWindow;
+            state.consecutiveOccupiedWindows += 1;
+        } else {
+            state.consecutiveOccupiedWindows = 0;
+        }
+        state.established = state.consecutiveOccupiedWindows >= ESTABLISHED_CHILD_WINDOWS
+                || activeWindowCount(childNiche) >= ESTABLISHED_CHILD_WINDOWS;
+    }
+
+    public int lastOccupiedWindow(String childNiche) {
+        return occupancyStateByChild.getOrDefault(childNiche, ChildOccupancyState.EMPTY).lastOccupiedWindow;
+    }
+
+    public int consecutiveOccupiedWindows(String childNiche) {
+        return occupancyStateByChild.getOrDefault(childNiche, ChildOccupancyState.EMPTY).consecutiveOccupiedWindows;
+    }
+
+    public boolean hasLineageSupport(String childNiche) {
+        return occupancyStateByChild.getOrDefault(childNiche, ChildOccupancyState.EMPTY).hasLineageSupport;
+    }
+
+    public double lineageSupport(String childNiche) {
+        return occupancyStateByChild.getOrDefault(childNiche, ChildOccupancyState.EMPTY).lineageSupport;
+    }
+
+    public boolean isEstablishedOrHistoricalChild(String childNiche) {
+        ChildOccupancyState state = occupancyStateByChild.get(childNiche);
+        return state != null && state.established;
+    }
+
+    public boolean eligibleForContinuityProtection(String childNiche) {
+        ChildOccupancyState state = occupancyStateByChild.get(childNiche);
+        if (state == null) {
+            return false;
+        }
+        if (!state.established || !state.hasLineageSupport) {
+            return false;
+        }
+        AtomicInteger zeroWindows = zeroPopulationWindowsByChild.get(childNiche);
+        return zeroWindows == null || zeroWindows.get() < childZeroWindowsToCollapse;
+    }
+
     private void retireChild(String childNiche, int currentWindow) {
         String parent = parentByChild(childNiche);
         dynamicNiches.remove(childNiche);
@@ -506,6 +561,7 @@ public class NicheBifurcationRegistry {
         reentryStabilizationWindowsByChild.remove(childNiche);
         birthWindowByChild.remove(childNiche);
         variantByChildNiche.remove(childNiche);
+        occupancyStateByChild.remove(childNiche);
         childrenByParent.values().forEach(children -> children.remove(childNiche));
         if (parent != null) {
             lastBifurcationTimeByNiche.put(parent, System.currentTimeMillis());
@@ -519,5 +575,16 @@ public class NicheBifurcationRegistry {
             }
         }
         return null;
+    }
+
+
+    private static final class ChildOccupancyState {
+        private static final ChildOccupancyState EMPTY = new ChildOccupancyState();
+
+        private int lastOccupiedWindow = -1;
+        private int consecutiveOccupiedWindows = 0;
+        private boolean established = false;
+        private boolean hasLineageSupport = false;
+        private double lineageSupport = 0.0D;
     }
 }

@@ -53,13 +53,12 @@ public class NichePopulationTracker {
     private static final int NICHE_LOCK_MIN_WINDOWS = 4;
     private static final int NICHE_LOCK_MAX_WINDOWS = 6;
     private static final double NICHE_LOCK_UTILITY_BOOST = 1.30D;
-    private static final int ESTABLISHED_CHILD_FLOOR_WINDOWS = 2;
-    private static final double PERSISTENCE_FLOOR_MIN_LINEAGE_SUPPORT = 0.28D;
-    private static final double ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT = 0.32D;
+    private static final double ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT = NicheBifurcationRegistry.CONTINUITY_LINEAGE_SUPPORT_THRESHOLD;
     private static final int ASSIGNMENT_CONTINUITY_STICKY_WINDOWS = 2;
     private static final int REENTRY_STICKY_WINDOWS = 3;
     private final Map<Long, NicheLockState> lockStateByArtifact = new ConcurrentHashMap<>();
     private final Set<Long> continuityProtectedArtifacts = ConcurrentHashMap.newKeySet();
+    private final Map<String, Long> lastKnownOccupantByChild = new ConcurrentHashMap<>();
 
     /**
      * Throttle: bifurcation evaluation is only run when at least this many
@@ -122,6 +121,8 @@ public class NichePopulationTracker {
         dynamicNicheByArtifact.remove(artifactSeed);
         lineageByArtifact.remove(artifactSeed);
         lockStateByArtifact.remove(artifactSeed);
+        continuityProtectedArtifacts.remove(artifactSeed);
+        lastKnownOccupantByChild.entrySet().removeIf(entry -> entry.getValue() == artifactSeed);
     }
 
     public void recordTelemetry(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
@@ -254,10 +255,13 @@ public class NichePopulationTracker {
 
         Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
+        continuityProtectedArtifacts.clear();
+        refreshOccupancyState(dynamicPopulation);
         applyForcedDisplacement();
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         continuityProtectedArtifacts.clear();
+        refreshOccupancyState(dynamicPopulation);
         enforceAssignmentContinuity(dynamicPopulation);
         applySoftMigrationPressure(dynamicPopulation);
         // Re-apply structural partition bounds so soft migration cannot stack child occupancy past cap.
@@ -265,10 +269,11 @@ public class NichePopulationTracker {
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         continuityProtectedArtifacts.clear();
-        enforceAssignmentContinuity(dynamicPopulation);
-        preserveEstablishedChildPresence(dynamicPopulation);
+        refreshOccupancyState(dynamicPopulation);
+        reconcileProtectedOccupancy(dynamicPopulation);
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
+        refreshOccupancyState(dynamicPopulation);
         // Pass current window so grace-period children are not prematurely collapsed
         bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation, lineageSupportByChild(), evaluationWindowCount);
         dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
@@ -291,41 +296,6 @@ public class NichePopulationTracker {
             }
         }
         return support;
-    }
-
-    private void preserveEstablishedChildPresence(Map<String, Long> dynamicPopulation) {
-        Map<String, Double> lineageSupport = lineageSupportByChild();
-        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
-            if (dynamicPopulation.getOrDefault(child, 0L) > 0L) {
-                continue;
-            }
-            if (!bifurcationRegistry.isEstablishedChild(child)) {
-                continue;
-            }
-            double support = lineageSupport.getOrDefault(child, 0.0D);
-            if (support < PERSISTENCE_FLOOR_MIN_LINEAGE_SUPPORT) {
-                continue;
-            }
-            if (!shouldApplyPersistenceFloor(child)) {
-                continue;
-            }
-            String parentName = parentByChildNiche.get(child);
-            if (parentName == null) {
-                continue;
-            }
-            List<Long> candidates = activeArtifacts.stream()
-                    .filter(seed -> parentName.equals(nicheProfilesByArtifact.get(seed) != null ? nicheProfilesByArtifact.get(seed).dominantNiche().name() : null))
-                    .filter(seed -> dynamicNicheByArtifact.get(seed) == null)
-                    .sorted(java.util.Comparator.comparingDouble(this::persistenceFloorCandidateScore))
-                    .toList();
-            if (candidates.isEmpty()) {
-                continue;
-            }
-            Long selected = candidates.get(0);
-            dynamicNicheByArtifact.put(selected, child);
-            applyMigrationLockWithDuration(selected, child, ASSIGNMENT_CONTINUITY_STICKY_WINDOWS);
-            dynamicPopulation.put(child, 1L);
-        }
     }
 
     private void enforceAssignmentContinuity(Map<String, Long> dynamicPopulation) {
@@ -360,12 +330,21 @@ public class NichePopulationTracker {
     }
 
     private boolean qualifiesForContinuityBias(String child, double lineageSupport) {
-        return (bifurcationRegistry.isEstablishedChild(child)
+        return (bifurcationRegistry.eligibleForContinuityProtection(child)
                 && lineageSupport >= ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT)
                 || bifurcationRegistry.hasReentryStabilization(child);
     }
 
     private Long seedContinuityOccupant(String parentName, String child) {
+        Long lastKnownOccupant = lastKnownOccupantByChild.get(child);
+        if (lastKnownOccupant != null && canRestoreLastKnownOccupant(lastKnownOccupant, parentName)) {
+            dynamicNicheByArtifact.put(lastKnownOccupant, child);
+            int stickyWindows = bifurcationRegistry.hasReentryStabilization(child)
+                    ? REENTRY_STICKY_WINDOWS
+                    : ASSIGNMENT_CONTINUITY_STICKY_WINDOWS;
+            applyMigrationLockWithDuration(lastKnownOccupant, child, stickyWindows);
+            return lastKnownOccupant;
+        }
         List<Long> candidates = activeArtifacts.stream()
                 .filter(seed -> {
                     ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
@@ -386,6 +365,58 @@ public class NichePopulationTracker {
         return selected;
     }
 
+    private void refreshOccupancyState(Map<String, Long> dynamicPopulation) {
+        Map<String, Double> lineageSupport = lineageSupportByChild();
+        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
+            long population = dynamicPopulation.getOrDefault(child, 0L);
+            bifurcationRegistry.recordChildOccupancy(child, population, lineageSupport.getOrDefault(child, 0.0D), evaluationWindowCount);
+            if (population > 0L) {
+                String parentName = parentByChildNiche.get(child);
+                activeArtifacts.stream()
+                        .filter(seed -> child.equals(dynamicNicheByArtifact.get(seed)))
+                        .min(java.util.Comparator.comparingDouble(seed -> continuityCandidateScore(seed, parentName, child)))
+                        .ifPresent(seed -> lastKnownOccupantByChild.put(child, seed));
+            }
+        }
+    }
+
+    private void reconcileProtectedOccupancy(Map<String, Long> dynamicPopulation) {
+        Map<String, Double> lineageSupport = lineageSupportByChild();
+        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
+            if (dynamicPopulation.getOrDefault(child, 0L) > 0L) {
+                continue;
+            }
+            if (!bifurcationRegistry.eligibleForContinuityProtection(child)) {
+                continue;
+            }
+            if (lineageSupport.getOrDefault(child, 0.0D) < ASSIGNMENT_CONTINUITY_MIN_LINEAGE_SUPPORT) {
+                continue;
+            }
+            String parentName = parentByChildNiche.get(child);
+            if (parentName == null) {
+                continue;
+            }
+            Long restored = seedContinuityOccupant(parentName, child);
+            if (restored != null) {
+                continuityProtectedArtifacts.add(restored);
+                dynamicPopulation.put(child, 1L);
+                bifurcationRegistry.recordChildOccupancy(child, 1L, lineageSupport.getOrDefault(child, 0.0D), evaluationWindowCount);
+            }
+        }
+    }
+
+    private boolean canRestoreLastKnownOccupant(Long artifactSeed, String parentName) {
+        if (artifactSeed == null || !activeArtifacts.contains(artifactSeed)) {
+            return false;
+        }
+        ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
+        if (profile == null || !parentName.equals(profile.dominantNiche().name())) {
+            return false;
+        }
+        String assignedChild = dynamicNicheByArtifact.get(artifactSeed);
+        return assignedChild == null || parentName.equals(parentByChildNiche.get(assignedChild));
+    }
+
     private double continuityCandidateScore(long seed, String parentName, String child) {
         String lineageId = lineageByArtifact.get(seed);
         double affinityBoost = lineageAffinityScore(parentName, child, lineageId);
@@ -399,18 +430,6 @@ public class NichePopulationTracker {
         }
         Map<String, Double> affinity = lineageAffinityByParent.getOrDefault(parentName, Map.of());
         return affinity.getOrDefault(lineageId + "|" + child, 0.0D);
-    }
-
-    private boolean shouldApplyPersistenceFloor(String child) {
-        int activeWindows = bifurcationRegistry.activeWindowCount(child);
-        return activeWindows >= NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS
-                && activeWindows <= (NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS + ESTABLISHED_CHILD_FLOOR_WINDOWS + 8);
-    }
-
-    private double persistenceFloorCandidateScore(long seed) {
-        String lineageId = lineageByArtifact.get(seed);
-        double lineagePenalty = (lineageId == null || lineageId.isBlank()) ? 0.15D : 0.0D;
-        return utilityDensityFor(seed) + lineagePenalty;
     }
 
     /**
