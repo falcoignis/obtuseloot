@@ -25,8 +25,10 @@ import obtuseloot.evolution.EcosystemRoleClassifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -35,6 +37,9 @@ public class ProceduralAbilityGenerator {
     private static final double NOVELTY_FLOOR_PENALTY = 0.65D;
     private static final double HIGH_SIMILARITY_THRESHOLD = 0.82D;
     private static final double MODERATE_SIMILARITY_THRESHOLD = 0.62D;
+    private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.84D;
+    private static final double GLOBAL_NOVELTY_WEIGHT = 0.16D;
+    private static final double NICHE_WEIGHT_EXPONENT = 1.85D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -182,7 +187,7 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> gatedCandidates = regulatoryEligibilityFilter.filter(allCandidates, regulatoryProfile);
         List<AbilityTemplate> scoringPool = gatedCandidates.isEmpty() ? allCandidates : gatedCandidates;
         TraitInterferenceSnapshot activeInterference = traitInterferenceResolver.summarizeInterference(scoringPool, genome, traitInterferenceResolver.scoringMode());
-        ArtifactNicheProfile nicheProfile = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
+        ArtifactNicheProfile nicheProfile = resolveScoringNicheProfile(utilityHistory, memoryProfile);
         NicheVariantProfile variantProfile = resolveVariantProfile(artifact);
         List<AbilityDiversityIndex.AbilitySignature> activePool = diversityIndex.activePool(artifact.getArtifactSeed());
         AbilityDiversityIndex.AbilitySignature motifAnchor = diversityIndex.motifAnchor(activePool, nicheProfile.dominantNiche(), lineageId, variantProfile);
@@ -233,6 +238,60 @@ public class ProceduralAbilityGenerator {
         }
 
         return new AbilityProfile("procedural-" + ranked.get(0).name().toLowerCase() + "-s" + evolutionStage, picked);
+    }
+
+
+    private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile) {
+        ArtifactNicheProfile classified = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
+        if (utilityHistory.hasUtilityHistory() || classified.dominantNiche() != MechanicNicheTag.GENERALIST) {
+            return classified;
+        }
+
+        MechanicNicheTag inferredDominant = inferDominantNiche(memoryProfile);
+        Map<MechanicNicheTag, Double> scores = new EnumMap<>(MechanicNicheTag.class);
+        scores.put(inferredDominant, 1.0D + dominantNicheWeight(memoryProfile, inferredDominant));
+        scores.put(MechanicNicheTag.GENERALIST, 0.35D);
+        return new ArtifactNicheProfile(
+                inferredDominant,
+                EnumSet.of(inferredDominant, MechanicNicheTag.GENERALIST),
+                Map.copyOf(scores),
+                classified.specialization());
+    }
+
+    private MechanicNicheTag inferDominantNiche(ArtifactMemoryProfile memoryProfile) {
+        double navigationScore = memoryProfile.mobilityWeight() + (memoryProfile.disciplineWeight() * 0.12D);
+        double ritualScore = memoryProfile.chaosWeight() + (memoryProfile.disciplineWeight() * 0.18D) + (memoryProfile.pressure() * 0.015D);
+        double protectionScore = memoryProfile.survivalWeight() + (memoryProfile.traumaWeight() * 0.18D) + (memoryProfile.bossWeight() * 0.12D);
+        double supportScore = memoryProfile.aggressionWeight() + (memoryProfile.disciplineWeight() * 0.10D);
+
+        MechanicNicheTag dominant = MechanicNicheTag.NAVIGATION;
+        double max = navigationScore;
+        if (ritualScore > max) {
+            dominant = memoryProfile.disciplineWeight() >= memoryProfile.chaosWeight() ? MechanicNicheTag.MEMORY_HISTORY : MechanicNicheTag.RITUAL_STRANGE_UTILITY;
+            max = ritualScore;
+        }
+        if (protectionScore > max) {
+            dominant = memoryProfile.survivalWeight() >= (memoryProfile.traumaWeight() + memoryProfile.bossWeight())
+                    ? MechanicNicheTag.ENVIRONMENTAL_ADAPTATION
+                    : MechanicNicheTag.PROTECTION_WARDING;
+            max = protectionScore;
+        }
+        if (supportScore > max) {
+            dominant = memoryProfile.aggressionWeight() > memoryProfile.disciplineWeight()
+                    ? MechanicNicheTag.SOCIAL_WORLD_INTERACTION
+                    : MechanicNicheTag.SUPPORT_COHESION;
+        }
+        return dominant;
+    }
+
+    private double dominantNicheWeight(ArtifactMemoryProfile memoryProfile, MechanicNicheTag dominant) {
+        return switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> memoryProfile.mobilityWeight() * 0.20D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> Math.max(memoryProfile.chaosWeight(), memoryProfile.disciplineWeight()) * 0.18D;
+            case ENVIRONMENTAL_ADAPTATION, PROTECTION_WARDING, FARMING_WORLDKEEPING -> memoryProfile.survivalWeight() * 0.20D;
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> Math.max(memoryProfile.aggressionWeight(), memoryProfile.disciplineWeight()) * 0.15D;
+            default -> 0.10D;
+        };
     }
 
     private AbilityDefinition fromTemplate(AbilityTemplate t, AbilityFamily family, int stage) { /* unchanged */
@@ -424,26 +483,75 @@ public class ProceduralAbilityGenerator {
 
     private double compositeTemplateScore(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
         double base = scoreTemplate(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation);
-        AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, template);
-        double nearest = activePool.stream().mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
-        double inSelection = selected.stream().map(sel -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, sel)).mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing)).max().orElse(0.0D);
-        double activeSimilarity = Math.max(nearest, inSelection);
-        double novelty = 1.0D - activeSimilarity;
-        double noveltyPressure = noveltyPressure(variantProfile);
-        double noveltyBonus = 1.0D + (Math.pow(novelty, 0.72D) * noveltyPressure);
-        double noveltyFloorPenalty = noveltyFloorPenalty(novelty);
-        double similarityPenalty = activePoolSimilarityPenalty(activeSimilarity, variantProfile);
-        double nicheBias = nicheWeight(template, nicheProfile, memoryProfile);
+        MechanicNicheTag dominantNiche = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, template);
+        AbilitySimilarityProfile similarityProfile = abilitySimilarityProfile(candidate, activePool, selected, artifact, lineage, dominantNiche, variantProfile);
+        double intraNovelty = 1.0D - similarityProfile.sameNicheSimilarity();
+        double globalNovelty = 1.0D - similarityProfile.globalSimilarity();
+        double noveltyBonus = noveltyBonus(intraNovelty, globalNovelty, variantProfile);
+        double noveltyFloorPenalty = noveltyFloorPenalty(intraNovelty);
+        double similarityPenalty = activePoolSimilarityPenalty(similarityProfile, variantProfile);
+        double nicheBias = Math.pow(nicheWeight(template, nicheProfile, memoryProfile), NICHE_WEIGHT_EXPONENT);
+        double nicheConsistencyPenalty = nicheConsistencyPenalty(template, nicheProfile, memoryProfile);
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
-        return base * noveltyBonus * noveltyFloorPenalty * similarityPenalty * nicheBias * lineageBias * motifBias;
+        return base * nicheBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty;
+    }
+
+    private AbilitySimilarityProfile abilitySimilarityProfile(AbilityDiversityIndex.AbilitySignature candidate,
+                                                            List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                                            List<AbilityTemplate> selected,
+                                                            Artifact artifact,
+                                                            ArtifactLineage lineage,
+                                                            MechanicNicheTag dominantNiche,
+                                                            NicheVariantProfile variantProfile) {
+        double sameNicheActive = activePool.stream()
+                .filter(existing -> sameNiche(candidate, existing, dominantNiche))
+                .mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing))
+                .max()
+                .orElse(0.0D);
+        double crossNicheActive = activePool.stream()
+                .filter(existing -> !sameNiche(candidate, existing, dominantNiche))
+                .mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing))
+                .max()
+                .orElse(0.0D);
+        double selectionSimilarity = selected.stream()
+                .map(sel -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, sel))
+                .mapToDouble(existing -> AbilityDiversityIndex.similarity(candidate, existing))
+                .max()
+                .orElse(0.0D);
+        double sameNicheSimilarity = Math.max(sameNicheActive, selectionSimilarity);
+        double globalSimilarity = Math.max(Math.max(sameNicheActive, crossNicheActive), selectionSimilarity);
+        return new AbilitySimilarityProfile(clamp(sameNicheSimilarity, 0.0D, 1.0D), clamp(globalSimilarity, 0.0D, 1.0D), clamp(crossNicheActive, 0.0D, 1.0D));
+    }
+
+    private boolean sameNiche(AbilityDiversityIndex.AbilitySignature candidate, AbilityDiversityIndex.AbilitySignature existing, MechanicNicheTag dominantNiche) {
+        MechanicNicheTag candidateNiche = candidate.niche() == null ? dominantNiche : candidate.niche();
+        MechanicNicheTag existingNiche = existing.niche() == null ? MechanicNicheTag.GENERALIST : existing.niche();
+        return Objects.equals(candidateNiche, existingNiche);
+    }
+
+    private double noveltyBonus(double intraNovelty, double globalNovelty, NicheVariantProfile variantProfile) {
+        double pressure = noveltyPressure(variantProfile);
+        double weightedNovelty = (Math.pow(intraNovelty, 0.72D) * SAME_NICHE_NOVELTY_WEIGHT)
+                + (Math.pow(globalNovelty, 0.88D) * GLOBAL_NOVELTY_WEIGHT * crossNicheNoveltyPressure(variantProfile));
+        return 1.0D + (weightedNovelty * pressure);
+    }
+
+    private double crossNicheNoveltyPressure(NicheVariantProfile variantProfile) {
+        if (variantProfile == null) {
+            return 0.46D;
+        }
+        return variantProfile.isAlphaVariant()
+                ? clamp(0.52D + (variantProfile.mutationBias() * 0.10D), 0.45D, 0.64D)
+                : clamp(0.22D + (variantProfile.retentionBias() * 0.08D), 0.18D, 0.32D);
     }
 
     private double noveltyPressure(NicheVariantProfile variantProfile) {
-        if (variantProfile == null) return 0.58D;
+        if (variantProfile == null) return 0.66D;
         return variantProfile.isAlphaVariant()
-                ? 0.72D * variantProfile.mutationBias()
-                : 0.18D * variantProfile.retentionBias();
+                ? 0.80D * variantProfile.mutationBias()
+                : 0.22D * variantProfile.retentionBias();
     }
 
     private double noveltyFloorPenalty(double novelty) {
@@ -454,35 +562,97 @@ public class ProceduralAbilityGenerator {
         return clamp(NOVELTY_FLOOR_PENALTY + (ratio * ratio * (1.0D - NOVELTY_FLOOR_PENALTY)), NOVELTY_FLOOR_PENALTY, 1.0D);
     }
 
-    private double activePoolSimilarityPenalty(double similarity, NicheVariantProfile variantProfile) {
-        double highSimilarityPenalty = variantProfile != null && variantProfile.isAlphaVariant() ? 0.62D : 0.68D;
-        if (similarity >= HIGH_SIMILARITY_THRESHOLD) {
-            double ratio = clamp((similarity - HIGH_SIMILARITY_THRESHOLD) / (1.0D - HIGH_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
+    private double activePoolSimilarityPenalty(AbilitySimilarityProfile similarityProfile, NicheVariantProfile variantProfile) {
+        double sameNiche = similarityProfile.sameNicheSimilarity();
+        double crossNiche = similarityProfile.crossNicheSimilarity();
+        double highSimilarityPenalty = variantProfile != null && variantProfile.isAlphaVariant() ? 0.69D : 0.74D;
+        if (sameNiche >= HIGH_SIMILARITY_THRESHOLD) {
+            double ratio = clamp((sameNiche - HIGH_SIMILARITY_THRESHOLD) / (1.0D - HIGH_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
             return clamp(1.0D - (ratio * highSimilarityPenalty), 1.0D - highSimilarityPenalty, 1.0D);
         }
-        if (similarity >= MODERATE_SIMILARITY_THRESHOLD) {
-            double ratio = clamp((similarity - MODERATE_SIMILARITY_THRESHOLD) / (HIGH_SIMILARITY_THRESHOLD - MODERATE_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
-            return clamp(1.01D - (ratio * 0.11D), 0.90D, 1.01D);
+        if (sameNiche >= MODERATE_SIMILARITY_THRESHOLD) {
+            double ratio = clamp((sameNiche - MODERATE_SIMILARITY_THRESHOLD) / (HIGH_SIMILARITY_THRESHOLD - MODERATE_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
+            double crossRelief = (1.0D - ratio) * (variantProfile != null && variantProfile.isAlphaVariant() ? 0.05D : 0.02D);
+            return clamp(0.98D - (ratio * 0.17D) + crossRelief, 0.84D, 1.00D);
         }
-        double noveltyLift = clamp((MODERATE_SIMILARITY_THRESHOLD - similarity) / MODERATE_SIMILARITY_THRESHOLD, 0.0D, 1.0D);
-        double variantLift = variantProfile != null && variantProfile.isAlphaVariant() ? 0.10D : 0.05D;
-        return clamp(1.0D + (noveltyLift * variantLift), 1.0D, 1.10D);
+        double sameNicheLift = clamp((MODERATE_SIMILARITY_THRESHOLD - sameNiche) / MODERATE_SIMILARITY_THRESHOLD, 0.0D, 1.0D);
+        double crossNichePenalty = clamp((crossNiche - MODERATE_SIMILARITY_THRESHOLD) / (1.0D - MODERATE_SIMILARITY_THRESHOLD), 0.0D, 1.0D);
+        double variantLift = variantProfile != null && variantProfile.isAlphaVariant() ? 0.10D : 0.04D;
+        return clamp(1.0D + (sameNicheLift * variantLift) - (crossNichePenalty * 0.03D), 0.97D, 1.10D);
     }
 
     private double nicheWeight(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
         MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
         boolean matches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger()).contains(dominant);
         double familyBias = switch (dominant) {
-            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.10D : 0.96D;
-            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.10D : 0.96D;
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.11D : 0.95D;
-            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.09D : 0.96D;
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.16D : 0.92D;
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.18D : 0.90D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.18D : 0.90D;
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.14D : 0.92D;
             default -> 1.0D;
         };
         double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
-        return clamp((matches ? 1.16D : 0.92D) * familyBias * memoryTuning, 0.82D, 1.26D);
+        return clamp((matches ? 1.24D : 0.84D) * familyBias * memoryTuning, 0.74D, 1.34D);
     }
 
+
+    private double nicheConsistencyPenalty(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        Set<MechanicNicheTag> templateNiches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger());
+        double mechanicMismatch = templateNiches.contains(dominant) ? 0.0D : 0.55D;
+        double triggerMismatch = switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> navigationTriggerMismatch(template.trigger());
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> survivalTriggerMismatch(template.trigger());
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> ritualTriggerMismatch(template.trigger());
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> supportTriggerMismatch(template.trigger());
+            default -> 0.10D;
+        };
+        double affinityMismatch = affinityMismatch(template, dominant, memoryProfile);
+        double penalty = Math.min(0.24D, (mechanicMismatch * 0.13D) + (triggerMismatch * 0.06D) + (affinityMismatch * 0.04D));
+        return clamp(1.0D - penalty, 0.76D, 1.0D);
+    }
+
+    private double navigationTriggerMismatch(AbilityTrigger trigger) {
+        return switch (trigger) {
+            case ON_WORLD_SCAN, ON_STRUCTURE_DISCOVERY, ON_CHUNK_ENTER, ON_STRUCTURE_SENSE, ON_BLOCK_INSPECT -> 0.0D;
+            case ON_MEMORY_EVENT, ON_WITNESS_EVENT -> 0.18D;
+            default -> 0.28D;
+        };
+    }
+
+    private double survivalTriggerMismatch(AbilityTrigger trigger) {
+        return switch (trigger) {
+            case ON_BLOCK_HARVEST, ON_LOW_HEALTH, ON_HIT, ON_CHUNK_ENTER, ON_WORLD_SCAN -> 0.0D;
+            case ON_MEMORY_EVENT, ON_WITNESS_EVENT -> 0.14D;
+            default -> 0.24D;
+        };
+    }
+
+    private double ritualTriggerMismatch(AbilityTrigger trigger) {
+        return switch (trigger) {
+            case ON_RITUAL_INTERACT, ON_MEMORY_EVENT, ON_WITNESS_EVENT, ON_AWAKENING, ON_FUSION -> 0.0D;
+            case ON_WORLD_SCAN, ON_STRUCTURE_SENSE -> 0.10D;
+            default -> 0.22D;
+        };
+    }
+
+    private double supportTriggerMismatch(AbilityTrigger trigger) {
+        return switch (trigger) {
+            case ON_WITNESS_EVENT, ON_MEMORY_EVENT, ON_STRUCTURE_SENSE, ON_WORLD_SCAN -> 0.0D;
+            case ON_CHUNK_ENTER, ON_BLOCK_INSPECT -> 0.10D;
+            default -> 0.20D;
+        };
+    }
+
+    private double affinityMismatch(AbilityTemplate template, MechanicNicheTag dominant, ArtifactMemoryProfile memoryProfile) {
+        return switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.metadata().hasAffinity("exploration") ? 0.0D : 0.35D - Math.min(0.15D, memoryProfile.mobilityWeight() * 0.05D);
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.metadata().hasAffinity("gathering") || template.metadata().hasAffinity("support") ? 0.0D : 0.28D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.metadata().hasAffinity("ritual") || template.metadata().hasAffinity("memory") ? 0.0D : 0.32D;
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.metadata().hasAffinity("social") || template.metadata().hasAffinity("support") ? 0.0D : 0.30D;
+            default -> 0.0D;
+        };
+    }
     private double lineageCombinationBias(AbilityTemplate template, ArtifactLineage lineage) {
         if (lineage == null) return 1.0D;
         EvolutionaryBiasGenome bias = lineage.evolutionaryBiasGenome();
@@ -515,6 +685,11 @@ public class ProceduralAbilityGenerator {
     }
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private record AbilitySimilarityProfile(double sameNicheSimilarity,
+                                            double globalSimilarity,
+                                            double crossNicheSimilarity) {
     }
 
     private double mechanicLineageWeight(AbilityMechanic mechanic, ArtifactLineage lineage) {

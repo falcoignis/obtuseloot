@@ -121,3 +121,34 @@ Probe rerun after the tuning pass reported:
 - Stability remained bounded because the change only retuned scoring weights/scales; ecology and population systems were left untouched.
 
 ABILITY_EXPANSION_TUNING_RESULT: PARTIAL
+
+## NOVELTY GATING FIX
+- Novelty scoring in `ProceduralAbilityGenerator` now splits similarity into same-niche and cross-niche layers before scoring candidates.
+- Same-niche similarity drives the strong novelty term, while cross-niche similarity contributes only a weaker drift term so patterns can recur across niches without flattening niche identity.
+- Selection ordering was reweighted so niche-weighted scoring is applied ahead of novelty amplification, and the niche multiplier was strengthened to keep novelty operating inside the niche space rather than redefining it.
+- Added a bounded niche-consistency penalty that softly downweights candidates whose mechanic families, trigger patterns, or affinity mix drift too far from the current niche profile.
+- When utility history is still sparse, scoring now infers a provisional niche context from the artifact memory profile so early-generation novelty pressure no longer defaults all candidates into the same generalist comparison pool.
+- ALPHA/BETA handling remains differentiated: ALPHA keeps stronger intra-niche novelty pressure with moderate cross-niche drift, while BETA keeps moderate intra-niche novelty and lower cross-niche drift.
+
+### Validation rerun
+Latest targeted probe rerun reported:
+- average novelty score vs active pool: `0.1759`
+- minimum novelty score: `0.1055`
+- maximum novelty score: `0.7714`
+- average nearest-neighbor similarity: `0.8241`
+- average intra-niche novelty: `0.5545`
+- average global novelty: `0.1759`
+- niche divergence (family-distribution Jensen-Shannon):
+  - explorer vs ritualist: `0.1488`
+  - explorer vs warden: `0.1771`
+  - ritualist vs warden: `0.1408`
+- lineage divergence (same-niche ritual probe): `0.4071`
+
+### Interpretation
+- The gating change restored materially stronger niche separation than the globally applied novelty pass, but it did not fully recover the original `~0.20+` niche-divergence target in this run.
+- Intra-niche novelty is now clearly higher than global novelty, which confirms novelty pressure is being concentrated inside niche boundaries instead of pushing all niches away from one another equally.
+- Lineage divergence remained healthy and improved relative to the earlier novelty-tuning rerun.
+- Global novelty stayed elevated relative to the original pre-tuning baseline, but it landed below the desired `0.20–0.35` success band after niche identity was reinforced.
+- Because niche divergence and lineage divergence improved while the final novelty band was only partially recovered, this pass is best classified as a bounded partial recovery rather than a full success.
+
+ABILITY_EXPANSION_TUNING_RESULT: PARTIAL
