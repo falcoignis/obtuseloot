@@ -1,0 +1,12 @@
+Picked up JAVA_TOOL_OPTIONS: 
+[world-sim][memory] generation=4 heap_used_mb=403 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=38738 in_memory_rollup_count=1 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=8 heap_used_mb=259 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=76989 in_memory_rollup_count=2 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=12 heap_used_mb=375 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=114217 in_memory_rollup_count=3 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=16 heap_used_mb=124 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=151959 in_memory_rollup_count=4 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=20 heap_used_mb=345 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=189712 in_memory_rollup_count=5 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=24 heap_used_mb=243 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=227575 in_memory_rollup_count=6 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=28 heap_used_mb=190 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=265955 in_memory_rollup_count=7 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=32 heap_used_mb=222 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=304114 in_memory_rollup_count=8 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=36 heap_used_mb=247 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=342292 in_memory_rollup_count=9 active_artifact_count=60 lineage_count=31 branch_count=21
+[world-sim][memory] generation=40 heap_used_mb=275 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=380978 in_memory_rollup_count=10 active_artifact_count=60 lineage_count=31 branch_count=21
+World simulation outputs written to analytics/validation-suite-rerun/deep-stability-final/mixed

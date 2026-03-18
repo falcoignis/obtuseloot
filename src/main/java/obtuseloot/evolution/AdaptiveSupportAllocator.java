@@ -59,7 +59,8 @@ public class AdaptiveSupportAllocator {
                 1.0D - diminishing);
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
         if (emitter != null) {
-            emitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, artifactSeed, lineageId == null ? "" : lineageId, profile.dominantNiche().name(),
+            String effectiveNiche = usageTracker.nichePopulationTracker().effectiveNicheName(artifactSeed);
+            emitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION, artifactSeed, lineageId == null ? "" : lineageId, effectiveNiche,
                     Map.of("reinforcement", String.valueOf(allocation.reinforcementMultiplier()),
                             "reinforcement_multiplier", String.valueOf(allocation.reinforcementMultiplier()),
                             "mutation", String.valueOf(allocation.mutationOpportunity()),

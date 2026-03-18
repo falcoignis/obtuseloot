@@ -62,6 +62,19 @@ public class NichePopulationTracker {
     private static final long BIFURCATION_EVAL_INTERVAL_MS = 5_000L;
     private volatile long lastBifurcationEvalMs = 0L;
 
+    // ---------- guaranteed bifurcation support ----------
+
+    /** Monotonically-increasing count of evaluation windows (each call to evaluateBifurcations). */
+    private volatile int evaluationWindowCount = 0;
+    /** Set once a forced bifurcation has been successfully recorded to prevent repeats. */
+    private volatile boolean forcedBifurcationDone = false;
+    /** Trigger forced bifurcation if no organic one has occurred by this window. */
+    private static final int FORCED_BIFURCATION_WINDOW = 3;
+    /** Minimum niche share required to be a forced-bifurcation candidate. */
+    private static final double FORCED_BIFURCATION_MIN_SHARE = 0.10D;
+    /** Minimum total active artifacts before attempting forced bifurcation. */
+    private static final int FORCED_BIFURCATION_MIN_ARTIFACTS = 5;
+
     public NichePopulationTracker() {
         this(new EcosystemRoleClassifier(), new EcosystemSaturationModel(), new NicheBifurcationRegistry());
     }
@@ -157,6 +170,9 @@ public class NichePopulationTracker {
      */
     public void evaluateBifurcations(long nowMs) {
         decayNicheLocks();
+        // Advance the window counter on every evaluation call
+        evaluationWindowCount++;
+
         Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
         if (allRollups.isEmpty()) {
             return;
@@ -191,6 +207,9 @@ public class NichePopulationTracker {
                 emitBifurcationEvent(bifurcation);
                 registerChildNicheMetadata(bifurcation, nowMs);
                 seedLineageAffinityForBifurcation(nicheTag, bifurcation);
+                // Record birth window for grace-period tracking
+                bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheA(), evaluationWindowCount);
+                bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheB(), evaluationWindowCount);
                 // Re-assign all artifacts in the parent niche to one of the two children
                 for (Long seed : activeArtifacts) {
                     ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
@@ -204,6 +223,15 @@ public class NichePopulationTracker {
             }
         }
 
+        // Guarantee at least one bifurcation: if none has occurred by window FORCED_BIFURCATION_WINDOW
+        // and there is a dominant niche eligible, force one now (once per scenario only).
+        if (!forcedBifurcationDone
+                && bifurcationRegistry.bifurcations().isEmpty()
+                && evaluationWindowCount >= FORCED_BIFURCATION_WINDOW
+                && totalPopulation >= FORCED_BIFURCATION_MIN_ARTIFACTS) {
+            tryForcedBifurcation(allRollups, totalPopulation, nowMs);
+        }
+
         Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         applyForcedDisplacement();
@@ -214,9 +242,57 @@ public class NichePopulationTracker {
         applyForcedDisplacement();
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
-        bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation);
+        // Pass current window so grace-period children are not prematurely collapsed
+        bifurcationRegistry.collapseUnderpopulatedChildren(dynamicPopulation, evaluationWindowCount);
         dynamicNicheByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue()));
         lockStateByArtifact.entrySet().removeIf(entry -> !bifurcationRegistry.isDynamicNiche(entry.getValue().lockedNiche()));
+    }
+
+    /**
+     * Attempts a forced bifurcation on the niche with the highest population share
+     * that meets the minimum share threshold, bypassing pressure gates.
+     */
+    private void tryForcedBifurcation(Map<MechanicNicheTag, NicheUtilityRollup> allRollups,
+                                      int totalPopulation,
+                                      long nowMs) {
+        MechanicNicheTag topNiche = null;
+        double topShare = 0.0D;
+        for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : allRollups.entrySet()) {
+            double share = totalPopulation <= 0 ? 0.0D
+                    : entry.getValue().activeArtifacts() / (double) totalPopulation;
+            if (share >= FORCED_BIFURCATION_MIN_SHARE && share > topShare) {
+                topShare = share;
+                topNiche = entry.getKey();
+            }
+        }
+        if (topNiche == null) {
+            return;
+        }
+        MechanicNicheTag finalTopNiche = topNiche;
+        String nicheName = topNiche.name();
+        NicheUtilityRollup nicheRollup = allRollups.get(topNiche);
+        RolePressureMetrics pressure = saturationModel.pressureFor(topNiche, nicheRollup, allRollups);
+
+        Optional<NicheBifurcation> maybeBifurcation = bifurcationRegistry.forceBifurcation(
+                nicheName,
+                pressure.saturationPenalty(),
+                meanSpecializationFor(topNiche),
+                nowMs);
+
+        maybeBifurcation.ifPresent(bifurcation -> {
+            forcedBifurcationDone = true;
+            emitBifurcationEvent(bifurcation);
+            registerChildNicheMetadata(bifurcation, nowMs);
+            seedLineageAffinityForBifurcation(finalTopNiche, bifurcation);
+            bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheA(), evaluationWindowCount);
+            bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheB(), evaluationWindowCount);
+            for (Long seed : activeArtifacts) {
+                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+                if (profile != null && profile.dominantNiche() == finalTopNiche) {
+                    refreshDynamicNicheAssignment(seed, profile);
+                }
+            }
+        });
     }
 
     /**
@@ -253,14 +329,24 @@ public class NichePopulationTracker {
         }
         String parentName = profile.dominantNiche().name();
         List<String> children = bifurcationRegistry.childrenOf(parentName);
-        if (children.isEmpty()) {
-            // No bifurcation for this niche yet — clear any stale assignment
-            dynamicNicheByArtifact.remove(artifactSeed);
+        String existingChild = dynamicNicheByArtifact.get(artifactSeed);
+        if (existingChild != null) {
+            // Keep the assignment unless the child niche was retired or the artifact's
+            // current parent niche has children of its own (meaning the artifact belongs
+            // to a different bifurcated family and can be assigned there instead).
+            boolean childStillExists = bifurcationRegistry.isDynamicNiche(existingChild);
+            String existingChildParent = parentByChildNiche.get(existingChild);
+            boolean childBelongsToCurrentParent = parentName.equals(existingChildParent);
+            if (!childStillExists || (childBelongsToCurrentParent && !children.contains(existingChild))) {
+                // Child retired, or current parent's children no longer include this child
+                dynamicNicheByArtifact.remove(artifactSeed);
+            }
+            // In all other cases keep the existing assignment
             return;
         }
-        String existingChild = dynamicNicheByArtifact.get(artifactSeed);
-        if (existingChild == null || !children.contains(existingChild)) {
-            dynamicNicheByArtifact.remove(artifactSeed);
+        if (children.isEmpty()) {
+            // No bifurcation for this niche yet — nothing to assign
+            return;
         }
     }
 
@@ -280,7 +366,11 @@ public class NichePopulationTracker {
                 continue;
             }
             RolePressureMetrics pressure = saturationModel.pressureFor(parentTag, parentRollup, allRollups);
-            if (pressure.saturationPenalty() < STRUCTURAL_ACTIVATION_SATURATION_GATE) {
+            // During the grace period, bypass the saturation gate so child niches are
+            // seeded even in low-saturation scenarios (e.g. explorer-heavy).
+            boolean anyChildInGrace = children.stream()
+                    .anyMatch(c -> bifurcationRegistry.isInGracePeriod(c, evaluationWindowCount));
+            if (!anyChildInGrace && pressure.saturationPenalty() < STRUCTURAL_ACTIVATION_SATURATION_GATE) {
                 continue;
             }
             List<Long> parentArtifacts = activeArtifacts.stream()

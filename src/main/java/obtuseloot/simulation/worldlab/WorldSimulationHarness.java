@@ -451,11 +451,12 @@ public class WorldSimulationHarness {
                         "specialization_pressure", String.valueOf(Math.max(0.0D, signal.mutationBias() - 1.0D)),
                         "specialization_trajectory", String.valueOf(signal.latentBias() - 1.0D)
                 ));
+        String effectiveNiche = usageTracker.nichePopulationTracker().effectiveNicheName(agent.artifact().getArtifactSeed());
         telemetryEmitter.emit(EcosystemTelemetryEventType.COMPETITION_ALLOCATION,
-                agent.artifact().getArtifactSeed(), lineageId, nicheId,
+                agent.artifact().getArtifactSeed(), lineageId, effectiveNiche,
                 Map.of(
                         "generation", String.valueOf(currentGeneration),
-                        "niche", nicheId,
+                        "niche", effectiveNiche,
                         "reinforcement_multiplier", String.valueOf(signal.mutationBias()),
                         "ecology_pressure", String.valueOf(Math.max(0.0D, 1.0D - signal.latentBias())),
                         "lineage_momentum", String.valueOf(1.0D + (utilityScore / 100.0D)),
