@@ -401,6 +401,49 @@ class NicheEcologySystemTest {
                 "At least one child niche must appear in the NichePopulationRollup");
     }
 
+
+    @Test
+    void establishedChildrenRequireMultipleEmptyWindowsBeforeCollapse() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        long nowMs = System.currentTimeMillis();
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+                .orElseThrow();
+        registry.setChildBirthWindow(bifurcation.childNicheA(), 1);
+
+        for (int window = 1; window <= NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS; window++) {
+            registry.collapseUnderpopulatedChildren(Map.of(bifurcation.childNicheA(), 1L), Map.of(), window + 10);
+        }
+
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 20);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 21);
+        assertTrue(registry.isDynamicNiche(bifurcation.childNicheA()), "Established child should survive short collapse streaks");
+
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 22);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 23);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(bifurcation.childNicheA(), 0.45D), 24);
+        assertFalse(registry.isDynamicNiche(bifurcation.childNicheA()), "Established child should still collapse after sustained unsupported windows");
+    }
+
+    @Test
+    void recentCollapseBlocksImmediateSameParentRebifurcation() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        long nowMs = System.currentTimeMillis();
+        NicheBifurcation first = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+                .orElseThrow();
+        registry.setChildBirthWindow(first.childNicheA(), 1);
+        registry.setChildBirthWindow(first.childNicheB(), 1);
+
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 10);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 11);
+        registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 12);
+        assertEquals(0, registry.dynamicNicheCount(), "Both children should collapse after sustained empty windows");
+
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isEmpty(),
+                "Immediate re-bifurcation should be blocked after a recent collapse");
+        assertTrue(registry.evaluateBifurcation("RITUAL_STRANGE_UTILITY", 0.20D, 0.10D, 0.20D, 8, nowMs + 61_000L).isPresent(),
+                "Cooldown should remain local to the collapsed parent niche after the global gate elapses");
+    }
+
     @Test
     void cooldownPreventsImmediateRebifurcation() {
         // cooldownMs=60_000 (1 minute) — the second evaluation is immediate, should be blocked
