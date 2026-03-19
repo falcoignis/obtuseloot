@@ -52,7 +52,8 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double SMALL_CATEGORY_SCORE_EXPONENT = 0.84D;
+    private static final double SMALL_CATEGORY_NORMALIZATION_SCALE = 0.45D;
+    private static final double SMALL_CATEGORY_SOFT_CAP_RATIO = 1.30D;
     private static final double SMALL_CATEGORY_RECENCY_STRENGTH = 1.35D;
     private static final double SMALL_CATEGORY_DIVERSITY_STRENGTH = 0.20D;
 
@@ -532,8 +533,7 @@ public class ProceduralAbilityGenerator {
         double diversityBias = intraCategoryDiversityBias(template, artifact, lineage, dominantNiche, variantProfile, selected);
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        double score = base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias;
-        return smallCategoryAdaptiveFlattening(template.category(), score);
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias;
     }
 
     private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
@@ -610,13 +610,18 @@ public class ProceduralAbilityGenerator {
                                                       AbilityDiversityIndex.AbilitySignature motifAnchor,
                                                       List<AbilityTemplate> selected,
                                                       Random random) {
+        double[] scores = new double[templates.size()];
+        for (int i = 0; i < templates.size(); i++) {
+            scores[i] = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
+        }
+        double[] samplingScores = normalizeSmallCategoryScores(templates, scores);
         double total = 0.0D;
         double[] weights = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
-            double score = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
+            double score = samplingScores[i];
             double weight = Math.sqrt(score);
             if (isSmallCategory(templates.get(i).category())) {
-                weight = 0.42D + Math.pow(score, 0.28D);
+                weight = smallCategorySamplingWeight(samplingScores, i);
             }
             weights[i] = weight;
             total += weight;
@@ -629,6 +634,66 @@ public class ProceduralAbilityGenerator {
             }
         }
         return templates.get(templates.size() - 1);
+    }
+
+    private double smallCategorySamplingWeight(double[] normalizedScores, int index) {
+        if (normalizedScores.length <= 1) {
+            return 1.0D;
+        }
+        double score = normalizedScores[index];
+        int lowerScores = 0;
+        for (double candidate : normalizedScores) {
+            if (candidate < score) {
+                lowerScores++;
+            }
+        }
+        double relativeRank = lowerScores / (double) Math.max(1, normalizedScores.length - 1);
+        return 1.0D + (relativeRank * (SMALL_CATEGORY_SOFT_CAP_RATIO - 1.0D));
+    }
+
+    private double[] normalizeSmallCategoryScores(List<AbilityTemplate> templates, double[] scores) {
+        if (templates.isEmpty()) {
+            return scores;
+        }
+        AbilityCategory category = templates.get(0).category();
+        if (!isSmallCategory(category) || templates.size() <= 1) {
+            return scores;
+        }
+        double minScore = Double.POSITIVE_INFINITY;
+        double maxScore = Double.NEGATIVE_INFINITY;
+        for (double score : scores) {
+            minScore = Math.min(minScore, score);
+            maxScore = Math.max(maxScore, score);
+        }
+        if (!Double.isFinite(minScore) || !Double.isFinite(maxScore) || maxScore <= minScore) {
+            return scores;
+        }
+        double[] normalized = new double[scores.length];
+        for (int i = 0; i < scores.length; i++) {
+            normalized[i] = minScore + ((scores[i] - minScore) * SMALL_CATEGORY_NORMALIZATION_SCALE);
+        }
+        return applySmallCategorySoftCap(normalized);
+    }
+
+    private double[] applySmallCategorySoftCap(double[] scores) {
+        double mean = java.util.Arrays.stream(scores).average().orElse(0.0D);
+        double max = java.util.Arrays.stream(scores).max().orElse(0.0D);
+        if (mean <= 0.0D || max <= (mean * SMALL_CATEGORY_SOFT_CAP_RATIO) || max <= mean) {
+            return scores;
+        }
+        double allowedExcess = (mean * SMALL_CATEGORY_SOFT_CAP_RATIO) - mean;
+        double currentExcess = max - mean;
+        double excessScale = clamp(allowedExcess / Math.max(currentExcess, 0.0001D), 0.0D, 1.0D);
+        double[] capped = new double[scores.length];
+        for (int i = 0; i < scores.length; i++) {
+            double score = scores[i];
+            if (score <= mean) {
+                capped[i] = score;
+                continue;
+            }
+            capped[i] = mean + ((score - mean) * excessScale);
+        }
+        return capped;
     }
 
     private double categorySelectionScore(AbilityCategory category,
@@ -744,13 +809,6 @@ public class ProceduralAbilityGenerator {
         return clamp(bias, 1.0D - negativeSwing, 1.0D);
     }
 
-
-    private double smallCategoryAdaptiveFlattening(AbilityCategory category, double score) {
-        if (!isSmallCategory(category)) {
-            return score;
-        }
-        return Math.pow(Math.max(0.0001D, score), SMALL_CATEGORY_SCORE_EXPONENT);
-    }
 
     private double intraCategoryDiversityBias(AbilityTemplate template,
                                               Artifact artifact,
