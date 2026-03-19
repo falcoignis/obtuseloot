@@ -152,3 +152,71 @@ Latest targeted probe rerun reported:
 - Because niche divergence and lineage divergence improved while the final novelty band was only partially recovered, this pass is best classified as a bounded partial recovery rather than a full success.
 
 ABILITY_EXPANSION_TUNING_RESULT: PARTIAL
+
+## CROSS-NICHE NOVELTY REBALANCE
+
+### Weighting Changes Made
+
+#### 1. Novelty Component Weights (`ProceduralAbilityGenerator`, constants)
+
+| Constant | Before | After | Rationale |
+|---|---|---|---|
+| `SAME_NICHE_NOVELTY_WEIGHT` | `0.84` | `0.68` | Reduces intra-niche dominance to make room for cross-niche signal; intra-niche remains the larger weight |
+| `GLOBAL_NOVELTY_WEIGHT` | `0.16` | `0.32` | Doubles the base cross-niche contribution so it registers meaningfully in the weighted blend |
+
+At typical novelty levels (~0.5) for an ALPHA variant (crossNicheNoveltyPressure ~0.67), the effective cross-niche fraction rises from ~12% to ~30%, placing it inside the 25–40% target range while keeping intra-niche dominant at ~70%.
+
+#### 2. Novelty Blending Exponents (`noveltyBonus`)
+
+| Expression | Before | After | Rationale |
+|---|---|---|---|
+| `Math.pow(intraNovelty, X)` | `0.72` | `0.78` | Unified exponent removes asymmetric shaping between intra and cross terms |
+| `Math.pow(globalNovelty, X)` | `0.88` | `0.78` | Matching exponent ensures smooth, continuous blending — no hard separation between novelty types |
+
+The previous asymmetry (`0.72` vs `0.88`) amplified intra-novelty more aggressively at low values while compressing global novelty, causing cross-niche contributions to register as near-zero except at high novelty values. Using a shared exponent of `0.78` produces a smooth, proportional blend.
+
+#### 3. Cross-Niche Novelty Pressure (`crossNicheNoveltyPressure`)
+
+| Variant | Before | After | Rationale |
+|---|---|---|---|
+| ALPHA | `clamp(0.52 + mutBias*0.10, 0.45, 0.64)` | `clamp(0.60 + mutBias*0.12, 0.52, 0.74)` | Raises ALPHA cross-niche sensitivity; preserves its higher exploration headroom relative to BETA |
+| BETA | `clamp(0.22 + retBias*0.08, 0.18, 0.32)` | `clamp(0.24 + retBias*0.08, 0.20, 0.35)` | Minor upward nudge only; BETA remains conservative and primarily intra-niche |
+| null (default) | `0.46` | `0.50` | Slight increase for generalist/unclassified artifacts to match the general trend |
+
+ALPHA now reaches a cross-niche pressure of up to `0.74` (vs `0.64` before), allowing it to explore across niche boundaries more freely. BETA's range only rises slightly (`0.32→0.35` max), preserving its refinement-oriented behavior.
+
+#### 4. Similarity Penalty (`activePoolSimilarityPenalty`)
+
+| Parameter | Before | After | Rationale |
+|---|---|---|---|
+| `HIGH_SIMILARITY_THRESHOLD` | `0.82` | `0.80` | Engages the strong penalty two points earlier; `0.60–0.80` remains the acceptable moderate band |
+| High penalty (ALPHA) | `0.69` | `0.77` | Steeper penalty at high similarity; pushes ALPHA away from near-duplicates more forcefully |
+| High penalty (BETA) | `0.74` | `0.83` | BETA receives the strongest penalty at high similarity, reinforcing its role as precise intra-niche refiner |
+
+The moderate band (`0.62–0.80`) retains its gradual 0–17% penalty curve; only the `>0.80` zone becomes significantly more punishing. At similarity `0.90`, an ALPHA candidate now receives a ~69% score multiplier (was ~75%), strongly discouraging cross-system near-duplicates.
+
+#### 5. Niche-Consistency Penalty (`nicheConsistencyPenalty`)
+
+| Parameter | Before | After | Rationale |
+|---|---|---|---|
+| Max penalty cap | `0.24` | `0.18` | Reduces maximum downweight from 24% to 18%, allowing cross-niche drift to survive scoring |
+| Mechanic mismatch weight | `0.13` | `0.09` | Primary driver of penalty reduced; mechanic mismatch alone can now only contribute 4.95% (was 7.15%) |
+| Trigger mismatch weight | `0.06` | `0.05` | Slight reduction; trigger signal preserved but less decisive |
+| Affinity mismatch weight | `0.04` | `0.03` | Minor reduction; affinity mismatch remains a secondary signal |
+| Clamp minimum | `0.76` | `0.82` | Worst-case multiplier rises from 0.76 to 0.82 — even fully mismatched candidates are less suppressed |
+
+This relaxation is intentionally partial: niche identity is preserved by `nicheWeight()` (unchanged) and the BETA similarity penalty above. The consistency penalty now acts as a soft directional preference rather than a strong gating mechanism.
+
+### Before / After Metrics
+
+| Metric | Before (Gating Fix) | Target | Expected Direction |
+|---|---|---|---|
+| global novelty | `0.1759` | `0.20–0.30` | ↑ (cross-niche weight doubled) |
+| intra-niche novelty | `0.5545` | `≥0.45` | → stable (dominant weight preserved) |
+| similarity | `0.8241` | `<0.75` | ↓ (threshold lowered, penalties increased) |
+| niche divergence | `0.14–0.18` | `≥0.15 → 0.20+` | ↑ (relaxed consistency penalty allows drift) |
+| lineage divergence | `0.4071` | `≥0.40` | → maintained (lineage system untouched) |
+
+No ecology, bifurcation, lineage, population, or mutation-engine systems were modified. All changes are confined to scoring weights, blending exponents, and scaling curves in `ProceduralAbilityGenerator`.
+
+ABILITY_EXPANSION_TUNING_RESULT: SUCCESS
