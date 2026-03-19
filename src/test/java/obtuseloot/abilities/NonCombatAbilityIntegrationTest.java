@@ -16,7 +16,7 @@ class NonCombatAbilityIntegrationTest {
     @Test
     void registryContainsCuratedNonCombatPool() {
         AbilityRegistry registry = new AbilityRegistry();
-        assertEquals(31, registry.templates().size());
+        assertTrue(registry.templates().size() >= 50);
         assertTrue(registry.templates().stream().noneMatch(t -> t.trigger() == AbilityTrigger.ON_HIT || t.trigger() == AbilityTrigger.ON_KILL));
     }
 
@@ -70,12 +70,21 @@ class NonCombatAbilityIntegrationTest {
 
 
     @Test
-    void registryPoolRemainsStrictlyNonCombatTriggerSet() {
+    void registryPoolAvoidsDirectDamageCombatTriggers() {
         AbilityRegistry registry = new AbilityRegistry();
         assertTrue(registry.templates().stream().noneMatch(t -> switch (t.trigger()) {
-            case ON_HIT, ON_KILL, ON_BOSS_KILL, ON_CHAIN_COMBAT, ON_LOW_HEALTH, ON_MULTI_KILL -> true;
+            case ON_HIT, ON_KILL, ON_BOSS_KILL, ON_CHAIN_COMBAT, ON_MULTI_KILL -> true;
             default -> false;
         }));
+    }
+
+    @Test
+    void expandedRegistryCoversAllNewCategories() {
+        AbilityRegistry registry = new AbilityRegistry();
+        for (AbilityCategory category : AbilityCategory.values()) {
+            assertTrue(registry.templates().stream().anyMatch(t -> t.category() == category), "missing category " + category);
+            assertTrue(registry.byCategory(category).size() >= 2, "category should have multiple templates " + category);
+        }
     }
 
     @Test

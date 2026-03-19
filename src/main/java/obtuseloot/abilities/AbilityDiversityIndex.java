@@ -108,14 +108,14 @@ public final class AbilityDiversityIndex {
             AbilityMechanic mechanic = parseMechanic(i < mechanics.size() ? mechanics.get(i) : "PULSE");
             Set<String> effectTokens = tokenSet(id + " " + branch);
             out.add(new AbilitySignature(artifact.getArtifactSeed(), artifact.getLatentLineage(), null, null,
-                    familyForId(id), trigger, mechanic, effectTokens, effectTokens, new double[6], id));
+                    categoryForId(id), familyForId(id), trigger, mechanic, effectTokens, effectTokens, new double[6], id));
         }
         return out;
     }
 
     public AbilitySignature fromTemplate(long artifactSeed, String lineageId, MechanicNicheTag niche, NicheVariantProfile variant, AbilityTemplate template) {
         return new AbilitySignature(artifactSeed, lineageId, niche, variant == null ? null : variant.isAlphaVariant(),
-                template.family(), template.trigger(), template.mechanic(),
+                template.category(), template.family(), template.trigger(), template.mechanic(),
                 tokenSet(template.effectPattern() + " " + String.join(" ", template.metadata().utilityDomains())),
                 mechanicSet(template),
                 statVector(template.metadata()), template.id());
@@ -123,7 +123,7 @@ public final class AbilityDiversityIndex {
 
     public AbilitySignature fromDefinition(long artifactSeed, String lineageId, MechanicNicheTag niche, NicheVariantProfile variant, AbilityDefinition definition) {
         return new AbilitySignature(artifactSeed, lineageId, niche, variant == null ? null : variant.isAlphaVariant(),
-                definition.family(), definition.trigger(), definition.mechanic(),
+                categoryForId(definition.id()), definition.family(), definition.trigger(), definition.mechanic(),
                 tokenSet(definition.effectPattern()),
                 new LinkedHashSet<>(definition.metadata() == null ? Set.of() : definition.metadata().affinities()),
                 definition.metadata() == null ? new double[6] : statVector(definition.metadata()), definition.id());
@@ -139,17 +139,19 @@ public final class AbilityDiversityIndex {
 
     public static double similarity(AbilitySignature a, AbilitySignature b) {
         double family = a.family() == b.family() ? 1.0D : 0.0D;
+        double category = a.category() == b.category() ? 1.0D : 0.0D;
         double trigger = a.trigger() == b.trigger() ? 1.0D : 0.0D;
         double mechanic = a.mechanic() == b.mechanic() ? 1.0D : 0.0D;
         double effects = jaccard(a.effectTokens(), b.effectTokens());
         double signature = jaccard(a.mechanicSignature(), b.mechanicSignature());
         double stats = 1.0D - normalizedDistance(a.statVector(), b.statVector());
-        return (family * 0.08D)
-                + (trigger * 0.12D)
-                + (mechanic * 0.14D)
-                + (effects * 0.28D)
-                + (signature * 0.20D)
-                + (stats * 0.18D);
+        return (category * 0.10D)
+                + (family * 0.06D)
+                + (trigger * 0.11D)
+                + (mechanic * 0.13D)
+                + (effects * 0.25D)
+                + (signature * 0.19D)
+                + (stats * 0.16D);
     }
 
     private static double normalizedDistance(double[] a, double[] b) {
@@ -206,14 +208,33 @@ public final class AbilityDiversityIndex {
         };
     }
 
+    private static AbilityCategory categoryForId(String id) {
+        String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
+        return switch (prefix) {
+            case "precision", "sensing" -> AbilityCategory.SENSING_INFORMATION;
+            case "mobility", "exploration" -> AbilityCategory.TRAVERSAL_MOBILITY;
+            case "survival", "environment" -> AbilityCategory.SURVIVAL_ADAPTATION;
+            case "tactical" -> AbilityCategory.COMBAT_TACTICAL_CONTROL;
+            case "warding", "consistency" -> AbilityCategory.DEFENSE_WARDING;
+            case "gathering", "logistics" -> AbilityCategory.RESOURCE_FARMING_LOGISTICS;
+            case "engineering" -> AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION;
+            case "social", "support" -> AbilityCategory.SOCIAL_SUPPORT_COORDINATION;
+            case "ritual", "chaos", "evolution" -> AbilityCategory.RITUAL_STRANGE_UTILITY;
+            case "stealth" -> AbilityCategory.STEALTH_TRICKERY_DISRUPTION;
+            default -> AbilityCategory.SENSING_INFORMATION;
+        };
+    }
+
     private static AbilityTrigger parseTrigger(String input) { try { return AbilityTrigger.valueOf(input); } catch (Exception ex) { return AbilityTrigger.ON_WORLD_SCAN; } }
     private static AbilityMechanic parseMechanic(String input) { try { return AbilityMechanic.valueOf(input); } catch (Exception ex) { return AbilityMechanic.PULSE; } }
 
     public record AbilitySignature(long artifactSeed, String lineageId, MechanicNicheTag niche, Boolean variantAlpha,
+                                   AbilityCategory category,
                                    AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,
                                    Set<String> effectTokens, Set<String> mechanicSignature, double[] statVector, String sourceId) {
         public double cohesionScore() {
-            return (mechanicSignature.size() * 0.08D) + effectTokens.size() * 0.04D + (family == AbilityFamily.CHAOS ? 0.05D : 0.0D);
+            return (mechanicSignature.size() * 0.08D) + effectTokens.size() * 0.04D + (family == AbilityFamily.CHAOS ? 0.05D : 0.0D)
+                    + (category == AbilityCategory.RITUAL_STRANGE_UTILITY || category == AbilityCategory.STEALTH_TRICKERY_DISRUPTION ? 0.03D : 0.0D);
         }
     }
 }

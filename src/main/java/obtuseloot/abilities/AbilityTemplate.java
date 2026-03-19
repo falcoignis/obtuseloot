@@ -5,6 +5,7 @@ import java.util.List;
 public record AbilityTemplate(
         String id,
         String name,
+        AbilityCategory category,
         AbilityFamily family,
         AbilityTrigger trigger,
         AbilityMechanic mechanic,

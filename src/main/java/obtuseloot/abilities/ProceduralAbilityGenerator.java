@@ -66,6 +66,7 @@ public class ProceduralAbilityGenerator {
     private final LatentTraitActivationResolver latentTraitActivationResolver;
     private final NicheTaxonomy nicheTaxonomy;
     private final Map<MechanicNicheTag, Double> nicheTemplatePressure;
+    private final Map<AbilityCategory, Double> categoryTemplatePressure;
     private final AbilityDiversityIndex diversityIndex;
     private final EcosystemRoleClassifier roleClassifier;
 
@@ -136,6 +137,7 @@ public class ProceduralAbilityGenerator {
         this.latentTraitActivationResolver = new LatentTraitActivationResolver();
         this.nicheTaxonomy = new NicheTaxonomy();
         this.nicheTemplatePressure = computeNicheTemplatePressure();
+        this.categoryTemplatePressure = computeCategoryTemplatePressure();
         this.diversityIndex = AbilityDiversityIndex.instance();
         this.roleClassifier = new EcosystemRoleClassifier();
     }
@@ -366,6 +368,7 @@ public class ProceduralAbilityGenerator {
                 .mapToDouble(tag -> nicheTemplatePressure.getOrDefault(tag, 0.0D))
                 .average()
                 .orElse(0.0D);
+        pressure += categoryTemplatePressure.getOrDefault(template.category(), 0.0D) * 0.65D;
         double lowYieldPenalty = clamp((0.62D - template.metadata().ecologicalYieldScore()) * 0.12D, 0.0D, 0.07D);
         return clamp(1.0D - pressure - lowYieldPenalty, 0.74D, 1.06D);
     }
@@ -382,6 +385,20 @@ public class ProceduralAbilityGenerator {
         counts.forEach((niche, count) -> {
             double crowded = clamp((count - average) / Math.max(1.0D, average), 0.0D, 1.0D);
             pressure.put(niche, crowded * 0.08D);
+        });
+        return Map.copyOf(pressure);
+    }
+
+    private Map<AbilityCategory, Double> computeCategoryTemplatePressure() {
+        Map<AbilityCategory, Integer> counts = new EnumMap<>(AbilityCategory.class);
+        for (AbilityTemplate template : registry.templates()) {
+            counts.merge(template.category(), 1, Integer::sum);
+        }
+        double average = counts.values().stream().mapToInt(Integer::intValue).average().orElse(1.0D);
+        Map<AbilityCategory, Double> pressure = new EnumMap<>(AbilityCategory.class);
+        counts.forEach((category, count) -> {
+            double crowded = clamp((count - average) / Math.max(1.0D, average), 0.0D, 1.0D);
+            pressure.put(category, crowded * 0.07D);
         });
         return Map.copyOf(pressure);
     }
@@ -492,10 +509,11 @@ public class ProceduralAbilityGenerator {
         double noveltyFloorPenalty = noveltyFloorPenalty(intraNovelty);
         double similarityPenalty = activePoolSimilarityPenalty(similarityProfile, variantProfile);
         double nicheBias = Math.pow(nicheWeight(template, nicheProfile, memoryProfile), NICHE_WEIGHT_EXPONENT);
+        double categoryBias = categoryWeight(template, nicheProfile, memoryProfile, lineage, variantProfile);
         double nicheConsistencyPenalty = nicheConsistencyPenalty(template, nicheProfile, memoryProfile);
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
-        return base * nicheBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty;
+        return base * nicheBias * categoryBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty;
     }
 
     private AbilitySimilarityProfile abilitySimilarityProfile(AbilityDiversityIndex.AbilitySignature candidate,
@@ -595,6 +613,33 @@ public class ProceduralAbilityGenerator {
         return clamp((matches ? 1.24D : 0.84D) * familyBias * memoryTuning, 0.74D, 1.34D);
     }
 
+    private double categoryWeight(AbilityTemplate template,
+                                  ArtifactNicheProfile nicheProfile,
+                                  ArtifactMemoryProfile memoryProfile,
+                                  ArtifactLineage lineage,
+                                  NicheVariantProfile variantProfile) {
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        AbilityCategory category = template.category();
+        double nicheMatch = category.niches().contains(dominant) ? 1.10D : 0.94D;
+        double memoryBias = switch (category) {
+            case TRAVERSAL_MOBILITY -> 1.0D + (memoryProfile.mobilityWeight() * 0.05D);
+            case SENSING_INFORMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.04D);
+            case SURVIVAL_ADAPTATION, DEFENSE_WARDING -> 1.0D + (memoryProfile.survivalWeight() * 0.05D);
+            case COMBAT_TACTICAL_CONTROL -> 1.0D + (memoryProfile.aggressionWeight() * 0.04D);
+            case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.03D) + (memoryProfile.survivalWeight() * 0.02D);
+            case SOCIAL_SUPPORT_COORDINATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.02D) + (memoryProfile.aggressionWeight() * 0.03D);
+            case RITUAL_STRANGE_UTILITY -> 1.0D + (memoryProfile.chaosWeight() * 0.05D);
+            case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.03D) + (memoryProfile.chaosWeight() * 0.02D);
+        };
+        double lineageBias = lineage == null ? 1.0D : switch (category) {
+            case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.08D);
+            case SOCIAL_SUPPORT_COORDINATION, DEFENSE_WARDING, RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE) * 0.07D);
+            case RITUAL_STRANGE_UTILITY, STEALTH_TRICKERY_DISRUPTION, COMBAT_TACTICAL_CONTROL -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.06D);
+            case SURVIVAL_ADAPTATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY) * 0.05D);
+        };
+        return clamp(nicheMatch * memoryBias * lineageBias * variantCategoryBias(template, variantProfile), 0.84D, 1.28D);
+    }
+
 
     private double nicheConsistencyPenalty(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
         MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
@@ -665,6 +710,8 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().affinities().contains("ritual")) value += ritual * 0.09D;
         if (template.metadata().affinities().contains("support")) value += support * 0.08D;
         if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 0.10D;
+        if (template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION || template.category() == AbilityCategory.COMBAT_TACTICAL_CONTROL) value += weirdness * 0.05D;
+        if (template.category() == AbilityCategory.RESOURCE_FARMING_LOGISTICS || template.category() == AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION) value += support * 0.04D;
         return clamp(value, 0.88D, 1.18D);
     }
 
@@ -683,6 +730,26 @@ public class ProceduralAbilityGenerator {
         }
         return plugin.getArtifactUsageTracker().nichePopulationTracker().variantFor(artifact.getArtifactSeed());
     }
+
+    private double variantCategoryBias(AbilityTemplate template, NicheVariantProfile variantProfile) {
+        if (variantProfile == null) {
+            return 1.0D;
+        }
+        AbilityCategory category = template.category();
+        if (variantProfile.isAlphaVariant()) {
+            return switch (category) {
+                case TRAVERSAL_MOBILITY, SENSING_INFORMATION, COMBAT_TACTICAL_CONTROL, RITUAL_STRANGE_UTILITY, STEALTH_TRICKERY_DISRUPTION ->
+                        clamp(1.03D * variantProfile.mutationBias(), 0.96D, 1.12D);
+                default -> clamp(0.98D + ((variantProfile.mutationBias() - 1.0D) * 0.04D), 0.94D, 1.04D);
+            };
+        }
+        return switch (category) {
+            case DEFENSE_WARDING, RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION, SOCIAL_SUPPORT_COORDINATION, SURVIVAL_ADAPTATION ->
+                    clamp(1.02D * variantProfile.retentionBias(), 0.97D, 1.10D);
+            default -> clamp(0.98D + ((variantProfile.retentionBias() - 1.0D) * 0.03D), 0.95D, 1.03D);
+        };
+    }
+
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
