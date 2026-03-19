@@ -62,6 +62,7 @@ public class ProceduralAbilityGenerator {
     private static final int COLD_LIFETIME_WARM_THRESHOLD = 2;
     private static final double COLD_TEMPLATE_MAX_BOOST = 0.22D;
     private static final double CATEGORY_LOCAL_COLD_BALANCE_MAX_BOOST = 0.12D;
+    private static final double UNSEEN_TEMPLATE_OVERRIDE_PROBABILITY = 0.12D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -642,10 +643,50 @@ public class ProceduralAbilityGenerator {
         for (int i = 0; i < templates.size(); i++) {
             roll -= weights[i];
             if (roll <= 0.0D) {
-                return templates.get(i);
+                AbilityTemplate selectedTemplate = templates.get(i);
+                return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
             }
         }
-        return templates.get(templates.size() - 1);
+        AbilityTemplate selectedTemplate = templates.get(templates.size() - 1);
+        return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
+    }
+
+    private AbilityTemplate applyUnseenTemplateOverride(AbilityTemplate selectedTemplate,
+                                                        List<AbilityTemplate> templates,
+                                                        double[] samplingScores,
+                                                        Artifact artifact,
+                                                        ArtifactMemoryProfile memoryProfile,
+                                                        ArtifactLineage lineage,
+                                                        NicheVariantProfile variantProfile,
+                                                        List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                                        List<AbilityTemplate> selected,
+                                                        Random random) {
+        if (selectedTemplate == null || isUnseenTemplate(selectedTemplate) || random.nextDouble() >= UNSEEN_TEMPLATE_OVERRIDE_PROBABILITY) {
+            return selectedTemplate;
+        }
+        List<Integer> unseenEligibleIndexes = new ArrayList<>();
+        for (int i = 0; i < templates.size(); i++) {
+            AbilityTemplate candidate = templates.get(i);
+            if (!isUnseenTemplate(candidate) || !qualifiesForUnseenOverride(candidate, artifact, memoryProfile, lineage, variantProfile, activePool, selected)) {
+                continue;
+            }
+            unseenEligibleIndexes.add(i);
+        }
+        if (unseenEligibleIndexes.isEmpty()) {
+            return selectedTemplate;
+        }
+        double total = 0.0D;
+        for (int index : unseenEligibleIndexes) {
+            total += Math.max(0.0001D, samplingScores[index]);
+        }
+        double roll = random.nextDouble() * Math.max(total, 0.0001D);
+        for (int index : unseenEligibleIndexes) {
+            roll -= Math.max(0.0001D, samplingScores[index]);
+            if (roll <= 0.0D) {
+                return templates.get(index);
+            }
+        }
+        return templates.get(unseenEligibleIndexes.get(unseenEligibleIndexes.size() - 1));
     }
 
     private double smallCategorySamplingWeight(double[] normalizedScores, int index) {
@@ -780,6 +821,10 @@ public class ProceduralAbilityGenerator {
 
     private void pushLifetimeTemplate(String templateId) {
         lifetimeTemplateUsage.merge(templateId, 1, (current, increment) -> Math.min(COLD_LIFETIME_WARM_THRESHOLD + 1, current + increment));
+    }
+
+    private boolean isUnseenTemplate(AbilityTemplate template) {
+        return lifetimeTemplateUsage.getOrDefault(template.id(), 0) <= 0;
     }
 
     private double coldTemplateBoost(AbilityTemplate template) {
@@ -1221,6 +1266,23 @@ public class ProceduralAbilityGenerator {
         double categoryFrequency = recentCategoryFrequency(template.category(), activePool);
         double scarcity = clamp((0.24D - categoryFrequency) / 0.24D, 0.0D, 1.0D);
         return clamp(1.0D + (scarcity * LOW_VOLUME_CATEGORY_MAX_BOOST), 1.0D, 1.0D + LOW_VOLUME_CATEGORY_MAX_BOOST);
+    }
+
+    private boolean qualifiesForUnseenOverride(AbilityTemplate template,
+                                               Artifact artifact,
+                                               ArtifactMemoryProfile memoryProfile,
+                                               ArtifactLineage lineage,
+                                               NicheVariantProfile variantProfile,
+                                               List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                               List<AbilityTemplate> selected) {
+        MechanicNicheTag dominant = memoryProfile == null ? MechanicNicheTag.GENERALIST : inferDominantNiche(memoryProfile);
+        AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominant, variantProfile, template);
+        AbilitySimilarityProfile similarityProfile = abilitySimilarityProfile(candidate, activePool, selected, artifact, lineage, dominant, variantProfile);
+        double intraNovelty = 1.0D - similarityProfile.sameNicheSimilarity();
+        boolean noveltyQualified = intraNovelty >= NOVELTY_FLOOR;
+        boolean similarityQualified = similarityProfile.sameNicheSimilarity() < HIGH_SIMILARITY_THRESHOLD;
+        boolean nicheQualified = template.category().niches().contains(dominant) || nicheAdjacent(template.category().niches(), dominant);
+        return noveltyQualified && similarityQualified && nicheQualified;
     }
 
     private double recentCategoryFrequency(AbilityCategory category, List<AbilityDiversityIndex.AbilitySignature> activePool) {
