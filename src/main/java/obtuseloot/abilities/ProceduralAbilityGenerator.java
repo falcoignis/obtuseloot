@@ -28,11 +28,13 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ProceduralAbilityGenerator {
     private static final double NOVELTY_FLOOR = 0.15D;
@@ -523,13 +525,24 @@ public class ProceduralAbilityGenerator {
             selected.add(best);
             remaining.remove(best);
             if (traitInteractionsEnabled && remaining.size() > 1) {
-                remaining.sort(Comparator.comparingDouble((AbilityTemplate t) -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)).reversed());
+                Map<AbilityTemplate, Double> rescored = compositeTemplateScores(remaining, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
+                remaining.sort(Comparator.comparingDouble((AbilityTemplate t) -> rescored.getOrDefault(t, 0.0001D)).reversed());
             }
         }
         return selected;
     }
 
     private double compositeTemplateScore(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
+        return compositeTemplateScore(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected, null);
+    }
+
+    private double compositeTemplateScore(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected, CategoryApplicabilityProfile applicabilityProfile) {
+        double baseComposite = baseCompositeTemplateScore(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
+        double applicabilityBias = underSampledApplicabilityBoost(template, nicheProfile, memoryProfile, applicabilityProfile);
+        return baseComposite * applicabilityBias;
+    }
+
+    private double baseCompositeTemplateScore(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
         double base = scoreTemplate(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation);
         MechanicNicheTag dominantNiche = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
         AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, template);
@@ -548,9 +561,42 @@ public class ProceduralAbilityGenerator {
         double diversityBias = intraCategoryDiversityBias(template, artifact, lineage, dominantNiche, variantProfile, selected);
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
         double coldBias = coldTemplateBoost(template);
-        double applicabilityBias = underSampledApplicabilityBoost(template, nicheProfile, memoryProfile);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias * applicabilityBias;
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias;
+    }
+
+    private Map<AbilityTemplate, Double> compositeTemplateScores(List<AbilityTemplate> templates, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
+        Map<AbilityTemplate, Double> scores = new HashMap<>();
+        Map<AbilityCategory, List<AbilityTemplate>> byCategory = templates.stream().collect(Collectors.groupingBy(AbilityTemplate::category, () -> new EnumMap<>(AbilityCategory.class), Collectors.toList()));
+        for (List<AbilityTemplate> categoryTemplates : byCategory.values()) {
+            Map<AbilityTemplate, Double> baseScores = new HashMap<>();
+            for (AbilityTemplate template : categoryTemplates) {
+                baseScores.put(template, baseCompositeTemplateScore(template, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
+            }
+            Map<AbilityTemplate, CategoryApplicabilityProfile> applicabilityProfiles = categoryApplicabilityProfiles(categoryTemplates, baseScores);
+            for (AbilityTemplate template : categoryTemplates) {
+                double applicabilityBias = underSampledApplicabilityBoost(template, nicheProfile, memoryProfile, applicabilityProfiles.get(template));
+                scores.put(template, baseScores.getOrDefault(template, 0.0001D) * applicabilityBias);
+            }
+        }
+        return scores;
+    }
+
+    private Map<AbilityTemplate, CategoryApplicabilityProfile> categoryApplicabilityProfiles(List<AbilityTemplate> templates, Map<AbilityTemplate, Double> baseScores) {
+        if (templates.isEmpty()) {
+            return Map.of();
+        }
+        List<AbilityTemplate> sorted = new ArrayList<>(templates);
+        sorted.sort(Comparator.comparingDouble((AbilityTemplate template) -> baseScores.getOrDefault(template, 0.0D)).reversed());
+        double mean = templates.stream().mapToDouble(template -> baseScores.getOrDefault(template, 0.0D)).average().orElse(0.0D);
+        Map<AbilityTemplate, CategoryApplicabilityProfile> profiles = new HashMap<>();
+        for (int i = 0; i < sorted.size(); i++) {
+            AbilityTemplate template = sorted.get(i);
+            double score = baseScores.getOrDefault(template, 0.0D);
+            double relativeToMean = mean <= 1.0E-9D ? 1.0D : score / mean;
+            profiles.put(template, new CategoryApplicabilityProfile(i, relativeToMean));
+        }
+        return profiles;
     }
 
     private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
@@ -573,13 +619,14 @@ public class ProceduralAbilityGenerator {
         }
         Map<AbilityCategory, CategorySelectionProfile> categoryProfiles = new EnumMap<>(AbilityCategory.class);
         for (Map.Entry<AbilityCategory, List<AbilityTemplate>> entry : byCategory.entrySet()) {
+            Map<AbilityTemplate, Double> categoryTemplateScores = compositeTemplateScores(entry.getValue(), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
             AbilityTemplate bestTemplate = entry.getValue().stream()
-                    .max(Comparator.comparingDouble(t -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)))
+                    .max(Comparator.comparingDouble(t -> categoryTemplateScores.getOrDefault(t, 0.0001D)))
                     .orElse(null);
             if (bestTemplate == null) {
                 continue;
             }
-            double templateScore = compositeTemplateScore(bestTemplate, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
+            double templateScore = categoryTemplateScores.getOrDefault(bestTemplate, 0.0001D);
             double categoryScore = categorySelectionScore(entry.getKey(), bestTemplate, templateScore, dominantNiche, nicheProfile, memoryProfile, activePool, artifact, lineage, variantProfile, selected);
             categoryProfiles.put(entry.getKey(), new CategorySelectionProfile(bestTemplate, templateScore, categoryScore));
         }
@@ -627,9 +674,10 @@ public class ProceduralAbilityGenerator {
                                                       AbilityDiversityIndex.AbilitySignature motifAnchor,
                                                       List<AbilityTemplate> selected,
                                                       Random random) {
+        Map<AbilityTemplate, Double> compositeScores = compositeTemplateScores(templates, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
         double[] scores = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
-            scores[i] = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
+            scores[i] = Math.max(0.0001D, compositeScores.getOrDefault(templates.get(i), 0.0001D));
         }
         double[] samplingScores = normalizeCategoryTemplateScores(templates, scores);
         applyCategoryLocalColdBalancing(templates, samplingScores);
@@ -1011,6 +1059,10 @@ public class ProceduralAbilityGenerator {
 
 
     private double underSampledApplicabilityBoost(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
+        return underSampledApplicabilityBoost(template, nicheProfile, memoryProfile, null);
+    }
+
+    private double underSampledApplicabilityBoost(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile, CategoryApplicabilityProfile applicabilityProfile) {
         if (!isUnderSampledHighComplexityTemplate(template)) {
             return 1.0D;
         }
@@ -1018,7 +1070,23 @@ public class ProceduralAbilityGenerator {
         double triggerFit = secondaryTriggerApplicability(template, nicheProfile);
         double adjacentActionFit = adjacentActionClassApplicability(template, memoryProfile);
         double boost = scarcity * ((triggerFit * 0.60D) + (adjacentActionFit * 0.40D)) * UNDER_SAMPLED_APPLICABILITY_MAX_BOOST;
-        return clamp(1.0D + boost, 1.0D, 1.0D + UNDER_SAMPLED_APPLICABILITY_MAX_BOOST);
+        double applicabilityBoost = clamp(1.0D + boost, 1.0D, 1.0D + UNDER_SAMPLED_APPLICABILITY_MAX_BOOST);
+        if (applicabilityProfile == null) {
+            return applicabilityBoost;
+        }
+        if (applicabilityProfile.rank() == 0) {
+            return 1.0D;
+        }
+        if (applicabilityProfile.isDominant()) {
+            return 1.0D + ((applicabilityBoost - 1.0D) * 0.25D);
+        }
+        return applicabilityBoost;
+    }
+
+    private record CategoryApplicabilityProfile(int rank, double relativeToMean) {
+        private boolean isDominant() {
+            return rank <= 2 || relativeToMean >= 1.25D;
+        }
     }
 
     private double underSampledTriggerRelief(AbilityTemplate template, MechanicNicheTag dominant) {
