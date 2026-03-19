@@ -52,8 +52,11 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double SMALL_CATEGORY_NORMALIZATION_SCALE = 0.45D;
-    private static final double SMALL_CATEGORY_SOFT_CAP_RATIO = 1.30D;
+    private static final double SMALL_CATEGORY_COMPRESSION_GAMMA = 1.75D;
+    private static final double SMALL_CATEGORY_MEAN_ANCHOR_BLEND = 0.40D;
+    private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
+    private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
+    private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
     private static final double SMALL_CATEGORY_RECENCY_STRENGTH = 1.35D;
     private static final double SMALL_CATEGORY_DIVERSITY_STRENGTH = 0.20D;
 
@@ -621,7 +624,9 @@ public class ProceduralAbilityGenerator {
             double score = samplingScores[i];
             double weight = Math.sqrt(score);
             if (isSmallCategory(templates.get(i).category())) {
-                weight = smallCategorySamplingWeight(samplingScores, i);
+                weight = Math.pow(Math.max(score, 0.0001D), 0.20D);
+                weight *= smallCategorySamplingWeight(samplingScores, i);
+                weight = lerp(weight, 1.0D, SMALL_CATEGORY_UNIFORM_BLEND);
             }
             weights[i] = weight;
             total += weight;
@@ -640,15 +645,12 @@ public class ProceduralAbilityGenerator {
         if (normalizedScores.length <= 1) {
             return 1.0D;
         }
-        double score = normalizedScores[index];
-        int lowerScores = 0;
-        for (double candidate : normalizedScores) {
-            if (candidate < score) {
-                lowerScores++;
-            }
-        }
-        double relativeRank = lowerScores / (double) Math.max(1, normalizedScores.length - 1);
-        return 1.0D + (relativeRank * (SMALL_CATEGORY_SOFT_CAP_RATIO - 1.0D));
+        double min = java.util.Arrays.stream(normalizedScores).min().orElse(normalizedScores[index]);
+        double max = java.util.Arrays.stream(normalizedScores).max().orElse(normalizedScores[index]);
+        double span = Math.max(max - min, 1.0E-9D);
+        double relative = (normalizedScores[index] - min) / span;
+        return SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR
+                + (relative * (SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING - SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR));
     }
 
     private double[] normalizeSmallCategoryScores(List<AbilityTemplate> templates, double[] scores) {
@@ -661,39 +663,31 @@ public class ProceduralAbilityGenerator {
         }
         double minScore = Double.POSITIVE_INFINITY;
         double maxScore = Double.NEGATIVE_INFINITY;
+        double sum = 0.0D;
         for (double score : scores) {
             minScore = Math.min(minScore, score);
             maxScore = Math.max(maxScore, score);
+            sum += score;
         }
         if (!Double.isFinite(minScore) || !Double.isFinite(maxScore) || maxScore <= minScore) {
             return scores;
         }
-        double[] normalized = new double[scores.length];
+        double meanScore = sum / scores.length;
+        double span = Math.max(maxScore - minScore, 1.0E-9D);
+        double[] compressed = new double[scores.length];
         for (int i = 0; i < scores.length; i++) {
-            normalized[i] = minScore + ((scores[i] - minScore) * SMALL_CATEGORY_NORMALIZATION_SCALE);
+            double normalized = clamp((scores[i] - minScore) / span, 0.0D, 1.0D);
+            double curved = 1.0D - Math.pow(1.0D - normalized, SMALL_CATEGORY_COMPRESSION_GAMMA);
+            double reExpanded = minScore + (curved * span);
+            compressed[i] = lerp(reExpanded, meanScore, SMALL_CATEGORY_MEAN_ANCHOR_BLEND);
         }
-        return applySmallCategorySoftCap(normalized);
+        return compressed;
     }
 
-    private double[] applySmallCategorySoftCap(double[] scores) {
-        double mean = java.util.Arrays.stream(scores).average().orElse(0.0D);
-        double max = java.util.Arrays.stream(scores).max().orElse(0.0D);
-        if (mean <= 0.0D || max <= (mean * SMALL_CATEGORY_SOFT_CAP_RATIO) || max <= mean) {
-            return scores;
-        }
-        double allowedExcess = (mean * SMALL_CATEGORY_SOFT_CAP_RATIO) - mean;
-        double currentExcess = max - mean;
-        double excessScale = clamp(allowedExcess / Math.max(currentExcess, 0.0001D), 0.0D, 1.0D);
-        double[] capped = new double[scores.length];
-        for (int i = 0; i < scores.length; i++) {
-            double score = scores[i];
-            if (score <= mean) {
-                capped[i] = score;
-                continue;
-            }
-            capped[i] = mean + ((score - mean) * excessScale);
-        }
-        return capped;
+
+    private double lerp(double start, double end, double alpha) {
+        double t = clamp(alpha, 0.0D, 1.0D);
+        return start + ((end - start) * t);
     }
 
     private double categorySelectionScore(AbilityCategory category,
