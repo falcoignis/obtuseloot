@@ -48,6 +48,40 @@ class IntraCategoryNormalizationProbeTest {
         assertTrue(sensing.topThreeShare() < 0.65D, "Sensing should retain balanced spread.");
     }
 
+
+    @Test
+    void underSampledApplicabilityStaysBoundedAndTargetsComplexTriggerFamilies() {
+        AbilityRegistry registry = new AbilityRegistry();
+        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+
+        try {
+            Method underSampledApplicabilityBoost = ProceduralAbilityGenerator.class.getDeclaredMethod(
+                    "underSampledApplicabilityBoost", AbilityTemplate.class, ArtifactNicheProfile.class, ArtifactMemoryProfile.class);
+            Method adjacentTriggerFamily = ProceduralAbilityGenerator.class.getDeclaredMethod(
+                    "adjacentTriggerFamily", AbilityTrigger.class);
+
+            underSampledApplicabilityBoost.setAccessible(true);
+            adjacentTriggerFamily.setAccessible(true);
+
+            AbilityTemplate traceFold = registry.templates().stream().filter(template -> template.id().equals("stealth.trace_fold")).findFirst().orElseThrow();
+            AbilityTemplate hushwire = registry.templates().stream().filter(template -> template.id().equals("stealth.hushwire")).findFirst().orElseThrow();
+            ArtifactMemoryProfile stealthProfile = stealthProfile();
+
+            double traceFoldBoost = (double) underSampledApplicabilityBoost.invoke(generator, traceFold, null, stealthProfile);
+            double hushwireBoost = (double) underSampledApplicabilityBoost.invoke(generator, hushwire, null, stealthProfile);
+            @SuppressWarnings("unchecked")
+            java.util.Set<AbilityTrigger> traceFoldFamily = (java.util.Set<AbilityTrigger>) adjacentTriggerFamily.invoke(generator, AbilityTrigger.ON_BLOCK_INSPECT);
+
+            assertTrue(traceFoldBoost > 1.0D, "Under-sampled complex templates should receive a bounded applicability lift.");
+            assertTrue(traceFoldBoost <= 1.16D, "Applicability expansion must remain capped.");
+            assertTrue(hushwireBoost > 1.0D, "Structure-proximity stealth templates should also gain bounded reachability help.");
+            assertTrue(traceFoldFamily.contains(AbilityTrigger.ON_STRUCTURE_SENSE), "Inspect-family expansion should admit nearby structure-reading triggers.");
+            assertTrue(traceFoldFamily.contains(AbilityTrigger.ON_STRUCTURE_DISCOVERY), "Inspect-family expansion should admit nearby structure-discovery triggers.");
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Unable to inspect under-sampled applicability helpers.", e);
+        }
+    }
+
     @Test
     void conditionalCompressionOnlyTriggersForHighTopThreeCategories() {
         AbilityRegistry registry = new AbilityRegistry();

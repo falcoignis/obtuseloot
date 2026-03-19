@@ -65,6 +65,9 @@ public class ProceduralAbilityGenerator {
     private static final int COLD_LIFETIME_WARM_THRESHOLD = 2;
     private static final double COLD_TEMPLATE_MAX_BOOST = 0.22D;
     private static final double CATEGORY_LOCAL_COLD_BALANCE_MAX_BOOST = 0.12D;
+    private static final double UNDER_SAMPLED_APPLICABILITY_MAX_BOOST = 0.16D;
+    private static final double UNDER_SAMPLED_TRIGGER_RELIEF_MAX = 0.08D;
+    private static final double HIGH_COMPLEXITY_TEMPLATE_FLOOR = 0.67D;
     private static final double UNSEEN_TEMPLATE_OVERRIDE_PROBABILITY = 0.12D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
@@ -545,8 +548,9 @@ public class ProceduralAbilityGenerator {
         double diversityBias = intraCategoryDiversityBias(template, artifact, lineage, dominantNiche, variantProfile, selected);
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
         double coldBias = coldTemplateBoost(template);
+        double applicabilityBias = underSampledApplicabilityBoost(template, nicheProfile, memoryProfile);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias;
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias * applicabilityBias;
     }
 
     private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
@@ -1005,6 +1009,91 @@ public class ProceduralAbilityGenerator {
         return clamp(1.0D - (recentSimilarity * SMALL_CATEGORY_DIVERSITY_STRENGTH), 0.78D, 1.0D);
     }
 
+
+    private double underSampledApplicabilityBoost(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
+        if (!isUnderSampledHighComplexityTemplate(template)) {
+            return 1.0D;
+        }
+        double scarcity = underSampledScarcity(template);
+        double triggerFit = secondaryTriggerApplicability(template, nicheProfile);
+        double adjacentActionFit = adjacentActionClassApplicability(template, memoryProfile);
+        double boost = scarcity * ((triggerFit * 0.60D) + (adjacentActionFit * 0.40D)) * UNDER_SAMPLED_APPLICABILITY_MAX_BOOST;
+        return clamp(1.0D + boost, 1.0D, 1.0D + UNDER_SAMPLED_APPLICABILITY_MAX_BOOST);
+    }
+
+    private double underSampledTriggerRelief(AbilityTemplate template, MechanicNicheTag dominant) {
+        if (!isUnderSampledHighComplexityTemplate(template)) {
+            return 0.0D;
+        }
+        Set<AbilityTrigger> nearTriggers = adjacentTriggerFamily(template.trigger());
+        if (nearTriggers.isEmpty()) {
+            return 0.0D;
+        }
+        double closeness = triggerContextSimilarity(template.trigger(), familyCompatibleTriggers(dominant, nearTriggers));
+        return closeness * underSampledScarcity(template) * UNDER_SAMPLED_TRIGGER_RELIEF_MAX;
+    }
+
+    private Set<AbilityTrigger> familyCompatibleTriggers(MechanicNicheTag dominant, Set<AbilityTrigger> nearTriggers) {
+        Set<AbilityTrigger> compatible = new java.util.HashSet<>(nearTriggers);
+        switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> compatible.addAll(Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE));
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> compatible.addAll(Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT));
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> compatible.addAll(Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION));
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> compatible.addAll(Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE));
+            default -> {}
+        }
+        return compatible;
+    }
+
+    private boolean isUnderSampledHighComplexityTemplate(AbilityTemplate template) {
+        return templateComplexityScore(template) >= HIGH_COMPLEXITY_TEMPLATE_FLOOR && underSampledScarcity(template) >= 0.35D;
+    }
+
+    private double underSampledScarcity(AbilityTemplate template) {
+        double recentScarcity = 1.0D - clamp(recentTemplateFrequency(template), 0.0D, 1.0D);
+        double lifetimeScarcity = 1.0D - clamp(lifetimeTemplateUsage.getOrDefault(template.id(), 0) / (double) COLD_LIFETIME_WARM_THRESHOLD, 0.0D, 1.0D);
+        return clamp(Math.max(recentScarcity * 0.75D, lifetimeScarcity), 0.0D, 1.0D);
+    }
+
+    private double templateComplexityScore(AbilityTemplate template) {
+        AbilityMetadata metadata = template.metadata();
+        double metadataBreadth = clamp((metadata.utilityDomains().size() + metadata.triggerClasses().size() + metadata.affinities().size()) / 9.0D, 0.0D, 1.0D);
+        double utilityDepth = clamp(metadata.utilityPotential(), 0.0D, 1.0D);
+        return clamp((metadataBreadth * 0.45D) + (utilityDepth * 0.55D), 0.0D, 1.0D);
+    }
+
+    private double secondaryTriggerApplicability(AbilityTemplate template, ArtifactNicheProfile nicheProfile) {
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        Set<AbilityTrigger> nearTriggers = adjacentTriggerFamily(template.trigger());
+        if (nearTriggers.isEmpty()) {
+            return 0.0D;
+        }
+        return triggerContextSimilarity(template.trigger(), familyCompatibleTriggers(dominant, nearTriggers));
+    }
+
+    private double adjacentActionClassApplicability(AbilityTemplate template, ArtifactMemoryProfile memoryProfile) {
+        return switch (template.trigger()) {
+            case ON_BLOCK_INSPECT -> clamp(Math.max(memoryProfile.mobilityWeight(), memoryProfile.disciplineWeight()) / 1.8D, 0.0D, 1.0D);
+            case ON_STRUCTURE_PROXIMITY -> clamp(Math.max(memoryProfile.mobilityWeight(), memoryProfile.survivalWeight()) / 1.9D, 0.0D, 1.0D);
+            case ON_PLAYER_TRADE, ON_SOCIAL_INTERACT -> clamp(Math.max(memoryProfile.aggressionWeight(), memoryProfile.disciplineWeight()) / 1.8D, 0.0D, 1.0D);
+            case ON_MOVEMENT, ON_REPOSITION -> clamp(Math.max(memoryProfile.mobilityWeight(), memoryProfile.pressure() / 10.0D), 0.0D, 1.0D);
+            default -> 0.45D;
+        };
+    }
+
+    private Set<AbilityTrigger> adjacentTriggerFamily(AbilityTrigger trigger) {
+        return switch (trigger) {
+            case ON_BLOCK_INSPECT -> Set.of(AbilityTrigger.ON_ENTITY_INSPECT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY);
+            case ON_STRUCTURE_PROXIMITY -> Set.of(AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_MOVEMENT);
+            case ON_MOVEMENT -> Set.of(AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_REPOSITION);
+            case ON_REPOSITION -> Set.of(AbilityTrigger.ON_MOVEMENT, AbilityTrigger.ON_CHUNK_ENTER);
+            case ON_PLAYER_TRADE -> Set.of(AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION);
+            case ON_SOCIAL_INTERACT -> Set.of(AbilityTrigger.ON_PLAYER_TRADE, AbilityTrigger.ON_PLAYER_GROUP_ACTION);
+            case ON_TIME_OF_DAY_TRANSITION -> Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE);
+            default -> Set.of();
+        };
+    }
+
     private boolean isSmallCategory(AbilityCategory category) {
         return categoryTemplateCount(category) <= SMALL_CATEGORY_TEMPLATE_LIMIT;
     }
@@ -1280,7 +1369,9 @@ public class ProceduralAbilityGenerator {
         double classOverlap = triggerContextSimilarity(template.trigger(), compatibleTriggers);
         double smoothingMax = categoryTriggerSpan(template.category()) <= 4 ? NARROW_TRIGGER_SMOOTHING_MAX_RELIEF : TRIGGER_SMOOTHING_MAX_RELIEF;
         double categoryRelief = template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION ? 1.0D : 0.72D;
+        double underSampledRelief = underSampledTriggerRelief(template, dominant);
         double relief = classOverlap * categoryRelief * smoothingMax;
+        relief += underSampledRelief;
         return clamp(triggerMismatch - relief, 0.0D, triggerMismatch);
     }
 
