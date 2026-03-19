@@ -51,6 +51,10 @@ public class ProceduralAbilityGenerator {
     private static final double MAX_COMBINED_SELECTION_PENALTY = 0.25D;
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
+    private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
+    private static final double SMALL_CATEGORY_SCORE_EXPONENT = 0.84D;
+    private static final double SMALL_CATEGORY_RECENCY_STRENGTH = 1.35D;
+    private static final double SMALL_CATEGORY_DIVERSITY_STRENGTH = 0.20D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -525,9 +529,11 @@ public class ProceduralAbilityGenerator {
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
         double recencyBias = recentTemplateRecencyBias(template);
+        double diversityBias = intraCategoryDiversityBias(template, artifact, lineage, dominantNiche, variantProfile, selected);
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * tailBias;
+        double score = base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias;
+        return smallCategoryAdaptiveFlattening(template.category(), score);
     }
 
     private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
@@ -607,7 +613,11 @@ public class ProceduralAbilityGenerator {
         double total = 0.0D;
         double[] weights = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
-            double weight = Math.sqrt(Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)));
+            double score = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
+            double weight = Math.sqrt(score);
+            if (isSmallCategory(templates.get(i).category())) {
+                weight = 0.42D + Math.pow(score, 0.28D);
+            }
             weights[i] = weight;
             total += weight;
         }
@@ -715,10 +725,71 @@ public class ProceduralAbilityGenerator {
         double observedShare = templateCount / (double) sameCategoryTotal;
         double pressure = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), -1.0D, 1.0D);
         double negativeSwing = TEMPLATE_RECENCY_MAX_SWING + 0.17D;
-        if (pressure >= 0.0D) {
-            return clamp(1.0D + (pressure * TEMPLATE_RECENCY_MAX_SWING), 1.0D, 1.0D + TEMPLATE_RECENCY_MAX_SWING);
+        if (isSmallCategory(template.category())) {
+            negativeSwing = Math.min(TEMPLATE_RECENCY_MAX_SWING + 0.17D, negativeSwing * SMALL_CATEGORY_RECENCY_STRENGTH);
         }
-        return clamp(1.0D + (pressure * negativeSwing), 1.0D - negativeSwing, 1.0D);
+        if (pressure >= 0.0D) {
+            double positiveSwing = TEMPLATE_RECENCY_MAX_SWING;
+            if (isSmallCategory(template.category())) {
+                positiveSwing = Math.min(TEMPLATE_RECENCY_MAX_SWING + 0.08D, positiveSwing * 1.18D);
+            }
+            return clamp(1.0D + (pressure * positiveSwing), 1.0D, 1.0D + positiveSwing);
+        }
+        double bias = 1.0D + (pressure * negativeSwing);
+        if (isSmallCategory(template.category())) {
+            double excessShare = Math.max(0.0D, observedShare - expectedShare);
+            double extraPenalty = clamp(excessShare / Math.max(expectedShare, 0.0001D), 0.0D, 1.0D) * 0.12D;
+            bias -= extraPenalty;
+        }
+        return clamp(bias, 1.0D - negativeSwing, 1.0D);
+    }
+
+
+    private double smallCategoryAdaptiveFlattening(AbilityCategory category, double score) {
+        if (!isSmallCategory(category)) {
+            return score;
+        }
+        return Math.pow(Math.max(0.0001D, score), SMALL_CATEGORY_SCORE_EXPONENT);
+    }
+
+    private double intraCategoryDiversityBias(AbilityTemplate template,
+                                              Artifact artifact,
+                                              ArtifactLineage lineage,
+                                              MechanicNicheTag dominantNiche,
+                                              NicheVariantProfile variantProfile,
+                                              List<AbilityTemplate> selected) {
+        if (!isSmallCategory(template.category())) {
+            return 1.0D;
+        }
+        double recentSimilarity = selected.stream()
+                .filter(existing -> existing.category() == template.category())
+                .map(existing -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, existing))
+                .mapToDouble(existing -> AbilityDiversityIndex.similarity(
+                        diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, template),
+                        existing))
+                .max()
+                .orElseGet(() -> recentTemplateSelections.stream()
+                        .map(this::templateById)
+                        .filter(Objects::nonNull)
+                        .filter(existing -> existing.category() == template.category())
+                        .limit(SMALL_CATEGORY_TEMPLATE_LIMIT)
+                        .map(existing -> diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, existing))
+                        .mapToDouble(existing -> AbilityDiversityIndex.similarity(
+                                diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominantNiche, variantProfile, template),
+                                existing))
+                        .max()
+                        .orElse(0.0D));
+        return clamp(1.0D - (recentSimilarity * SMALL_CATEGORY_DIVERSITY_STRENGTH), 0.78D, 1.0D);
+    }
+
+    private boolean isSmallCategory(AbilityCategory category) {
+        return categoryTemplateCount(category) <= SMALL_CATEGORY_TEMPLATE_LIMIT;
+    }
+
+    private int categoryTemplateCount(AbilityCategory category) {
+        return (int) registry.templates().stream()
+                .filter(template -> template.category() == category)
+                .count();
     }
 
     private double categoryExposureBias(AbilityCategory category, MechanicNicheTag dominantNiche, List<AbilityDiversityIndex.AbilitySignature> activePool) {
