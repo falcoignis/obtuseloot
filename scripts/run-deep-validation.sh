@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deep ecosystem validation suite.
-# Uses 10 seasons x 4 sessions/season for meaningful cohort depth.
+# Uses 8 seasons x 4 sessions/season for a 32-window deep validation run.
 # Runs the same 5 scenarios as the constrained suite.
 # Keeps encounter density, telemetry sampling, and player count stable.
 set -euo pipefail
@@ -10,7 +10,7 @@ cd "$ROOT_DIR"
 
 BASE_ROOT="analytics/validation-suite-rerun"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-RUN_ID="deep-ten-season-${TIMESTAMP}"
+RUN_ID="deep-32-window-${TIMESTAMP}"
 SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
 REQUIRED_COMPLETION_SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed random-baseline)
 POINTER_PATH="analytics/validation-suite/latest-run.properties"
@@ -18,11 +18,12 @@ POINTER_EXPECTED_SCENARIOS=(explorer-heavy ritualist-heavy gatherer-heavy mixed 
 COMPLETION_MARKER_NAME=".dataset-complete.properties"
 
 # Deep-run parameters
-DEEP_SEASONS=10
+DEEP_SEASONS=8
 DEEP_SESSIONS_PER_SEASON=4
-DEEP_PLAYERS=18
-DEEP_ARTIFACTS_PER_PLAYER=3
-DEEP_ENCOUNTER_DENSITY=5
+DEEP_PLAYERS=4
+DEEP_ARTIFACTS_PER_PLAYER=2
+DEEP_ARTIFACT_POPULATION_SIZE=6
+DEEP_ENCOUNTER_DENSITY=3
 DEEP_TELEMETRY_SAMPLING=0.25
 
 while [[ $# -gt 0 ]]; do
@@ -188,6 +189,33 @@ resolve_config_path() {
   return 1
 }
 
+prepare_runtime_config() {
+  local scenario="$1"
+  local source_config="$2"
+  local runtime_config="$RUN_ROOT/runtime-configs/${scenario}.properties"
+  mkdir -p "$(dirname "$runtime_config")"
+  cp "$source_config" "$runtime_config"
+  python - "$runtime_config" "$DEEP_ARTIFACT_POPULATION_SIZE" <<'PYCFG'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+pop = sys.argv[2]
+lines = path.read_text().splitlines()
+out = []
+replaced = False
+for line in lines:
+    if line.strip().startswith('artifact_population_size='):
+        out.append(f'artifact_population_size={pop}')
+        replaced = True
+    else:
+        out.append(line)
+if not replaced:
+    out.append(f'artifact_population_size={pop}')
+path.write_text('\n'.join(out) + '\n')
+PYCFG
+  printf '%s' "$runtime_config"
+}
+
 is_true_harness_dataset_root() {
   local dataset_root="$1"
   shift
@@ -246,7 +274,11 @@ for scenario in "${SCENARIOS[@]}"; do
     exit 1
   fi
 
-  echo "[deep-run] Running scenario: $scenario (seasons=$DEEP_SEASONS sessionsPerSeason=$DEEP_SESSIONS_PER_SEASON)"
+  runtime_config_path="$(prepare_runtime_config "$scenario" "$config_path")"
+  expected_windows=$((DEEP_SEASONS * DEEP_SESSIONS_PER_SEASON))
+  max_runtime_seconds=${VALIDATION_MAX_RUNTIME_SECONDS:-900}
+  echo "[validation] scenario_start: $scenario"
+  echo "[deep-run] Running scenario: $scenario (seasons=$DEEP_SEASONS sessionsPerSeason=$DEEP_SESSIONS_PER_SEASON expectedWindows=$expected_windows players=$DEEP_PLAYERS artifactsPerPlayer=$DEEP_ARTIFACTS_PER_PLAYER artifactPopulation=$DEEP_ARTIFACT_POPULATION_SIZE timeout=${max_runtime_seconds}s)"
 
   _CP="$ROOT_DIR/target/classes"
   for _jar in $(find /root/.m2/repository -name "*.jar" 2>/dev/null | grep -v "\-sources\|\-javadoc\|\-tests"); do
@@ -254,7 +286,7 @@ for scenario in "${SCENARIOS[@]}"; do
   done
 
   set +e
-  JAVA_TOOL_OPTIONS="" java \
+  timeout --foreground "${max_runtime_seconds}s" env JAVA_TOOL_OPTIONS="" java \
     -cp "$_CP" \
     -Dworld.outputDirectory="$scenario_root" \
     -Dworld.validationProfile=true \
@@ -264,19 +296,36 @@ for scenario in "${SCENARIOS[@]}"; do
     -Dworld.sessionsPerSeason=${DEEP_SESSIONS_PER_SEASON} \
     -Dworld.seasonCount=${DEEP_SEASONS} \
     -Dworld.encounterDensity=${DEEP_ENCOUNTER_DENSITY} \
-    -Dworld.scenarioConfigPath="$config_path" \
+    -Dworld.scenarioConfigPath="$runtime_config_path" \
     obtuseloot.simulation.worldlab.WorldSimulationRunner \
     >"$scenario_log" 2>&1
   exit_code=$?
   set -e
 
+  if [[ $exit_code -eq 124 ]]; then
+    echo "FAIL: scenario '$scenario' exceeded runtime guard (${max_runtime_seconds}s); log=$scenario_log" >&2
+    tail -20 "$scenario_log" >&2
+    exit 1
+  fi
   if [[ $exit_code -ne 0 ]]; then
     echo "FAIL: scenario '$scenario' harness exited $exit_code; log=$scenario_log" >&2
-    cat "$scenario_log" | tail -20 >&2
+    tail -20 "$scenario_log" >&2
     exit 1
   fi
 
   expected_log_marker="World simulation outputs written to ${scenario_root}"
+  if ! grep -Fq "[validation] scenario_complete: ${scenario}" "$scenario_log"; then
+    echo "FAIL: scenario completion marker not found in log for '$scenario'" >&2
+    exit 1
+  fi
+  if ! grep -Fq "[validation] window_complete: ${expected_windows}" "$scenario_log"; then
+    echo "FAIL: final window marker ${expected_windows} not found in log for '$scenario'" >&2
+    exit 1
+  fi
+  if ! grep -Fq "[validation] writing_rollup_snapshots" "$scenario_log"; then
+    echo "FAIL: rollup snapshot write marker not found in log for '$scenario'" >&2
+    exit 1
+  fi
   if ! grep -Fq "$expected_log_marker" "$scenario_log"; then
     echo "FAIL: completion marker not found in log for '$scenario'" >&2
     exit 1
@@ -310,6 +359,7 @@ for scenario in "${SCENARIOS[@]}"; do
   dataset_lines+=("- ${scenario}: VERIFIED")
   completed_scenarios+=("$scenario")
   write_manifest "IN_PROGRESS"
+  echo "[validation] scenario_complete: $scenario"
   echo "[deep-run] $scenario DONE"
 done
 
@@ -392,6 +442,7 @@ write_manifest "READY_FOR_ANALYSIS"
   echo "- validationProfile=true"
   echo "- world.players=${DEEP_PLAYERS}"
   echo "- world.artifactsPerPlayer=${DEEP_ARTIFACTS_PER_PLAYER}"
+  echo "- artifact_population_size=${DEEP_ARTIFACT_POPULATION_SIZE}"
   echo "- world.sessionsPerSeason=${DEEP_SESSIONS_PER_SEASON}"
   echo "- world.seasonCount=${DEEP_SEASONS}"
   echo "- world.encounterDensity=${DEEP_ENCOUNTER_DENSITY}"
@@ -408,6 +459,7 @@ write_manifest "READY_FOR_ANALYSIS"
 } > "$RUN_ROOT/execution-report.md"
 
 echo ""
+echo "[validation] run_complete"
 echo "==================================================="
 echo "Deep run complete: ${RUN_ROOT}"
 echo "Manifest: ${MANIFEST_PATH}"

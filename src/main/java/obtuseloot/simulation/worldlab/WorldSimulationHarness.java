@@ -158,14 +158,25 @@ public class WorldSimulationHarness {
     }
 
     public void runAndWriteOutputs() throws IOException {
+        int expectedWindows = Math.max(1, config.seasonCount() * config.sessionsPerSeason());
+        long scenarioStartNs = System.nanoTime();
+        long maxScenarioRuntimeMs = Long.getLong("world.validationMaxScenarioRuntimeMs",
+                Math.max(300_000L, expectedWindows * 30_000L));
+        int maxIterationsGuard = Integer.getInteger("world.validationMaxIterationsGuard",
+                Math.max(expectedWindows + 1, expectedWindows * 2));
+        System.out.println("[validation] scenario_start: " + scenario.name());
+        System.out.println("[validation] expected_windows: " + expectedWindows);
+
         List<SimulatedPlayer> players = generatePlayers();
         latestPlayers = players;
         for (int season = 1; season <= config.seasonCount(); season++) {
             for (int s = 0; s < config.sessionsPerSeason(); s++) {
+                assertScenarioProgressWithinBounds(expectedWindows, maxIterationsGuard, scenarioStartNs, maxScenarioRuntimeMs);
                 currentGeneration++;
                 simulateRound(players);
                 telemetryEmitter.scheduledTick(System.currentTimeMillis());
                 clock.advanceDay();
+                System.out.println("[validation] window_complete: " + currentGeneration);
             }
             metrics.closeSeasonSnapshot();
             ecologicalMemoryEngine.observeSeason(seasonBranchCounts, seasonNicheCounts, seasonSpeciesCounts, seasonTriggerCounts, seasonMechanicCounts, seasonEnvironmentCounts);
@@ -189,11 +200,35 @@ public class WorldSimulationHarness {
                 logMemoryCheckpoint(players);
             }
         }
+        if (currentGeneration != expectedWindows) {
+            throw new IllegalStateException("Validation harness terminated with " + currentGeneration
+                    + " windows, expected " + expectedWindows + ".");
+        }
         flushTelemetryForExport();
         if (!config.validationProfile()) {
             writeRegulatoryReports();
         }
         writeReports();
+        System.out.println("[validation] scenario_complete: " + scenario.name());
+    }
+
+    private void assertScenarioProgressWithinBounds(int expectedWindows,
+                                                  int maxIterationsGuard,
+                                                  long scenarioStartNs,
+                                                  long maxScenarioRuntimeMs) {
+        if (currentGeneration >= maxIterationsGuard) {
+            throw new IllegalStateException("Validation harness exceeded iteration guard for scenario "
+                    + scenario.name() + ": currentGeneration=" + currentGeneration
+                    + ", expectedWindows=" + expectedWindows
+                    + ", guard=" + maxIterationsGuard + ".");
+        }
+        long elapsedMs = (System.nanoTime() - scenarioStartNs) / 1_000_000L;
+        if (elapsedMs > maxScenarioRuntimeMs) {
+            throw new IllegalStateException("Validation harness exceeded runtime guard for scenario "
+                    + scenario.name() + ": elapsedMs=" + elapsedMs
+                    + ", expectedWindows=" + expectedWindows
+                    + ", runtimeGuardMs=" + maxScenarioRuntimeMs + ".");
+        }
     }
 
     private void flushTelemetryForExport() {
@@ -681,6 +716,7 @@ public class WorldSimulationHarness {
             Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
             Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
             Files.writeString(out.resolve("world-sim-balance-findings.md"), "# Validation profile enabled\n\nHeavy balance findings are disabled.\n");
+            System.out.println("[validation] run_complete");
             return;
         }
 
@@ -735,6 +771,7 @@ public class WorldSimulationHarness {
         writeJsonFile(out.resolve("world-sim-data.json"), data);
         Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
         Files.writeString(out.resolve("world-sim-meta-shifts.md"), builder.metaShiftMarkdown(metrics));
+        System.out.println("[validation] run_complete");
         Files.writeString(out.resolve("world-sim-balance-findings.md"), builder.balanceFindings(report));
 
         if (Boolean.getBoolean("world.minimalReports")) {
@@ -796,6 +833,7 @@ public class WorldSimulationHarness {
                 .write(new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION,
                         System.currentTimeMillis(), "harness_export", snapshot));
 
+        System.out.println("[validation] writing_rollup_snapshots");
         writeRollupSnapshotsJson(out.resolve("rollup-snapshots.json"), rollups);
 
         Files.writeString(out.resolve("scenario-metadata.properties"),
