@@ -1,0 +1,690 @@
+{
+  "ability": {
+    "branch_diversity": 2.5137889741225545,
+    "family_distribution": {
+      "chaos": 492,
+      "consistency": 574,
+      "mobility": 412,
+      "precision": 329,
+      "survival": 392
+    },
+    "gate_candidate_pool_distribution": {
+      "36->11": 2,
+      "36->12": 1,
+      "36->13": 2,
+      "36->16": 14,
+      "36->19": 8,
+      "36->2": 4,
+      "36->20": 1,
+      "36->22": 4,
+      "36->27": 10,
+      "36->28": 16,
+      "36->30": 2,
+      "36->31": 12,
+      "36->32": 96,
+      "36->33": 4,
+      "36->36": 67,
+      "36->6": 1,
+      "36->8": 12
+    },
+    "interference_effect_distribution": {
+      "branch tendency×environment affinity=-0.039": 1,
+      "branch tendency×environment affinity=-0.042": 1,
+      "branch tendency×environment affinity=-0.045": 1,
+      "branch tendency×environment affinity=0.038": 1,
+      "branch tendency×environment affinity=0.041": 1,
+      "branch tendency×environment affinity=0.043": 10,
+      "branch tendency×environment affinity=0.044": 15,
+      "branch tendency×environment affinity=0.045": 26,
+      "gate×trigger=0.042": 2,
+      "gate×trigger=0.043": 3,
+      "gate×trigger=0.044": 4,
+      "gate×trigger=0.049": 1,
+      "gate×trigger=0.050": 2,
+      "memory×mechanic=-0.045": 1,
+      "memory×mechanic=-0.060": 1,
+      "memory×mechanic=0.060": 25,
+      "trigger×mechanic=0.060": 8,
+      "trigger×mechanic=0.080": 3,
+      "trigger×mechanic=0.100": 1
+    },
+    "latent_activation_examples": ["[PRECISION_AFFINITY, STABILITY, RESONANCE, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY, VOLATILITY, MUTATION_SENSITIVITY]","[CHAOS_AFFINITY]","[STABILITY]","[PRECISION_AFFINITY, CHAOS_AFFINITY, STABILITY, RESONANCE, MUTATION_SENSITIVITY]","[PRECISION_AFFINITY, STABILITY, VOLATILITY, MUTATION_SENSITIVITY]","[CHAOS_AFFINITY, RESONANCE]","[PRECISION_AFFINITY, STABILITY, VOLATILITY]","[STABILITY]","[VOLATILITY]","[PRECISION_AFFINITY]","[STABILITY]"],
+    "latent_activation_rate": 0.6345486111111112,
+    "mechanic_distribution": {
+      "biome_resonance": 54,
+      "cartographers_echo": 7,
+      "chain_escalation": 542,
+      "cluster_intuition": 13,
+      "collective_relay": 96,
+      "ecological_pathing": 3,
+      "forager_memory": 7,
+      "guardian_pulse": 330,
+      "harvest_relay": 12,
+      "insight_reveal": 30,
+      "mark": 36,
+      "memory_echo": 63,
+      "navigation_anchor": 184,
+      "pattern_resonance": 35,
+      "resource_ecology_scan": 115,
+      "revenant_trigger": 102,
+      "ritual_channel": 89,
+      "ritual_stabilization": 6,
+      "sense_ping": 65,
+      "social_attunement": 107,
+      "structure_attunement": 1,
+      "temporal_specialization": 3,
+      "terrain_adaptation": 10,
+      "trade_scent": 7,
+      "trail_sense": 84,
+      "unstable_detonation": 113,
+      "weather_attunement": 14,
+      "witness_imprint": 71
+    },
+    "memory_driven_ability_frequency": 485,
+    "open_gate_distribution": {
+      "disciplineGate": 204,
+      "environmentGate": 98,
+      "lineageMilestoneGate": 251,
+      "memoryGate": 229,
+      "mobilityGate": 212,
+      "resonanceGate": 116,
+      "survivalGate": 248,
+      "volatilityGate": 84
+    },
+    "regulatory_profile_distribution": {
+      "[]": 4,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate+volatilityGate]": 23,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate]": 4,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 40,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 22,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 2,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 3,
+      "[disciplineGate+environmentGate+lineageMilestoneGate+survivalGate]": 1,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate]": 74,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 12,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 14,
+      "[disciplineGate+lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 7,
+      "[disciplineGate+lineageMilestoneGate+resonanceGate+survivalGate]": 1,
+      "[disciplineGate+lineageMilestoneGate+survivalGate]": 1,
+      "[environmentGate+lineageMilestoneGate+memoryGate+survivalGate]": 1,
+      "[environmentGate+lineageMilestoneGate+survivalGate]": 2,
+      "[lineageMilestoneGate+memoryGate+mobilityGate+resonanceGate+survivalGate]": 2,
+      "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate+volatilityGate]": 7,
+      "[lineageMilestoneGate+memoryGate+mobilityGate+survivalGate]": 14,
+      "[lineageMilestoneGate+memoryGate+resonanceGate+survivalGate]": 2,
+      "[lineageMilestoneGate+memoryGate+survivalGate]": 2,
+      "[lineageMilestoneGate+resonanceGate+survivalGate]": 1,
+      "[lineageMilestoneGate+survivalGate+volatilityGate]": 2,
+      "[lineageMilestoneGate+survivalGate]": 10,
+      "[lineageMilestoneGate]": 4,
+      "[survivalGate]": 1
+    },
+    "trigger_distribution": {
+      "on_biome_change": 46,
+      "on_block_harvest": 88,
+      "on_block_inspect": 43,
+      "on_chunk_enter": 83,
+      "on_elevation_change": 8,
+      "on_entity_inspect": 6,
+      "on_item_pickup": 82,
+      "on_low_health": 11,
+      "on_memory_event": 485,
+      "on_player_group_action": 91,
+      "on_player_trade": 83,
+      "on_player_witness": 65,
+      "on_repeated_block_pattern": 70,
+      "on_resource_harvest_streak": 50,
+      "on_ritual_completion": 56,
+      "on_ritual_interact": 172,
+      "on_social_interact": 51,
+      "on_structure_discovery": 71,
+      "on_structure_proximity": 46,
+      "on_structure_sense": 114,
+      "on_time_of_day_transition": 52,
+      "on_weather_change": 16,
+      "on_witness_event": 91,
+      "on_world_scan": 319
+    }
+  },
+  "artifact": {
+    "archetype_distribution": {
+      "deadeye": 41,
+      "harbinger": 3,
+      "ravager": 61,
+      "strider": 124,
+      "vanguard": 23,
+      "warden": 4
+    },
+    "awakening_rates": {
+      "Bulwark Ascendant": 19,
+      "Executioner's Oath": 57,
+      "Stormblade": 22,
+      "Tempest Stride": 111,
+      "dormant": 47
+    },
+    "branch_path_distribution": {
+      "adaptive": 30,
+      "chaos.awakened-entropy": 10,
+      "chaos.awakened-variant": 20,
+      "chaos.paradox": 5,
+      "chaos.sprawl": 12,
+      "consistency.anchor": 4,
+      "consistency.boss-ledger": 13,
+      "environment.awakened-variant": 1,
+      "evolution.awakened-variant": 29,
+      "exploration.awakened-variant": 37,
+      "mobility.awakened-variant": 5,
+      "mobility.fusion-slipstream": 3,
+      "mobility.lane-dancer": 14,
+      "mobility.relay": 4,
+      "ritual.awakened-variant": 1,
+      "social.awakened-variant": 49,
+      "survival.awakened-remnant": 2,
+      "survival.guardian": 11,
+      "survival.shelter": 6
+    },
+    "drift_alignment_distribution": {
+      "ascetic": 66,
+      "hollow": 1,
+      "paradox": 4,
+      "predatory": 93,
+      "tempest": 86,
+      "volatile": 6
+    },
+    "evolution_stage_distribution": {
+      "deadeye-awakened-hybrid": 21,
+      "deadeye-equilibrium-hybrid": 6,
+      "deadeye-formed": 1,
+      "deadeye-mythic": 2,
+      "deadeye-tempered": 2,
+      "deadeye-void-hybrid": 8,
+      "fused-convergence": 1,
+      "fused-eclipseshot": 1,
+      "fused-stormrider": 1,
+      "harbinger-formed": 1,
+      "harbinger-mythic": 1,
+      "harbinger-tempered": 1,
+      "ravager-awakened-hybrid": 56,
+      "ravager-formed": 1,
+      "ravager-mythic": 2,
+      "ravager-tempered": 1,
+      "ravager-void-hybrid": 1,
+      "strider-awakened-hybrid": 109,
+      "strider-equilibrium-hybrid": 1,
+      "strider-formed": 3,
+      "strider-mythic": 2,
+      "strider-tempered": 3,
+      "strider-tempest-hybrid": 2,
+      "strider-void-hybrid": 3,
+      "vanguard-awakened-hybrid": 18,
+      "vanguard-formed": 1,
+      "vanguard-mythic": 2,
+      "vanguard-tempered": 1,
+      "warden-formed": 1,
+      "warden-mythic": 1,
+      "warden-tempered": 2
+    },
+    "fusion_rates": {
+      "bloodstorm": 54,
+      "convergence": 19,
+      "eclipseshot": 22,
+      "none": 51,
+      "stormrider": 110
+    },
+    "memory_profile_summaries": {
+      "awakening": 209,
+      "chaos_rampage": 192,
+      "first_boss_kill": 250,
+      "fusion": 205,
+      "low_health_survival": 256,
+      "multikill_chain": 252
+    },
+    "mutation_counts": {
+      "0": 2,
+      "2": 13,
+      "3": 29,
+      "4": 50,
+      "5": 101,
+      "6": 47,
+      "7": 14
+    },
+    "seed_distribution": {
+      "137": 128,
+      "826": 128
+    }
+  },
+  "fusion_diagnostics": {
+    "fusion_applied": 8,
+    "fusion_attempted": 768,
+    "fusion_blocked": 597,
+    "fusion_pair_found": 8,
+    "fusion_prereq_failed": 163
+  },
+  "lineage": {
+    "lineage_count": 5,
+    "lineage_depth_distribution": {
+      "ashen": 32,
+      "graveborn": 96,
+      "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 32,
+      "wild-35642": 64,
+      "wild-4233": 32
+    },
+    "lineage_distribution": {
+      "ashen": 32,
+      "graveborn": 96,
+      "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 32,
+      "wild-35642": 64,
+      "wild-4233": 32
+    },
+    "lineage_extinction_rate": 0.0
+  },
+  "player": {
+    "boss_engagement_rate": 0.5546875,
+    "kill_chain_rate": 0.78125,
+    "low_health_survival_rate": 0.7535211267605634,
+    "playstyle_cluster_distribution": {
+      "aggressive-chaotic": 2,
+      "disciplined": 1,
+      "survivor": 1
+    },
+    "session_length_distribution": {
+      "long": 64,
+      "medium": 192
+    }
+  },
+  "rollup_history": {
+    "latest_created_at_ms": 1773888789597,
+    "rollup_count": 8
+  },
+  "rollups": {
+    "ecosystem": {
+      "generatedAtMs": 1773888789598,
+      "eventCounts": {
+        "ABILITY_EXECUTION": 564,
+        "BRANCH_FORMATION": 44,
+        "COMPETITION_ALLOCATION": 138193,
+        "LINEAGE_UPDATE": 137,
+        "MUTATION_EVENT": 376,
+        "NICHE_BIFURCATION": 6,
+        "NICHE_CLASSIFICATION_CHANGE": 197
+      },
+      "nichePopulationRollup": {
+        "generatedAtMs": 1773888789598,
+        "populationByNiche": {
+          "GENERALIST": 0,
+          "MEMORY_HISTORY": 0,
+          "NAVIGATION": 1,
+          "RITUAL_STRANGE_UTILITY": 0,
+          "niche-1": 2,
+          "unassigned": 0
+        },
+        "meaningfulOutcomesByNiche": {
+          "MEMORY_HISTORY": 141,
+          "MOBILITY_UTILITY": 79,
+          "NAVIGATION": 58,
+          "RITUAL_STRANGE_UTILITY": 139,
+          "SOCIAL_WORLD_INTERACTION": 69,
+          "SOCIAL_WORLD_INTERACTION_B1": 57,
+          "niche-1": 21
+        },
+        "utilityDensityByNiche": {
+          "MEMORY_HISTORY": 70.60341552661701,
+          "MOBILITY_UTILITY": 58.62806320791621,
+          "NAVIGATION": 61.88726942269824,
+          "RITUAL_STRANGE_UTILITY": 66.97718011611109,
+          "SOCIAL_WORLD_INTERACTION": 70.35124575519556,
+          "SOCIAL_WORLD_INTERACTION_B1": 48.54851976366254,
+          "niche-1": 199.54016419919824,
+          "unassigned": 10.04084230928744
+        },
+        "saturationPressureByNiche": {
+          "GENERALIST": 0.0,
+          "MEMORY_HISTORY": 4728.676656872145,
+          "MOBILITY_UTILITY": 1247.6674673227953,
+          "NAVIGATION": 1741.759022132891,
+          "RITUAL_STRANGE_UTILITY": 3795.5003224874126,
+          "SOCIAL_WORLD_INTERACTION": 3597.2444327239555,
+          "SOCIAL_WORLD_INTERACTION_B1": 3141.507609058982,
+          "niche-1": 282.8636541211454,
+          "unassigned": 6.029333333333333
+        },
+        "opportunityShareByNiche": {
+          "GENERALIST": 989.0,
+          "MEMORY_HISTORY": 3532.840865328595,
+          "MOBILITY_UTILITY": 884.2296243102662,
+          "NAVIGATION": 1216.5921983268736,
+          "RITUAL_STRANGE_UTILITY": 4686.470741796791,
+          "SOCIAL_WORLD_INTERACTION": 1993.189890593109,
+          "SOCIAL_WORLD_INTERACTION_B1": 1590.7792333717468
+        },
+        "specializationPressureByNiche": {
+          "GENERALIST": 0.0,
+          "MEMORY_HISTORY": 4728.676656872145,
+          "MOBILITY_UTILITY": 1247.6674673227953,
+          "NAVIGATION": 1741.759022132891,
+          "RITUAL_STRANGE_UTILITY": 3795.5003224874126,
+          "SOCIAL_WORLD_INTERACTION": 3597.2444327239555,
+          "SOCIAL_WORLD_INTERACTION_A1": 2.5429520100000005,
+          "SOCIAL_WORLD_INTERACTION_A2": 1.3497528806075703,
+          "SOCIAL_WORLD_INTERACTION_B1": 3146.6226090589857,
+          "SOCIAL_WORLD_INTERACTION_B2": 0.6956883693000001,
+          "niche-1": 4.193514561408424,
+          "unassigned": 0.0
+        },
+        "branchContributionByNiche": {
+          "MEMORY_HISTORY": 7,
+          "MOBILITY_UTILITY": 1,
+          "RITUAL_STRANGE_UTILITY": 13,
+          "SOCIAL_WORLD_INTERACTION": 10,
+          "SOCIAL_WORLD_INTERACTION_B1": 6,
+          "niche-1": 7
+        }
+      },
+      "lineagePopulationRollup": {
+        "generatedAtMs": 1773888789598,
+        "populationByLineage": {
+          "graveborn": 1,
+          "wild-35642": 1,
+          "wild-4233": 1
+        },
+        "branchCountByLineage": {
+          "ashen": 1,
+          "graveborn": 21,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 7,
+          "wild-35642": 13,
+          "wild-4233": 2
+        },
+        "utilityDensityByLineage": {
+          "ashen": 77.88856589273428,
+          "graveborn": 96.87097015463708,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 99.70738391190571,
+          "wild-35642": 89.37156145590343,
+          "wild-4233": 83.8510780050298
+        },
+        "momentumByLineage": {
+          "ashen": 2755.513001340696,
+          "graveborn": 10732.881735168528,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 3459.5117542163225,
+          "wild-35642": 7321.072898736947,
+          "wild-4233": 3779.9849253496172
+        },
+        "specializationTrajectoryByLineage": {
+          "ashen": 1.0146650128888681,
+          "graveborn": 3.291131539959056,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 1.1002367731120333,
+          "wild-35642": 1.934799037887739,
+          "wild-4233": 0.8996971514685221
+        },
+        "nicheDistributionByLineage": {
+          "ashen": {
+            "GENERALIST": 159,
+            "MOBILITY_UTILITY": 12214,
+            "niche-1": 48,
+            "unassigned": 2
+          },
+          "graveborn": {
+            "GENERALIST": 255,
+            "RITUAL_STRANGE_UTILITY": 36960,
+            "SOCIAL_WORLD_INTERACTION": 18297,
+            "SOCIAL_WORLD_INTERACTION_A1": 3,
+            "SOCIAL_WORLD_INTERACTION_A2": 2,
+            "niche-1": 183,
+            "unassigned": 8
+          },
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": {
+            "GENERALIST": 178,
+            "MEMORY_HISTORY": 16741,
+            "niche-1": 55
+          },
+          "wild-35642": {
+            "GENERALIST": 209,
+            "MEMORY_HISTORY": 19483,
+            "SOCIAL_WORLD_INTERACTION": 750,
+            "SOCIAL_WORLD_INTERACTION_B1": 16345,
+            "SOCIAL_WORLD_INTERACTION_B2": 1,
+            "niche-1": 157,
+            "unassigned": 6
+          },
+          "wild-4233": {
+            "GENERALIST": 188,
+            "NAVIGATION": 16963,
+            "niche-1": 78,
+            "unassigned": 2
+          }
+        },
+        "driftWindowRemainingByLineage": {
+          "ashen": 68.68860830818917,
+          "graveborn": 215.03715540199664,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 82.60852951169751,
+          "wild-35642": 194.60404220405937,
+          "wild-4233": 61.8128486155211
+        },
+        "branchDivergenceByLineage": {
+          "ashen": 1.8116697240465314,
+          "graveborn": 11.8091804896727,
+          "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 4.078809099561947,
+          "wild-35642": 8.453284957042488,
+          "wild-4233": 2.272611419139783
+        }
+      },
+      "activeArtifactCount": 3,
+      "carryingCapacityUtilization": 0.3333333333333333,
+      "diversityIndex": 2.0,
+      "turnoverRate": 29.0,
+      "branchBirthCount": 44,
+      "branchCollapseCount": 43,
+      "competitionPressureDistribution": {
+        "high": 376,
+        "low": 138193
+      },
+      "dynamicNiches": ["SOCIAL_WORLD_INTERACTION_A1","SOCIAL_WORLD_INTERACTION_B2","SOCIAL_WORLD_INTERACTION_A2","SOCIAL_WORLD_INTERACTION_B1"],
+      "bifurcationCount": 2,
+      "dynamicNichePopulation": {
+        "SOCIAL_WORLD_INTERACTION_A1": 4,
+        "SOCIAL_WORLD_INTERACTION_A2": 3,
+        "SOCIAL_WORLD_INTERACTION_B1": 16352,
+        "SOCIAL_WORLD_INTERACTION_B2": 2
+      }
+    },
+    "lineage": {
+      "generatedAtMs": 1773888789598,
+      "populationByLineage": {
+        "graveborn": 1,
+        "wild-35642": 1,
+        "wild-4233": 1
+      },
+      "branchCountByLineage": {
+        "ashen": 1,
+        "graveborn": 21,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 7,
+        "wild-35642": 13,
+        "wild-4233": 2
+      },
+      "utilityDensityByLineage": {
+        "ashen": 77.88856589273428,
+        "graveborn": 96.87097015463708,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 99.70738391190571,
+        "wild-35642": 89.37156145590343,
+        "wild-4233": 83.8510780050298
+      },
+      "momentumByLineage": {
+        "ashen": 2755.513001340696,
+        "graveborn": 10732.881735168528,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 3459.5117542163225,
+        "wild-35642": 7321.072898736947,
+        "wild-4233": 3779.9849253496172
+      },
+      "specializationTrajectoryByLineage": {
+        "ashen": 1.0146650128888681,
+        "graveborn": 3.291131539959056,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 1.1002367731120333,
+        "wild-35642": 1.934799037887739,
+        "wild-4233": 0.8996971514685221
+      },
+      "nicheDistributionByLineage": {
+        "ashen": {
+          "GENERALIST": 159,
+          "MOBILITY_UTILITY": 12214,
+          "niche-1": 48,
+          "unassigned": 2
+        },
+        "graveborn": {
+          "GENERALIST": 255,
+          "RITUAL_STRANGE_UTILITY": 36960,
+          "SOCIAL_WORLD_INTERACTION": 18297,
+          "SOCIAL_WORLD_INTERACTION_A1": 3,
+          "SOCIAL_WORLD_INTERACTION_A2": 2,
+          "niche-1": 183,
+          "unassigned": 8
+        },
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": {
+          "GENERALIST": 178,
+          "MEMORY_HISTORY": 16741,
+          "niche-1": 55
+        },
+        "wild-35642": {
+          "GENERALIST": 209,
+          "MEMORY_HISTORY": 19483,
+          "SOCIAL_WORLD_INTERACTION": 750,
+          "SOCIAL_WORLD_INTERACTION_B1": 16345,
+          "SOCIAL_WORLD_INTERACTION_B2": 1,
+          "niche-1": 157,
+          "unassigned": 6
+        },
+        "wild-4233": {
+          "GENERALIST": 188,
+          "NAVIGATION": 16963,
+          "niche-1": 78,
+          "unassigned": 2
+        }
+      },
+      "driftWindowRemainingByLineage": {
+        "ashen": 68.68860830818917,
+        "graveborn": 215.03715540199664,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 82.60852951169751,
+        "wild-35642": 194.60404220405937,
+        "wild-4233": 61.8128486155211
+      },
+      "branchDivergenceByLineage": {
+        "ashen": 1.8116697240465314,
+        "graveborn": 11.8091804896727,
+        "lineage-bd6f9bd0-123e-3802-94dd-314108af2161": 4.078809099561947,
+        "wild-35642": 8.453284957042488,
+        "wild-4233": 2.272611419139783
+      }
+    },
+    "niche": {
+      "generatedAtMs": 1773888789598,
+      "populationByNiche": {
+        "GENERALIST": 0,
+        "MEMORY_HISTORY": 0,
+        "NAVIGATION": 1,
+        "RITUAL_STRANGE_UTILITY": 0,
+        "niche-1": 2,
+        "unassigned": 0
+      },
+      "meaningfulOutcomesByNiche": {
+        "MEMORY_HISTORY": 141,
+        "MOBILITY_UTILITY": 79,
+        "NAVIGATION": 58,
+        "RITUAL_STRANGE_UTILITY": 139,
+        "SOCIAL_WORLD_INTERACTION": 69,
+        "SOCIAL_WORLD_INTERACTION_B1": 57,
+        "niche-1": 21
+      },
+      "utilityDensityByNiche": {
+        "MEMORY_HISTORY": 70.60341552661701,
+        "MOBILITY_UTILITY": 58.62806320791621,
+        "NAVIGATION": 61.88726942269824,
+        "RITUAL_STRANGE_UTILITY": 66.97718011611109,
+        "SOCIAL_WORLD_INTERACTION": 70.35124575519556,
+        "SOCIAL_WORLD_INTERACTION_B1": 48.54851976366254,
+        "niche-1": 199.54016419919824,
+        "unassigned": 10.04084230928744
+      },
+      "saturationPressureByNiche": {
+        "GENERALIST": 0.0,
+        "MEMORY_HISTORY": 4728.676656872145,
+        "MOBILITY_UTILITY": 1247.6674673227953,
+        "NAVIGATION": 1741.759022132891,
+        "RITUAL_STRANGE_UTILITY": 3795.5003224874126,
+        "SOCIAL_WORLD_INTERACTION": 3597.2444327239555,
+        "SOCIAL_WORLD_INTERACTION_B1": 3141.507609058982,
+        "niche-1": 282.8636541211454,
+        "unassigned": 6.029333333333333
+      },
+      "opportunityShareByNiche": {
+        "GENERALIST": 989.0,
+        "MEMORY_HISTORY": 3532.840865328595,
+        "MOBILITY_UTILITY": 884.2296243102662,
+        "NAVIGATION": 1216.5921983268736,
+        "RITUAL_STRANGE_UTILITY": 4686.470741796791,
+        "SOCIAL_WORLD_INTERACTION": 1993.189890593109,
+        "SOCIAL_WORLD_INTERACTION_B1": 1590.7792333717468
+      },
+      "specializationPressureByNiche": {
+        "GENERALIST": 0.0,
+        "MEMORY_HISTORY": 4728.676656872145,
+        "MOBILITY_UTILITY": 1247.6674673227953,
+        "NAVIGATION": 1741.759022132891,
+        "RITUAL_STRANGE_UTILITY": 3795.5003224874126,
+        "SOCIAL_WORLD_INTERACTION": 3597.2444327239555,
+        "SOCIAL_WORLD_INTERACTION_A1": 2.5429520100000005,
+        "SOCIAL_WORLD_INTERACTION_A2": 1.3497528806075703,
+        "SOCIAL_WORLD_INTERACTION_B1": 3146.6226090589857,
+        "SOCIAL_WORLD_INTERACTION_B2": 0.6956883693000001,
+        "niche-1": 4.193514561408424,
+        "unassigned": 0.0
+      },
+      "branchContributionByNiche": {
+        "MEMORY_HISTORY": 7,
+        "MOBILITY_UTILITY": 1,
+        "RITUAL_STRANGE_UTILITY": 13,
+        "SOCIAL_WORLD_INTERACTION": 10,
+        "SOCIAL_WORLD_INTERACTION_B1": 6,
+        "niche-1": 7
+      }
+    }
+  },
+  "simulation_scenario": {
+    "artifact_population_size": 6,
+    "behavior_mix": {
+      "EXPLORER": 0.0,
+      "GATHERER": 0.0,
+      "RANDOM_BASELINE": 1.0,
+      "RITUALIST": 0.0
+    },
+    "competition_pressure": 1.0,
+    "ecology_sensitivity": 1.0,
+    "generations": 24,
+    "lineage_drift_window": 1.0,
+    "mutation_intensity": 1.0,
+    "name": "random-baseline",
+    "parallel_batches": 1
+  },
+  "telemetry": {
+    "archive_recent": 1,
+    "buffer_dropped": 0,
+    "buffer_max": 512,
+    "event_counts": {
+      "ABILITY_EXECUTION": 564,
+      "BRANCH_FORMATION": 44,
+      "COMPETITION_ALLOCATION": 138193,
+      "LINEAGE_UPDATE": 137,
+      "MUTATION_EVENT": 376,
+      "NICHE_BIFURCATION": 6,
+      "NICHE_CLASSIFICATION_CHANGE": 197
+    },
+    "sampling_rate": 0.25
+  },
+  "validation_profile": true,
+  "world": {
+    "branch_convergence_rate": 0.37155275646936137,
+    "dead_branch_rate": 0.10526315789473684,
+    "diversity_index_over_time": [3.452234017986792,3.934739129644151,4.073860754743707,4.14316542243925,4.142318799862201,4.14492142314713,4.121708011733051,4.104790228372941],
+    "dominant_family_rate": 0.2610277398817644,
+    "late_season_meta_concentration": 0.2610277398817644,
+    "long_run_awakening_adoption": 0.81640625,
+    "long_run_fusion_adoption": 0.80078125
+  }
+}

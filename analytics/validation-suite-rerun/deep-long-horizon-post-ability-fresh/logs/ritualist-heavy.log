@@ -1,0 +1,47 @@
+Picked up JAVA_TOOL_OPTIONS: 
+[validation] scenario_start: ritualist-heavy
+[validation] expected_windows: 32
+[validation] window_complete: 1
+[validation] window_complete: 2
+[validation] window_complete: 3
+[validation] window_complete: 4
+[world-sim][memory] generation=4 heap_used_mb=299 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=7135 in_memory_rollup_count=1 active_artifact_count=8 lineage_count=6 branch_count=8
+[validation] window_complete: 5
+[validation] window_complete: 6
+[validation] window_complete: 7
+[validation] window_complete: 8
+[world-sim][memory] generation=8 heap_used_mb=120 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=18661 in_memory_rollup_count=2 active_artifact_count=8 lineage_count=6 branch_count=14
+[validation] window_complete: 9
+[validation] window_complete: 10
+[validation] window_complete: 11
+[validation] window_complete: 12
+[world-sim][memory] generation=12 heap_used_mb=127 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=35394 in_memory_rollup_count=3 active_artifact_count=8 lineage_count=6 branch_count=17
+[validation] window_complete: 13
+[validation] window_complete: 14
+[validation] window_complete: 15
+[validation] window_complete: 16
+[world-sim][memory] generation=16 heap_used_mb=120 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=53709 in_memory_rollup_count=4 active_artifact_count=8 lineage_count=6 branch_count=19
+[validation] window_complete: 17
+[validation] window_complete: 18
+[validation] window_complete: 19
+[validation] window_complete: 20
+[world-sim][memory] generation=20 heap_used_mb=151 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=73303 in_memory_rollup_count=5 active_artifact_count=8 lineage_count=6 branch_count=19
+[validation] window_complete: 21
+[validation] window_complete: 22
+[validation] window_complete: 23
+[validation] window_complete: 24
+[world-sim][memory] generation=24 heap_used_mb=110 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=93466 in_memory_rollup_count=6 active_artifact_count=8 lineage_count=6 branch_count=19
+[validation] window_complete: 25
+[validation] window_complete: 26
+[validation] window_complete: 27
+[validation] window_complete: 28
+[world-sim][memory] generation=28 heap_used_mb=188 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=113473 in_memory_rollup_count=7 active_artifact_count=8 lineage_count=6 branch_count=19
+[validation] window_complete: 29
+[validation] window_complete: 30
+[validation] window_complete: 31
+[validation] window_complete: 32
+[world-sim][memory] generation=32 heap_used_mb=149 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=132967 in_memory_rollup_count=8 active_artifact_count=8 lineage_count=6 branch_count=19
+[validation] writing_rollup_snapshots
+[validation] run_complete
+[validation] scenario_complete: ritualist-heavy
+World simulation outputs written to analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/ritualist-heavy

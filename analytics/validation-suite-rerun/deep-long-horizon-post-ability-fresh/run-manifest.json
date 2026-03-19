@@ -1,0 +1,68 @@
+{
+  "run_id": "deep-long-horizon-post-ability-fresh",
+  "dataset_root": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh",
+  "created_at": "2026-03-19T02:41:35Z",
+  "updated_at": "2026-03-19T02:53:11Z",
+  "status": "READY_FOR_ANALYSIS",
+  "deep_run_config": {"seasons": 8, "sessionsPerSeason": 4, "players": 4, "artifactsPerPlayer": 2, "encounterDensity": 3, "telemetrySamplingRate": 0.25},
+  "stages": {
+    "matrix_execution":   {"status": "PASSED", "updated_at": "2026-03-19T02:53:11Z"},
+    "dataset_contract":   {"status": "PASSED", "updated_at": "2026-03-19T02:53:11Z"},
+    "completion_marker":  {"status": "PASSED", "updated_at": "2026-03-19T02:53:11Z"},
+    "latest_run_pointer": {"status": "PASSED", "updated_at": "2026-03-19T02:53:11Z"},
+    "analytics_ingestion":  {"status": "PENDING", "updated_at": ""},
+    "ecosystem_evaluation": {"status": "PENDING", "updated_at": ""}
+  },
+  "scenarios": {
+    "explorer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/explorer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "ritualist-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/ritualist-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "gatherer-heavy": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/gatherer-heavy",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "mixed": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/mixed",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    },
+    "random-baseline": {
+      "path": "/home/user/obtuseloot/analytics/validation-suite-rerun/deep-long-horizon-post-ability-fresh/random-baseline",
+      "artifacts": {
+        "telemetry/ecosystem-events.log": true,
+        "telemetry/rollup-snapshot.properties": true,
+        "rollup-snapshots.json": true,
+        "scenario-metadata.properties": true
+      },
+      "complete": true
+    }
+  }
+}
