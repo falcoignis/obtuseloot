@@ -52,8 +52,9 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double SMALL_CATEGORY_COMPRESSION_GAMMA = 1.75D;
-    private static final double SMALL_CATEGORY_MEAN_ANCHOR_BLEND = 0.40D;
+    private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 1.75D;
+    private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.24D;
+    private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.50D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
@@ -601,10 +602,10 @@ public class ProceduralAbilityGenerator {
         if (chosenTemplates == null || chosenTemplates.isEmpty()) {
             return chosenProfile == null ? null : chosenProfile.bestTemplate();
         }
-        if (chosenCategory == AbilityCategory.STEALTH_TRICKERY_DISRUPTION || categoryTriggerSpan(chosenCategory) <= 4) {
-            return weightedTemplateSelection(chosenTemplates, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected, random);
+        if (chosenTemplates.size() == 1) {
+            return chosenProfile == null ? null : chosenProfile.bestTemplate();
         }
-        return chosenProfile == null ? null : chosenProfile.bestTemplate();
+        return weightedTemplateSelection(chosenTemplates, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected, random);
     }
 
     private AbilityTemplate weightedTemplateSelection(List<AbilityTemplate> templates,
@@ -624,7 +625,7 @@ public class ProceduralAbilityGenerator {
         for (int i = 0; i < templates.size(); i++) {
             scores[i] = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
         }
-        double[] samplingScores = normalizeSmallCategoryScores(templates, scores);
+        double[] samplingScores = normalizeCategoryTemplateScores(templates, scores);
         applyCategoryLocalColdBalancing(templates, samplingScores);
         double total = 0.0D;
         double[] weights = new double[templates.size()];
@@ -701,12 +702,8 @@ public class ProceduralAbilityGenerator {
                 + (relative * (SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING - SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR));
     }
 
-    private double[] normalizeSmallCategoryScores(List<AbilityTemplate> templates, double[] scores) {
-        if (templates.isEmpty()) {
-            return scores;
-        }
-        AbilityCategory category = templates.get(0).category();
-        if (!isSmallCategory(category) || templates.size() <= 1) {
+    private double[] normalizeCategoryTemplateScores(List<AbilityTemplate> templates, double[] scores) {
+        if (templates.isEmpty() || templates.size() <= 1) {
             return scores;
         }
         double minScore = Double.POSITIVE_INFINITY;
@@ -722,14 +719,33 @@ public class ProceduralAbilityGenerator {
         }
         double meanScore = sum / scores.length;
         double span = Math.max(maxScore - minScore, 1.0E-9D);
-        double[] compressed = new double[scores.length];
+        double[] normalizedScores = new double[scores.length];
         for (int i = 0; i < scores.length; i++) {
             double normalized = clamp((scores[i] - minScore) / span, 0.0D, 1.0D);
-            double curved = 1.0D - Math.pow(1.0D - normalized, SMALL_CATEGORY_COMPRESSION_GAMMA);
+            double curved = Math.pow(normalized, 1.0D / GLOBAL_CATEGORY_COMPRESSION_GAMMA);
             double reExpanded = minScore + (curved * span);
-            compressed[i] = lerp(reExpanded, meanScore, SMALL_CATEGORY_MEAN_ANCHOR_BLEND);
+            normalizedScores[i] = lerp(reExpanded, meanScore, GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND);
         }
-        return compressed;
+        return applyMeanRelativeSoftTopCap(normalizedScores, meanScore);
+    }
+
+    private double[] applyMeanRelativeSoftTopCap(double[] scores, double meanScore) {
+        if (scores.length <= 1 || meanScore <= 0.0D || !Double.isFinite(meanScore)) {
+            return scores;
+        }
+        double capStart = meanScore;
+        double capRange = Math.max(meanScore * (GLOBAL_CATEGORY_TOP_CAP_RATIO - 1.0D), 1.0E-9D);
+        double[] capped = new double[scores.length];
+        for (int i = 0; i < scores.length; i++) {
+            double score = Math.max(0.0001D, scores[i]);
+            if (score <= capStart) {
+                capped[i] = score;
+                continue;
+            }
+            double excess = score - capStart;
+            capped[i] = capStart + (capRange * Math.tanh(excess / capRange));
+        }
+        return capped;
     }
 
 
