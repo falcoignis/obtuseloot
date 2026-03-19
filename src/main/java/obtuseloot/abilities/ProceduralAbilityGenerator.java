@@ -22,8 +22,10 @@ import obtuseloot.evolution.NicheVariantProfile;
 import obtuseloot.evolution.ArtifactNicheProfile;
 import obtuseloot.evolution.EcosystemRoleClassifier;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -40,6 +42,12 @@ public class ProceduralAbilityGenerator {
     private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.68D;
     private static final double GLOBAL_NOVELTY_WEIGHT = 0.32D;
     private static final double NICHE_WEIGHT_EXPONENT = 1.85D;
+    private static final int RECENT_TEMPLATE_WINDOW_LIMIT = 96;
+    private static final int RECENT_CATEGORY_WINDOW_LIMIT = 144;
+    private static final double TEMPLATE_RECENCY_MAX_SWING = 0.20D;
+    private static final double CATEGORY_EXPOSURE_MAX_SWING = 0.12D;
+    private static final double TAIL_PRESERVATION_MAX_BOOST = 0.08D;
+    private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -69,6 +77,11 @@ public class ProceduralAbilityGenerator {
     private final Map<AbilityCategory, Double> categoryTemplatePressure;
     private final AbilityDiversityIndex diversityIndex;
     private final EcosystemRoleClassifier roleClassifier;
+    private final Deque<String> recentTemplateSelections;
+    private final Deque<AbilityCategory> recentCategorySelections;
+    private final Map<String, AbilityTemplate> templatesById;
+    private final Map<AbilityCategory, Integer> recentCategoryUsage;
+    private final Map<String, Integer> recentTemplateUsage;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -140,6 +153,11 @@ public class ProceduralAbilityGenerator {
         this.categoryTemplatePressure = computeCategoryTemplatePressure();
         this.diversityIndex = AbilityDiversityIndex.instance();
         this.roleClassifier = new EcosystemRoleClassifier();
+        this.recentTemplateSelections = new ArrayDeque<>();
+        this.recentCategorySelections = new ArrayDeque<>();
+        this.templatesById = registry.templates().stream().collect(java.util.stream.Collectors.toMap(AbilityTemplate::id, template -> template));
+        this.recentCategoryUsage = new EnumMap<>(AbilityCategory.class);
+        this.recentTemplateUsage = new java.util.HashMap<>();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -228,6 +246,7 @@ public class ProceduralAbilityGenerator {
             }
         }
 
+        recordRecentSelections(selected);
         diversityIndex.record(artifact.getArtifactSeed(), lineageId, nicheProfile.dominantNiche(), variantProfile, selected);
         if (lineageRegistry != null && lineage != null) {
             EvolutionaryBiasGenome observedBias = deriveObservedBias(selected, memoryProfile, utilityHistory);
@@ -513,7 +532,130 @@ public class ProceduralAbilityGenerator {
         double nicheConsistencyPenalty = nicheConsistencyPenalty(template, nicheProfile, memoryProfile);
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
-        return base * nicheBias * categoryBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty;
+        double recencyBias = recentTemplateRecencyBias(template);
+        double categoryExposureBias = categoryExposureBias(template.category(), dominantNiche, activePool);
+        double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias);
+        return base * nicheBias * categoryBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * recencyBias * categoryExposureBias * tailBias;
+    }
+
+
+    private void recordRecentSelections(List<AbilityTemplate> selected) {
+        for (AbilityTemplate template : selected) {
+            pushRecentTemplate(template.id());
+            pushRecentCategory(template.category());
+        }
+    }
+
+    private void pushRecentTemplate(String templateId) {
+        recentTemplateSelections.addLast(templateId);
+        recentTemplateUsage.merge(templateId, 1, Integer::sum);
+        while (recentTemplateSelections.size() > RECENT_TEMPLATE_WINDOW_LIMIT) {
+            String expired = recentTemplateSelections.pollFirst();
+            if (expired != null) {
+                decrementCount(recentTemplateUsage, expired);
+            }
+        }
+    }
+
+    private void pushRecentCategory(AbilityCategory category) {
+        recentCategorySelections.addLast(category);
+        recentCategoryUsage.merge(category, 1, Integer::sum);
+        while (recentCategorySelections.size() > RECENT_CATEGORY_WINDOW_LIMIT) {
+            AbilityCategory expired = recentCategorySelections.pollFirst();
+            if (expired != null) {
+                decrementCount(recentCategoryUsage, expired);
+            }
+        }
+    }
+
+    private <T> void decrementCount(Map<T, Integer> counts, T key) {
+        counts.computeIfPresent(key, (ignored, current) -> current <= 1 ? null : current - 1);
+    }
+
+    private double recentTemplateRecencyBias(AbilityTemplate template) {
+        int sameCategoryTotal = recentCategoryTemplateTotal(template.category());
+        if (sameCategoryTotal <= 0) {
+            return 1.03D;
+        }
+        int templateCount = recentTemplateUsage.getOrDefault(template.id(), 0);
+        long uniqueCategoryTemplates = registry.templates().stream()
+                .filter(candidate -> candidate.category() == template.category())
+                .map(AbilityTemplate::id)
+                .distinct()
+                .count();
+        double expectedShare = 1.0D / Math.max(1.0D, uniqueCategoryTemplates);
+        double observedShare = templateCount / (double) sameCategoryTotal;
+        double pressure = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), -1.0D, 1.0D);
+        return clamp(1.0D + (pressure * TEMPLATE_RECENCY_MAX_SWING), 1.0D - TEMPLATE_RECENCY_MAX_SWING, 1.0D + TEMPLATE_RECENCY_MAX_SWING);
+    }
+
+    private double categoryExposureBias(AbilityCategory category, MechanicNicheTag dominantNiche, List<AbilityDiversityIndex.AbilitySignature> activePool) {
+        Map<AbilityCategory, Double> exposure = new EnumMap<>(AbilityCategory.class);
+        for (AbilityCategory value : AbilityCategory.values()) {
+            exposure.put(value, 0.0D);
+        }
+        double totalWeight = 0.0D;
+        for (AbilityDiversityIndex.AbilitySignature signature : activePool) {
+            if (signature.category() == null) {
+                continue;
+            }
+            exposure.merge(signature.category(), 1.0D, Double::sum);
+            totalWeight += 1.0D;
+        }
+        for (Map.Entry<AbilityCategory, Integer> entry : recentCategoryUsage.entrySet()) {
+            exposure.merge(entry.getKey(), entry.getValue() * 0.6D, Double::sum);
+            totalWeight += entry.getValue() * 0.6D;
+        }
+        if (totalWeight <= 0.0D) {
+            return 1.02D;
+        }
+        long compatibleCategories = java.util.Arrays.stream(AbilityCategory.values())
+                .filter(value -> dominantNiche == null || value.niches().contains(dominantNiche))
+                .count();
+        double expectedShare = 1.0D / Math.max(1.0D, compatibleCategories);
+        double compatibleWeight = exposure.entrySet().stream()
+                .filter(entry -> dominantNiche == null || entry.getKey().niches().contains(dominantNiche))
+                .mapToDouble(Map.Entry::getValue)
+                .sum();
+        double observedShare = category.niches().contains(dominantNiche)
+                ? exposure.getOrDefault(category, 0.0D) / Math.max(1.0D, compatibleWeight)
+                : exposure.getOrDefault(category, 0.0D) / totalWeight;
+        double pressure = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), -1.0D, 1.0D);
+        double positiveSwing = category.niches().contains(dominantNiche) ? CATEGORY_EXPOSURE_MAX_SWING : 0.03D;
+        double negativeSwing = CATEGORY_EXPOSURE_MAX_SWING;
+        if (pressure >= 0.0D) {
+            return clamp(1.0D + (pressure * positiveSwing), 1.0D, 1.0D + positiveSwing);
+        }
+        return clamp(1.0D + (pressure * negativeSwing), 1.0D - negativeSwing, 1.0D);
+    }
+
+    private double tailPreservationBias(AbilityTemplate template, double intraNovelty, double nicheAlignment) {
+        double noveltyQualified = intraNovelty >= NOVELTY_FLOOR ? 1.0D : 0.0D;
+        double nicheQualified = clamp((nicheAlignment - 0.82D) / 0.32D, 0.0D, 1.0D);
+        double scarcity = 1.0D - clamp(recentTemplateFrequency(template), 0.0D, 1.0D);
+        double boost = scarcity * noveltyQualified * nicheQualified * TAIL_PRESERVATION_MAX_BOOST;
+        return clamp(1.0D + boost, 1.0D, 1.0D + TAIL_PRESERVATION_MAX_BOOST);
+    }
+
+    private double recentTemplateFrequency(AbilityTemplate template) {
+        int sameCategoryTotal = recentCategoryTemplateTotal(template.category());
+        if (sameCategoryTotal <= 0) {
+            return 0.0D;
+        }
+        int templateCount = recentTemplateUsage.getOrDefault(template.id(), 0);
+        return templateCount / (double) sameCategoryTotal;
+    }
+
+    private AbilityTemplate templateById(String templateId) {
+        return templatesById.get(templateId);
+    }
+
+    private int recentCategoryTemplateTotal(AbilityCategory category) {
+        return recentTemplateUsage.entrySet().stream()
+                .map(entry -> Map.entry(templateById(entry.getKey()), entry.getValue()))
+                .filter(entry -> entry.getKey() != null && entry.getKey().category() == category)
+                .mapToInt(Map.Entry::getValue)
+                .sum();
     }
 
     private AbilitySimilarityProfile abilitySimilarityProfile(AbilityDiversityIndex.AbilitySignature candidate,
@@ -601,7 +743,9 @@ public class ProceduralAbilityGenerator {
 
     private double nicheWeight(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
         MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
-        boolean matches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger()).contains(dominant);
+        Set<MechanicNicheTag> templateNiches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger());
+        boolean matches = templateNiches.contains(dominant);
+        boolean adjacent = !matches && nicheAdjacent(templateNiches, dominant);
         double familyBias = switch (dominant) {
             case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.16D : 0.92D;
             case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.18D : 0.90D;
@@ -610,7 +754,8 @@ public class ProceduralAbilityGenerator {
             default -> 1.0D;
         };
         double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
-        return clamp((matches ? 1.24D : 0.84D) * familyBias * memoryTuning, 0.74D, 1.34D);
+        double nicheMatchWeight = matches ? 1.24D : (adjacent ? 1.05D : 0.84D);
+        return clamp(nicheMatchWeight * familyBias * memoryTuning, 0.74D, 1.34D);
     }
 
     private double categoryWeight(AbilityTemplate template,
@@ -620,7 +765,7 @@ public class ProceduralAbilityGenerator {
                                   NicheVariantProfile variantProfile) {
         MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
         AbilityCategory category = template.category();
-        double nicheMatch = category.niches().contains(dominant) ? 1.10D : 0.94D;
+        double nicheMatch = category.niches().contains(dominant) ? 1.10D : (nicheAdjacent(category.niches(), dominant) ? 1.02D : 0.94D);
         double memoryBias = switch (category) {
             case TRAVERSAL_MOBILITY -> 1.0D + (memoryProfile.mobilityWeight() * 0.05D);
             case SENSING_INFORMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.04D);
@@ -644,7 +789,7 @@ public class ProceduralAbilityGenerator {
     private double nicheConsistencyPenalty(AbilityTemplate template, ArtifactNicheProfile nicheProfile, ArtifactMemoryProfile memoryProfile) {
         MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
         Set<MechanicNicheTag> templateNiches = nicheTaxonomy.nichesFor(template.mechanic(), template.trigger());
-        double mechanicMismatch = templateNiches.contains(dominant) ? 0.0D : 0.55D;
+        double mechanicMismatch = templateNiches.contains(dominant) ? 0.0D : (nicheAdjacent(templateNiches, dominant) ? 0.24D : 0.55D);
         double triggerMismatch = switch (dominant) {
             case NAVIGATION, ENVIRONMENTAL_SENSING -> navigationTriggerMismatch(template.trigger());
             case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> survivalTriggerMismatch(template.trigger());
@@ -652,6 +797,7 @@ public class ProceduralAbilityGenerator {
             case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> supportTriggerMismatch(template.trigger());
             default -> 0.10D;
         };
+        triggerMismatch = smoothedTriggerMismatch(template, dominant, triggerMismatch);
         double affinityMismatch = affinityMismatch(template, dominant, memoryProfile);
         double penalty = Math.min(0.18D, (mechanicMismatch * 0.09D) + (triggerMismatch * 0.05D) + (affinityMismatch * 0.03D));
         return clamp(1.0D - penalty, 0.82D, 1.0D);
@@ -686,6 +832,68 @@ public class ProceduralAbilityGenerator {
             case ON_WITNESS_EVENT, ON_MEMORY_EVENT, ON_STRUCTURE_SENSE, ON_WORLD_SCAN -> 0.0D;
             case ON_CHUNK_ENTER, ON_BLOCK_INSPECT -> 0.10D;
             default -> 0.20D;
+        };
+    }
+
+
+    private double smoothedTriggerMismatch(AbilityTemplate template, MechanicNicheTag dominant, double triggerMismatch) {
+        if (triggerMismatch <= 0.0D) {
+            return 0.0D;
+        }
+        if (!template.category().niches().contains(dominant)) {
+            return triggerMismatch;
+        }
+        double classOverlap = switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE));
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT));
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION));
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE));
+            default -> 0.0D;
+        };
+        double categoryRelief = template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION ? 1.0D : 0.7D;
+        double relief = classOverlap * categoryRelief * TRIGGER_SMOOTHING_MAX_RELIEF;
+        return clamp(triggerMismatch - relief, 0.0D, triggerMismatch);
+    }
+
+    private double triggerContextSimilarity(AbilityTrigger trigger, Set<AbilityTrigger> closeTriggers) {
+        if (closeTriggers.contains(trigger)) {
+            return 1.0D;
+        }
+        return switch (trigger) {
+            case ON_PLAYER_WITNESS -> closeTriggers.contains(AbilityTrigger.ON_WITNESS_EVENT) ? 0.85D : 0.0D;
+            case ON_STRUCTURE_PROXIMITY -> closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_SENSE) || closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_DISCOVERY) ? 0.80D : 0.0D;
+            case ON_PLAYER_TRADE -> closeTriggers.contains(AbilityTrigger.ON_SOCIAL_INTERACT) ? 0.72D : 0.0D;
+            case ON_MOVEMENT -> closeTriggers.contains(AbilityTrigger.ON_CHUNK_ENTER) || closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) ? 0.68D : 0.0D;
+            case ON_BLOCK_INSPECT -> closeTriggers.contains(AbilityTrigger.ON_ENTITY_INSPECT) ? 0.52D : 0.0D;
+            case ON_TIME_OF_DAY_TRANSITION -> closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) || closeTriggers.contains(AbilityTrigger.ON_WEATHER_CHANGE) ? 0.58D : 0.0D;
+            default -> 0.0D;
+        };
+    }
+
+
+    private boolean nicheAdjacent(Set<MechanicNicheTag> niches, MechanicNicheTag dominant) {
+        return niches.stream().anyMatch(niche -> nicheAdjacent(niche, dominant));
+    }
+
+    private boolean nicheAdjacent(MechanicNicheTag left, MechanicNicheTag right) {
+        if (left == null || right == null || left == right) {
+            return false;
+        }
+        return switch (left) {
+            case NAVIGATION -> right == MechanicNicheTag.MOBILITY_UTILITY || right == MechanicNicheTag.STRUCTURE_SENSING;
+            case MOBILITY_UTILITY -> right == MechanicNicheTag.NAVIGATION || right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION;
+            case STRUCTURE_SENSING -> right == MechanicNicheTag.ENVIRONMENTAL_SENSING || right == MechanicNicheTag.INSPECT_INFORMATION || right == MechanicNicheTag.NAVIGATION;
+            case ENVIRONMENTAL_SENSING -> right == MechanicNicheTag.STRUCTURE_SENSING || right == MechanicNicheTag.INSPECT_INFORMATION;
+            case INSPECT_INFORMATION -> right == MechanicNicheTag.ENVIRONMENTAL_SENSING || right == MechanicNicheTag.STRUCTURE_SENSING || right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION;
+            case SOCIAL_WORLD_INTERACTION -> right == MechanicNicheTag.MOBILITY_UTILITY || right == MechanicNicheTag.INSPECT_INFORMATION || right == MechanicNicheTag.SUPPORT_COHESION;
+            case SUPPORT_COHESION -> right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION || right == MechanicNicheTag.PROTECTION_WARDING;
+            case PROTECTION_WARDING -> right == MechanicNicheTag.ENVIRONMENTAL_ADAPTATION || right == MechanicNicheTag.SUPPORT_COHESION;
+            case ENVIRONMENTAL_ADAPTATION -> right == MechanicNicheTag.PROTECTION_WARDING || right == MechanicNicheTag.FARMING_WORLDKEEPING;
+            case FARMING_WORLDKEEPING -> right == MechanicNicheTag.ENVIRONMENTAL_ADAPTATION || right == MechanicNicheTag.SUPPORT_COHESION;
+            case MEMORY_HISTORY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.RARE_HIGH_COST_UTILITY;
+            case RITUAL_STRANGE_UTILITY -> right == MechanicNicheTag.MEMORY_HISTORY || right == MechanicNicheTag.RARE_HIGH_COST_UTILITY;
+            case RARE_HIGH_COST_UTILITY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.MEMORY_HISTORY;
+            case GENERALIST -> false;
         };
     }
 
