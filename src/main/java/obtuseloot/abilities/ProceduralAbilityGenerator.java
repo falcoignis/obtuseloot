@@ -55,6 +55,8 @@ public class ProceduralAbilityGenerator {
     private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 1.75D;
     private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.24D;
     private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.50D;
+    private static final double CATEGORY_TOP_THREE_SHARE_THRESHOLD = 0.70D;
+    private static final double CATEGORY_TOP_THREE_SHARE_TARGET = 0.62D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
@@ -640,6 +642,7 @@ public class ProceduralAbilityGenerator {
             weights[i] = weight;
             total += weight;
         }
+        total = applyConditionalTopThreeCompression(weights, total);
         double roll = random.nextDouble() * Math.max(total, 0.0001D);
         for (int i = 0; i < templates.size(); i++) {
             roll -= weights[i];
@@ -746,6 +749,50 @@ public class ProceduralAbilityGenerator {
             capped[i] = capStart + (capRange * Math.tanh(excess / capRange));
         }
         return capped;
+    }
+
+    private double applyConditionalTopThreeCompression(double[] weights, double totalWeight) {
+        if (weights.length <= 3 || totalWeight <= 0.0D) {
+            return totalWeight;
+        }
+        if (estimateTopThreeShare(weights, totalWeight) <= CATEGORY_TOP_THREE_SHARE_THRESHOLD) {
+            return totalWeight;
+        }
+        double meanWeight = totalWeight / weights.length;
+        double low = 0.0D;
+        double high = 1.0D;
+        for (int i = 0; i < 24; i++) {
+            double mid = (low + high) / 2.0D;
+            double[] candidate = new double[weights.length];
+            double candidateTotal = 0.0D;
+            for (int j = 0; j < weights.length; j++) {
+                candidate[j] = lerp(weights[j], meanWeight, mid);
+                candidateTotal += candidate[j];
+            }
+            if (estimateTopThreeShare(candidate, candidateTotal) > CATEGORY_TOP_THREE_SHARE_TARGET) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        double adjustedTotal = 0.0D;
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = lerp(weights[i], meanWeight, high);
+            adjustedTotal += weights[i];
+        }
+        return adjustedTotal;
+    }
+
+    private double estimateTopThreeShare(double[] weights, double totalWeight) {
+        if (weights.length == 0 || totalWeight <= 0.0D) {
+            return 0.0D;
+        }
+        return java.util.Arrays.stream(weights)
+                .boxed()
+                .sorted(Comparator.reverseOrder())
+                .limit(3)
+                .mapToDouble(weight -> weight / totalWeight)
+                .sum();
     }
 
 
