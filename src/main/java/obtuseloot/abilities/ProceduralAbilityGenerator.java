@@ -59,6 +59,9 @@ public class ProceduralAbilityGenerator {
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
     private static final double SMALL_CATEGORY_RECENCY_STRENGTH = 1.35D;
     private static final double SMALL_CATEGORY_DIVERSITY_STRENGTH = 0.20D;
+    private static final int COLD_LIFETIME_WARM_THRESHOLD = 2;
+    private static final double COLD_TEMPLATE_MAX_BOOST = 0.22D;
+    private static final double CATEGORY_LOCAL_COLD_BALANCE_MAX_BOOST = 0.12D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -93,6 +96,7 @@ public class ProceduralAbilityGenerator {
     private final Map<String, AbilityTemplate> templatesById;
     private final Map<AbilityCategory, Integer> recentCategoryUsage;
     private final Map<String, Integer> recentTemplateUsage;
+    private final Map<String, Integer> lifetimeTemplateUsage;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null);
@@ -169,6 +173,7 @@ public class ProceduralAbilityGenerator {
         this.templatesById = registry.templates().stream().collect(java.util.stream.Collectors.toMap(AbilityTemplate::id, template -> template));
         this.recentCategoryUsage = new EnumMap<>(AbilityCategory.class);
         this.recentTemplateUsage = new java.util.HashMap<>();
+        this.lifetimeTemplateUsage = new java.util.HashMap<>();
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -535,8 +540,9 @@ public class ProceduralAbilityGenerator {
         double recencyBias = recentTemplateRecencyBias(template);
         double diversityBias = intraCategoryDiversityBias(template, artifact, lineage, dominantNiche, variantProfile, selected);
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
+        double coldBias = coldTemplateBoost(template);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias;
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias;
     }
 
     private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
@@ -618,6 +624,7 @@ public class ProceduralAbilityGenerator {
             scores[i] = Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected));
         }
         double[] samplingScores = normalizeSmallCategoryScores(templates, scores);
+        applyCategoryLocalColdBalancing(templates, samplingScores);
         double total = 0.0D;
         double[] weights = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
@@ -739,6 +746,7 @@ public class ProceduralAbilityGenerator {
     private void recordRecentSelections(List<AbilityTemplate> selected) {
         for (AbilityTemplate template : selected) {
             pushRecentTemplate(template.id());
+            pushLifetimeTemplate(template.id());
             pushRecentCategory(template.category());
         }
     }
@@ -767,6 +775,61 @@ public class ProceduralAbilityGenerator {
 
     private <T> void decrementCount(Map<T, Integer> counts, T key) {
         counts.computeIfPresent(key, (ignored, current) -> current <= 1 ? null : current - 1);
+    }
+
+
+    private void pushLifetimeTemplate(String templateId) {
+        lifetimeTemplateUsage.merge(templateId, 1, (current, increment) -> Math.min(COLD_LIFETIME_WARM_THRESHOLD + 1, current + increment));
+    }
+
+    private double coldTemplateBoost(AbilityTemplate template) {
+        if (!isColdTemplate(template)) {
+            return 1.0D;
+        }
+        double recentScarcity = 1.0D - clamp(recentTemplateFrequency(template), 0.0D, 1.0D);
+        double lifetimeScarcity = 1.0D - clamp(lifetimeTemplateUsage.getOrDefault(template.id(), 0) / (double) COLD_LIFETIME_WARM_THRESHOLD, 0.0D, 1.0D);
+        double boost = Math.max(recentScarcity * 0.70D, lifetimeScarcity);
+        return clamp(1.0D + (boost * COLD_TEMPLATE_MAX_BOOST), 1.0D, 1.0D + COLD_TEMPLATE_MAX_BOOST);
+    }
+
+    private boolean isColdTemplate(AbilityTemplate template) {
+        int recentCount = recentTemplateUsage.getOrDefault(template.id(), 0);
+        int lifetimeCount = lifetimeTemplateUsage.getOrDefault(template.id(), 0);
+        if (recentCount == 0) {
+            return lifetimeCount <= COLD_LIFETIME_WARM_THRESHOLD;
+        }
+        int sameCategoryTotal = recentCategoryTemplateTotal(template.category());
+        if (sameCategoryTotal <= 0) {
+            return lifetimeCount <= COLD_LIFETIME_WARM_THRESHOLD;
+        }
+        long categoryTemplates = registry.templates().stream()
+                .filter(candidate -> candidate.category() == template.category())
+                .count();
+        double expectedShare = 1.0D / Math.max(1.0D, categoryTemplates);
+        double observedShare = recentCount / (double) Math.max(1, sameCategoryTotal);
+        return lifetimeCount <= 1 && observedShare <= (expectedShare * 0.25D);
+    }
+
+    private void applyCategoryLocalColdBalancing(List<AbilityTemplate> templates, double[] samplingScores) {
+        if (templates.size() <= 1) {
+            return;
+        }
+        long coldTemplates = templates.stream().filter(this::isColdTemplate).count();
+        if (coldTemplates == 0 || coldTemplates == templates.size()) {
+            return;
+        }
+        int sameCategoryTotal = recentCategoryTemplateTotal(templates.get(0).category());
+        long categoryTemplateCount = templates.size();
+        double expectedShare = 1.0D / Math.max(1.0D, categoryTemplateCount);
+        for (int i = 0; i < templates.size(); i++) {
+            AbilityTemplate template = templates.get(i);
+            if (!isColdTemplate(template)) {
+                continue;
+            }
+            double observedShare = sameCategoryTotal <= 0 ? 0.0D : recentTemplateUsage.getOrDefault(template.id(), 0) / (double) sameCategoryTotal;
+            double scarcity = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), 0.0D, 1.0D);
+            samplingScores[i] *= 1.0D + (scarcity * CATEGORY_LOCAL_COLD_BALANCE_MAX_BOOST);
+        }
     }
 
     private double recentTemplateRecencyBias(AbilityTemplate template) {
