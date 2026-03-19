@@ -44,10 +44,13 @@ public class ProceduralAbilityGenerator {
     private static final double NICHE_WEIGHT_EXPONENT = 1.85D;
     private static final int RECENT_TEMPLATE_WINDOW_LIMIT = 96;
     private static final int RECENT_CATEGORY_WINDOW_LIMIT = 144;
-    private static final double TEMPLATE_RECENCY_MAX_SWING = 0.20D;
-    private static final double CATEGORY_EXPOSURE_MAX_SWING = 0.12D;
-    private static final double TAIL_PRESERVATION_MAX_BOOST = 0.08D;
+    private static final double TEMPLATE_RECENCY_MAX_SWING = 0.28D;
+    private static final double CATEGORY_EXPOSURE_MAX_SWING = 0.08D;
+    private static final double TAIL_PRESERVATION_MAX_BOOST = 0.10D;
+    private static final double LOW_VOLUME_CATEGORY_MAX_BOOST = 0.14D;
+    private static final double MAX_COMBINED_SELECTION_PENALTY = 0.25D;
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
+    private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -323,22 +326,13 @@ public class ProceduralAbilityGenerator {
     }
 
     private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, Set<String> excludedIds) {
-        double total = 0.0D;
-        double[] scores = new double[pool.size()];
-        for (int i = 0; i < pool.size(); i++) {
-            if (excludedIds.contains(pool.get(i).id())) {
-                scores[i] = 0.0D;
-                continue;
-            }
-            scores[i] = Math.max(0.01D, compositeTemplateScore(pool.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, java.util.List.of()) * rarityModifier(pool.get(i)));
-            total += scores[i];
+        List<AbilityTemplate> filtered = pool.stream()
+                .filter(template -> !excludedIds.contains(template.id()))
+                .toList();
+        if (filtered.isEmpty()) {
+            return pool.get(pool.size() - 1);
         }
-        double roll = random.nextDouble() * total;
-        for (int i = 0; i < pool.size(); i++) {
-            roll -= scores[i];
-            if (roll <= 0) return pool.get(i);
-        }
-        return pool.get(pool.size() - 1);
+        return selectNextTemplate(filtered, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, java.util.List.of(), random);
     }
 
     private double scoreTemplate(AbilityTemplate template, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation) {
@@ -502,16 +496,14 @@ public class ProceduralAbilityGenerator {
         List<AbilityTemplate> remaining = new ArrayList<>(pool);
         List<AbilityTemplate> selected = new ArrayList<>();
         while (!remaining.isEmpty() && selected.size() < picks) {
-            AbilityTemplate best = remaining.stream()
-                    .max(Comparator.comparingDouble(t -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)))
-                    .orElse(null);
+            AbilityTemplate best = selectNextTemplate(remaining, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected, random);
             if (best == null) {
                 break;
             }
             selected.add(best);
             remaining.remove(best);
             if (traitInteractionsEnabled && remaining.size() > 1) {
-                remaining.sort(Comparator.comparingDouble((AbilityTemplate t) -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected) + (random.nextDouble() * 0.01D)).reversed());
+                remaining.sort(Comparator.comparingDouble((AbilityTemplate t) -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)).reversed());
             }
         }
         return selected;
@@ -533,9 +525,145 @@ public class ProceduralAbilityGenerator {
         double lineageBias = lineageCombinationBias(template, lineage);
         double motifBias = motifAnchor == null ? 1.0D : motifAnchorBias(candidate, motifAnchor, variantProfile);
         double recencyBias = recentTemplateRecencyBias(template);
-        double categoryExposureBias = categoryExposureBias(template.category(), dominantNiche, activePool);
-        double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias);
-        return base * nicheBias * categoryBias * nicheConsistencyPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * recencyBias * categoryExposureBias * tailBias;
+        double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
+        double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * tailBias;
+    }
+
+    private AbilityTemplate selectNextTemplate(List<AbilityTemplate> remaining,
+                                               Artifact artifact,
+                                               ArtifactMemoryProfile memoryProfile,
+                                               int stage,
+                                               UtilityHistoryRollup utilityHistory,
+                                               ArtifactLineage lineage,
+                                               AdaptiveSupportAllocation supportAllocation,
+                                               ArtifactNicheProfile nicheProfile,
+                                               NicheVariantProfile variantProfile,
+                                               List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                               AbilityDiversityIndex.AbilitySignature motifAnchor,
+                                               List<AbilityTemplate> selected,
+                                               Random random) {
+        MechanicNicheTag dominantNiche = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        Map<AbilityCategory, List<AbilityTemplate>> byCategory = new EnumMap<>(AbilityCategory.class);
+        for (AbilityTemplate template : remaining) {
+            byCategory.computeIfAbsent(template.category(), ignored -> new ArrayList<>()).add(template);
+        }
+        Map<AbilityCategory, CategorySelectionProfile> categoryProfiles = new EnumMap<>(AbilityCategory.class);
+        for (Map.Entry<AbilityCategory, List<AbilityTemplate>> entry : byCategory.entrySet()) {
+            AbilityTemplate bestTemplate = entry.getValue().stream()
+                    .max(Comparator.comparingDouble(t -> compositeTemplateScore(t, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)))
+                    .orElse(null);
+            if (bestTemplate == null) {
+                continue;
+            }
+            double templateScore = compositeTemplateScore(bestTemplate, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected);
+            double categoryScore = categorySelectionScore(entry.getKey(), bestTemplate, templateScore, dominantNiche, nicheProfile, memoryProfile, activePool, artifact, lineage, variantProfile, selected);
+            categoryProfiles.put(entry.getKey(), new CategorySelectionProfile(bestTemplate, templateScore, categoryScore));
+        }
+        if (categoryProfiles.isEmpty()) {
+            return null;
+        }
+        Map<AbilityCategory, Double> normalizedCategoryScores = normalizeCategoryScores(categoryProfiles);
+        double total = normalizedCategoryScores.values().stream().mapToDouble(Double::doubleValue).sum();
+        double roll = random.nextDouble() * Math.max(total, 0.0001D);
+        AbilityCategory chosenCategory = null;
+        for (Map.Entry<AbilityCategory, Double> entry : normalizedCategoryScores.entrySet()) {
+            roll -= entry.getValue();
+            if (roll <= 0.0D) {
+                chosenCategory = entry.getKey();
+                break;
+            }
+        }
+        if (chosenCategory == null) {
+            chosenCategory = normalizedCategoryScores.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse(null);
+        }
+        List<AbilityTemplate> chosenTemplates = byCategory.get(chosenCategory);
+        CategorySelectionProfile chosenProfile = categoryProfiles.get(chosenCategory);
+        if (chosenTemplates == null || chosenTemplates.isEmpty()) {
+            return chosenProfile == null ? null : chosenProfile.bestTemplate();
+        }
+        if (chosenCategory == AbilityCategory.STEALTH_TRICKERY_DISRUPTION || categoryTriggerSpan(chosenCategory) <= 4) {
+            return weightedTemplateSelection(chosenTemplates, artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected, random);
+        }
+        return chosenProfile == null ? null : chosenProfile.bestTemplate();
+    }
+
+    private AbilityTemplate weightedTemplateSelection(List<AbilityTemplate> templates,
+                                                      Artifact artifact,
+                                                      ArtifactMemoryProfile memoryProfile,
+                                                      int stage,
+                                                      UtilityHistoryRollup utilityHistory,
+                                                      ArtifactLineage lineage,
+                                                      AdaptiveSupportAllocation supportAllocation,
+                                                      ArtifactNicheProfile nicheProfile,
+                                                      NicheVariantProfile variantProfile,
+                                                      List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                                      AbilityDiversityIndex.AbilitySignature motifAnchor,
+                                                      List<AbilityTemplate> selected,
+                                                      Random random) {
+        double total = 0.0D;
+        double[] weights = new double[templates.size()];
+        for (int i = 0; i < templates.size(); i++) {
+            double weight = Math.sqrt(Math.max(0.0001D, compositeTemplateScore(templates.get(i), artifact, memoryProfile, stage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, selected)));
+            weights[i] = weight;
+            total += weight;
+        }
+        double roll = random.nextDouble() * Math.max(total, 0.0001D);
+        for (int i = 0; i < templates.size(); i++) {
+            roll -= weights[i];
+            if (roll <= 0.0D) {
+                return templates.get(i);
+            }
+        }
+        return templates.get(templates.size() - 1);
+    }
+
+    private double categorySelectionScore(AbilityCategory category,
+                                          AbilityTemplate bestTemplate,
+                                          double bestTemplateScore,
+                                          MechanicNicheTag dominantNiche,
+                                          ArtifactNicheProfile nicheProfile,
+                                          ArtifactMemoryProfile memoryProfile,
+                                          List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                          Artifact artifact,
+                                          ArtifactLineage lineage,
+                                          NicheVariantProfile variantProfile,
+                                          List<AbilityTemplate> selected) {
+        double categoryExposureBias = categoryExposureBias(category, dominantNiche, activePool);
+        double lowVolumeBoost = lowVolumeCategoryBoost(bestTemplate, nicheProfile, activePool, artifact, lineage, variantProfile, selected);
+        double categoryStageBias = Math.sqrt(categoryWeight(bestTemplate, nicheProfile, memoryProfile, lineage, variantProfile));
+        double nicheStageBias = Math.sqrt(nicheWeight(bestTemplate, nicheProfile, memoryProfile));
+        return Math.max(0.0001D, bestTemplateScore * categoryStageBias * nicheStageBias * boundedPenaltyMultiplier(categoryExposureBias, 1.0D) * lowVolumeBoost);
+    }
+
+    private Map<AbilityCategory, Double> normalizeCategoryScores(Map<AbilityCategory, CategorySelectionProfile> categoryProfiles) {
+        Map<AbilityCategory, Double> normalized = new EnumMap<>(AbilityCategory.class);
+        double total = categoryProfiles.values().stream().mapToDouble(CategorySelectionProfile::categoryScore).sum();
+        double targetTotal = Math.max(1.0D, categoryProfiles.size());
+        double scale = total <= 0.0D ? 1.0D : targetTotal / total;
+        categoryProfiles.forEach((category, profile) -> normalized.put(category, Math.max(0.0001D, profile.categoryScore() * scale)));
+        return normalized;
+    }
+
+    private double boundedPenaltyMultiplier(double... multipliers) {
+        double product = 1.0D;
+        double totalPenalty = 0.0D;
+        for (double multiplier : multipliers) {
+            double safe = clamp(multiplier, 0.0D, 2.0D);
+            product *= safe;
+            if (safe < 1.0D) {
+                totalPenalty += 1.0D - safe;
+            }
+        }
+        if (totalPenalty <= MAX_COMBINED_SELECTION_PENALTY) {
+            return product;
+        }
+        double allowedProduct = 1.0D - MAX_COMBINED_SELECTION_PENALTY;
+        double lift = allowedProduct / Math.max(product, 0.0001D);
+        return clamp(product * Math.max(1.0D, lift), allowedProduct, 2.0D);
     }
 
 
@@ -586,7 +714,11 @@ public class ProceduralAbilityGenerator {
         double expectedShare = 1.0D / Math.max(1.0D, uniqueCategoryTemplates);
         double observedShare = templateCount / (double) sameCategoryTotal;
         double pressure = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), -1.0D, 1.0D);
-        return clamp(1.0D + (pressure * TEMPLATE_RECENCY_MAX_SWING), 1.0D - TEMPLATE_RECENCY_MAX_SWING, 1.0D + TEMPLATE_RECENCY_MAX_SWING);
+        double negativeSwing = TEMPLATE_RECENCY_MAX_SWING + 0.17D;
+        if (pressure >= 0.0D) {
+            return clamp(1.0D + (pressure * TEMPLATE_RECENCY_MAX_SWING), 1.0D, 1.0D + TEMPLATE_RECENCY_MAX_SWING);
+        }
+        return clamp(1.0D + (pressure * negativeSwing), 1.0D - negativeSwing, 1.0D);
     }
 
     private double categoryExposureBias(AbilityCategory category, MechanicNicheTag dominantNiche, List<AbilityDiversityIndex.AbilitySignature> activePool) {
@@ -629,11 +761,12 @@ public class ProceduralAbilityGenerator {
         return clamp(1.0D + (pressure * negativeSwing), 1.0D - negativeSwing, 1.0D);
     }
 
-    private double tailPreservationBias(AbilityTemplate template, double intraNovelty, double nicheAlignment) {
+    private double tailPreservationBias(AbilityTemplate template, double intraNovelty, double nicheAlignment, ArtifactNicheProfile nicheProfile, AbilitySimilarityProfile similarityProfile) {
         double noveltyQualified = intraNovelty >= NOVELTY_FLOOR ? 1.0D : 0.0D;
         double nicheQualified = clamp((nicheAlignment - 0.82D) / 0.32D, 0.0D, 1.0D);
+        double similarityQualified = similarityProfile.sameNicheSimilarity() < HIGH_SIMILARITY_THRESHOLD ? 1.0D : 0.0D;
         double scarcity = 1.0D - clamp(recentTemplateFrequency(template), 0.0D, 1.0D);
-        double boost = scarcity * noveltyQualified * nicheQualified * TAIL_PRESERVATION_MAX_BOOST;
+        double boost = scarcity * noveltyQualified * nicheQualified * similarityQualified * TAIL_PRESERVATION_MAX_BOOST;
         return clamp(1.0D + boost, 1.0D, 1.0D + TAIL_PRESERVATION_MAX_BOOST);
     }
 
@@ -768,10 +901,10 @@ public class ProceduralAbilityGenerator {
         double nicheMatch = category.niches().contains(dominant) ? 1.10D : (nicheAdjacent(category.niches(), dominant) ? 1.02D : 0.94D);
         double memoryBias = switch (category) {
             case TRAVERSAL_MOBILITY -> 1.0D + (memoryProfile.mobilityWeight() * 0.05D);
-            case SENSING_INFORMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.04D);
+            case SENSING_INFORMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D);
             case SURVIVAL_ADAPTATION, DEFENSE_WARDING -> 1.0D + (memoryProfile.survivalWeight() * 0.05D);
             case COMBAT_TACTICAL_CONTROL -> 1.0D + (memoryProfile.aggressionWeight() * 0.04D);
-            case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.03D) + (memoryProfile.survivalWeight() * 0.02D);
+            case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D) + (memoryProfile.survivalWeight() * 0.04D);
             case SOCIAL_SUPPORT_COORDINATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.02D) + (memoryProfile.aggressionWeight() * 0.03D);
             case RITUAL_STRANGE_UTILITY -> 1.0D + (memoryProfile.chaosWeight() * 0.05D);
             case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.03D) + (memoryProfile.chaosWeight() * 0.02D);
@@ -840,18 +973,20 @@ public class ProceduralAbilityGenerator {
         if (triggerMismatch <= 0.0D) {
             return 0.0D;
         }
-        if (!template.category().niches().contains(dominant)) {
+        if (!template.category().niches().contains(dominant) && !nicheAdjacent(template.category().niches(), dominant)) {
             return triggerMismatch;
         }
-        double classOverlap = switch (dominant) {
-            case NAVIGATION, ENVIRONMENTAL_SENSING -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE));
-            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT));
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION));
-            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> triggerContextSimilarity(template.trigger(), Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE));
-            default -> 0.0D;
+        Set<AbilityTrigger> compatibleTriggers = switch (dominant) {
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE);
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT);
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION);
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE);
+            default -> Set.of();
         };
-        double categoryRelief = template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION ? 1.0D : 0.7D;
-        double relief = classOverlap * categoryRelief * TRIGGER_SMOOTHING_MAX_RELIEF;
+        double classOverlap = triggerContextSimilarity(template.trigger(), compatibleTriggers);
+        double smoothingMax = categoryTriggerSpan(template.category()) <= 4 ? NARROW_TRIGGER_SMOOTHING_MAX_RELIEF : TRIGGER_SMOOTHING_MAX_RELIEF;
+        double categoryRelief = template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION ? 1.0D : 0.72D;
+        double relief = classOverlap * categoryRelief * smoothingMax;
         return clamp(triggerMismatch - relief, 0.0D, triggerMismatch);
     }
 
@@ -861,15 +996,53 @@ public class ProceduralAbilityGenerator {
         }
         return switch (trigger) {
             case ON_PLAYER_WITNESS -> closeTriggers.contains(AbilityTrigger.ON_WITNESS_EVENT) ? 0.85D : 0.0D;
-            case ON_STRUCTURE_PROXIMITY -> closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_SENSE) || closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_DISCOVERY) ? 0.80D : 0.0D;
-            case ON_PLAYER_TRADE -> closeTriggers.contains(AbilityTrigger.ON_SOCIAL_INTERACT) ? 0.72D : 0.0D;
-            case ON_MOVEMENT -> closeTriggers.contains(AbilityTrigger.ON_CHUNK_ENTER) || closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) ? 0.68D : 0.0D;
-            case ON_BLOCK_INSPECT -> closeTriggers.contains(AbilityTrigger.ON_ENTITY_INSPECT) ? 0.52D : 0.0D;
-            case ON_TIME_OF_DAY_TRANSITION -> closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) || closeTriggers.contains(AbilityTrigger.ON_WEATHER_CHANGE) ? 0.58D : 0.0D;
+            case ON_STRUCTURE_PROXIMITY -> closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_SENSE) || closeTriggers.contains(AbilityTrigger.ON_STRUCTURE_DISCOVERY) ? 0.88D : 0.0D;
+            case ON_PLAYER_TRADE -> closeTriggers.contains(AbilityTrigger.ON_SOCIAL_INTERACT) ? 0.74D : 0.0D;
+            case ON_MOVEMENT -> closeTriggers.contains(AbilityTrigger.ON_CHUNK_ENTER) || closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) ? 0.72D : 0.0D;
+            case ON_BLOCK_INSPECT -> closeTriggers.contains(AbilityTrigger.ON_ENTITY_INSPECT) ? 0.62D : 0.0D;
+            case ON_TIME_OF_DAY_TRANSITION -> closeTriggers.contains(AbilityTrigger.ON_WORLD_SCAN) || closeTriggers.contains(AbilityTrigger.ON_WEATHER_CHANGE) ? 0.66D : 0.0D;
             default -> 0.0D;
         };
     }
 
+
+
+    private int categoryTriggerSpan(AbilityCategory category) {
+        return (int) registry.templates().stream()
+                .filter(template -> template.category() == category)
+                .map(AbilityTemplate::trigger)
+                .distinct()
+                .count();
+    }
+
+    private double lowVolumeCategoryBoost(AbilityTemplate template,
+                                          ArtifactNicheProfile nicheProfile,
+                                          List<AbilityDiversityIndex.AbilitySignature> activePool,
+                                          Artifact artifact,
+                                          ArtifactLineage lineage,
+                                          NicheVariantProfile variantProfile,
+                                          List<AbilityTemplate> selected) {
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
+        AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominant, variantProfile, template);
+        AbilitySimilarityProfile similarityProfile = abilitySimilarityProfile(candidate, activePool, selected, artifact, lineage, dominant, variantProfile);
+        double intraNovelty = 1.0D - similarityProfile.sameNicheSimilarity();
+        boolean noveltyQualified = intraNovelty >= NOVELTY_FLOOR;
+        boolean nicheQualified = template.category().niches().contains(dominant) || nicheAdjacent(template.category().niches(), dominant);
+        boolean similarityQualified = similarityProfile.sameNicheSimilarity() < HIGH_SIMILARITY_THRESHOLD;
+        if (!noveltyQualified || !nicheQualified || !similarityQualified) {
+            return 1.0D;
+        }
+        double categoryFrequency = recentCategoryFrequency(template.category(), activePool);
+        double scarcity = clamp((0.24D - categoryFrequency) / 0.24D, 0.0D, 1.0D);
+        return clamp(1.0D + (scarcity * LOW_VOLUME_CATEGORY_MAX_BOOST), 1.0D, 1.0D + LOW_VOLUME_CATEGORY_MAX_BOOST);
+    }
+
+    private double recentCategoryFrequency(AbilityCategory category, List<AbilityDiversityIndex.AbilitySignature> activePool) {
+        double observed = activePool.stream().filter(signature -> signature.category() == category).count();
+        double recent = recentCategoryUsage.getOrDefault(category, 0);
+        double total = Math.max(1.0D, activePool.size() + recentCategoryUsage.values().stream().mapToInt(Integer::intValue).sum());
+        return (observed + recent) / total;
+    }
 
     private boolean nicheAdjacent(Set<MechanicNicheTag> niches, MechanicNicheTag dominant) {
         return niches.stream().anyMatch(niche -> nicheAdjacent(niche, dominant));
@@ -930,6 +1103,8 @@ public class ProceduralAbilityGenerator {
         }
         return clamp(1.0D + ((0.42D - Math.abs(similarity - 0.42D)) * 0.09D), 0.98D, 1.04D);
     }
+
+    private record CategorySelectionProfile(AbilityTemplate bestTemplate, double templateScore, double categoryScore) {}
 
     private NicheVariantProfile resolveVariantProfile(Artifact artifact) {
         ObtuseLoot plugin = ObtuseLoot.get();
