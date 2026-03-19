@@ -5,42 +5,42 @@ Picked up JAVA_TOOL_OPTIONS:
 [validation] window_complete: 2
 [validation] window_complete: 3
 [validation] window_complete: 4
-[world-sim][memory] generation=4 heap_used_mb=239 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=8407 in_memory_rollup_count=1 active_artifact_count=8 lineage_count=5 branch_count=9
+[world-sim][memory] generation=4 heap_used_mb=50 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=8548 in_memory_rollup_count=1 active_artifact_count=8 lineage_count=6 branch_count=11
 [validation] window_complete: 5
 [validation] window_complete: 6
 [validation] window_complete: 7
 [validation] window_complete: 8
-[world-sim][memory] generation=8 heap_used_mb=304 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=23315 in_memory_rollup_count=2 active_artifact_count=8 lineage_count=5 branch_count=14
+[world-sim][memory] generation=8 heap_used_mb=190 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=23380 in_memory_rollup_count=2 active_artifact_count=8 lineage_count=6 branch_count=16
 [validation] window_complete: 9
 [validation] window_complete: 10
 [validation] window_complete: 11
 [validation] window_complete: 12
-[world-sim][memory] generation=12 heap_used_mb=194 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=42045 in_memory_rollup_count=3 active_artifact_count=8 lineage_count=5 branch_count=17
+[world-sim][memory] generation=12 heap_used_mb=104 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=42550 in_memory_rollup_count=3 active_artifact_count=8 lineage_count=6 branch_count=17
 [validation] window_complete: 13
 [validation] window_complete: 14
 [validation] window_complete: 15
 [validation] window_complete: 16
-[world-sim][memory] generation=16 heap_used_mb=193 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=60996 in_memory_rollup_count=4 active_artifact_count=8 lineage_count=5 branch_count=19
+[world-sim][memory] generation=16 heap_used_mb=212 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=61451 in_memory_rollup_count=4 active_artifact_count=8 lineage_count=6 branch_count=19
 [validation] window_complete: 17
 [validation] window_complete: 18
 [validation] window_complete: 19
 [validation] window_complete: 20
-[world-sim][memory] generation=20 heap_used_mb=354 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=80568 in_memory_rollup_count=5 active_artifact_count=8 lineage_count=5 branch_count=19
+[world-sim][memory] generation=20 heap_used_mb=278 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=81039 in_memory_rollup_count=5 active_artifact_count=8 lineage_count=6 branch_count=19
 [validation] window_complete: 21
 [validation] window_complete: 22
 [validation] window_complete: 23
 [validation] window_complete: 24
-[world-sim][memory] generation=24 heap_used_mb=226 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=100515 in_memory_rollup_count=6 active_artifact_count=8 lineage_count=5 branch_count=19
+[world-sim][memory] generation=24 heap_used_mb=189 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=100020 in_memory_rollup_count=6 active_artifact_count=8 lineage_count=6 branch_count=19
 [validation] window_complete: 25
 [validation] window_complete: 26
 [validation] window_complete: 27
 [validation] window_complete: 28
-[world-sim][memory] generation=28 heap_used_mb=331 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=120117 in_memory_rollup_count=7 active_artifact_count=8 lineage_count=5 branch_count=19
+[world-sim][memory] generation=28 heap_used_mb=68 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=118986 in_memory_rollup_count=7 active_artifact_count=8 lineage_count=6 branch_count=19
 [validation] window_complete: 29
 [validation] window_complete: 30
 [validation] window_complete: 31
 [validation] window_complete: 32
-[world-sim][memory] generation=32 heap_used_mb=258 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=139517 in_memory_rollup_count=8 active_artifact_count=8 lineage_count=5 branch_count=19
+[world-sim][memory] generation=32 heap_used_mb=123 heap_max_mb=4022 telemetry_buffer_size=0 telemetry_total_recorded=138002 in_memory_rollup_count=8 active_artifact_count=8 lineage_count=6 branch_count=19
 [validation] writing_rollup_snapshots
 [validation] run_complete
 [validation] scenario_complete: random-baseline
