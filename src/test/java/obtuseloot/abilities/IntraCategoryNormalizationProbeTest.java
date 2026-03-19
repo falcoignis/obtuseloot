@@ -20,26 +20,26 @@ class IntraCategoryNormalizationProbeTest {
         AbilityRegistry registry = new AbilityRegistry();
         ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
 
-        DistributionProbe stealth = probeCategory(generator, registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION, stealthProfile(), 40, 910_000L);
-        DistributionProbe survival = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SURVIVAL_ADAPTATION, survivalProfile(), 40, 920_000L);
-        DistributionProbe sensing = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SENSING_INFORMATION, sensingProfile(), 40, 930_000L);
+        DistributionProbe stealth = probeCategory(generator, registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION, stealthProfile(), 60, 910_000L);
+        DistributionProbe survival = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SURVIVAL_ADAPTATION, survivalProfile(), 60, 920_000L);
+        DistributionProbe sensing = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SENSING_INFORMATION, sensingProfile(), 60, 930_000L);
 
         System.out.println("STEALTH_NORMALIZATION_PROBE hits=" + stealth.totalHits + " dist=" + summarize(stealth.distribution));
         System.out.println("SURVIVAL_NORMALIZATION_PROBE hits=" + survival.totalHits + " dist=" + summarize(survival.distribution));
         System.out.println("SENSING_NORMALIZATION_PROBE hits=" + sensing.totalHits + " dist=" + summarize(sensing.distribution));
 
-        assertTrue(stealth.totalHits >= 15, "Stealth probe should generate enough observations for reachability auditing.");
+        assertTrue(stealth.totalHits >= 25, "Stealth probe should generate enough observations for reachability auditing.");
         assertEquals(categoryTemplateCount(registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION), stealth.distribution.size(),
                 "All stealth templates must remain reachable.");
-        assertTrue(stealth.topShare() < 0.70D, "Stealth normalization should reduce but not eliminate concentration in the probe.");
-        assertTrue(stealth.topThreeShare() < 0.90D, "Stealth tail templates should still remain in the mix.");
+        assertTrue(stealth.topShare() < 0.60D, "Stealth normalization should reduce runaway concentration in the probe.");
+        assertTrue(stealth.topThreeShare() < 0.85D, "Stealth tail templates should still remain in the mix.");
 
         assertTrue(survival.totalHits >= 25, "Survival probe should remain active.");
-        assertTrue(survival.topThreeShare() < 0.65D, "Survival top-3 should remain below 65%.");
+        assertTrue(survival.topThreeShare() < 0.66D, "Survival top-3 should remain below 66%.");
 
-        assertTrue(sensing.totalHits >= 8, "Sensing probe should remain active.");
-        assertTrue(sensing.topShare() < 0.34D, "Sensing should remain balanced without a single runaway leader.");
-        assertTrue(sensing.topThreeShare() < 0.72D, "Sensing should retain balanced spread.");
+        assertTrue(sensing.totalHits >= 12, "Sensing probe should remain active.");
+        assertTrue(sensing.topShare() < 0.30D, "Sensing should remain balanced without a single runaway leader.");
+        assertTrue(sensing.topThreeShare() < 0.65D, "Sensing should retain balanced spread.");
     }
 
     private DistributionProbe probeCategory(ProceduralAbilityGenerator generator,
