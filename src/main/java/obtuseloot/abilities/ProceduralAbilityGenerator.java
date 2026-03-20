@@ -389,7 +389,7 @@ public class ProceduralAbilityGenerator {
         double mechanicInfluence = mechanicLineageWeight(template.mechanic(), lineage);
         double ecologicalCorrection = lineageResolver == null ? 1.0D : lineageResolver.resolveEcologicalCorrection(lineage, ecology);
         double opportunity = supportAllocation == null ? 1.0D : supportAllocation.reinforcementMultiplier();
-        return score * rarityModifier(template) * ecology * triggerSaturation * nicheSaturation * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
+        return score * ecology * triggerSaturation * nicheSaturation * lineageTemplateInfluence * mechanicInfluence * ecologicalCorrection * mutationInfluence * opportunity;
     }
 
     private double triggerSaturationPenalty(AbilityTemplate template) {
@@ -462,17 +462,6 @@ public class ProceduralAbilityGenerator {
         observed.add(LineageBiasDimension.RISK_APPETITE, templates.stream().filter(t -> t.family() == AbilityFamily.BRUTALITY || t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.30D);
         observed.add(LineageBiasDimension.COMPETITION_TOLERANCE, Math.max(-0.22D, Math.min(0.22D, memoryProfile.aggressionWeight() * 0.04D)));
         return observed;
-    }
-
-    private double rarityModifier(AbilityTemplate template) {
-        if (ecosystemEngine == null || template == null) {
-            return 1.0D;
-        }
-        double observedShare = ecosystemEngine.branchShare(template.id());
-        double targetShare = 0.10D;
-        double alpha = 0.5D;
-        double modifier = 1.0D + alpha * (targetShare - observedShare);
-        return Math.max(0.93D, Math.min(1.07D, modifier));
     }
 
     private double scoreFamily(Artifact artifact, AbilityFamily family, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage, UtilityHistoryRollup utilityHistory) {
