@@ -43,7 +43,7 @@ public class AbilityMutationEngine {
         }
 
         Random r = new Random(artifact.getArtifactSeed() ^ artifact.getDriftLevel() ^ artifact.getDriftAlignment().hashCode() ^ artifact.getAwakeningPath().hashCode()
-                ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure() ^ definitions.size());
+                ^ artifact.getConvergencePath().hashCode() ^ memoryProfile.pressure() ^ definitions.size());
 
         EcosystemRoleClassifier roleClassifier = new EcosystemRoleClassifier();
         ArtifactNicheProfile nicheProfile = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
@@ -105,7 +105,7 @@ public class AbilityMutationEngine {
                     definition.evolutionVariant(),
                     definition.driftVariant(),
                     definition.awakeningVariant(),
-                    definition.fusionVariant(),
+                    definition.convergenceVariant(),
                     definition.memoryVariant() + (memoryPressure ? " + memory echo" : ""),
                     support,
                     List.of(new AbilityEffect(effectPattern, AbilityEffectType.TRIGGERED_BEHAVIOR, 0.02D + (mutationCount * 0.001D))),

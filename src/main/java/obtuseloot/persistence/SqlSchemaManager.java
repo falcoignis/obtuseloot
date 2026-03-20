@@ -24,7 +24,7 @@ public class SqlSchemaManager {
                     evolution_path VARCHAR(128),
                     drift_alignment VARCHAR(64),
                     awakening_path VARCHAR(128),
-                    fusion_path VARCHAR(128),
+                    convergence_path VARCHAR(128),
                     ability_branch_path TEXT,
                     mutation_history TEXT,
                     memory_influence TEXT,
@@ -108,6 +108,8 @@ public class SqlSchemaManager {
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_archetype ON artifacts(archetype)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_evolution ON artifacts(evolution_path)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_drift_alignment ON artifacts(drift_alignment)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_path VARCHAR(128)");
+            tryExecute(statement, "UPDATE artifacts SET convergence_path = fusion_path WHERE convergence_path IS NULL AND fusion_path IS NOT NULL");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN utility_history TEXT");
         }
     }
@@ -117,6 +119,14 @@ public class SqlSchemaManager {
             statement.executeUpdate(ddl);
         } catch (SQLException ignored) {
             // Column likely already exists on upgraded installs.
+        }
+    }
+
+    private void tryExecute(Statement statement, String ddl) {
+        try {
+            statement.executeUpdate(ddl);
+        } catch (SQLException ignored) {
+            // Legacy migration helpers may target columns that are absent on fresh installs.
         }
     }
 }

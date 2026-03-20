@@ -10,7 +10,7 @@ import java.util.Random;
 public class AbilityBranchResolver {
     public AbilityEvolutionTree resolveTree(String abilityId, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, String behaviorHint) {
         String family = abilityId.contains(".") ? abilityId.substring(0, abilityId.indexOf('.')) : "adaptive";
-        long seed = artifact.getArtifactSeed() ^ abilityId.hashCode() ^ artifact.getDriftAlignment().hashCode() ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode();
+        long seed = artifact.getArtifactSeed() ^ abilityId.hashCode() ^ artifact.getDriftAlignment().hashCode() ^ artifact.getAwakeningPath().hashCode() ^ artifact.getConvergencePath().hashCode();
         seed ^= (long) stage * 17L;
         seed ^= behaviorHint.hashCode();
         Random r = new Random(seed);
@@ -32,7 +32,7 @@ public class AbilityBranchResolver {
             if (id.contains("dash") || id.contains("lane")) score += memoryProfile.mobilityWeight();
             if (id.contains("boss") || id.contains("quarry") || id.contains("anchor")) score += memoryProfile.bossWeight();
             if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && id.contains("awakened")) score += 1.1D;
-            if (!"none".equalsIgnoreCase(artifact.getFusionPath()) && id.contains("fusion")) score += 0.9D;
+            if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && id.contains("convergence")) score += 0.9D;
             if ("chaos".equals(family) && id.contains("paradox")) score += stage >= 4 ? 1.2D : 0.0D;
             scores[i] = Math.max(0.1D, score);
             total += scores[i];
@@ -54,7 +54,7 @@ public class AbilityBranchResolver {
             case "brutality" -> List.of(
                     branch("brutality.mauler", "hunt", "break", "pile-on", "execution burst"),
                     branch("brutality.quarry", "stalk", "fracture", "stampede", "overrun"),
-                    branch("brutality.fusion-predator", "bloodcall", "relay", "sunder", "pack collapse"));
+                    branch("brutality.convergence-predator", "bloodcall", "relay", "sunder", "pack collapse"));
             case "survival" -> List.of(
                     branch("survival.guardian", "brace", "counter", "stabilize", "bastion lock"),
                     branch("survival.shelter", "buffer", "recover", "harden", "eternal shelter"),
@@ -62,7 +62,7 @@ public class AbilityBranchResolver {
             case "mobility" -> List.of(
                     branch("mobility.lane-dancer", "setup", "sidestep", "dash", "corridor climax"),
                     branch("mobility.relay", "tag", "zip", "crossfire", "blink lattice"),
-                    branch("mobility.fusion-slipstream", "draft", "hook", "spiral", "kinetic storm"));
+                    branch("mobility.convergence-slipstream", "draft", "hook", "spiral", "kinetic storm"));
             case "chaos" -> List.of(
                     branch("chaos.sprawl", "spark", "split", "cascade", "anomaly bloom"),
                     branch("chaos.paradox", "glitch", "flip", "overwrite", "paradox verdict"),

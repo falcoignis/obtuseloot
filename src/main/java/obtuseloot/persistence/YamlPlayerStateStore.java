@@ -86,7 +86,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
         artifact.setAwakeningPath(yaml.getString("artifact.awakening-path", "dormant"));
         artifact.setItemCategory(yaml.getString("artifact.item-category", "artifact"));
-        artifact.setFusionPath(yaml.getString("artifact.fusion-path", "none"));
+        artifact.setConvergencePath(readConvergencePath(yaml));
         artifact.setDriftLevel(yaml.getInt("artifact.drift-level", 0));
         artifact.setTotalDrifts(yaml.getInt("artifact.total-drifts", 0));
         artifact.setLastDriftTimestamp(yaml.getLong("artifact.last-drift-timestamp", 0L));
@@ -324,7 +324,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "archetype-path", artifact.getArchetypePath());
         yaml.set(base + "evolution-path", artifact.getEvolutionPath());
         yaml.set(base + "awakening-path", artifact.getAwakeningPath());
-        yaml.set(base + "fusion-path", artifact.getFusionPath());
+        yaml.set(base + "convergence-path", artifact.getConvergencePath());
         yaml.set(base + "drift-level", artifact.getDriftLevel());
         yaml.set(base + "total-drifts", artifact.getTotalDrifts());
         yaml.set(base + "drift-alignment", artifact.getDriftAlignment());
@@ -358,6 +358,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "last-utility-history", artifact.getLastUtilityHistory());
         yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
         artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
+    }
+
+    private String readConvergencePath(YamlConfiguration yaml) {
+        if (yaml.contains("artifact.convergence-path")) {
+            return yaml.getString("artifact.convergence-path", "none");
+        }
+        return yaml.getString("artifact.fusion-path", "none");
     }
 
     private void writeReputationSection(YamlConfiguration yaml, ArtifactReputation reputation) {

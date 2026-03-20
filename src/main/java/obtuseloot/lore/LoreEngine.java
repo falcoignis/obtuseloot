@@ -37,8 +37,8 @@ public class LoreEngine {
         lines.add(fragmentGenerator.identifyFragment(artifact));
         lines.add(fragmentGenerator.driftFragment(artifact));
         lines.add(fragmentGenerator.awakeningFragment(artifact));
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) {
-            lines.add(fragmentGenerator.fusionFragment(artifact));
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) {
+            lines.add(fragmentGenerator.convergenceFragment(artifact));
         }
         lines.add(fragmentGenerator.memoryFragment(artifact));
         if (artifact.hasInstability()) {

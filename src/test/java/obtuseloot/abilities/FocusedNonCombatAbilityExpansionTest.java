@@ -146,7 +146,7 @@ class FocusedNonCombatAbilityExpansionTest {
                 "evo",
                 "drift",
                 "awakening",
-                "fusion",
+                "convergence",
                 "memory",
                 java.util.List.of(),
                 java.util.List.of(),

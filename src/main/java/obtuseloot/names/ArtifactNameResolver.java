@@ -93,7 +93,7 @@ public final class ArtifactNameResolver {
         if (artifact.getMemory().snapshot().values().stream().mapToInt(Integer::intValue).sum() > 4) tags.add("memory");
         if (artifact.getSeedMobilityAffinity() > 0.66D) tags.add("mobility");
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) tags.add("ritual");
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) tags.add("control");
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) tags.add("control");
         if (tags.isEmpty()) tags.add("support");
         return tags;
     }

@@ -13,7 +13,7 @@ class ArtifactNamingRefactorTest {
         Artifact artifact = new Artifact(UUID.randomUUID());
         artifact.setEvolutionPath("advanced");
         artifact.setAwakeningPath("emberwake");
-        artifact.setFusionPath("twin-reliquary");
+        artifact.setConvergencePath("twin-reliquary");
 
         assertEquals(ArtifactRank.FUSED, ArtifactRankResolver.resolve(artifact));
     }

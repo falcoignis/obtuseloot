@@ -40,7 +40,7 @@ class EcosystemTelemetryPipelineTest {
                 AbilityFamily.PRECISION,
                 AbilityTrigger.ON_WORLD_SCAN,
                 AbilityMechanic.SENSE_PING,
-                "effect", "evo", "drift", "awake", "fusion", "memory", List.of(), List.of(),
+                "effect", "evo", "drift", "awake", "convergence", "memory", List.of(), List.of(),
                 AbilityMetadata.of(java.util.Set.of("info"), java.util.Set.of("scan"), java.util.Set.of("watchful"), 0.8, 0.8, 0.8, 0.2, 0.2, 0.2),
                 "s1", "s2", "s3", "s4", "s5"
         );

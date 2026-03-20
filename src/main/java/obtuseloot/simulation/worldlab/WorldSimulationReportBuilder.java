@@ -18,7 +18,7 @@ public class WorldSimulationReportBuilder {
                 + "- Dominant family rate: " + world(data, "dominant_family_rate") + "\n"
                 + "- Branch convergence rate: " + world(data, "branch_convergence_rate") + "\n"
                 + "- Dead branch rate: " + world(data, "dead_branch_rate") + "\n"
-                + "- Fusion adoption: " + world(data, "long_run_fusion_adoption") + "\n"
+                + "- Convergence adoption: " + world(data, "long_run_convergence_adoption") + "\n"
                 + "- Awakening adoption: " + world(data, "long_run_awakening_adoption") + "\n";
     }
 
@@ -37,7 +37,7 @@ public class WorldSimulationReportBuilder {
                 + "- Awakening prevalence starts to bend branch selection and memory specialization.\n\n"
                 + "## Late season meta\n"
                 + "- Dominant family concentration: " + late + "\n"
-                + "- Fusion/drift pressure compounds; watch for convergence spikes and dead branches.\n";
+                + "- Convergence/drift pressure compounds; watch for convergence spikes and dead branches.\n";
     }
 
     public String balanceFindings(EcosystemHealthReport report) {

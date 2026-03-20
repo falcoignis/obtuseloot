@@ -70,7 +70,7 @@ public enum AbilityCategory {
             Set.of("ritual", "weirdness", "symbolism")),
     STEALTH_TRICKERY_DISRUPTION(
             "Stealth / trickery / disruption",
-            "Silent movement, misdirection, contraband routing, witness confusion, and threshold interference.",
+            "Silent movement, misdirection, contraband routing, witness convergence, and threshold interference.",
             "Decoys, spoofed signals, smuggling cues, denial fields, and infiltration-friendly setup.",
             "Supports rogues, spies, factions, infiltration, and mischievous adventure/minigame play.",
             Set.of(MechanicNicheTag.MOBILITY_UTILITY, MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.INSPECT_INFORMATION),

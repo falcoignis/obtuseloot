@@ -44,7 +44,7 @@ public class ArtifactTextToneValidator {
             case MEMORY -> "It remembers what others let fade.";
             case LINEAGE -> "Its making belongs to an older vow.";
             case DRIFT -> "It leans toward " + identity.motifs().getFirst() + ".";
-            case FUSION -> "Two intentions now share one edge.";
+            case CONVERGENCE -> "Two intentions now share one edge.";
             case DISCOVERY, EVENT -> "Something in it is newly known.";
         };
     }

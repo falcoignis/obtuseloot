@@ -8,7 +8,7 @@ public enum ArtifactTextChannel {
     LINEAGE,
     MEMORY,
     DRIFT,
-    FUSION,
+    CONVERGENCE,
     DISCOVERY,
     EVENT
 }

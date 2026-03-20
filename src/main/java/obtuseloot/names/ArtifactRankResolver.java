@@ -7,7 +7,7 @@ public final class ArtifactRankResolver {
     }
 
     public static ArtifactRank resolve(Artifact artifact) {
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) {
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) {
             return ArtifactRank.FUSED;
         }
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {

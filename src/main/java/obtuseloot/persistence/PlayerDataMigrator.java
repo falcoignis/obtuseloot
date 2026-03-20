@@ -6,12 +6,13 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public final class PlayerDataMigrator {
-    public static final int CURRENT_DATA_VERSION = 3;
+    public static final int CURRENT_DATA_VERSION = 4;
 
     private static final List<DataMigration> MIGRATIONS = List.of(
             new LegacyToV1Migration(),
             new V1ToV2Migration(),
-            new V2ToV3Migration()
+            new V2ToV3Migration(),
+            new V3ToV4Migration()
     );
 
     private PlayerDataMigrator() {
@@ -88,7 +89,7 @@ public final class PlayerDataMigrator {
             moveIfAbsent(yaml, "artifact.archetype", "artifact.archetype-path");
             moveIfAbsent(yaml, "artifact.evolution", "artifact.evolution-path");
             moveIfAbsent(yaml, "artifact.awakening", "artifact.awakening-path");
-            moveIfAbsent(yaml, "artifact.fusion", "artifact.fusion-path");
+            moveIfAbsent(yaml, "artifact.fusion", "artifact.convergence-path");
             moveIfAbsent(yaml, "artifact.drift", "artifact.drift-level");
             moveIfAbsent(yaml, "artifact.drifts", "artifact.total-drifts");
             moveIfAbsent(yaml, "artifact.lineage", "artifact.latent-lineage");
@@ -136,6 +137,24 @@ public final class PlayerDataMigrator {
         @Override
         public void migrate(YamlConfiguration yaml) {
             yaml.set("artifact.naming.rank-at-naming", null);
+        }
+    }
+
+    private static final class V3ToV4Migration implements DataMigration {
+        @Override
+        public int fromVersion() {
+            return 3;
+        }
+
+        @Override
+        public int toVersion() {
+            return 4;
+        }
+
+        @Override
+        public void migrate(YamlConfiguration yaml) {
+            moveIfAbsent(yaml, "artifact.fusion-path", "artifact.convergence-path");
+            yaml.set("artifact.fusion-path", null);
         }
     }
 

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DebugTabCompleter {
-    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome", "projection", "subscriptions", "artifact");
+    private static final List<String> TOP = List.of("inspect", "rep", "evolve", "drift", "awaken", "converge", "lore", "reset", "save", "reload", "help", "instability", "archetype", "path", "simulate", "seed", "ability", "memory", "persistence", "ecosystem", "lineage", "genome", "projection", "subscriptions", "artifact");
     private static final List<String> REP_ACTIONS = List.of("set", "add", "reset");
     private static final List<String> STATS = List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency", "kills", "bossKills", "recentKillChain", "survivalStreak");
     private static final List<String> ARCHETYPES = List.of("unformed", "vanguard", "deadeye", "ravager", "strider", "harbinger", "warden", "paragon");
@@ -96,7 +96,7 @@ public class DebugTabCompleter {
             return false;
         }
         String sub = args[1].toLowerCase(Locale.ROOT);
-        boolean base = (args.length == 3 && List.of("inspect", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save").contains(sub))
+        boolean base = (args.length == 3 && List.of("inspect", "evolve", "drift", "awaken", "converge", "lore", "reset", "save").contains(sub))
                 || (args.length == 4 && "rep".equals(sub) && "reset".equalsIgnoreCase(args[2]))
                 || (args.length == 5 && "rep".equals(sub) && ("set".equalsIgnoreCase(args[2]) || "add".equalsIgnoreCase(args[2])))
                 || (args.length == 4 && "instability".equals(sub) && "clear".equalsIgnoreCase(args[2]))

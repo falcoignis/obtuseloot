@@ -28,7 +28,7 @@ public final class ArtifactDebugger {
         lines.add("id=" + artifact.getArtifactSeed() + ", owner=" + artifact.getOwnerId());
         lines.add("name=\"" + artifact.getName() + "\", archetype=" + artifact.getArchetypePath()
                 + ", evolution=" + artifact.getEvolutionPath());
-        lines.add("awakening=" + artifact.getAwakeningPath() + ", fusion=" + artifact.getFusionPath()
+        lines.add("awakening=" + artifact.getAwakeningPath() + ", convergence=" + artifact.getConvergencePath()
                 + ", drift=" + artifact.getDriftLevel() + " (total=" + artifact.getTotalDrifts() + ", align=" + artifact.getDriftAlignment() + ")");
         lines.add("reputation={precision=" + rep.precision() + ", brutality=" + rep.brutality() + ", survival=" + rep.survival()
                 + ", mobility=" + rep.mobility() + ", chaos=" + rep.chaos() + ", consistency=" + rep.consistency() + "}");
