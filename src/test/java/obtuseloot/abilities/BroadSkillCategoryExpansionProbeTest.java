@@ -132,7 +132,7 @@ class BroadSkillCategoryExpansionProbeTest {
         Artifact artifact = new Artifact(UUID.randomUUID());
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
-        artifact.setLatentLineage(lineageId == null ? "common" : lineageId);
+        artifact.setLatentLineage(lineageId == null ? "unassigned" : lineageId);
         artifact.setSeedPrecisionAffinity(0.48D);
         artifact.setSeedBrutalityAffinity(0.22D);
         artifact.setSeedSurvivalAffinity(0.56D);

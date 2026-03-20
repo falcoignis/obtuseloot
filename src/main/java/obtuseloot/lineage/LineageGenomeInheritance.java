@@ -9,8 +9,8 @@ import java.util.Random;
 
 public class LineageGenomeInheritance {
     private static final double NORMAL_MUTATION_RANGE = 0.05D;
-    private static final double RARE_MUTATION_RANGE = 0.15D;
-    private static final double RARE_MUTATION_CHANCE = 0.10D;
+    private static final double HIGH_VARIANCE_MUTATION_RANGE = 0.15D;
+    private static final double LOW_PROBABILITY_MUTATION_CHANCE = 0.10D;
 
     public ArtifactGenome inherit(ArtifactLineage lineage, ArtifactGenome parentGenome, long childSeed) {
         EnumMap<GenomeTrait, Double> childTraits = new EnumMap<>(GenomeTrait.class);
@@ -28,7 +28,7 @@ public class LineageGenomeInheritance {
             if (hasLineageGenome && lineageTraits.containsKey(trait)) {
                 parentTrait = lineageTraits.get(trait);
             }
-            double mutationRange = random.nextDouble() < RARE_MUTATION_CHANCE ? RARE_MUTATION_RANGE : NORMAL_MUTATION_RANGE;
+            double mutationRange = random.nextDouble() < LOW_PROBABILITY_MUTATION_CHANCE ? HIGH_VARIANCE_MUTATION_RANGE : NORMAL_MUTATION_RANGE;
             double mutation = ((random.nextDouble() * 2.0D) - 1.0D) * mutationRange;
             mutation += traitDirectionalBias(trait, specializationBias, riskBias, reliabilityBias);
             childTraits.put(trait, clamp01(parentTrait + mutation));

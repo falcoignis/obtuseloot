@@ -233,7 +233,7 @@ class AbilityNoveltyTuningProbeTest {
         Artifact artifact = new Artifact(UUID.randomUUID());
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
-        artifact.setLatentLineage(lineageId == null ? "common" : lineageId);
+        artifact.setLatentLineage(lineageId == null ? "unassigned" : lineageId);
         artifact.setSeedPrecisionAffinity(0.45D);
         artifact.setSeedBrutalityAffinity(0.15D);
         artifact.setSeedSurvivalAffinity(0.55D);
