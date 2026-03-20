@@ -30,9 +30,9 @@ Phase 2 is **partially integrated** as live decision logic, not analytics-only. 
 ## 4) Utility-Aware Ecology
 - Pressure is not based on population alone:
   - penalties require crowding plus below-mean utility density
-  - scarcity bonuses require rarity plus above-mean utility density
+  - scarcity bonuses require low share plus above-mean utility density
   - repulsion includes low outcome yield under crowding
-- This implements utility-aware behavior: rare useless niches are not automatically protected, while useful rare niches can gain positive pressure.
+- This implements utility-aware behavior: low-value low-share niches are not automatically protected, while useful low-share niches can gain positive pressure.
 
 ## 5) Specialization / Subniches
 - `SubnicheClassifier` and `RoleDifferentiationHeuristics` produce subniche labels and specialization scores.
@@ -53,7 +53,7 @@ Phase 2 is **partially integrated** as live decision logic, not analytics-only. 
 - Code path confirms ecological pressure affects real runtime scoring and evolution feedback.
 - Expected outcomes are encoded and tested:
   - crowded weak niches receive worse net pressure
-  - useful rare niches gain retention support
+  - useful low-share niches gain retention support
   - crowded useful niches can get specialization pressure instead of only collapse pressure
 
 ## 8) Test Coverage
@@ -61,7 +61,7 @@ Phase 2 is **partially integrated** as live decision logic, not analytics-only. 
   - niche classification
   - runtime telemetry saturation tracking
   - utility-aware pressure
-  - end-to-end crowded weak vs rare useful + specialization signal behavior
+  - end-to-end crowded weak vs low-share useful + specialization signal behavior
 - `ArtifactUtilityFitnessModelTest` validates utility-first scoring behavior used by ecology inputs.
 - `ArtifactUsageTrackerUtilityTelemetryTest` validates telemetry rollups/high-volume low-value detection.
 - `ExperienceEvolutionEngineTest` validates evolution feedback integration.

@@ -5,8 +5,8 @@ It is intentionally opinionated and should be tuned from playtest telemetry.
 
 ## 1) Archetype Matrix
 
-Archetype assignment unlocks at `evolution.archetype-score` and is selected by dominant pair score.
-If first place does not beat second place by at least `evolution.archetype-dominance-delta`, fallback is `paragon`.
+Archetype assignment unlocks at `evolution.archetype-threshold` and is selected by dominant pair score.
+If first place does not beat second place by at least `evolution.archetype-switch-margin`, fallback is `paragon`.
 
 ### Scoring pairs
 
@@ -23,9 +23,9 @@ If first place does not beat second place by at least `evolution.archetype-domin
 ### Stage naming by score
 
 - `<archetype>-initiate` at archetype unlock
-- `<archetype>-adept` at `evolution.tempered-score`
-- `<archetype>-ascendant` at `evolution.mythic-score`
-- hybrid specialization at `evolution.hybrid-score` via behavioral tie-breakers
+- `<archetype>-adept` at `evolution.tempered-threshold`
+- `<archetype>-advanced` at `evolution.advanced-threshold`
+- hybrid specialization at `evolution.hybrid-threshold` via behavioral tie-breakers
 
 ## 2) Hybrid Specialization Matrix
 

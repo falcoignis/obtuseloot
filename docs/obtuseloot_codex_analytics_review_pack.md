@@ -28,13 +28,13 @@ If not, the analysis may be unreliable.
 
 ## 2. Do Path Distributions Make Sense?
 The report should distinguish between:
-- common paths
-- rare but healthy paths
+- dominant paths
+- low-frequency but healthy paths
 - dead or unreachable paths
 
 Warning signs:
-- “Rare = buff it”
-- “Common = nerf it”
+- “Low-frequency = buff it”
+- “Dominant = nerf it”
 
 ## 3. Does It Analyze Progression Timing?
 Look for metrics such as:
@@ -56,7 +56,7 @@ Weak reports treat systems independently.
 Good reports mention:
 - unusually strong seeds
 - unusually weak seeds
-- interesting rare lineages
+- interesting low-frequency lineages
 
 Bad reports treat all unusual seeds as bugs.
 
@@ -109,12 +109,12 @@ Red flags:
 ## 2. Path Distribution Quality
 Good analysis:
 - identifies dominant paths
-- recognizes healthy rare paths
+- recognizes healthy low-frequency paths
 - identifies dead paths with evidence
 
 Red flags:
-- rare paths automatically labeled bad
-- common paths automatically labeled broken
+- low-frequency paths automatically labeled bad
+- dominant paths automatically labeled broken
 
 ## 3. Progression Pacing
 Check whether analysis evaluates:
@@ -135,7 +135,7 @@ Weak analysis treats each system independently.
 ## 5. Seed / Outlier Analysis
 Good analysis:
 - identifies unusual seeds
-- distinguishes “cool rare” vs “broken outlier”
+- distinguishes “cool low-frequency” vs “broken outlier”
 
 ## 6. Suggestion Quality
 Good suggestions are:

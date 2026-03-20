@@ -12,7 +12,7 @@
 - World B removes Experience-Driven Evolution (EDE).
 - World C removes ecosystem bias, diversity preservation, self-balancing, and environment pressure.
 - World D removes trait interaction scoring.
-- Output tracks dominant family/branch/lineage, turnover, entropy, concentration, niche count, novelty, and rare-lineage persistence.
+- Output tracks dominant family/branch/lineage, turnover, entropy, concentration, niche count, novelty, and low-frequency lineage persistence.
 
 ## 3) Key findings
 - Generator-balanced in isolation: yes; full-system world still shows non-trivial turnover with controlled concentration.
@@ -26,8 +26,8 @@
 - World C dominant trio: chaos / mobility.lane-dancer / gilded
 - World D dominant trio: chaos / consistency.boss-ledger / gilded
 
-## 5) Rare but viable systems
-- Rare lineage persistence A/B/C/D: 68 / 71 / 74 / 69
+## 5) Low-frequency but viable systems
+- Low-frequency lineage persistence A/B/C/D: 68 / 71 / 74 / 69
 - Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.
 
 ## 6) Dead or suspicious systems

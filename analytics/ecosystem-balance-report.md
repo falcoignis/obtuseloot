@@ -12,7 +12,7 @@
 ## 3) Key findings
 - Generator ecology remains broad (family Shannon 1.791, branch Shannon 2.889).
 - No mutation occurs in 19.82% of sampled artifacts (watch-list, not immediate failure).
-- World-lab confirms that divergence emerges mostly from ecosystem controls and trait-interaction dynamics rather than family template scarcity.
+- World-lab confirms that divergence emerges mostly from ecosystem controls and trait-interaction dynamics rather than family template distribution skew.
 
 ## 4) Dominant families / branches / lineages / mechanics
 - Families: consistency (868), survival (866), precision (819), brutality (818).
@@ -20,9 +20,9 @@
 - Mechanics: defensiveThreshold (409), chainEscalation (401), pulse (400), burstState (396).
 - World-lab dominant trio was highly similar across worlds, indicating baseline generator pressure is stable but still somewhat designer-anchored.
 
-## 5) Rare but viable systems
+## 5) Low-frequency but viable systems
 - precision.clock (251), mobility.fusion-slipstream (254), precision.awakened-discipline (257), survival.guardian (264).
-- In world-lab, rare-lineage persistence remained non-zero across all worlds, indicating low-frequency systems can survive under pressure.
+- In world-lab, low-frequency lineage persistence remained non-zero across all worlds, indicating low-frequency systems can survive under pressure.
 
 ## 6) Dead or suspicious systems
 - Dead memory types: none.

@@ -1,10 +1,10 @@
 # Branch Frequency Dampening Report
 
-Implemented adaptive branch-level rarity modifier during ability scoring:
+Implemented adaptive branch-level branch-share modifier during ability scoring:
 - `observedShare = ecosystemStats.branchShare(branchId)`
 - `targetShare = 0.10`
 - `alpha = 0.5`
-- `rarityModifier = clamp(1 + alpha*(targetShare-observedShare), 0.93, 1.07)`
+- `shareModifier = clamp(1 + alpha*(targetShare-observedShare), 0.93, 1.07)`
 
 ## Distribution shift
 

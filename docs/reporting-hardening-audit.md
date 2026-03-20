@@ -2,8 +2,8 @@
 
 ## Expanded reports
 - Upgraded ability, memory, ecosystem balance, and world-lab summaries from thin snapshots to structured decision reports.
-- Added explicit sections for scope, method, key findings, dominant systems, rare systems, suspicious systems, confidence, and next steps.
-- Open-endedness reports now include turnover trends, novelty rate, and rare-lineage persistence interpretation.
+- Added explicit sections for scope, method, key findings, dominant systems, low-frequency systems, suspicious systems, confidence, and next steps.
+- Open-endedness reports now include turnover trends, novelty rate, and low-frequency lineage persistence interpretation.
 
 ## Interpretation gaps closed
 - Separated generator balance conclusions from world-scale divergence conclusions.

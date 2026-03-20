@@ -130,7 +130,7 @@ class NicheEcologySystemTest {
             ));
         }
 
-        // 1 rare RITUAL artifact with high utility (pulls mean utility up,
+        // 1 low-frequency RITUAL artifact with high utility (pulls mean utility up,
         // making NAVIGATION below-mean → saturationPenalty fires)
         tracker.recordTelemetry(99L, Map.of(
                 "RITUAL_CHANNEL@ON_MEMORY_EVENT",

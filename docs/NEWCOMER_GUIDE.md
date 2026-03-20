@@ -16,7 +16,7 @@ ObtuseLoot is a Java 21 Minecraft plugin for Purpur/Paper-style servers that gen
 2. Plugin creates folders/default config/list files if needed and loads all data.
 3. Plugin wires listeners and commands.
 4. When lootable inventories are opened, plugin may inject generated artifacts.
-5. Generated items get rarity/name/lore and optional soul metadata.
+5. Generated items get procedural name/lore output and optional soul metadata.
 6. `SoulEngine` watches player equipment/projectiles/events and drives particles + abilities from soul metadata.
 
 ## Important concepts
