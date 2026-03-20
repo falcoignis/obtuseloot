@@ -28,31 +28,32 @@ public enum EquipmentArchetype {
     BOW("bow", EquipmentRole.WEAPON, EquipmentRole.RANGED_WEAPON),
     CROSSBOW("crossbow", EquipmentRole.WEAPON, EquipmentRole.RANGED_WEAPON),
 
-    LEATHER_HELMET("leather_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    LEATHER_CHESTPLATE("leather_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    LEATHER_LEGGINGS("leather_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    LEATHER_BOOTS("leather_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    CHAINMAIL_HELMET("chainmail_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    CHAINMAIL_CHESTPLATE("chainmail_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    CHAINMAIL_LEGGINGS("chainmail_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    CHAINMAIL_BOOTS("chainmail_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    IRON_HELMET("iron_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    IRON_CHESTPLATE("iron_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    IRON_LEGGINGS("iron_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    IRON_BOOTS("iron_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    GOLDEN_HELMET("golden_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    GOLDEN_CHESTPLATE("golden_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    GOLDEN_LEGGINGS("golden_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    GOLDEN_BOOTS("golden_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    DIAMOND_HELMET("diamond_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    DIAMOND_CHESTPLATE("diamond_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    DIAMOND_LEGGINGS("diamond_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    DIAMOND_BOOTS("diamond_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    NETHERITE_HELMET("netherite_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET),
-    NETHERITE_CHESTPLATE("netherite_chestplate", EquipmentRole.ARMOR, EquipmentRole.CHESTPLATE),
-    NETHERITE_LEGGINGS("netherite_leggings", EquipmentRole.ARMOR, EquipmentRole.LEGGINGS),
-    NETHERITE_BOOTS("netherite_boots", EquipmentRole.ARMOR, EquipmentRole.BOOTS),
-    TURTLE_HELMET("turtle_helmet", EquipmentRole.ARMOR, EquipmentRole.HELMET);
+    LEATHER_HELMET("leather_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    LEATHER_CHESTPLATE("leather_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    LEATHER_LEGGINGS("leather_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    LEATHER_BOOTS("leather_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    CHAINMAIL_HELMET("chainmail_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    CHAINMAIL_CHESTPLATE("chainmail_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    CHAINMAIL_LEGGINGS("chainmail_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    CHAINMAIL_BOOTS("chainmail_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    IRON_HELMET("iron_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    IRON_CHESTPLATE("iron_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    IRON_LEGGINGS("iron_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    IRON_BOOTS("iron_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    GOLDEN_HELMET("golden_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    GOLDEN_CHESTPLATE("golden_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    GOLDEN_LEGGINGS("golden_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    GOLDEN_BOOTS("golden_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    DIAMOND_HELMET("diamond_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    DIAMOND_CHESTPLATE("diamond_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    DIAMOND_LEGGINGS("diamond_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    DIAMOND_BOOTS("diamond_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    NETHERITE_HELMET("netherite_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    NETHERITE_CHESTPLATE("netherite_chestplate", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.CHESTPLATE),
+    NETHERITE_LEGGINGS("netherite_leggings", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.LEGGINGS),
+    NETHERITE_BOOTS("netherite_boots", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.BOOTS),
+    TURTLE_HELMET("turtle_helmet", EquipmentRole.ARMOR, EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.HELMET),
+    ELYTRA("elytra", EquipmentRole.ARMOR, EquipmentRole.MOBILITY, EquipmentRole.TRAVERSAL);
 
     private static final List<EquipmentArchetype> ALL = List.of(values());
     private static final Map<String, EquipmentArchetype> BY_ID = ALL.stream()
@@ -79,6 +80,7 @@ public enum EquipmentArchetype {
     }
 
     public String rootForm() {
+        if (hasRole(EquipmentRole.MOBILITY) && hasRole(EquipmentRole.TRAVERSAL)) return "Wings";
         if (hasRole(EquipmentRole.HELMET)) return "Helm";
         if (hasRole(EquipmentRole.CHESTPLATE)) return "Cuirass";
         if (hasRole(EquipmentRole.LEGGINGS)) return "Greaves";
