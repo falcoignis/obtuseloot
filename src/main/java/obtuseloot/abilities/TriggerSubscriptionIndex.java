@@ -33,7 +33,13 @@ public final class TriggerSubscriptionIndex {
                     definition
             ));
         }
-        PlayerArtifactTriggerMap map = PlayerArtifactTriggerMap.fromBindings(bindings, reason, System.nanoTime() - start);
+        PlayerArtifactTriggerMap map = PlayerArtifactTriggerMap.fromBindings(
+                bindings,
+                artifact.getArtifactSeed(),
+                artifact.getArtifactStorageKey(),
+                reason,
+                System.nanoTime() - start
+        );
         byPlayer.put(playerId, map);
         rebuildCount.increment();
         rebuildNanos.add(map.rebuildNanos());
@@ -49,7 +55,11 @@ public final class TriggerSubscriptionIndex {
                                                  ArtifactReputation reputation,
                                                  ItemAbilityManager manager,
                                                  String reason) {
-        return byPlayer.computeIfAbsent(playerId, key -> rebuild(key, artifact, reputation, manager, reason));
+        PlayerArtifactTriggerMap existing = byPlayer.get(playerId);
+        if (existing != null && existing.matchesArtifactIdentity(artifact.getArtifactSeed(), artifact.getArtifactStorageKey())) {
+            return existing;
+        }
+        return rebuild(playerId, artifact, reputation, manager, reason);
     }
 
     public void remove(UUID playerId) {

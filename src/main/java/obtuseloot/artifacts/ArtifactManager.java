@@ -94,7 +94,7 @@ public class ArtifactManager {
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
         }
-        replaceLoadedArtifact(playerId, fresh, true);
+        replaceLoadedArtifact(playerId, ArtifactIdentityTransition.recreate(existing, fresh), true);
         return fresh;
     }
 
@@ -139,7 +139,7 @@ public class ArtifactManager {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(artifact);
         }
         Artifact replacement = createRegeneratedArtifact(artifact, newSeed);
-        replaceLoadedArtifact(playerId, replacement, true);
+        replaceLoadedArtifact(playerId, ArtifactIdentityTransition.regenerate(artifact, replacement), true);
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(replacement);
         }
@@ -197,7 +197,15 @@ public class ArtifactManager {
     }
 
     private void replaceLoadedArtifact(UUID playerId, Artifact artifact, boolean dirty) {
+        replaceLoadedArtifact(playerId, new ArtifactIdentityTransition(null, artifact, "artifact-load"), dirty);
+    }
+
+    private void replaceLoadedArtifact(UUID playerId, ArtifactIdentityTransition transition, boolean dirty) {
+        Artifact artifact = transition.replacement();
         Artifact previous = loadedArtifacts.put(playerId, artifact);
+        if (transition.discarded() != null && previous != null && previous != transition.discarded()) {
+            throw new IllegalStateException("Artifact transition discarded instance does not match loaded artifact for " + playerId);
+        }
         if (previous != null) {
             storageToOwner.remove(previous.getArtifactStorageKey(), playerId);
         }
