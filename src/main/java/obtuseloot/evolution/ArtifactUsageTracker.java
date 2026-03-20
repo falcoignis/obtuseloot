@@ -61,8 +61,8 @@ public class ArtifactUsageTracker {
         nichePopulationTracker.markDiscarded(artifact.getArtifactSeed());
     }
 
-    public void trackFusionParticipation(Artifact artifact) {
-        profileFor(artifact).recordFusion(System.currentTimeMillis());
+    public void trackConvergenceParticipation(Artifact artifact) {
+        profileFor(artifact).recordConvergence(System.currentTimeMillis());
     }
 
     public void trackAwakening(Artifact artifact) {

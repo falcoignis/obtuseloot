@@ -88,7 +88,7 @@ public final class PlayerDataMigrator {
             moveIfAbsent(yaml, "artifact.archetype", "artifact.archetype-path");
             moveIfAbsent(yaml, "artifact.evolution", "artifact.evolution-path");
             moveIfAbsent(yaml, "artifact.awakening", "artifact.awakening-path");
-            moveIfAbsent(yaml, "artifact.fusion", "artifact.fusion-path");
+            moveIfAbsent(yaml, "artifact.fusion", "artifact.convergence-path");
             moveIfAbsent(yaml, "artifact.drift", "artifact.drift-level");
             moveIfAbsent(yaml, "artifact.drifts", "artifact.total-drifts");
             moveIfAbsent(yaml, "artifact.lineage", "artifact.latent-lineage");

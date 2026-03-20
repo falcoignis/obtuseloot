@@ -20,7 +20,7 @@ public class EvolutionEngine {
         if (!ArtifactEligibility.isEvolutionEligible(artifact)) {
             artifact.setEvolutionPath("generic-baseline");
             artifact.setAwakeningPath("dormant");
-            artifact.setFusionPath("none");
+            artifact.setConvergencePath("none");
             return;
         }
         if (reputation.getTotalScore() < s.archetypeThreshold()) {

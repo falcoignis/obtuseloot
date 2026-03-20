@@ -30,7 +30,7 @@ import obtuseloot.evolution.ArtifactUsageTracker;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
-import obtuseloot.fusion.FusionEngine;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.lineage.ArtifactLineage;
@@ -75,7 +75,7 @@ public class WorldSimulationHarness {
     private final EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
     private final DriftEngine driftEngine = new DriftEngine();
     private final AwakeningEngine awakeningEngine = new AwakeningEngine();
-    private final FusionEngine fusionEngine = new FusionEngine();
+    private final ConvergenceEngine convergenceEngine = new ConvergenceEngine();
     private final ArtifactMemoryEngine memoryEngine = new ArtifactMemoryEngine();
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
     private final ArtifactUsageTracker usageTracker = new ArtifactUsageTracker();
@@ -340,16 +340,16 @@ public class WorldSimulationHarness {
             driftEngine.applyDriftSimulation(agent.artifact(), rep);
         }
         boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
-        boolean fused = fusionEngine.evaluateSimulation(agent.artifact(), rep);
+        boolean fused = convergenceEngine.evaluateSimulation(agent.artifact(), rep);
         if (awakened) {
             usageTracker.trackAwakening(agent.artifact());
             memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
             if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("awakening", "precision", 0.01D));
         }
         if (fused) {
-            usageTracker.trackFusionParticipation(agent.artifact());
-            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.FUSION);
-            if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("fusion", "survival", 0.01D));
+            usageTracker.trackConvergenceParticipation(agent.artifact());
+            memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.CONVERGENCE);
+            if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("convergence", "survival", 0.01D));
         }
 
         SpeciesNicheAnalyticsEngine.PenaltyResult penaltyResult = speciesNicheEngine.applyCrowdingPenalty(agent.artifact(), rep.getTotalScore());
@@ -711,7 +711,7 @@ public class WorldSimulationHarness {
             data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
             data.put("rollup_history", rollupHistorySummary);
             data.put("validation_profile", true);
-            data.put("fusion_diagnostics", fusionEngine.diagnosticCounters());
+            data.put("convergence_diagnostics", convergenceEngine.diagnosticCounters());
             writeJsonFile(out.resolve("world-sim-data.json"), data);
             Files.writeString(out.resolve("world-sim-report.md"), builder.reportMarkdown(config, data));
             Files.writeString(out.resolve("world-sim-meta-shifts.md"), "# Validation profile enabled\n\nHeavy narrative reports are disabled.\n");
@@ -765,7 +765,7 @@ public class WorldSimulationHarness {
         }
         data.put("telemetry", Map.of("archive_recent", telemetryArchive.readRecent(1).size(), "event_counts", snapshot.eventCounts(), "buffer_max", telemetryBuffer.maxPendingEvents(), "buffer_dropped", telemetryBuffer.droppedEvents(), "sampling_rate", telemetrySamplingRate));
         data.put("rollups", Map.of("niche", snapshot.nichePopulationRollup(), "lineage", snapshot.lineagePopulationRollup(), "ecosystem", snapshot));
-        data.put("fusion_diagnostics", fusionEngine.diagnosticCounters());
+        data.put("convergence_diagnostics", convergenceEngine.diagnosticCounters());
         data.put("phase6_experiment_outputs", buildPhase6Outputs(snapshot));
         data.put("rollup_history", rollupHistorySummary);
         writeJsonFile(out.resolve("world-sim-data.json"), data);

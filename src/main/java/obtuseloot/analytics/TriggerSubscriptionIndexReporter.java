@@ -70,7 +70,7 @@ public final class TriggerSubscriptionIndexReporter {
         out.append("\n");
 
         out.append("## 7) Remaining hot-path concerns\n");
-        out.append("- Ensure subscription rebuild hooks are triggered after state-changing debug, evolution, drift, awakening, and fusion flows.\n");
+        out.append("- Ensure subscription rebuild hooks are triggered after state-changing debug, evolution, drift, awakening, and convergence flows.\n");
         out.append("- Keep fallback scans disabled in production by keeping runtime.triggerSubscriptionIndexing=true.\n");
 
         Files.createDirectories(path.getParent());

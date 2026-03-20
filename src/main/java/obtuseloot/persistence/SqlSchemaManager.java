@@ -24,7 +24,7 @@ public class SqlSchemaManager {
                     evolution_path VARCHAR(128),
                     drift_alignment VARCHAR(64),
                     awakening_path VARCHAR(128),
-                    fusion_path VARCHAR(128),
+                    convergence_path VARCHAR(128),
                     ability_branch_path TEXT,
                     mutation_history TEXT,
                     memory_influence TEXT,

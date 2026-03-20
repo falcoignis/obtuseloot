@@ -16,7 +16,7 @@ class ExperienceEvolutionEngineTest {
         profile.markCreated(start);
         profile.recordUse(start + 3_600_000L);
         profile.recordKill(start + 3_600_000L);
-        profile.recordFusion(start + 3_600_000L);
+        profile.recordConvergence(start + 3_600_000L);
         profile.recordAwakening(start + 3_600_000L);
         profile.recordDiscard(start + 3_600_000L);
 
@@ -24,7 +24,7 @@ class ExperienceEvolutionEngineTest {
         assertEquals(1.0D, profile.killParticipation(), 1.0E-9D);
         assertTrue(profile.lifetimeHours() >= 1.0D);
         assertTrue(profile.discardRate() > 0.0D);
-        assertEquals(1.0D, profile.fusionParticipation(), 1.0E-9D);
+        assertEquals(1.0D, profile.convergenceParticipation(), 1.0E-9D);
         assertEquals(1.0D, profile.awakeningRate(), 1.0E-9D);
         assertEquals(0.0D, profile.validatedUtilityScore(), 1.0E-9D);
 
@@ -47,7 +47,7 @@ class ExperienceEvolutionEngineTest {
             profile.recordUse(t);
             if (i < 70) profile.recordKill(t);
             if (i < 15) profile.recordDiscard(t);
-            if (i < 20) profile.recordFusion(t);
+            if (i < 20) profile.recordConvergence(t);
             if (i < 10) profile.recordAwakening(t);
         }
 

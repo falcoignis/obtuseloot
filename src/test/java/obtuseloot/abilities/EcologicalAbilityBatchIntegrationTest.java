@@ -172,7 +172,7 @@ class EcologicalAbilityBatchIntegrationTest {
                 "evo",
                 "drift",
                 "awakening",
-                "fusion",
+                "convergence",
                 "memory",
                 List.of(),
                 List.of(),

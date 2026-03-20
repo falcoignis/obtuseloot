@@ -12,7 +12,7 @@ public class SimulationMetricsCollector {
     private final Map<String, Integer> archetypes = new HashMap<>();
     private final Map<String, Integer> stages = new HashMap<>();
     private final Map<String, Integer> awakenings = new HashMap<>();
-    private final Map<String, Integer> fusions = new HashMap<>();
+    private final Map<String, Integer> convergences = new HashMap<>();
     private final Map<String, Integer> driftAlignments = new HashMap<>();
     private final Map<String, Integer> branchPaths = new HashMap<>();
     private final Map<String, Integer> memoryProfiles = new HashMap<>();
@@ -45,7 +45,7 @@ public class SimulationMetricsCollector {
         bump(archetypes, artifact.getArchetypePath());
         bump(stages, artifact.getEvolutionPath());
         bump(awakenings, artifact.getAwakeningPath());
-        bump(fusions, artifact.getFusionPath());
+        bump(convergences, artifact.getConvergencePath());
         bump(driftAlignments, artifact.getDriftAlignment());
         bump(branchPaths, artifact.getLastAbilityBranchPath());
         bump(mutationCounts, artifact.getLastMutationHistory());
@@ -119,7 +119,7 @@ public class SimulationMetricsCollector {
                 "archetype_distribution", archetypes,
                 "evolution_stage_distribution", stages,
                 "awakening_rates", awakenings,
-                "fusion_rates", fusions,
+                "convergence_rates", convergences,
                 "drift_alignment_distribution", driftAlignments,
                 "branch_path_distribution", branchPaths,
                 "mutation_counts", mutationCounts,
@@ -157,7 +157,7 @@ public class SimulationMetricsCollector {
                 "dominant_family_rate", dominantRate(abilityFamilies),
                 "dead_branch_rate", deadBranchRate(branchPaths),
                 "late_season_meta_concentration", dominantFamilyTimeline.isEmpty() ? 0.0D : dominantFamilyTimeline.get(dominantFamilyTimeline.size() - 1),
-                "long_run_fusion_adoption", rate(sumValue(fusions) - fusions.getOrDefault("none", 0), sumValue(fusions)),
+                "long_run_convergence_adoption", rate(sumValue(convergences) - convergences.getOrDefault("none", 0), sumValue(convergences)),
                 "long_run_awakening_adoption", rate(sumValue(awakenings) - awakenings.getOrDefault("dormant", 0), sumValue(awakenings))
         ));
         return root;

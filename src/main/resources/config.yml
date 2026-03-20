@@ -94,7 +94,7 @@ text:
       max-words: 16
     drift:
       max-words: 10
-    fusion:
+    convergence:
       max-words: 14
 
 analytics:

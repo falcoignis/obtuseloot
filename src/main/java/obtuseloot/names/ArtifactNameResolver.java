@@ -42,7 +42,7 @@ public final class ArtifactNameResolver {
     }
 
     private static boolean shouldAssignTrueName(Artifact artifact) {
-        return hasAwakeningPath(artifact) || hasFusionPath(artifact) || artifact.getHistoryScore() >= 60;
+        return hasAwakeningPath(artifact) || hasConvergencePath(artifact) || artifact.getHistoryScore() >= 60;
     }
 
     private static ArtifactDiscoveryState resolveDiscovery(Artifact artifact) {
@@ -50,7 +50,7 @@ public final class ArtifactNameResolver {
         if (historyScore >= 80) {
             return ArtifactDiscoveryState.STORIED;
         }
-        if (hasAwakeningPath(artifact) || hasFusionPath(artifact) || historyScore >= 40) {
+        if (hasAwakeningPath(artifact) || hasConvergencePath(artifact) || historyScore >= 40) {
             return ArtifactDiscoveryState.REVEALED;
         }
         if (historyScore >= 20) {
@@ -64,9 +64,9 @@ public final class ArtifactNameResolver {
         return awakeningPath != null && !"dormant".equalsIgnoreCase(awakeningPath);
     }
 
-    private static boolean hasFusionPath(Artifact artifact) {
-        String fusionPath = artifact.getFusionPath();
-        return fusionPath != null && !"none".equalsIgnoreCase(fusionPath);
+    private static boolean hasConvergencePath(Artifact artifact) {
+        String convergencePath = artifact.getConvergencePath();
+        return convergencePath != null && !"none".equalsIgnoreCase(convergencePath);
     }
 
     private static List<String> identityTags(Artifact artifact) {
@@ -78,7 +78,7 @@ public final class ArtifactNameResolver {
         if (artifact.getMemory().snapshot().values().stream().mapToInt(Integer::intValue).sum() > 4) tags.add("memory");
         if (artifact.getSeedMobilityAffinity() > 0.66D) tags.add("mobility");
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) tags.add("ritual");
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath())) tags.add("control");
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) tags.add("control");
         if (tags.isEmpty()) tags.add("support");
         return tags;
     }
