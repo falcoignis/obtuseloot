@@ -16,6 +16,7 @@ import obtuseloot.analytics.InteractionHeatmapExporter;
 import obtuseloot.analytics.NovelStrategyEmergenceAnalyzer;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactIdentityTransition;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.analytics.TraitInteractionReportWriter;
 import obtuseloot.artifacts.ArtifactSeedFactory;
@@ -340,7 +341,15 @@ public class WorldSimulationHarness {
             driftEngine.applyDriftSimulation(agent.artifact(), rep);
         }
         boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
-        boolean fused = convergenceEngine.evaluateSimulation(agent.artifact(), rep);
+        ArtifactIdentityTransition convergenceTransition = convergenceEngine.evaluateSimulation(agent.artifact(), rep);
+        boolean fused = convergenceTransition != null;
+        if (fused) {
+            Artifact previousArtifact = agent.artifact();
+            Artifact replacementArtifact = convergenceTransition.replacement();
+            usageTracker.transitionIdentity(previousArtifact, replacementArtifact);
+            lineageRegistry.recordIdentityTransition(previousArtifact, replacementArtifact, convergenceTransition.reason(), replacementArtifact.getConvergencePath());
+            agent.replaceArtifact(replacementArtifact);
+        }
         if (awakened) {
             usageTracker.trackAwakening(agent.artifact());
             memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
