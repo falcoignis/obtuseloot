@@ -6,9 +6,6 @@ import obtuseloot.artifacts.ArtifactSeedFactory;
 import obtuseloot.artifacts.EquipmentArchetype;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.names.ArtifactNaming;
-import obtuseloot.names.ArtifactDiscoveryState;
-import obtuseloot.names.NamingArchetype;
-import obtuseloot.names.ToneProfile;
 import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.species.ArtifactSpecies;
 import obtuseloot.species.SpeciesRegistrySnapshot;
@@ -54,6 +51,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
 
     @Override
     public void saveArtifact(UUID playerId, Artifact artifact) {
+        artifact.refreshNamingProjection();
         CachedPlayerState state = stateFor(playerId);
         String yamlText;
         long revision;
@@ -97,14 +95,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setArtifactSeed(artifactSeed);
         seedFactory.applySeedProfile(artifact, artifactSeed);
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
-        naming.setDisplayName(yaml.getString("artifact.naming.display-name", naming.getDisplayName()));
         naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
-        naming.setRootForm(yaml.getString("artifact.naming.root-form", naming.getRootForm()));
-        naming.setNamingArchetype(NamingArchetype.valueOf(yaml.getString("artifact.naming.archetype", naming.getNamingArchetype().name())));
-        naming.setToneProfile(ToneProfile.valueOf(yaml.getString("artifact.naming.tone", naming.getToneProfile().name())));
-        naming.setDiscoveryState(ArtifactDiscoveryState.valueOf(yaml.getString("artifact.naming.discovery", naming.getDiscoveryState().name())));
-        naming.setIdentityTags(yaml.getStringList("artifact.naming.identity-tags"));
-        naming.setAffinityLexemes(yaml.getStringList("artifact.naming.affinity-lexemes"));
         naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
         naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
         artifact.setNaming(naming);
@@ -141,6 +132,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             } catch (IllegalArgumentException ignored) {
             }
         }
+        artifact.refreshNamingProjection();
         return artifact;
     }
 

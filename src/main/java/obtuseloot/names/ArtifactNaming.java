@@ -17,9 +17,9 @@ public class ArtifactNaming {
     private ArtifactDiscoveryState discoveryState;
 
     public ArtifactNaming() {
-        this.displayName = "Nameless Artifact";
-        this.rootForm = "Artifact";
-        this.namingArchetype = NamingArchetype.TRAIT_FORM;
+        this.displayName = "";
+        this.rootForm = "";
+        this.namingArchetype = NamingArchetype.FORM_OF_CONCEPT;
         this.toneProfile = ToneProfile.ODD;
         this.identityTags = new ArrayList<>();
         this.affinityLexemes = new ArrayList<>();
@@ -29,11 +29,11 @@ public class ArtifactNaming {
     public String getTrueName() { return trueName; }
     public void setTrueName(String trueName) { this.trueName = blankToNull(trueName); }
     public String getDisplayName() { return displayName; }
-    public void setDisplayName(String displayName) { this.displayName = Objects.requireNonNullElse(displayName, "Nameless Artifact"); }
+    public void setDisplayName(String displayName) { this.displayName = requireNonBlank(displayName, "displayName"); }
     public String getRootForm() { return rootForm; }
-    public void setRootForm(String rootForm) { this.rootForm = Objects.requireNonNullElse(rootForm, "Artifact"); }
+    public void setRootForm(String rootForm) { this.rootForm = requireNonBlank(rootForm, "rootForm"); }
     public NamingArchetype getNamingArchetype() { return namingArchetype; }
-    public void setNamingArchetype(NamingArchetype namingArchetype) { this.namingArchetype = Objects.requireNonNullElse(namingArchetype, NamingArchetype.TRAIT_FORM); }
+    public void setNamingArchetype(NamingArchetype namingArchetype) { this.namingArchetype = Objects.requireNonNullElse(namingArchetype, NamingArchetype.FORM_OF_CONCEPT); }
     public ToneProfile getToneProfile() { return toneProfile; }
     public void setToneProfile(ToneProfile toneProfile) { this.toneProfile = Objects.requireNonNullElse(toneProfile, ToneProfile.ODD); }
     public List<String> getIdentityTags() { return identityTags; }
@@ -50,6 +50,13 @@ public class ArtifactNaming {
     private String blankToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
+        }
+        return value;
+    }
+
+    private String requireNonBlank(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Artifact naming " + fieldName + " cannot be blank");
         }
         return value;
     }

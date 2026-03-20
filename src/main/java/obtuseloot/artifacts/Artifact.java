@@ -1,6 +1,7 @@
 package obtuseloot.artifacts;
 
 import obtuseloot.memory.ArtifactMemory;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.names.ArtifactNaming;
 
 import java.util.*;
@@ -67,8 +68,6 @@ public class Artifact {
 
     public Artifact(UUID ownerId, EquipmentArchetype archetype) {
         this.ownerId = ownerId;
-        this.naming = new ArtifactNaming();
-        this.generatedName = this.naming.getDisplayName();
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
         this.itemCategory = Objects.requireNonNull(archetype, "archetype").id();
         this.archetypePath = "unformed";
@@ -101,6 +100,8 @@ public class Artifact {
         this.lastLatentActivationRate = 0.0D;
         this.lastActivatedLatentTraits = "[]";
         this.lastUtilityHistory = "";
+        this.naming = ArtifactNameResolver.initialize(this);
+        this.generatedName = this.naming.getDisplayName();
     }
 
     public void resetMutableState() {
@@ -139,7 +140,7 @@ public class Artifact {
     }
 
     public long getArtifactSeed() { return artifactSeed; }
-    public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
+    public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; refreshNamingProjection(); }
     public UUID getOwnerId() { return ownerId; }
 
     public void setOwnerId(UUID ownerId) {
@@ -160,7 +161,7 @@ public class Artifact {
     public ArtifactNaming getNaming() { return naming; }
 
     public void setNaming(ArtifactNaming naming) {
-        this.naming = naming == null ? new ArtifactNaming() : naming;
+        this.naming = Objects.requireNonNull(naming, "naming");
         this.generatedName = this.naming.getDisplayName();
     }
 
@@ -286,6 +287,14 @@ public class Artifact {
         if (history.size() > MAX_HISTORY_ENTRIES) {
             history.remove(0);
         }
+    }
+
+    public void refreshNamingProjection() {
+        if (naming == null || itemCategory == null || itemCategory.isBlank()) {
+            return;
+        }
+        ArtifactNameResolver.refresh(this, naming);
+        generatedName = naming.getDisplayName();
     }
 
     public static String buildDefaultStorageKey(UUID ownerId) {

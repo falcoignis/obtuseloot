@@ -54,8 +54,10 @@ class ArtifactTextResolverTest {
         intimate.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.LOW_HEALTH_SURVIVAL);
         intimate.setNaming(ArtifactNameResolver.initialize(intimate));
 
-        assertNotEquals(resolver.compose(liturgical, ArtifactTextChannel.AWAKENING, ""),
-                resolver.compose(predatory, ArtifactTextChannel.AWAKENING, ""));
+        assertNotEquals(resolver.identityFor(liturgical).personality(),
+                resolver.identityFor(predatory).personality());
+        assertNotEquals(resolver.identityFor(intimate).voice(),
+                resolver.identityFor(predatory).voice());
         assertNotEquals(resolver.compose(intimate, ArtifactTextChannel.MEMORY, "close_call"),
                 resolver.compose(predatory, ArtifactTextChannel.MEMORY, "close_call"));
     }

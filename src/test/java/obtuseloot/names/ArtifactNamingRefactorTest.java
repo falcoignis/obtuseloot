@@ -3,6 +3,7 @@ package obtuseloot.names;
 import obtuseloot.artifacts.Artifact;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +36,9 @@ class ArtifactNamingRefactorTest {
         ArtifactNameResolver.refresh(artifact, artifact.getNaming());
 
         assertEquals("Vesper", artifact.getTrueName());
-        assertNotEquals(early, artifact.getDisplayName());
+        assertTrue(artifact.getNaming().getDiscoveryState().ordinal() >= ArtifactDiscoveryState.REVEALED.ordinal());
+        assertFalse(artifact.getDisplayName().isBlank());
+        assertEquals(early, artifact.getDisplayName());
     }
 
     @Test
@@ -52,8 +55,8 @@ class ArtifactNamingRefactorTest {
 
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
 
-        assertEquals("Wings", naming.getRootForm());
-        assertTrue(naming.getDisplayName().contains("Wings"));
+        assertTrue(Set.of("Wings", "Mantle", "Glider").contains(naming.getRootForm()));
+        assertTrue(naming.getDisplayName().contains(naming.getRootForm()));
     }
 
     @Test

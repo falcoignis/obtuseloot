@@ -38,6 +38,7 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
 
     @Override
     public void saveArtifact(UUID playerId, Artifact artifact) {
+        artifact.refreshNamingProjection();
         try (Connection connection = database.openConnection()) {
             connection.setAutoCommit(false);
             upsertPlayer(connection, playerId);
@@ -82,7 +83,6 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 artifact.setArtifactSeed(rs.getLong("artifact_seed"));
                 seedFactory.applySeedProfile(artifact, artifact.getArtifactSeed());
                 artifact.setNaming(ArtifactNameResolver.initialize(artifact));
-                artifact.setDisplayName(nullToDefault(rs.getString("generated_name"), artifact.getDisplayName()));
                 artifact.setArchetypePath(nullToDefault(rs.getString("archetype"), "unformed"));
                 artifact.setEvolutionPath(nullToDefault(rs.getString("evolution_path"), "base"));
                 artifact.setDriftAlignment(nullToDefault(rs.getString("drift_alignment"), "stable"));
@@ -121,6 +121,7 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                         }
                     }
                 }
+                artifact.refreshNamingProjection();
                 return artifact;
             }
         } catch (IllegalStateException ex) {
