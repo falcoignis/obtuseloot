@@ -18,6 +18,8 @@ public class SqlSchemaManager {
                     player_uuid VARCHAR(36) PRIMARY KEY,
                     artifact_seed BIGINT NOT NULL,
                     owner_uuid VARCHAR(36) NOT NULL,
+                    persistence_origin_timestamp BIGINT,
+                    identity_birth_timestamp BIGINT,
                     generated_name TEXT,
                     naming_seed BIGINT,
                     true_name TEXT,
@@ -133,6 +135,8 @@ public class SqlSchemaManager {
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_evolution ON artifacts(evolution_path)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_drift_alignment ON artifacts(drift_alignment)");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN naming_seed BIGINT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN persistence_origin_timestamp BIGINT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN identity_birth_timestamp BIGINT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN true_name TEXT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN root_form VARCHAR(64)");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN naming_archetype VARCHAR(64)");

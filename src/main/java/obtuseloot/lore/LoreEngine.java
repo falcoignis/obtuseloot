@@ -2,6 +2,7 @@ package obtuseloot.lore;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.reputation.ArtifactReputation;
+import obtuseloot.significance.ArtifactSignificanceResolver;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class LoreEngine {
     private final Map<UUID, Long> lastActionBarUpdate = new ConcurrentHashMap<>();
     private final LoreFragmentGenerator fragmentGenerator = new LoreFragmentGenerator();
     private final LoreHistoryFormatter historyFormatter = new LoreHistoryFormatter();
+    private final ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
 
     public void refreshLore(Player player, Artifact artifact, ArtifactReputation reputation) {
         long now = System.currentTimeMillis();
@@ -33,6 +35,7 @@ public class LoreEngine {
 
     public List<String> buildLoreLines(Artifact artifact, ArtifactReputation reputation) {
         List<String> lines = new ArrayList<>();
+        lines.add(significanceResolver.resolve(artifact).format());
         lines.add(fragmentGenerator.lineageFragment(artifact));
         lines.add(fragmentGenerator.identifyFragment(artifact));
         lines.add(fragmentGenerator.driftFragment(artifact));

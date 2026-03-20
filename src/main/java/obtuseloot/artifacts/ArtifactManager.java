@@ -193,6 +193,8 @@ public class ArtifactManager {
                 ArtifactGenerator.resolveCategory(seed),
                 "artifact baseline identity regeneration");
         Artifact replacement = new Artifact(previous.getOwnerId(), archetype);
+        replacement.setPersistenceOriginTimestamp(previous.getPersistenceOriginTimestamp());
+        replacement.setIdentityBirthTimestamp(System.currentTimeMillis());
         replacement.setArtifactStorageKey(previous.getArtifactStorageKey());
         replacement.setOwnerId(previous.getOwnerId());
         replacement.resetMutableState();

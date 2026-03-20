@@ -244,6 +244,8 @@ public class ConvergenceEngine {
                 artifact.getLoreHistory().hashCode());
 
         Artifact replacement = new Artifact(artifact.getOwnerId(), target);
+        replacement.setPersistenceOriginTimestamp(artifact.getPersistenceOriginTimestamp());
+        replacement.setIdentityBirthTimestamp(System.currentTimeMillis());
         replacement.setArtifactStorageKey(artifact.getArtifactStorageKey());
         replacement.setArtifactSeed(seed);
         replacement.setOwnerId(artifact.getOwnerId());

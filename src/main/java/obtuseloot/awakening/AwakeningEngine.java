@@ -79,6 +79,8 @@ public class AwakeningEngine {
                 rep.getTotalScore(),
                 memoryProfile.pressure());
         Artifact replacement = new Artifact(artifact.getOwnerId(), artifact.getItemCategory());
+        replacement.setPersistenceOriginTimestamp(artifact.getPersistenceOriginTimestamp());
+        replacement.setIdentityBirthTimestamp(System.currentTimeMillis());
         replacement.setArtifactStorageKey(artifact.getArtifactStorageKey());
         replacement.setArtifactSeed(seed);
         replacement.setOwnerId(artifact.getOwnerId());

@@ -12,6 +12,8 @@ public class Artifact {
     private long artifactSeed;
     private String artifactStorageKey;
     private UUID ownerId;
+    private long persistenceOriginTimestamp;
+    private long identityBirthTimestamp;
     private ArtifactNaming naming;
     private String generatedName;
     private String itemCategory;
@@ -83,7 +85,10 @@ public class Artifact {
     }
 
     public Artifact(UUID ownerId, EquipmentArchetype archetype) {
+        long now = System.currentTimeMillis();
         this.ownerId = ownerId;
+        this.persistenceOriginTimestamp = now;
+        this.identityBirthTimestamp = now;
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
         this.itemCategory = Objects.requireNonNull(archetype, "archetype").id();
         this.archetypePath = "unformed";
@@ -186,6 +191,14 @@ public class Artifact {
     public long getArtifactSeed() { return artifactSeed; }
     public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; refreshNamingProjection(); }
     public UUID getOwnerId() { return ownerId; }
+    public long getPersistenceOriginTimestamp() { return persistenceOriginTimestamp; }
+    public void setPersistenceOriginTimestamp(long persistenceOriginTimestamp) {
+        this.persistenceOriginTimestamp = persistenceOriginTimestamp <= 0L ? System.currentTimeMillis() : persistenceOriginTimestamp;
+    }
+    public long getIdentityBirthTimestamp() { return identityBirthTimestamp; }
+    public void setIdentityBirthTimestamp(long identityBirthTimestamp) {
+        this.identityBirthTimestamp = identityBirthTimestamp <= 0L ? System.currentTimeMillis() : identityBirthTimestamp;
+    }
 
     public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;

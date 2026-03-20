@@ -82,6 +82,8 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         Artifact artifact = new Artifact(playerId, archetype);
         artifact.setOwnerId(UUID.fromString(yaml.getString("artifact.owner-id", playerId.toString())));
         artifact.setArtifactStorageKey(yaml.getString("artifact.storage-key", Artifact.buildDefaultStorageKey(artifact.getOwnerId())));
+        artifact.setPersistenceOriginTimestamp(yaml.getLong("artifact.persistence-origin-timestamp", artifact.getPersistenceOriginTimestamp()));
+        artifact.setIdentityBirthTimestamp(yaml.getLong("artifact.identity-birth-timestamp", artifact.getIdentityBirthTimestamp()));
         artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
         artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
         artifact.setAwakeningPath(yaml.getString("artifact.awakening-path", "dormant"));
@@ -332,6 +334,8 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         String base = "artifact.";
         yaml.set(base + "owner-id", artifact.getOwnerId().toString());
         yaml.set(base + "storage-key", artifact.getArtifactStorageKey());
+        yaml.set(base + "persistence-origin-timestamp", artifact.getPersistenceOriginTimestamp());
+        yaml.set(base + "identity-birth-timestamp", artifact.getIdentityBirthTimestamp());
         yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
         yaml.set(base + "naming.display-name", artifact.getDisplayName());
         yaml.set(base + "naming.true-name", artifact.getTrueName());
