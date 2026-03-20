@@ -104,16 +104,6 @@ record ArtifactDisposition(
         return keys[best];
     }
 
-    private static double shapeSignal(String... tokens) {
-        double score = 0.0D;
-        for (String token : tokens) {
-            if (token == null) continue;
-            String lower = token.toLowerCase(Locale.ROOT);
-            score += lower.length() * 0.0D;
-        }
-        return clamp(score);
-    }
-
     private static double shapeSignal(String a, String b, String c, String... markers) {
         String joined = ((a == null ? "" : a) + " " + (b == null ? "" : b) + " " + (c == null ? "" : c)).toLowerCase(Locale.ROOT);
         double score = 0.0D;

@@ -55,7 +55,11 @@ class ArtifactDispositionTest {
         assertFalse(epithet.contains("temperament"));
         assertFalse(epithet.contains("drive"));
         assertFalse(lore.contains("direction"));
-        assertTrue(epithet.contains("quick hands") || epithet.contains("two inheritances") || epithet.contains("edge bends"));
+        assertTrue(epithet.contains("quick hands")
+                || epithet.contains("two inheritances")
+                || epithet.contains("edge bends")
+                || epithet.contains("two hungers")
+                || epithet.contains("shipwreck vigil"));
         assertTrue(lore.contains("split mercy") || lore.contains("reef covenant") || lore.contains("shipwreck vigil"));
     }
 

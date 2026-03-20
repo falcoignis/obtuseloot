@@ -16,8 +16,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class ArtifactSignificanceResolver {
+    private static final Pattern HEX_LIKE_TOKEN = Pattern.compile("(?i)[0-9a-f]{6,}");
+    private static final Pattern NUMBER_SUFFIX = Pattern.compile(".*\\d.*");
+    private static final Set<String> TRACE_STOP_WORDS = Set.of(
+            "artifact", "lineage", "trace", "pressure", "debug", "memory", "signature",
+            "owner", "storage", "bounded", "history", "chain", "boss", "variant",
+            "awakening", "convergence", "lore", "expression", "continuity", "path", "leak"
+    );
+
     public ArtifactSignificanceProfile resolve(Artifact artifact) {
         Objects.requireNonNull(artifact, "artifact");
         EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(artifact, "artifact significance");
@@ -245,8 +255,12 @@ public final class ArtifactSignificanceResolver {
     }
 
     private String compactWords(String raw) {
-        String cleaned = raw == null ? "" : raw.replaceAll("[\\[\\]{}()]", " ")
-                .replaceAll("[:_/\\\\|]+", " ")
+        String cleaned = raw == null ? "" : raw.replaceAll("(?i)trace\\s*=", " ")
+                .replaceAll("(?i)debug", " ")
+                .replaceAll("->", " ")
+                .replaceAll("[=]", " ")
+                .replaceAll("[\\[\\]{}()]", " ")
+                .replaceAll("[:_/\\\\|-]+", " ")
                 .replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("\\s+", " ")
                 .trim()
@@ -258,7 +272,10 @@ public final class ArtifactSignificanceResolver {
         int words = 0;
         for (String part : cleaned.split(" ")) {
             if (part.isBlank() || "none".equals(part) || "unassigned".equals(part) || "wild".equals(part)
-                    || part.chars().allMatch(Character::isDigit)) {
+                    || part.chars().allMatch(Character::isDigit)
+                    || HEX_LIKE_TOKEN.matcher(part).matches()
+                    || NUMBER_SUFFIX.matcher(part).matches()
+                    || TRACE_STOP_WORDS.contains(part)) {
                 continue;
             }
             if (!out.isEmpty()) out.append(' ');
