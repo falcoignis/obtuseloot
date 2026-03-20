@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConvergenceEngine {
+    private static final List<ConvergenceRecipe> RECIPES = buildRecipes();
+
     private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
     private final MemoryInfluenceResolver memoryInfluenceResolver = new MemoryInfluenceResolver();
 
@@ -50,7 +52,7 @@ public class ConvergenceEngine {
 
         ArtifactMemoryProfile memoryProfile = memoryInfluenceResolver.profileFor(artifact.getMemory());
         ConvergenceContext context = new ConvergenceContext(artifact, current, rep, memoryProfile);
-        for (ConvergenceRecipe recipe : recipes()) {
+        for (ConvergenceRecipe recipe : RECIPES) {
             if (!matches(recipe, context)) {
                 continue;
             }
@@ -84,8 +86,8 @@ public class ConvergenceEngine {
                 && !"dormant".equalsIgnoreCase(context.artifact().getAwakeningPath());
     }
 
-    private List<ConvergenceRecipe> recipes() {
-        return List.of(
+    private static List<ConvergenceRecipe> buildRecipes() {
+        List<ConvergenceRecipe> recipes = List.of(
                 new ConvergenceRecipe("reaper-vow", EnumSet.of(EquipmentRole.WEAPON), 96, 1, 6,
                         List.of(EquipmentArchetype.NETHERITE_SWORD, EquipmentArchetype.NETHERITE_AXE, EquipmentArchetype.TRIDENT)) {
                     @Override boolean supports(EquipmentArchetype current) {
@@ -106,8 +108,12 @@ public class ConvergenceEngine {
                                 .build();
                     }
                 },
-                new ConvergenceRecipe("horizon-syndicate", EnumSet.of(EquipmentRole.RANGED_WEAPON), 92, 1, 5,
+                new ConvergenceRecipe("horizon-syndicate", EnumSet.of(EquipmentRole.WEAPON, EquipmentRole.MOBILITY), 92, 1, 5,
                         List.of(EquipmentArchetype.ELYTRA, EquipmentArchetype.TRIDENT)) {
+                    @Override boolean supports(EquipmentArchetype current) {
+                        return current.hasRole(EquipmentRole.RANGED_WEAPON);
+                    }
+
                     @Override ConvergenceExpansion expand(ConvergenceContext context) {
                         return profile(context)
                                 .preferHighScore(EquipmentArchetype.ELYTRA,
@@ -181,13 +187,21 @@ public class ConvergenceEngine {
                     }
                 }
         );
+        recipes.forEach(ConvergenceRecipe::assertSemanticIntegrity);
+        return recipes;
     }
 
-    private int memoryCount(ConvergenceContext context, ArtifactMemoryEvent event) {
+    static List<String> recipeIntegrityDiagnostics() {
+        return RECIPES.stream()
+                .map(ConvergenceRecipe::integritySummary)
+                .toList();
+    }
+
+    private static int memoryCount(ConvergenceContext context, ArtifactMemoryEvent event) {
         return context.artifact().getMemory().count(event);
     }
 
-    private ExpansionBuilder profile(ConvergenceContext context) {
+    private static ExpansionBuilder profile(ConvergenceContext context) {
         return new ExpansionBuilder(context);
     }
 
@@ -401,6 +415,24 @@ public class ConvergenceEngine {
 
         EnumSet<EquipmentRole> semanticRoles() {
             return semanticRoles.clone();
+        }
+
+        void assertSemanticIntegrity() {
+            if (semanticRoles.isEmpty()) {
+                throw new IllegalStateException("Convergence recipe " + id + " must declare at least one semantic role");
+            }
+            List<String> invalidTargets = validTargets.stream()
+                    .filter(target -> !supportsTarget(target))
+                    .map(EquipmentArchetype::id)
+                    .toList();
+            if (!invalidTargets.isEmpty()) {
+                throw new IllegalStateException("Convergence recipe " + id + " declares targets outside semantic roles "
+                        + semanticRoles + ": " + invalidTargets);
+            }
+        }
+
+        String integritySummary() {
+            return id + " roles=" + semanticRoles + " targets=" + validTargets.stream().map(EquipmentArchetype::id).toList();
         }
 
         abstract ConvergenceExpansion expand(ConvergenceContext context);
