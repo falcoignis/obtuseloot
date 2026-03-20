@@ -12,7 +12,7 @@ public record AbilityDefinition(
         String evolutionVariant,
         String driftVariant,
         String awakeningVariant,
-        String fusionVariant,
+        String convergenceVariant,
         String memoryVariant,
         List<AbilityModifier> supportModifiers,
         List<AbilityEffect> effects,

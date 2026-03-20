@@ -9,7 +9,7 @@ public final class ArtifactUsageProfile {
     private long uses;
     private long kills;
     private long discards;
-    private long fusions;
+    private long convergences;
     private long awakenings;
     private final Map<String, OutcomeUtilityProfile> utilityProfiles = new ConcurrentHashMap<>();
     private final ValidatedOutcomeClassifier classifier = new ValidatedOutcomeClassifier();
@@ -36,9 +36,9 @@ public final class ArtifactUsageProfile {
         discards++;
     }
 
-    public void recordFusion(long now) {
+    public void recordConvergence(long now) {
         markCreated(now);
-        fusions++;
+        convergences++;
     }
 
     public void recordAwakening(long now) {
@@ -72,11 +72,11 @@ public final class ArtifactUsageProfile {
         return (double) discards / (double) totalOutcomes;
     }
 
-    public double fusionParticipation() {
+    public double convergenceParticipation() {
         if (uses <= 0L) {
             return 0.0D;
         }
-        return (double) fusions / (double) uses;
+        return (double) convergences / (double) uses;
     }
 
     public double awakeningRate() {

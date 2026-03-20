@@ -9,6 +9,6 @@ public enum ArtifactMemoryEvent {
     PRECISION_STREAK,
     LONG_BATTLE,
     AWAKENING,
-    FUSION,
+    CONVERGENCE,
     PLAYER_DEATH_WHILE_BOUND
 }

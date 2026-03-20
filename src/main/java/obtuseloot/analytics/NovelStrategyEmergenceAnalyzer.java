@@ -230,7 +230,7 @@ public class NovelStrategyEmergenceAnalyzer {
         if (t.contains("movement") || t.contains("drift")) return "mobility";
         if (t.contains("low_health") || t.contains("survival") || t.contains("defensive")) return "survival";
         if (t.contains("boss") || t.contains("chain") || t.contains("combat") || t.contains("kill")) return "combat";
-        if (t.contains("memory") || t.contains("awakening") || t.contains("fusion") || t.contains("lineage")) return "evolution";
+        if (t.contains("memory") || t.contains("awakening") || t.contains("convergence") || t.contains("lineage")) return "evolution";
         return "hybrid";
     }
 

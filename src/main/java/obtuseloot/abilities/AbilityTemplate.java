@@ -13,7 +13,7 @@ public record AbilityTemplate(
         String evolutionVariant,
         String driftVariant,
         String awakeningVariant,
-        String fusionVariant,
+        String convergenceVariant,
         String memoryVariant,
         List<AbilityModifier> supportModifiers,
         AbilityMetadata metadata

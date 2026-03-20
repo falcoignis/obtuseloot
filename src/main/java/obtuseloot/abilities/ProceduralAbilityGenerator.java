@@ -239,7 +239,7 @@ public class ProceduralAbilityGenerator {
         AbilityDiversityIndex.AbilitySignature motifAnchor = diversityIndex.motifAnchor(activePool, nicheProfile.dominantNiche(), lineageId, variantProfile);
 
         long seed = artifact.getArtifactSeed() ^ artifact.getArchetypePath().hashCode() ^ artifact.getEvolutionPath().hashCode() ^ artifact.getDriftAlignment().hashCode()
-                ^ artifact.getAwakeningPath().hashCode() ^ artifact.getFusionPath().hashCode() ^ memoryProfile.pressure();
+                ^ artifact.getAwakeningPath().hashCode() ^ artifact.getConvergencePath().hashCode() ^ memoryProfile.pressure();
         Random random = new Random(seed);
 
         List<AbilityTemplate> selected = selectTemplates(scoringPool, artifact, memoryProfile, evolutionStage, utilityHistory, lineage, supportAllocation, nicheProfile, variantProfile, activePool, motifAnchor, picks, random);
@@ -342,10 +342,10 @@ public class ProceduralAbilityGenerator {
     }
 
     private AbilityDefinition fromTemplate(AbilityTemplate t, AbilityFamily family, int stage) { /* unchanged */
-        return new AbilityDefinition(t.id(), t.name(), family, t.trigger(), t.mechanic(), t.effectPattern(), t.evolutionVariant(), t.driftVariant(), t.awakeningVariant(), t.fusionVariant(), t.memoryVariant(), t.supportModifiers(),
+        return new AbilityDefinition(t.id(), t.name(), family, t.trigger(), t.mechanic(), t.effectPattern(), t.evolutionVariant(), t.driftVariant(), t.awakeningVariant(), t.convergenceVariant(), t.memoryVariant(), t.supportModifiers(),
                 List.of(new AbilityEffect(t.effectPattern(), AbilityEffectType.TRIGGERED_BEHAVIOR, 0.015D + (stage * 0.002D))), t.metadata(),
                 "Template: " + t.id() + " | Core: " + t.effectPattern(), "Evolution: " + t.evolutionVariant(), "Drift: " + t.driftVariant(),
-                "Awakening/Fusion: " + t.awakeningVariant() + " / " + t.fusionVariant(), "Memory: " + t.memoryVariant());
+                "Awakening/Convergence: " + t.awakeningVariant() + " / " + t.convergenceVariant(), "Memory: " + t.memoryVariant());
     }
 
     private AbilityTemplate pickTemplate(List<AbilityTemplate> pool, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, Random random, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, Set<String> excludedIds) {
@@ -373,7 +373,7 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().affinities().contains("social")) score += memoryProfile.aggressionWeight() * 0.04D;
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.5D;
-        if (!"none".equalsIgnoreCase(artifact.getFusionPath()) && template.trigger() == AbilityTrigger.ON_FUSION) score += 0.5D;
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && template.trigger() == AbilityTrigger.ON_CONVERGENCE) score += 0.5D;
         double utilityBias = utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger());
         if (utilityHistory.hasUtilityHistory()) {
             double confidence = utilityHistory.confidence();
@@ -444,14 +444,14 @@ public class ProceduralAbilityGenerator {
         if (templates.isEmpty()) {
             return observed;
         }
-        double activeRate = templates.stream().filter(template -> template.trigger() != AbilityTrigger.ON_AWAKENING && template.trigger() != AbilityTrigger.ON_FUSION).count() / (double) templates.size();
+        double activeRate = templates.stream().filter(template -> template.trigger() != AbilityTrigger.ON_AWAKENING && template.trigger() != AbilityTrigger.ON_CONVERGENCE).count() / (double) templates.size();
         observed.add(LineageBiasDimension.ACTIVE_BEHAVIOR, (activeRate - 0.5D) * 0.40D);
         long memoryTemplates = templates.stream().filter(template -> template.metadata().hasAffinity("memory")).count();
         observed.add(LineageBiasDimension.MEMORY_REACTIVITY, ((memoryTemplates / (double) templates.size()) * 0.45D) + (memoryProfile.pressure() * 0.01D));
         double nicheSpread = templates.stream().map(t -> t.mechanic().name()).distinct().count() / (double) templates.size();
         observed.add(LineageBiasDimension.SPECIALIZATION, (0.6D - nicheSpread) * 0.45D);
         observed.add(LineageBiasDimension.WEIRDNESS, templates.stream().filter(t -> t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.40D);
-        observed.add(LineageBiasDimension.PATIENCE, templates.stream().filter(t -> t.trigger() == AbilityTrigger.ON_AWAKENING || t.trigger() == AbilityTrigger.ON_FUSION).count() / (double) templates.size() * 0.30D);
+        observed.add(LineageBiasDimension.PATIENCE, templates.stream().filter(t -> t.trigger() == AbilityTrigger.ON_AWAKENING || t.trigger() == AbilityTrigger.ON_CONVERGENCE).count() / (double) templates.size() * 0.30D);
         observed.add(LineageBiasDimension.BUDGET_DISCIPLINE, Math.max(-0.25D, Math.min(0.25D, (templates.stream().mapToDouble(t -> t.metadata().triggerEfficiency()).average().orElse(1.0D) - 1.0D) * 0.4D)));
         observed.add(LineageBiasDimension.UTILITY_DENSITY_PREFERENCE, Math.max(-0.25D, Math.min(0.25D, (utilityHistory.utilityDensity() - 0.5D) * 0.40D)));
         observed.add(LineageBiasDimension.EXPLORATION_PREFERENCE, templates.stream().filter(t -> t.metadata().affinities().contains("exploration")).count() / (double) templates.size() * 0.40D);
@@ -1096,7 +1096,7 @@ public class ProceduralAbilityGenerator {
         switch (dominant) {
             case NAVIGATION, ENVIRONMENTAL_SENSING -> compatible.addAll(Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE));
             case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> compatible.addAll(Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT));
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> compatible.addAll(Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION));
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> compatible.addAll(Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_CONVERGENCE, AbilityTrigger.ON_RITUAL_COMPLETION));
             case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> compatible.addAll(Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE));
             default -> {}
         }
@@ -1407,7 +1407,7 @@ public class ProceduralAbilityGenerator {
 
     private double ritualTriggerMismatch(AbilityTrigger trigger) {
         return switch (trigger) {
-            case ON_RITUAL_INTERACT, ON_MEMORY_EVENT, ON_WITNESS_EVENT, ON_AWAKENING, ON_FUSION -> 0.0D;
+            case ON_RITUAL_INTERACT, ON_MEMORY_EVENT, ON_WITNESS_EVENT, ON_AWAKENING, ON_CONVERGENCE -> 0.0D;
             case ON_WORLD_SCAN, ON_STRUCTURE_SENSE -> 0.10D;
             default -> 0.22D;
         };
@@ -1432,7 +1432,7 @@ public class ProceduralAbilityGenerator {
         Set<AbilityTrigger> compatibleTriggers = switch (dominant) {
             case NAVIGATION, ENVIRONMENTAL_SENSING -> Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_BLOCK_INSPECT, AbilityTrigger.ON_ELEVATION_CHANGE);
             case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> Set.of(AbilityTrigger.ON_BLOCK_HARVEST, AbilityTrigger.ON_LOW_HEALTH, AbilityTrigger.ON_HIT, AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE, AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_TIME_OF_DAY_TRANSITION, AbilityTrigger.ON_ITEM_PICKUP, AbilityTrigger.ON_ENTITY_INSPECT);
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_FUSION, AbilityTrigger.ON_RITUAL_COMPLETION);
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> Set.of(AbilityTrigger.ON_RITUAL_INTERACT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_AWAKENING, AbilityTrigger.ON_CONVERGENCE, AbilityTrigger.ON_RITUAL_COMPLETION);
             case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> Set.of(AbilityTrigger.ON_WITNESS_EVENT, AbilityTrigger.ON_MEMORY_EVENT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_PLAYER_TRADE);
             default -> Set.of();
         };

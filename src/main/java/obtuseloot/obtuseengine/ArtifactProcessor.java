@@ -10,7 +10,7 @@ import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.drift.DriftMutation;
-import obtuseloot.fusion.FusionEngine;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.reputation.ArtifactReputation;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ArtifactProcessor {
-    private static final FusionEngine FUSION_ENGINE = new FusionEngine();
+    private static final ConvergenceEngine CONVERGENCE_ENGINE = new ConvergenceEngine();
 
     private ArtifactProcessor() {
     }
@@ -36,7 +36,7 @@ public final class ArtifactProcessor {
         String oldArchetype = artifact.getArchetypePath();
         String oldEvolution = artifact.getEvolutionPath();
         String oldAwakening = artifact.getAwakeningPath();
-        String oldFusion = artifact.getFusionPath();
+        String oldConvergence = artifact.getConvergencePath();
         int oldDriftLevel = artifact.getDriftLevel();
 
         rep.recordKill();
@@ -59,13 +59,13 @@ public final class ArtifactProcessor {
             recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.AWAKENING, "awakening");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
-        if (FUSION_ENGINE.evaluate(player, artifact, rep)) {
-            plugin.getArtifactUsageTracker().trackFusionParticipation(artifact);
-            recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.FUSION, "fusion");
-            triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_FUSION, 1D, artifact.getFusionPath());
+        if (CONVERGENCE_ENGINE.evaluate(player, artifact, rep)) {
+            plugin.getArtifactUsageTracker().trackConvergenceParticipation(artifact);
+            recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.CONVERGENCE, "convergence");
+            triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_CONVERGENCE, 1D, artifact.getConvergencePath());
         }
 
-        recordStateTransitions(artifact, oldArchetype, oldEvolution, oldAwakening, oldFusion, oldDriftLevel);
+        recordStateTransitions(artifact, oldArchetype, oldEvolution, oldAwakening, oldConvergence, oldDriftLevel);
         plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), artifact, rep, "kill-cycle-state-change");
         context.resetTransient();
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
@@ -246,7 +246,7 @@ public final class ArtifactProcessor {
                                               String oldArchetype,
                                               String oldEvolution,
                                               String oldAwakening,
-                                              String oldFusion,
+                                              String oldConvergence,
                                               int oldDriftLevel) {
         if (!oldArchetype.equals(artifact.getArchetypePath())) {
             artifact.addLoreHistory("Archetype shifted: " + oldArchetype + " -> " + artifact.getArchetypePath());
@@ -260,9 +260,9 @@ public final class ArtifactProcessor {
             artifact.addLoreHistory("Awakening manifested: " + artifact.getAwakeningPath());
             artifact.addNotableEvent("awakening." + artifact.getAwakeningPath().toLowerCase().replace(' ', '-'));
         }
-        if (!oldFusion.equals(artifact.getFusionPath())) {
-            artifact.addLoreHistory("Fusion milestone: " + artifact.getFusionPath());
-            artifact.addNotableEvent("fusion." + artifact.getFusionPath());
+        if (!oldConvergence.equals(artifact.getConvergencePath())) {
+            artifact.addLoreHistory("Convergence milestone: " + artifact.getConvergencePath());
+            artifact.addNotableEvent("convergence." + artifact.getConvergencePath());
         }
         if (oldDriftLevel != artifact.getDriftLevel()) {
             artifact.addLoreHistory("Drift level increased to " + artifact.getDriftLevel());

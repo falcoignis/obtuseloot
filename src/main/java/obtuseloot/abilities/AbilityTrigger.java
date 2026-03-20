@@ -11,7 +11,7 @@ public enum AbilityTrigger {
     ON_CHAIN_COMBAT,
     ON_DRIFT_MUTATION,
     ON_AWAKENING,
-    ON_FUSION,
+    ON_CONVERGENCE,
     ON_MEMORY_EVENT,
     ON_WORLD_SCAN,
     ON_STRUCTURE_SENSE,

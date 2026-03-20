@@ -28,8 +28,8 @@ public class LoreFragmentGenerator {
         return textResolver.compose(artifact, ArtifactTextChannel.MEMORY, latest);
     }
 
-    public String fusionFragment(Artifact artifact) {
-        return textResolver.compose(artifact, ArtifactTextChannel.FUSION, artifact.getFusionPath());
+    public String convergenceFragment(Artifact artifact) {
+        return textResolver.compose(artifact, ArtifactTextChannel.CONVERGENCE, artifact.getConvergencePath());
     }
 
     public String instabilityFragment(Artifact artifact) {

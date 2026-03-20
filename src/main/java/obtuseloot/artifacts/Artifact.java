@@ -17,7 +17,7 @@ public class Artifact {
     private String archetypePath;
     private String evolutionPath;
     private String awakeningPath;
-    private String fusionPath;
+    private String convergencePath;
 
     private int driftLevel;
     private int totalDrifts;
@@ -70,7 +70,7 @@ public class Artifact {
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
         this.awakeningPath = "dormant";
-        this.fusionPath = "none";
+        this.convergencePath = "none";
         this.driftAlignment = "stable";
         this.latentLineage = "common";
         this.speciesId = "unspeciated";
@@ -110,7 +110,7 @@ public class Artifact {
         archetypePath = "unformed";
         evolutionPath = "base";
         awakeningPath = "dormant";
-        fusionPath = "none";
+        convergencePath = "none";
         currentInstabilityState = "none";
         speciesId = "unspeciated";
         parentSpeciesId = "none";
@@ -180,8 +180,8 @@ public class Artifact {
     public void setEvolutionPath(String evolutionPath) { this.evolutionPath = evolutionPath; }
     public String getAwakeningPath() { return awakeningPath; }
     public void setAwakeningPath(String awakeningPath) { this.awakeningPath = awakeningPath; }
-    public String getFusionPath() { return fusionPath; }
-    public void setFusionPath(String fusionPath) { this.fusionPath = fusionPath; }
+    public String getConvergencePath() { return convergencePath; }
+    public void setConvergencePath(String convergencePath) { this.convergencePath = convergencePath; }
     public int getDriftLevel() { return driftLevel; }
     public void setDriftLevel(int driftLevel) { this.driftLevel = driftLevel; }
     public int getTotalDrifts() { return totalDrifts; }

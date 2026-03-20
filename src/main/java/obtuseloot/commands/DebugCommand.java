@@ -12,7 +12,7 @@ import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
-import obtuseloot.fusion.FusionEngine;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.obtuseengine.ArtifactProcessor;
 import obtuseloot.persistence.MySqlPersistenceProvider;
 import obtuseloot.persistence.PersistenceMigrator;
@@ -42,7 +42,7 @@ public class DebugCommand {
     );
 
     private final ObtuseLoot plugin;
-    private final FusionEngine fusionEngine = new FusionEngine();
+    private final ConvergenceEngine convergenceEngine = new ConvergenceEngine();
 
     public DebugCommand(ObtuseLoot plugin) {
         this.plugin = plugin;
@@ -144,7 +144,7 @@ public class DebugCommand {
         sender.sendMessage("§d=== Obtuse Debug Inspect: " + target.getName() + " ===");
         sender.sendMessage("§7name=§f" + artifact.getDisplayName() + " §7archetype=§f" + artifact.getArchetypePath()
                 + " §7evolution=§f" + artifact.getEvolutionPath());
-        sender.sendMessage("§7awakening=§f" + artifact.getAwakeningPath() + " §7fusion=§f" + artifact.getFusionPath());
+        sender.sendMessage("§7awakening=§f" + artifact.getAwakeningPath() + " §7convergence=§f" + artifact.getConvergencePath());
         sender.sendMessage("§7driftLevel=§f" + artifact.getDriftLevel() + " §7totalDrifts=§f" + artifact.getTotalDrifts()
                 + " §7driftAlignment=§f" + artifact.getDriftAlignment());
         sender.sendMessage("§7seed=§f" + artifact.getArtifactSeed() + " §7lineage=§f" + artifact.getLatentLineage() + " §7instability=§f" + artifact.getCurrentInstabilityState());
@@ -163,7 +163,7 @@ public class DebugCommand {
         sender.sendMessage("§7abilityTriggers=§f" + abilityProfile.abilities().stream().map(a -> a.trigger().name()).toList());
         sender.sendMessage("§7abilityEffects=§f" + abilityProfile.abilities().stream().map(a -> a.name() + ":" + a.effects().stream().map(e -> e.type().name()).toList()).toList());
         sender.sendMessage("§7triggerBudget=§f" + plugin.getItemAbilityManager().triggerBudgetManager().debugSummary(target.getUniqueId(), artifact.getArtifactStorageKey(), AbilityTrigger.ON_WORLD_SCAN));
-        sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7fusion influence=§f" + artifact.getFusionPath());
+        sender.sendMessage("§7drift influence=§f" + artifact.getDriftAlignment() + " §7awakening influence=§f" + artifact.getAwakeningPath() + " §7convergence influence=§f" + artifact.getConvergencePath());
         sender.sendMessage("§7branchPath=§f" + artifact.getLastAbilityBranchPath() + " §7mutationHistory=§f" + artifact.getLastMutationHistory());
         sender.sendMessage("§7speciesId=§f" + artifact.getSpeciesId() + " §7parentSpecies=§f" + artifact.getParentSpeciesId()
                 + " §7compatibility=§f" + String.format(java.util.Locale.ROOT, "%.3f", artifact.getLastSpeciesCompatibilityDistance()));
@@ -268,13 +268,13 @@ public class DebugCommand {
         if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
-        String old = artifact.getFusionPath();
-        boolean changed = fusionEngine.evaluate(target, artifact, rep);
+        String old = artifact.getConvergencePath();
+        boolean changed = convergenceEngine.evaluate(target, artifact, rep);
         refreshAndSave(target);
         if (!changed) {
-            sender.sendMessage("§eNo valid fusion recipe available for " + target.getName() + ".");
+            sender.sendMessage("§eNo valid convergence recipe available for " + target.getName() + ".");
         } else {
-            sender.sendMessage("§aFusion changed for " + target.getName() + ": " + old + " -> " + artifact.getFusionPath());
+            sender.sendMessage("§aConvergence changed for " + target.getName() + ": " + old + " -> " + artifact.getConvergencePath());
         }
         return true;
     }

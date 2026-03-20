@@ -22,7 +22,7 @@ public class ArtifactTextComposer {
             case LINEAGE -> lineage(identity, context);
             case MEMORY -> memory(identity, context);
             case DRIFT -> drift(identity, context);
-            case FUSION -> fusion(identity, context);
+            case CONVERGENCE -> convergence(identity, context);
             case DISCOVERY -> discovery(identity);
             case EVENT -> event(identity, context);
         };
@@ -94,9 +94,9 @@ public class ArtifactTextComposer {
         return "It leans toward " + direction + ", slowly and without apology.";
     }
 
-    private String fusion(ArtifactTextIdentity identity, String path) {
-        String fusionPath = path == null || path.isBlank() ? "a second inheritance" : path;
-        return "Two intentions now share one edge: " + fusionPath + ".";
+    private String convergence(ArtifactTextIdentity identity, String path) {
+        String convergencePath = path == null || path.isBlank() ? "a second inheritance" : path;
+        return "Two intentions now share one edge: " + convergencePath + ".";
     }
 
     private String discovery(ArtifactTextIdentity identity) {
@@ -138,7 +138,7 @@ public class ArtifactTextComposer {
             case LINEAGE -> s.textLineageMaxWords();
             case MEMORY -> s.textMemoryMaxWords();
             case DRIFT -> s.textDriftMaxWords();
-            case FUSION -> s.textFusionMaxWords();
+            case CONVERGENCE -> s.textConvergenceMaxWords();
             case DISCOVERY, EVENT -> s.textLoreMaxWords();
         };
     }
