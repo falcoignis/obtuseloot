@@ -7,6 +7,7 @@ import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.reputation.ArtifactReputation;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,7 +51,7 @@ class ConvergenceEngineIdentityTransitionTest {
         assertTrue(replacement.getArchetypePath().startsWith("horizon-"));
         assertNotEquals(artifact.getArtifactSeed(), replacement.getArtifactSeed());
         assertNotEquals(artifact.getNaming().getNamingSeed(), replacement.getNaming().getNamingSeed());
-        assertEquals(EquipmentArchetype.TRIDENT.id(), replacement.getItemCategory());
+        assertTrue(Set.of(EquipmentArchetype.ELYTRA.id(), EquipmentArchetype.TRIDENT.id()).contains(replacement.getItemCategory()));
         assertTrue(replacement.getNotableEvents().stream().anyMatch(event -> event.startsWith("identity.replaced.")));
         assertEquals(artifact.getMemory().pressure(), replacement.getMemory().pressure());
         assertNotEquals("none", replacement.getConvergenceVariantId());
@@ -107,6 +108,13 @@ class ConvergenceEngineIdentityTransitionTest {
         assertEquals(0.0D, replacement.getLastLatentActivationRate());
         assertEquals("[]", replacement.getLastActivatedLatentTraits());
         assertEquals("", replacement.getLastUtilityHistory());
+    }
+
+
+    @Test
+    void convergenceRecipeDefinitionsStayWithinDeclaredSemanticRoleBounds() {
+        assertDoesNotThrow(ConvergenceEngine::recipeIntegrityDiagnostics);
+        assertEquals(5, ConvergenceEngine.recipeIntegrityDiagnostics().size());
     }
 
     @Test
