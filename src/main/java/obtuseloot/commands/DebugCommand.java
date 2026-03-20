@@ -10,6 +10,7 @@ import obtuseloot.abilities.PlayerArtifactTriggerMap;
 import obtuseloot.abilities.ArtifactEvolutionStage;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactIdentityTransition;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.convergence.ConvergenceEngine;
@@ -269,12 +270,17 @@ public class DebugCommand {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
         String old = artifact.getConvergencePath();
-        boolean changed = convergenceEngine.evaluate(target, artifact, rep);
-        refreshAndSave(target);
-        if (!changed) {
+        ArtifactIdentityTransition transition = convergenceEngine.evaluate(target, artifact, rep);
+        if (transition == null) {
+            refreshAndSave(target);
             sender.sendMessage("§eNo valid convergence recipe available for " + target.getName() + ".");
         } else {
-            sender.sendMessage("§aConvergence changed for " + target.getName() + ": " + old + " -> " + artifact.getConvergencePath());
+            Artifact replacement = plugin.getArtifactManager().replaceIdentity(target.getUniqueId(), transition);
+            plugin.getArtifactUsageTracker().transitionIdentity(artifact, replacement);
+            plugin.getLineageRegistry().recordIdentityTransition(artifact, replacement, transition.reason(), replacement.getConvergencePath());
+            plugin.getArtifactUsageTracker().trackConvergenceParticipation(replacement);
+            refreshAndSave(target);
+            sender.sendMessage("§aConvergence changed for " + target.getName() + ": " + old + " -> " + replacement.getConvergencePath());
         }
         return true;
     }

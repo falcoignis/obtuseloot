@@ -29,6 +29,10 @@ public class ArtifactRuntimeCache<V> {
         return value;
     }
 
+    public void invalidate(long artifactSeed) {
+        values.remove(artifactSeed);
+    }
+
     private void cleanup(long now) {
         values.entrySet().removeIf(entry -> now - entry.getValue().lastAccessMs > idleExpireMs);
     }

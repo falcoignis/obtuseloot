@@ -5,7 +5,7 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.reputation.ArtifactReputation;
 
 public class SimulatedArtifactAgent {
-    private final Artifact artifact;
+    private Artifact artifact;
     private final ArtifactReputation reputation;
     private AbilityProfile abilityProfile;
     private final EvolutionaryAbilityRuntimeState evolutionaryAbilityState = new EvolutionaryAbilityRuntimeState();
@@ -17,6 +17,10 @@ public class SimulatedArtifactAgent {
 
     public Artifact artifact() {
         return artifact;
+    }
+
+    public void replaceArtifact(Artifact artifact) {
+        this.artifact = artifact;
     }
 
     public ArtifactReputation reputation() {

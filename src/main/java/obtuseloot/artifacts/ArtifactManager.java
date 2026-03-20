@@ -146,6 +146,11 @@ public class ArtifactManager {
         return replacement;
     }
 
+    public Artifact replaceIdentity(UUID playerId, ArtifactIdentityTransition transition) {
+        replaceLoadedArtifact(playerId, transition, true);
+        return transition.replacement();
+    }
+
     public void markDirty(UUID playerId) {
         cache.markDirtyByOwner(playerId);
     }

@@ -125,6 +125,36 @@ public class LineageRegistry {
         return lineages.get(lineageId);
     }
 
+    public ArtifactLineage recordIdentityTransition(Artifact previous,
+                                                    Artifact replacement,
+                                                    String reason,
+                                                    String convergencePath) {
+        if (previous == null || replacement == null) {
+            return null;
+        }
+        String lineageId = previous.getLatentLineage();
+        if (lineageId == null || lineageId.isBlank()) {
+            lineageId = replacement.getLatentLineage();
+        }
+        replacement.setLatentLineage(lineageId);
+        ArtifactLineage lineage = assignLineage(replacement);
+        if (!lineage.ancestorSeeds().contains(previous.getArtifactSeed())) {
+            lineage.addAncestor(new ArtifactAncestor(previous.getArtifactSeed(), Math.max(1, lineage.generationIndex())));
+        }
+        if (!lineage.ancestorSeeds().contains(replacement.getArtifactSeed())) {
+            lineage.addAncestor(new ArtifactAncestor(replacement.getArtifactSeed(), lineage.generationIndex() + 1));
+        }
+        emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, replacement, lineage.lineageId(), Map.of(
+                "event", "identity-transition",
+                "context_tags", "identity-transition|convergence",
+                "transition_reason", reason == null ? "artifact-identity-transition" : reason,
+                "previous_artifact_seed", String.valueOf(previous.getArtifactSeed()),
+                "replacement_artifact_seed", String.valueOf(replacement.getArtifactSeed()),
+                "convergence_path", convergencePath == null ? "none" : convergencePath
+        ));
+        return lineage;
+    }
+
     public ArtifactSpecies resolveSpecies(Artifact artifact) {
         ArtifactLineage lineage = assignLineage(artifact);
         return speciesRegistry.resolveSpecies(artifact, lineage);

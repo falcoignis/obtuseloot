@@ -14,6 +14,7 @@ import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
+import obtuseloot.artifacts.ArtifactIdentityTransition;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -60,7 +61,12 @@ public final class ArtifactProcessor {
             recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.AWAKENING, "awakening");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
-        if (CONVERGENCE_ENGINE.evaluate(player, artifact, rep)) {
+        ArtifactIdentityTransition convergenceTransition = CONVERGENCE_ENGINE.evaluate(player, artifact, rep);
+        if (convergenceTransition != null) {
+            Artifact replacement = plugin.getArtifactManager().replaceIdentity(player.getUniqueId(), convergenceTransition);
+            plugin.getArtifactUsageTracker().transitionIdentity(artifact, replacement);
+            plugin.getLineageRegistry().recordIdentityTransition(artifact, replacement, convergenceTransition.reason(), replacement.getConvergencePath());
+            artifact = replacement;
             plugin.getArtifactUsageTracker().trackConvergenceParticipation(artifact);
             recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.CONVERGENCE, "convergence");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_CONVERGENCE, 1D, artifact.getConvergencePath());

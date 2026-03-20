@@ -69,6 +69,24 @@ public class ArtifactUsageTracker {
         profileFor(artifact).recordAwakening(System.currentTimeMillis());
     }
 
+    public void transitionIdentity(Artifact previous, Artifact replacement) {
+        if (previous == null || replacement == null) {
+            return;
+        }
+        ArtifactUsageProfile profile = profiles.remove(previous.getArtifactSeed());
+        if (profile != null) {
+            profiles.put(replacement.getArtifactSeed(), profile);
+        } else {
+            profileFor(replacement).markCreated(System.currentTimeMillis());
+        }
+        signalCache.invalidate(previous.getArtifactSeed());
+        signalCache.invalidate(replacement.getArtifactSeed());
+        nichePopulationTracker.markDiscarded(previous.getArtifactSeed());
+        nichePopulationTracker.markCreated(replacement.getArtifactSeed());
+        nichePopulationTracker.recordTelemetry(replacement.getArtifactSeed(), replacement.getLatentLineage(),
+                UtilityHistoryRollup.parse(replacement.getLastUtilityHistory()).signalByMechanicTrigger());
+    }
+
     public void trackAbilityExecution(Artifact artifact,
                                       AbilityEventContext context,
                                       AbilityExecutionResult result,
