@@ -18,23 +18,24 @@ public final class ArtifactNameResolver {
 
     public static ArtifactNaming initialize(Artifact artifact) {
         ArtifactNaming naming = new ArtifactNaming();
-        naming.setRootForm(resolveRootForm(artifact));
-        naming.setEpithetSeed((int) (artifact.getArtifactSeed() & 0x7FFFFFFF));
-        naming.setTitleSeed((int) ((artifact.getArtifactSeed() >>> 32) & 0x7FFFFFFF));
+        long namingSeed = artifact.getArtifactSeed();
+        naming.setNamingSeed(namingSeed);
+        naming.setRootForm(resolveRootForm(artifact, namingSeed));
+        naming.setEpithetSeed((int) (namingSeed & 0x7FFFFFFF));
+        naming.setTitleSeed((int) ((namingSeed >>> 32) & 0x7FFFFFFF));
         artifact.setNaming(naming);
         refresh(artifact, naming);
         return naming;
     }
 
     public static void refresh(Artifact artifact, ArtifactNaming naming) {
-        naming.setRootForm(resolveRootForm(artifact));
-        ArtifactDiscoveryState discovery = resolveDiscovery(artifact);
+        long namingSeed = naming.getNamingSeed() == 0L ? artifact.getArtifactSeed() : naming.getNamingSeed();
+        naming.setNamingSeed(namingSeed);
+        naming.setRootForm(resolveRootForm(artifact, namingSeed));
+        ArtifactDiscoveryState discovery = ArtifactDiscoveryState.OBSCURED;
         List<String> tags = identityTags(artifact);
-        List<String> lexemes = ArtifactLexemeRegistry.lexemesFor(tags, artifact.getArtifactSeed() ^ artifact.getTotalDrifts());
+        List<String> lexemes = ArtifactLexemeRegistry.lexemesFor(tags, namingSeed);
         String trueName = naming.getTrueName();
-        if (trueName == null && shouldAssignTrueName(artifact)) {
-            trueName = titleCase(lexemes.isEmpty() ? "Vesper" : lexemes.getFirst());
-        }
 
         naming.setDiscoveryState(discovery);
         naming.setIdentityTags(tags);
@@ -44,34 +45,6 @@ public final class ArtifactNameResolver {
         naming.setNamingArchetype(NamingArchetype.FORM_OF_CONCEPT);
         String displayName = TEXT_RESOLVER.compose(artifact, ArtifactTextChannel.NAME, naming.getRootForm());
         naming.setDisplayName(displayName);
-    }
-
-    private static boolean shouldAssignTrueName(Artifact artifact) {
-        return hasAwakeningPath(artifact) || hasConvergencePath(artifact) || artifact.getHistoryScore() >= 60;
-    }
-
-    private static ArtifactDiscoveryState resolveDiscovery(Artifact artifact) {
-        int historyScore = artifact.getHistoryScore();
-        if (historyScore >= 80) {
-            return ArtifactDiscoveryState.STORIED;
-        }
-        if (hasAwakeningPath(artifact) || hasConvergencePath(artifact) || historyScore >= 40) {
-            return ArtifactDiscoveryState.REVEALED;
-        }
-        if (historyScore >= 20) {
-            return ArtifactDiscoveryState.KNOWN;
-        }
-        return ArtifactDiscoveryState.OBSCURED;
-    }
-
-    private static boolean hasAwakeningPath(Artifact artifact) {
-        String awakeningPath = artifact.getAwakeningPath();
-        return awakeningPath != null && !"dormant".equalsIgnoreCase(awakeningPath);
-    }
-
-    private static boolean hasConvergencePath(Artifact artifact) {
-        String convergencePath = artifact.getConvergencePath();
-        return convergencePath != null && !"none".equalsIgnoreCase(convergencePath);
     }
 
     private static List<String> identityTags(Artifact artifact) {
@@ -86,19 +59,16 @@ public final class ArtifactNameResolver {
         if (archetype.hasRole(EquipmentRole.TOOL)) tags.add("utility");
         if (artifact.getSeedPrecisionAffinity() > 0.66D) tags.add("precision");
         if (artifact.getSeedBrutalityAffinity() > 0.66D && archetype.hasRole(EquipmentRole.WEAPON)) tags.add("aggression");
-        if (artifact.getMemory().snapshot().values().stream().mapToInt(Integer::intValue).sum() > 4) tags.add("memory");
-        if (artifact.getSeedChaosAffinity() > 0.66D || artifact.getDriftAlignment().toLowerCase().contains("vol")) tags.add("chaotic");
-        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) tags.add("ritual");
-        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) tags.add("control");
+        if (artifact.getSeedChaosAffinity() > 0.66D) tags.add("chaotic");
         if (tags.isEmpty()) {
             throw new IllegalStateException("Artifact naming tags must derive from a valid archetype: " + archetype.id());
         }
         return tags;
     }
 
-    private static String resolveRootForm(Artifact artifact) {
+    private static String resolveRootForm(Artifact artifact, long namingSeed) {
         EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(artifact, "artifact naming");
-        return archetype.rootForm(artifact.getArtifactSeed());
+        return archetype.rootForm(namingSeed);
     }
 
     private static ToneProfile resolveTone(List<String> tags) {
@@ -112,8 +82,4 @@ public final class ArtifactNameResolver {
         throw new IllegalStateException("Unable to resolve naming tone from tags: " + tags);
     }
 
-    private static String titleCase(String value) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Naming value cannot be blank");
-        return Character.toUpperCase(value.charAt(0)) + value.substring(1).toLowerCase();
-    }
 }

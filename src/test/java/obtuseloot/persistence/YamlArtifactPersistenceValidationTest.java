@@ -43,6 +43,41 @@ class YamlArtifactPersistenceValidationTest {
         assertEquals("elytra", artifact.getItemCategory());
     }
 
+    @Test
+    void reloadPreservesNameForSameArtifactIdentityDespiteMutableState() {
+        UUID playerId = UUID.randomUUID();
+        YamlPlayerStateStore store = new YamlPlayerStateStore(plugin());
+        Artifact artifact = new Artifact(playerId, "diamond_sword");
+        artifact.setArtifactSeed(12345L);
+        artifact.setSeedPrecisionAffinity(0.9D);
+        artifact.setSeedBrutalityAffinity(0.8D);
+        artifact.setSeedChaosAffinity(0.1D);
+        artifact.setSeedSurvivalAffinity(0.2D);
+        artifact.setSeedMobilityAffinity(0.2D);
+        artifact.setSeedConsistencyAffinity(0.7D);
+        artifact.refreshNamingProjection();
+        String originalName = artifact.getDisplayName();
+        long originalNamingSeed = artifact.getNaming().getNamingSeed();
+
+        artifact.setEvolutionPath("advanced");
+        artifact.setAwakeningPath("storm");
+        artifact.setConvergencePath("vanguard");
+        artifact.setDriftAlignment("volatile");
+        artifact.setTotalDrifts(6);
+        artifact.addLoreHistory("history.1");
+        artifact.addNotableEvent("event.1");
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+        store.saveArtifact(playerId, artifact);
+        store.flushPendingWrites();
+
+        YamlPlayerStateStore reloadedStore = new YamlPlayerStateStore(plugin());
+        Artifact reloaded = reloadedStore.loadArtifact(playerId);
+
+        assertNotNull(reloaded);
+        assertEquals(originalName, reloaded.getDisplayName());
+        assertEquals(originalNamingSeed, reloaded.getNaming().getNamingSeed());
+    }
+
     private void writePlayerFile(UUID playerId, String itemCategory) throws IOException {
         Path playerDataDir = tempDir.resolve("playerdata");
         Files.createDirectories(playerDataDir);
@@ -52,6 +87,8 @@ class YamlArtifactPersistenceValidationTest {
                   owner-id: %s
                   item-category: %s
                   artifact-seed: 99
+                  naming:
+                    naming-seed: 99
                 """.formatted(playerId, itemCategory);
         Files.writeString(playerDataDir.resolve(playerId + ".yml"), yaml);
     }
