@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class ArtifactNaming {
+    private long namingSeed;
     private String trueName;
     private String displayName;
     private String rootForm;
@@ -17,6 +18,7 @@ public class ArtifactNaming {
     private ArtifactDiscoveryState discoveryState;
 
     public ArtifactNaming() {
+        this.namingSeed = 0L;
         this.displayName = "";
         this.rootForm = "";
         this.namingArchetype = NamingArchetype.FORM_OF_CONCEPT;
@@ -26,6 +28,8 @@ public class ArtifactNaming {
         this.discoveryState = ArtifactDiscoveryState.OBSCURED;
     }
 
+    public long getNamingSeed() { return namingSeed; }
+    public void setNamingSeed(long namingSeed) { this.namingSeed = namingSeed; }
     public String getTrueName() { return trueName; }
     public void setTrueName(String trueName) { this.trueName = blankToNull(trueName); }
     public String getDisplayName() { return displayName; }

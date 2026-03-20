@@ -95,6 +95,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setArtifactSeed(artifactSeed);
         seedFactory.applySeedProfile(artifact, artifactSeed);
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
+        naming.setNamingSeed(yaml.getLong("artifact.naming.naming-seed", naming.getNamingSeed()));
         naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
         naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
         naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
@@ -311,6 +312,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
         yaml.set(base + "naming.display-name", artifact.getDisplayName());
         yaml.set(base + "naming.true-name", artifact.getTrueName());
+        yaml.set(base + "naming.naming-seed", artifact.getNaming().getNamingSeed());
         yaml.set(base + "naming.root-form", artifact.getNaming().getRootForm());
         yaml.set(base + "naming.archetype", artifact.getNaming().getNamingArchetype().name());
         yaml.set(base + "naming.tone", artifact.getNaming().getToneProfile().name());

@@ -36,9 +36,42 @@ class ArtifactNamingRefactorTest {
         ArtifactNameResolver.refresh(artifact, artifact.getNaming());
 
         assertEquals("Vesper", artifact.getTrueName());
-        assertTrue(artifact.getNaming().getDiscoveryState().ordinal() >= ArtifactDiscoveryState.REVEALED.ordinal());
+        assertEquals(ArtifactDiscoveryState.OBSCURED, artifact.getNaming().getDiscoveryState());
         assertFalse(artifact.getDisplayName().isBlank());
         assertEquals(early, artifact.getDisplayName());
+    }
+
+    @Test
+    void namingRemainsStableAcrossMutableStateChangesAndTimeProgression() {
+        Artifact artifact = seeded(77L, "diamond_sword");
+        artifact.setNaming(ArtifactNameResolver.initialize(artifact));
+        String initialName = artifact.getDisplayName();
+        long namingSeed = artifact.getNaming().getNamingSeed();
+
+        artifact.setEvolutionPath("advanced");
+        artifact.setAwakeningPath("storm");
+        artifact.setConvergencePath("vanguard");
+        artifact.setDriftAlignment("volatile");
+        artifact.setDriftLevel(4);
+        artifact.setTotalDrifts(9);
+        artifact.setLastDriftTimestamp(1_000_000L);
+        artifact.addLoreHistory("history.1");
+        artifact.addNotableEvent("event.1");
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+        artifact.setLastDriftTimestamp(9_999_999L);
+        artifact.refreshNamingProjection();
+
+        assertEquals(initialName, artifact.getDisplayName());
+        assertEquals(namingSeed, artifact.getNaming().getNamingSeed());
+    }
+
+    @Test
+    void differentIdentityAllowsNameChange() {
+        Artifact original = seeded(88L, "diamond_sword");
+        Artifact replacement = seeded(89L, "elytra");
+
+        assertNotEquals(original.getNaming().getNamingSeed(), replacement.getNaming().getNamingSeed());
+        assertNotEquals(original.getDisplayName(), replacement.getDisplayName());
     }
 
     @Test
