@@ -2,6 +2,7 @@ package obtuseloot.abilities;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.evolution.MechanicUtilitySignal;
 import obtuseloot.reputation.ArtifactReputation;
@@ -58,9 +59,7 @@ public class ItemAbilityManager {
     }
 
     public AbilityProfile profileFor(Artifact artifact, ArtifactReputation rep) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact)) {
-            return new AbilityProfile("generic-baseline", List.of());
-        }
+        ArtifactArchetypeValidator.requireValid(artifact, "ability profiling");
         return resolver.resolve(artifact, rep);
     }
 

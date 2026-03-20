@@ -18,11 +18,8 @@ import java.util.List;
 public final class NamePoolManager {
     public static final String POOL_PREFIXES = "prefixes";
     public static final String POOL_SUFFIXES = "suffixes";
-    public static final String POOL_GENERIC = "generic";
-
     private static volatile List<String> prefixes = List.of();
     private static volatile List<String> suffixes = List.of();
-    private static volatile List<String> generic = List.of();
     private static volatile Path namesDirectory;
 
     private NamePoolManager() {
@@ -36,15 +33,13 @@ public final class NamePoolManager {
             Files.createDirectories(namesDir);
             prefixes = loadOrCreate(namesDir.resolve("prefixes.txt"), Prefixes.get());
             suffixes = loadOrCreate(namesDir.resolve("suffixes.txt"), Suffixes.get());
-            generic = loadOrCreate(namesDir.resolve("generic.txt"), Generic.get());
             plugin.getLogger().info("Loaded name pools: " + prefixes.size() + " prefixes, "
-                    + suffixes.size() + " suffixes, " + generic.size() + " generic names.");
+                    + suffixes.size() + " suffixes.");
         } catch (IOException exception) {
             plugin.getLogger().warning("Failed to initialize name pool files; using in-memory defaults. Cause: "
                     + exception.getMessage());
             prefixes = Prefixes.get();
             suffixes = Suffixes.get();
-            generic = Generic.get();
         }
     }
 
@@ -56,19 +51,15 @@ public final class NamePoolManager {
         return suffixes;
     }
 
-    public static List<String> generic() {
-        return generic;
-    }
 
     public static List<String> allPoolNames() {
-        return List.of(POOL_PREFIXES, POOL_SUFFIXES, POOL_GENERIC);
+        return List.of(POOL_PREFIXES, POOL_SUFFIXES);
     }
 
     public static List<String> getPool(String pool) {
         return switch (normalizePool(pool)) {
             case POOL_PREFIXES -> prefixes;
             case POOL_SUFFIXES -> suffixes;
-            case POOL_GENERIC -> generic;
             default -> List.of();
         };
     }
@@ -140,7 +131,7 @@ public final class NamePoolManager {
         }
 
         String normalized = pool.trim().toLowerCase();
-        if (POOL_PREFIXES.equals(normalized) || POOL_SUFFIXES.equals(normalized) || POOL_GENERIC.equals(normalized)) {
+        if (POOL_PREFIXES.equals(normalized) || POOL_SUFFIXES.equals(normalized)) {
             return normalized;
         }
 
@@ -160,7 +151,6 @@ public final class NamePoolManager {
         switch (pool) {
             case POOL_PREFIXES -> prefixes = immutable;
             case POOL_SUFFIXES -> suffixes = immutable;
-            case POOL_GENERIC -> generic = immutable;
             default -> {
             }
         }

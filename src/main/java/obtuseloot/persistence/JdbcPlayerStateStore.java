@@ -78,9 +78,9 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 artifact.setOwnerId(UUID.fromString(rs.getString("owner_uuid")));
                 artifact.setArtifactSeed(rs.getLong("artifact_seed"));
                 seedFactory.applySeedProfile(artifact, artifact.getArtifactSeed());
+                artifact.setItemCategory(requirePersistedItemCategory(rs.getString("item_category"), playerId));
                 artifact.setNaming(ArtifactNameResolver.initialize(artifact));
                 artifact.setDisplayName(nullToDefault(rs.getString("generated_name"), artifact.getDisplayName()));
-                artifact.setItemCategory(nullToDefault(rs.getString("item_category"), "artifact"));
                 artifact.setArchetypePath(nullToDefault(rs.getString("archetype"), "unformed"));
                 artifact.setEvolutionPath(nullToDefault(rs.getString("evolution_path"), "base"));
                 artifact.setDriftAlignment(nullToDefault(rs.getString("drift_alignment"), "stable"));
@@ -121,6 +121,8 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 }
                 return artifact;
             }
+        } catch (IllegalStateException ex) {
+            throw ex;
         } catch (Exception ex) {
             plugin.getLogger().warning("[Persistence] SQL loadArtifact failed for " + playerId + ": " + ex.getMessage());
             return null;
@@ -168,6 +170,17 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
             ps.setString(1, playerId.toString());
             ps.setLong(2, System.currentTimeMillis());
             ps.executeUpdate();
+        }
+    }
+
+    private String requirePersistedItemCategory(String rawCategory, UUID playerId) {
+        if (rawCategory == null || rawCategory.isBlank()) {
+            throw new IllegalStateException("[Persistence] Missing artifact item_category for " + playerId);
+        }
+        try {
+            return obtuseloot.artifacts.EquipmentArchetype.fromId(rawCategory).id();
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("[Persistence] Invalid artifact item_category '" + rawCategory + "' for " + playerId, exception);
         }
     }
 

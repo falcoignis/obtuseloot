@@ -1,7 +1,7 @@
 package obtuseloot.awakening;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.eligibility.ArtifactEligibility;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import obtuseloot.text.ArtifactTextChannel;
@@ -23,7 +23,8 @@ public class AwakeningEngine {
     );
 
     public boolean evaluate(Player player, Artifact artifact, ArtifactReputation reputation) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
+        ArtifactArchetypeValidator.requireValid(artifact, "awakening evaluation");
+        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
         String resolved = resolve(artifact, reputation);
@@ -31,7 +32,8 @@ public class AwakeningEngine {
     }
 
     public boolean evaluateSimulation(Artifact artifact, ArtifactReputation reputation) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
+        ArtifactArchetypeValidator.requireValid(artifact, "awakening evaluation");
+        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
         String resolved = resolve(artifact, reputation);
@@ -39,7 +41,8 @@ public class AwakeningEngine {
     }
 
     public boolean forceAwakening(Player player, Artifact artifact, ArtifactReputation reputation) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact) || !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
+        ArtifactArchetypeValidator.requireValid(artifact, "awakening evaluation");
+        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             return false;
         }
         String resolved = resolve(artifact, reputation);

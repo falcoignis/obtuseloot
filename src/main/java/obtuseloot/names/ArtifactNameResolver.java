@@ -1,7 +1,7 @@
 package obtuseloot.names;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
@@ -85,10 +85,7 @@ public final class ArtifactNameResolver {
     }
 
     private static String resolveRootForm(String itemCategory) {
-        if (EquipmentArchetype.isEquipment(itemCategory)) {
-            return EquipmentArchetype.fromId(itemCategory).rootForm();
-        }
-        return "Artifact";
+        return obtuseloot.artifacts.EquipmentArchetype.fromId(ArtifactArchetypeValidator.requireValidId(itemCategory, "artifact naming")).rootForm();
     }
 
     private static ToneProfile resolveTone(List<String> tags) {

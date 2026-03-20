@@ -7,10 +7,6 @@ import obtuseloot.artifacts.EquipmentRole;
 public final class ArtifactEligibility {
     private ArtifactEligibility() {}
 
-    public static boolean isGenericItem(Artifact artifact) {
-        return artifact == null || !EquipmentArchetype.isEquipment(artifact.getItemCategory());
-    }
-
     public static boolean isEvolutionEligible(Artifact artifact) {
         return hasRealEquipmentArchetype(artifact);
     }

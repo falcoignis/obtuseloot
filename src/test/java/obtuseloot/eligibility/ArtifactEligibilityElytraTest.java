@@ -15,7 +15,6 @@ class ArtifactEligibilityElytraTest {
         Artifact artifact = artifact("elytra");
 
         assertAll(
-                () -> assertFalse(ArtifactEligibility.isGenericItem(artifact)),
                 () -> assertTrue(ArtifactEligibility.isEvolutionEligible(artifact)),
                 () -> assertTrue(ArtifactEligibility.isAbilityEligible(artifact)),
                 () -> assertTrue(ArtifactEligibility.isMemoryEligible(artifact)),

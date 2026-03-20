@@ -6,7 +6,7 @@ ObtuseLoot is a Java 21 Minecraft plugin (Purpur/Bukkit API target `1.21`) focus
 The repository also contains an extensive offline analytics + simulation toolchain (world-lab, open-endedness experiments, CLI analyzers, validation harness scripts) that is built and executed through Maven-based workflows.
 
 ## Current Status
-- **Version in source:** `0.9.6` (`pom.xml` + `plugin.yml`).
+- **Version in source:** `0.9.7` (`pom.xml` + `plugin.yml`).
 - **Packaging:** Single-module Maven `jar` project (no multi-module reactor).
 - **Runtime target:** Purpur API `1.21.1-R0.1-SNAPSHOT`.
 - **Maturity profile:** Active runtime plugin with large analytics/experiment surface and substantial test coverage under `src/test/java`.
@@ -209,7 +209,7 @@ Primary runtime config is `src/main/resources/config.yml` (copied to plugin data
 | `obtuseloot.admin` | Allows refresh/reset/reload | `op` | Declared in `plugin.yml`. |
 | `obtuseloot.edit` | Allows add/remove name | `op` | Declared in `plugin.yml`; code also supports scoped edit permissions. |
 | `obtuseloot.debug` | Allows debug surface | `op` | Declared in `plugin.yml`; enforced in debug executor paths. |
-| `obtuseloot.edit.prefixes` / `.suffixes` / `.generic` | Scoped pool editing | not specified | **Checked in code but not declared in `plugin.yml`.** |
+| `obtuseloot.edit.prefixes` / `.suffixes` | Scoped pool editing | not specified | **Checked in code but not declared in `plugin.yml`.** |
 
 ### Descriptor ↔ Code inconsistencies
 - `plugin.yml` usage text does not enumerate all implemented debug subcommands (`subscriptions`, `artifact/storage` etc.).

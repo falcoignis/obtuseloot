@@ -84,7 +84,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
         artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
         artifact.setAwakeningPath(yaml.getString("artifact.awakening-path", "dormant"));
-        artifact.setItemCategory(yaml.getString("artifact.item-category", "artifact"));
+        artifact.setItemCategory(requirePersistedItemCategory(yaml, playerId));
         artifact.setConvergencePath(yaml.getString("artifact.convergence-path", "none"));
         artifact.setDriftLevel(yaml.getInt("artifact.drift-level", 0));
         artifact.setTotalDrifts(yaml.getInt("artifact.total-drifts", 0));
@@ -233,8 +233,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             YamlConfiguration yaml = loadYaml(id);
             PlayerDataMigrator.MigrationResult migration = PlayerDataMigrator.migrateToCurrent(yaml, logger, fileFor(id).getName());
             if (migration.failed()) {
-                logger.warning("[Persistence] Using in-memory defaults for " + id + " due to migration/load failure.");
-                return new CachedPlayerState(new YamlConfiguration());
+                throw new IllegalStateException("[Persistence] Refusing to load " + id + " due to migration failure.");
             }
             if (migration.migrated()) {
                 long revision = revisionCounter.incrementAndGet();
@@ -300,6 +299,19 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             }
         }
         return new SpeciesRegistrySnapshot(species, lineageRoots);
+    }
+
+
+    private String requirePersistedItemCategory(YamlConfiguration yaml, UUID playerId) {
+        String rawCategory = yaml.getString("artifact.item-category");
+        if (rawCategory == null || rawCategory.isBlank()) {
+            throw new IllegalStateException("[Persistence] Missing artifact.item-category for " + playerId);
+        }
+        try {
+            return obtuseloot.artifacts.EquipmentArchetype.fromId(rawCategory).id();
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException("[Persistence] Invalid artifact.item-category '" + rawCategory + "' for " + playerId, exception);
+        }
     }
 
     private void writeArtifactSection(YamlConfiguration yaml, Artifact artifact) {

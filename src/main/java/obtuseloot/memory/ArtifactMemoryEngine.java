@@ -1,7 +1,7 @@
 package obtuseloot.memory;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.eligibility.ArtifactEligibility;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
@@ -16,9 +16,7 @@ public class ArtifactMemoryEngine {
     private final Map<String, MemoryTriggerSnapshot> memoryTriggerSnapshots = new ConcurrentHashMap<>();
 
     public ArtifactMemoryProfile recordAndProfile(Artifact artifact, ArtifactMemoryEvent event) {
-        if (!ArtifactEligibility.isMemoryEligible(artifact)) {
-            return new ArtifactMemoryProfile(0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
-        }
+        ArtifactArchetypeValidator.requireValid(artifact, "memory recording");
         artifact.getMemory().record(event);
         artifact.addNotableEvent("memory." + event.name().toLowerCase());
         artifact.addLoreHistory(textResolver.compose(artifact, ArtifactTextChannel.MEMORY, event.name().toLowerCase()));
@@ -42,9 +40,7 @@ public class ArtifactMemoryEngine {
     }
 
     public ArtifactMemoryProfile profile(Artifact artifact) {
-        if (!ArtifactEligibility.isMemoryEligible(artifact)) {
-            return new ArtifactMemoryProfile(0, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 0.0D);
-        }
+        ArtifactArchetypeValidator.requireValid(artifact, "memory recording");
         return influenceResolver.profileFor(artifact.getMemory());
     }
 

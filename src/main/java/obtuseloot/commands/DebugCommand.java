@@ -154,7 +154,7 @@ public class DebugCommand {
         sender.sendMessage("§7awakening multipliers: §f" + artifact.getAwakeningGainMultipliers());
         sender.sendMessage("§7awakening traits: §f" + artifact.getAwakeningTraits());
         AbilityProfile abilityProfile = plugin.getItemAbilityManager().profileFor(artifact, rep);
-        sender.sendMessage("§7isGeneric=§f" + ArtifactEligibility.isGenericItem(artifact)
+        sender.sendMessage("§7isArchetypeValid=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + " §7evolutionEligible=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + " §7abilityEligible=§f" + ArtifactEligibility.isAbilityEligible(artifact)
                 + " §7memoryEligible=§f" + ArtifactEligibility.isMemoryEligible(artifact));

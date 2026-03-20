@@ -135,7 +135,7 @@ final class Prefixes {
             "Voracious", "Wicked", "Yieldless",
 
             // ── Suggestive — all have legitimate primary meanings ─────────────
-            // Earn a second reading when combined with generic names or hollow/deep suffixes.
+            // Earn a second reading when combined with core-form names or hollow/deep suffixes.
             // Subtle over explicit — the double reading should be discovered, not announced.
             "Supple", "Tender", "Aching", "Eager", "Hungry",
             "Smoldering", "Surging", "Rising", "Mounting", "Plunging",
