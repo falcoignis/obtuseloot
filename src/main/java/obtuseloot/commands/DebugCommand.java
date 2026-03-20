@@ -19,6 +19,7 @@ import obtuseloot.persistence.MySqlPersistenceProvider;
 import obtuseloot.persistence.PersistenceMigrator;
 import obtuseloot.persistence.SqlitePersistenceProvider;
 import obtuseloot.reputation.ArtifactReputation;
+import obtuseloot.significance.ArtifactSignificanceResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -44,6 +45,7 @@ public class DebugCommand {
 
     private final ObtuseLoot plugin;
     private final ConvergenceEngine convergenceEngine = new ConvergenceEngine();
+    private final ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
 
     public DebugCommand(ObtuseLoot plugin) {
         this.plugin = plugin;
@@ -149,6 +151,7 @@ public class DebugCommand {
         sender.sendMessage("§7driftLevel=§f" + artifact.getDriftLevel() + " §7totalDrifts=§f" + artifact.getTotalDrifts()
                 + " §7driftAlignment=§f" + artifact.getDriftAlignment());
         sender.sendMessage("§7seed=§f" + artifact.getArtifactSeed() + " §7lineage=§f" + artifact.getLatentLineage() + " §7instability=§f" + artifact.getCurrentInstabilityState());
+        sender.sendMessage("§7significance=§f" + significanceResolver.resolve(artifact).format());
         sender.sendMessage("§7seed affinities: §f" + formatStatMap(artifact));
         sender.sendMessage("§7drift bias: §f" + artifact.getDriftBiasAdjustments());
         sender.sendMessage("§7awakening bias: §f" + artifact.getAwakeningBiasAdjustments());
