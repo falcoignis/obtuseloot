@@ -99,6 +99,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
         naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
         naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
+        ArtifactNameResolver.refresh(artifact, naming);
         artifact.setNaming(naming);
         artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", artifact.getLatentLineage()));
         artifact.setSpeciesId(yaml.getString("artifact.species-id", artifact.getSpeciesId()));
