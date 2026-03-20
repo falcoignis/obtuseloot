@@ -177,7 +177,6 @@ public class Artifact {
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return naming.getDisplayName(); }
-    void replaceArchetype(EquipmentArchetype archetype) { this.itemCategory = Objects.requireNonNull(archetype, "archetype").id(); }
     public String getArchetypePath() { return archetypePath; }
     public void setArchetypePath(String archetypePath) { this.archetypePath = archetypePath; }
     public String getEvolutionPath() { return evolutionPath; }

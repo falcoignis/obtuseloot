@@ -3,8 +3,8 @@ package obtuseloot.artifacts;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.artifacts.cache.ArtifactCacheEntry;
 import obtuseloot.artifacts.cache.ArtifactCacheManager;
-import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.config.RuntimeSettings;
+import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.persistence.PlayerStateStore;
 
 import java.util.Map;
@@ -94,9 +94,7 @@ public class ArtifactManager {
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
         }
-        loadedArtifacts.put(playerId, fresh);
-        storageToOwner.put(fresh.getArtifactStorageKey(), playerId);
-        cache.put(playerId, fresh, true, true);
+        replaceLoadedArtifact(playerId, fresh, true);
         return fresh;
     }
 
@@ -140,13 +138,12 @@ public class ArtifactManager {
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(artifact);
         }
-        artifact.resetMutableState();
-        regenerateBaselineIdentity(artifact, newSeed);
-        markDirty(playerId);
+        Artifact replacement = createRegeneratedArtifact(artifact, newSeed);
+        replaceLoadedArtifact(playerId, replacement, true);
         if (ObtuseLoot.get() != null) {
-            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(replacement);
         }
-        return artifact;
+        return replacement;
     }
 
     public void markDirty(UUID playerId) {
@@ -182,19 +179,29 @@ public class ArtifactManager {
         }
     }
 
-    public void regenerateBaselineIdentity(Artifact artifact) {
-        regenerateBaselineIdentity(artifact, artifact.getArtifactSeed());
-    }
-
-    public void regenerateBaselineIdentity(Artifact artifact, long seed) {
-        seedFactory.regenerateFromSeed(artifact, seed);
-        artifact.replaceArchetype(ArtifactArchetypeValidator.requireValidArchetype(
-                ArtifactGenerator.resolveCategory(seed),
-                "artifact baseline identity regeneration"));
-        artifact.setNaming(ArtifactNameResolver.initialize(artifact));
-    }
-
     public long rollSeed() {
         return ThreadLocalRandom.current().nextLong();
+    }
+
+    private Artifact createRegeneratedArtifact(Artifact previous, long seed) {
+        EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValidArchetype(
+                ArtifactGenerator.resolveCategory(seed),
+                "artifact baseline identity regeneration");
+        Artifact replacement = new Artifact(previous.getOwnerId(), archetype);
+        replacement.setArtifactStorageKey(previous.getArtifactStorageKey());
+        replacement.setOwnerId(previous.getOwnerId());
+        replacement.resetMutableState();
+        seedFactory.regenerateFromSeed(replacement, seed);
+        replacement.setNaming(ArtifactNameResolver.initialize(replacement));
+        return replacement;
+    }
+
+    private void replaceLoadedArtifact(UUID playerId, Artifact artifact, boolean dirty) {
+        Artifact previous = loadedArtifacts.put(playerId, artifact);
+        if (previous != null) {
+            storageToOwner.remove(previous.getArtifactStorageKey(), playerId);
+        }
+        storageToOwner.put(artifact.getArtifactStorageKey(), playerId);
+        cache.put(playerId, artifact, dirty, true);
     }
 }
