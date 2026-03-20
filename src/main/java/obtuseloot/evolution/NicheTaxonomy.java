@@ -16,8 +16,8 @@ public class NicheTaxonomy {
         mechanicToNiches.put(AbilityMechanic.SENSE_PING, EnumSet.of(MechanicNicheTag.STRUCTURE_SENSING, MechanicNicheTag.ENVIRONMENTAL_SENSING, MechanicNicheTag.INSPECT_INFORMATION));
         mechanicToNiches.put(AbilityMechanic.INSIGHT_REVEAL, EnumSet.of(MechanicNicheTag.INSPECT_INFORMATION, MechanicNicheTag.MEMORY_HISTORY));
         mechanicToNiches.put(AbilityMechanic.HARVEST_RELAY, EnumSet.of(MechanicNicheTag.FARMING_WORLDKEEPING, MechanicNicheTag.SUPPORT_COHESION));
-        mechanicToNiches.put(AbilityMechanic.RITUAL_CHANNEL, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.RARE_HIGH_COST_UTILITY));
-        mechanicToNiches.put(AbilityMechanic.REVENANT_TRIGGER, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY, MechanicNicheTag.RARE_HIGH_COST_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.RITUAL_CHANNEL, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.HIGH_COST_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.REVENANT_TRIGGER, EnumSet.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY, MechanicNicheTag.HIGH_COST_UTILITY));
         mechanicToNiches.put(AbilityMechanic.SOCIAL_ATTUNEMENT, EnumSet.of(MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.SUPPORT_COHESION));
         mechanicToNiches.put(AbilityMechanic.GUARDIAN_PULSE, EnumSet.of(MechanicNicheTag.PROTECTION_WARDING, MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
         mechanicToNiches.put(AbilityMechanic.DEFENSIVE_THRESHOLD, EnumSet.of(MechanicNicheTag.PROTECTION_WARDING, MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
@@ -30,7 +30,7 @@ public class NicheTaxonomy {
         mechanicToNiches.put(AbilityMechanic.CHAIN_ESCALATION, EnumSet.of(MechanicNicheTag.SUPPORT_COHESION, MechanicNicheTag.SOCIAL_WORLD_INTERACTION));
         mechanicToNiches.put(AbilityMechanic.BURST_STATE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_ADAPTATION));
         mechanicToNiches.put(AbilityMechanic.RETALIATION, EnumSet.of(MechanicNicheTag.PROTECTION_WARDING));
-        mechanicToNiches.put(AbilityMechanic.UNSTABLE_DETONATION, EnumSet.of(MechanicNicheTag.RARE_HIGH_COST_UTILITY, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
+        mechanicToNiches.put(AbilityMechanic.UNSTABLE_DETONATION, EnumSet.of(MechanicNicheTag.HIGH_COST_UTILITY, MechanicNicheTag.RITUAL_STRANGE_UTILITY));
         mechanicToNiches.put(AbilityMechanic.TRAIL_SENSE, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
         mechanicToNiches.put(AbilityMechanic.ECOLOGICAL_PATHING, EnumSet.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.ENVIRONMENTAL_SENSING));
         mechanicToNiches.put(AbilityMechanic.BIOME_RESONANCE, EnumSet.of(MechanicNicheTag.ENVIRONMENTAL_SENSING, MechanicNicheTag.INSPECT_INFORMATION));

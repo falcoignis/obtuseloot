@@ -1533,9 +1533,9 @@ public class ProceduralAbilityGenerator {
             case PROTECTION_WARDING -> right == MechanicNicheTag.ENVIRONMENTAL_ADAPTATION || right == MechanicNicheTag.SUPPORT_COHESION;
             case ENVIRONMENTAL_ADAPTATION -> right == MechanicNicheTag.PROTECTION_WARDING || right == MechanicNicheTag.FARMING_WORLDKEEPING;
             case FARMING_WORLDKEEPING -> right == MechanicNicheTag.ENVIRONMENTAL_ADAPTATION || right == MechanicNicheTag.SUPPORT_COHESION;
-            case MEMORY_HISTORY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.RARE_HIGH_COST_UTILITY;
-            case RITUAL_STRANGE_UTILITY -> right == MechanicNicheTag.MEMORY_HISTORY || right == MechanicNicheTag.RARE_HIGH_COST_UTILITY;
-            case RARE_HIGH_COST_UTILITY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.MEMORY_HISTORY;
+            case MEMORY_HISTORY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.HIGH_COST_UTILITY;
+            case RITUAL_STRANGE_UTILITY -> right == MechanicNicheTag.MEMORY_HISTORY || right == MechanicNicheTag.HIGH_COST_UTILITY;
+            case HIGH_COST_UTILITY -> right == MechanicNicheTag.RITUAL_STRANGE_UTILITY || right == MechanicNicheTag.MEMORY_HISTORY;
             case GENERALIST -> false;
         };
     }

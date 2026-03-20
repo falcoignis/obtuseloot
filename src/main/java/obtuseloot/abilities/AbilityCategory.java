@@ -66,7 +66,7 @@ public enum AbilityCategory {
             "Pattern repetition, altar completion, memory echoes, temporal shifts, and uncanny environmental signs.",
             "Ritual channels, anomaly shaping, weird utility conversion, omen control, and symbolic persistence.",
             "Supports RPG mystics, lore-heavy play, adventure servers, and social/ritual specialists.",
-            Set.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY, MechanicNicheTag.RARE_HIGH_COST_UTILITY),
+            Set.of(MechanicNicheTag.RITUAL_STRANGE_UTILITY, MechanicNicheTag.MEMORY_HISTORY, MechanicNicheTag.HIGH_COST_UTILITY),
             Set.of("ritual", "weirdness", "symbolism")),
     STEALTH_TRICKERY_DISRUPTION(
             "Stealth / trickery / disruption",
