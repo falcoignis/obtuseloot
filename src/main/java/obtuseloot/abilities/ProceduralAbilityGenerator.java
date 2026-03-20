@@ -71,6 +71,7 @@ public class ProceduralAbilityGenerator {
     private static final double UNDER_SAMPLED_TRIGGER_RELIEF_MAX = 0.08D;
     private static final double HIGH_COMPLEXITY_TEMPLATE_FLOOR = 0.67D;
     private static final double UNSEEN_TEMPLATE_OVERRIDE_PROBABILITY = 0.12D;
+    private static final double HIGH_FREQUENCY_CONTEXT_MISALIGN_DAMPENING = 0.88D;
 
     private static final Map<AbilityTrigger, Double> TRIGGER_SATURATION_WEIGHTS = new EnumMap<>(AbilityTrigger.class);
 
@@ -562,7 +563,8 @@ public class ProceduralAbilityGenerator {
         double tailBias = tailPreservationBias(template, intraNovelty, nicheBias * categoryBias, nicheProfile, similarityProfile);
         double coldBias = coldTemplateBoost(template);
         double boundedPenalty = boundedPenaltyMultiplier(recencyBias, nicheConsistencyPenalty);
-        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias;
+        double contextAlignDampening = isHighFrequencyContextMisaligned(template) ? HIGH_FREQUENCY_CONTEXT_MISALIGN_DAMPENING : 1.0D;
+        return base * nicheBias * categoryBias * boundedPenalty * lineageBias * motifBias * noveltyBonus * noveltyFloorPenalty * similarityPenalty * diversityBias * tailBias * coldBias * contextAlignDampening;
     }
 
     private Map<AbilityTemplate, Double> compositeTemplateScores(List<AbilityTemplate> templates, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
@@ -1151,15 +1153,27 @@ public class ProceduralAbilityGenerator {
 
     private Set<AbilityTrigger> adjacentTriggerFamily(AbilityTrigger trigger) {
         return switch (trigger) {
-            case ON_BLOCK_INSPECT -> Set.of(AbilityTrigger.ON_ENTITY_INSPECT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY);
-            case ON_STRUCTURE_PROXIMITY -> Set.of(AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_MOVEMENT);
+            case ON_BLOCK_INSPECT -> Set.of(AbilityTrigger.ON_ENTITY_INSPECT, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_WITNESS_EVENT);
+            case ON_STRUCTURE_PROXIMITY -> Set.of(AbilityTrigger.ON_STRUCTURE_SENSE, AbilityTrigger.ON_STRUCTURE_DISCOVERY, AbilityTrigger.ON_MOVEMENT, AbilityTrigger.ON_WEATHER_CHANGE);
+            case ON_STRUCTURE_SENSE -> Set.of(AbilityTrigger.ON_STRUCTURE_PROXIMITY, AbilityTrigger.ON_MEMORY_EVENT);
+            case ON_WORLD_SCAN -> Set.of(AbilityTrigger.ON_STRUCTURE_PROXIMITY);
             case ON_MOVEMENT -> Set.of(AbilityTrigger.ON_CHUNK_ENTER, AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_REPOSITION);
             case ON_REPOSITION -> Set.of(AbilityTrigger.ON_MOVEMENT, AbilityTrigger.ON_CHUNK_ENTER);
             case ON_PLAYER_TRADE -> Set.of(AbilityTrigger.ON_SOCIAL_INTERACT, AbilityTrigger.ON_PLAYER_GROUP_ACTION);
-            case ON_SOCIAL_INTERACT -> Set.of(AbilityTrigger.ON_PLAYER_TRADE, AbilityTrigger.ON_PLAYER_GROUP_ACTION);
+            case ON_SOCIAL_INTERACT -> Set.of(AbilityTrigger.ON_PLAYER_TRADE, AbilityTrigger.ON_PLAYER_GROUP_ACTION, AbilityTrigger.ON_WITNESS_EVENT);
             case ON_TIME_OF_DAY_TRANSITION -> Set.of(AbilityTrigger.ON_WORLD_SCAN, AbilityTrigger.ON_WEATHER_CHANGE);
             default -> Set.of();
         };
+    }
+
+    private boolean isHighFrequencyContextMisaligned(AbilityTemplate template) {
+        AbilityTrigger trigger = template.trigger();
+        if (trigger != AbilityTrigger.ON_LOW_HEALTH && trigger != AbilityTrigger.ON_TIME_OF_DAY_TRANSITION) {
+            return false;
+        }
+        Set<MechanicNicheTag> templateNiches = nicheTaxonomy.nichesFor(template.mechanic(), trigger);
+        Set<MechanicNicheTag> categoryNiches = template.category().niches();
+        return templateNiches.stream().noneMatch(categoryNiches::contains);
     }
 
     private boolean isSmallCategory(AbilityCategory category) {
