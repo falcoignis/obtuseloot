@@ -26,7 +26,7 @@ class AdaptiveSupportAllocatorTest {
     }
 
     @Test
-    void crowdedNicheLosesOpportunityAndRareUsefulNicheGainsIt() {
+    void crowdedNicheLosesOpportunityAndUnderrepresentedUsefulNicheGainsIt() {
         ArtifactUsageTracker tracker = new ArtifactUsageTracker();
         for (int i = 0; i < 20; i++) {
             tracker.nichePopulationTracker().recordTelemetry(100L + i, Map.of(
@@ -35,17 +35,17 @@ class AdaptiveSupportAllocatorTest {
         }
         tracker.nichePopulationTracker().recordTelemetry(999L, Map.of(
                 "RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                new MechanicUtilitySignal("rare", 6.8D, 0.72D, 0.9D, 0.05D, 0.05D, 0.05D, 10L, 8L, 5.0D)));
+                new MechanicUtilitySignal("lowFrequency", 6.8D, 0.72D, 0.9D, 0.05D, 0.05D, 0.05D, 10L, 8L, 5.0D)));
 
         AdaptiveSupportAllocator allocator = new AdaptiveSupportAllocator();
         EvolutionOpportunityPool pool = allocator.buildPool(tracker, new LineageRegistry());
         NicheOpportunityAllocation crowded = pool.nicheAllocations().get(MechanicNicheTag.NAVIGATION);
-        NicheOpportunityAllocation rare = pool.nicheAllocations().get(MechanicNicheTag.RITUAL_STRANGE_UTILITY);
+        NicheOpportunityAllocation lowFrequency = pool.nicheAllocations().get(MechanicNicheTag.RITUAL_STRANGE_UTILITY);
 
         assertNotNull(crowded);
-        assertNotNull(rare);
-        assertTrue(crowded.reinforcementMultiplier() < rare.reinforcementMultiplier());
-        assertTrue(crowded.competitionPressure() > rare.competitionPressure());
+        assertNotNull(lowFrequency);
+        assertTrue(crowded.reinforcementMultiplier() < lowFrequency.reinforcementMultiplier());
+        assertTrue(crowded.competitionPressure() > lowFrequency.competitionPressure());
     }
 
     @Test
@@ -86,7 +86,7 @@ class AdaptiveSupportAllocatorTest {
             }
             tracker.nichePopulationTracker().recordTelemetry(9_000L + generation, Map.of(
                     "RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                    new MechanicUtilitySignal("rare" + generation, 5.5D + (generation * 0.10D), 0.65D, 0.85D, 0.08D, 0.08D, 0.08D, 9L, 7L, 4.5D)));
+                    new MechanicUtilitySignal("lowFrequency" + generation, 5.5D + (generation * 0.10D), 0.65D, 0.85D, 0.08D, 0.08D, 0.08D, 9L, 7L, 4.5D)));
         }
 
         AdaptiveSupportAllocator allocator = new AdaptiveSupportAllocator();
