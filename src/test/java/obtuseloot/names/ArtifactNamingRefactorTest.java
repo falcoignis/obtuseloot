@@ -11,8 +11,8 @@ class ArtifactNamingRefactorTest {
 
     @Test
     void namingIsDeterministicForEquivalentIdentity() {
-        Artifact left = seeded(99L, "artifact");
-        Artifact right = seeded(99L, "artifact");
+        Artifact left = seeded(99L, "iron_sword");
+        Artifact right = seeded(99L, "iron_sword");
         ArtifactNaming first = ArtifactNameResolver.initialize(left);
         ArtifactNaming second = ArtifactNameResolver.initialize(right);
 
@@ -21,7 +21,7 @@ class ArtifactNamingRefactorTest {
 
     @Test
     void trueNamePersistsWhileDisplayEvolvesAcrossDiscovery() {
-        Artifact artifact = seeded(7L, "blade");
+        Artifact artifact = seeded(7L, "diamond_sword");
         artifact.setEvolutionPath("advanced");
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
         naming.setTrueName("Vesper");
@@ -45,13 +45,13 @@ class ArtifactNamingRefactorTest {
     }
 
     @Test
-    void nonCombatIdentityCanProduceUtilityFlavor() {
-        Artifact artifact = seeded(241L, "bell");
+    void armorIdentityCanProduceEquipmentFlavor() {
+        Artifact artifact = seeded(241L, "chainmail_helmet");
         artifact.setSeedSurvivalAffinity(0.9D);
         artifact.setSeedMobilityAffinity(0.91D);
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
 
-        assertTrue(naming.getDisplayName().contains("Bell") || naming.getDisplayName().contains("Ward") || naming.getDisplayName().contains("Vigil"));
+        assertTrue(naming.getDisplayName().contains("Helm") || naming.getDisplayName().contains("Vigil") || naming.getDisplayName().contains("Ward"));
     }
 
     private Artifact seeded(long seed, String category) {

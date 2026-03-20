@@ -1,6 +1,7 @@
 package obtuseloot.names;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.EquipmentArchetype;
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
@@ -84,13 +85,10 @@ public final class ArtifactNameResolver {
     }
 
     private static String resolveRootForm(String itemCategory) {
-        return switch (itemCategory == null ? "artifact" : itemCategory.toLowerCase()) {
-            case "blade", "sword" -> "Blade";
-            case "bell" -> "Bell";
-            case "focus", "reliquary" -> "Reliquary";
-            case "ward", "shield" -> "Ward";
-            default -> "Artifact";
-        };
+        if (EquipmentArchetype.isEquipment(itemCategory)) {
+            return EquipmentArchetype.fromId(itemCategory).rootForm();
+        }
+        return "Artifact";
     }
 
     private static ToneProfile resolveTone(List<String> tags) {
