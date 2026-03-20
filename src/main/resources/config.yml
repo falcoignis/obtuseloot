@@ -30,7 +30,7 @@ reputation:
 evolution:
   archetype-threshold: 10
   tempered-threshold: 25
-  mythic-threshold: 45
+  advanced-threshold: 45
   hybrid-threshold: 70
   archetype-switch-margin: 4.0
   current-archetype-inertia: 2.0

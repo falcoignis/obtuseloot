@@ -32,8 +32,8 @@ public class EvolutionEngine {
         int total = reputation.getTotalScore();
         if (total >= s.hybridThreshold()) {
             artifact.setEvolutionPath(hybridResolver.resolve(artifact, reputation));
-        } else if (total >= s.mythicThreshold()) {
-            artifact.setEvolutionPath(archetype + "-mythic");
+        } else if (total >= s.advancedThreshold()) {
+            artifact.setEvolutionPath(archetype + "-advanced");
         } else if (total >= s.temperedThreshold()) {
             artifact.setEvolutionPath(archetype + "-tempered");
         } else {
