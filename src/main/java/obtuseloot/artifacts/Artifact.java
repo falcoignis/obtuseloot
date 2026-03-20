@@ -62,6 +62,14 @@ public class Artifact {
     private String lastActivatedLatentTraits;
     private String lastUtilityHistory;
 
+    private String convergenceVariantId;
+    private String convergenceIdentityShape;
+    private String convergenceLineageTrace;
+    private String convergenceLoreTrace;
+    private String convergenceContinuityTrace;
+    private String convergenceExpressionTrace;
+    private String convergenceMemorySignature;
+
     public Artifact(UUID ownerId, String itemCategory) {
         this(ownerId, ArtifactArchetypeValidator.requireValidArchetype(itemCategory, "artifact construction"));
     }
@@ -100,6 +108,13 @@ public class Artifact {
         this.lastLatentActivationRate = 0.0D;
         this.lastActivatedLatentTraits = "[]";
         this.lastUtilityHistory = "";
+        this.convergenceVariantId = "none";
+        this.convergenceIdentityShape = "none";
+        this.convergenceLineageTrace = "none";
+        this.convergenceLoreTrace = "none";
+        this.convergenceContinuityTrace = "none";
+        this.convergenceExpressionTrace = "none";
+        this.convergenceMemorySignature = "none";
         this.naming = ArtifactNameResolver.initialize(this);
         this.generatedName = this.naming.getDisplayName();
     }
@@ -137,6 +152,13 @@ public class Artifact {
         lastLatentActivationRate = 0.0D;
         lastActivatedLatentTraits = "[]";
         lastUtilityHistory = "";
+        convergenceVariantId = "none";
+        convergenceIdentityShape = "none";
+        convergenceLineageTrace = "none";
+        convergenceLoreTrace = "none";
+        convergenceContinuityTrace = "none";
+        convergenceExpressionTrace = "none";
+        convergenceMemorySignature = "none";
     }
 
     public long getArtifactSeed() { return artifactSeed; }
@@ -249,6 +271,20 @@ public class Artifact {
     public void setLastActivatedLatentTraits(String lastActivatedLatentTraits) { this.lastActivatedLatentTraits = lastActivatedLatentTraits; }
     public String getLastUtilityHistory() { return lastUtilityHistory; }
     public void setLastUtilityHistory(String lastUtilityHistory) { this.lastUtilityHistory = lastUtilityHistory; }
+    public String getConvergenceVariantId() { return convergenceVariantId; }
+    public void setConvergenceVariantId(String convergenceVariantId) { this.convergenceVariantId = convergenceVariantId; }
+    public String getConvergenceIdentityShape() { return convergenceIdentityShape; }
+    public void setConvergenceIdentityShape(String convergenceIdentityShape) { this.convergenceIdentityShape = convergenceIdentityShape; }
+    public String getConvergenceLineageTrace() { return convergenceLineageTrace; }
+    public void setConvergenceLineageTrace(String convergenceLineageTrace) { this.convergenceLineageTrace = convergenceLineageTrace; }
+    public String getConvergenceLoreTrace() { return convergenceLoreTrace; }
+    public void setConvergenceLoreTrace(String convergenceLoreTrace) { this.convergenceLoreTrace = convergenceLoreTrace; }
+    public String getConvergenceContinuityTrace() { return convergenceContinuityTrace; }
+    public void setConvergenceContinuityTrace(String convergenceContinuityTrace) { this.convergenceContinuityTrace = convergenceContinuityTrace; }
+    public String getConvergenceExpressionTrace() { return convergenceExpressionTrace; }
+    public void setConvergenceExpressionTrace(String convergenceExpressionTrace) { this.convergenceExpressionTrace = convergenceExpressionTrace; }
+    public String getConvergenceMemorySignature() { return convergenceMemorySignature; }
+    public void setConvergenceMemorySignature(String convergenceMemorySignature) { this.convergenceMemorySignature = convergenceMemorySignature; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {
