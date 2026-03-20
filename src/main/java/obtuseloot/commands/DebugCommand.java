@@ -254,12 +254,17 @@ public class DebugCommand {
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
         String old = artifact.getAwakeningPath();
-        boolean changed = plugin.getAwakeningEngine().forceAwakening(target, artifact, rep);
-        refreshAndSave(target);
-        if (!changed) {
+        ArtifactIdentityTransition transition = plugin.getAwakeningEngine().forceAwakening(target, artifact, rep);
+        if (transition == null) {
+            refreshAndSave(target);
             sender.sendMessage("§eAwakening already active: " + old + ".");
         } else {
-            sender.sendMessage("§aAwakening applied for " + target.getName() + ": " + old + " -> " + artifact.getAwakeningPath());
+            Artifact replacement = plugin.getArtifactManager().replaceIdentity(target.getUniqueId(), transition);
+            plugin.getArtifactUsageTracker().transitionIdentity(artifact, replacement);
+            plugin.getLineageRegistry().recordIdentityTransition(artifact, replacement, transition.reason(), replacement.getConvergencePath());
+            plugin.getArtifactUsageTracker().trackAwakening(replacement);
+            refreshAndSave(target);
+            sender.sendMessage("§aAwakening applied for " + target.getName() + ": " + old + " -> " + replacement.getAwakeningPath());
         }
         return true;
     }

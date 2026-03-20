@@ -70,6 +70,14 @@ public class Artifact {
     private String convergenceExpressionTrace;
     private String convergenceMemorySignature;
 
+    private String awakeningVariantId;
+    private String awakeningIdentityShape;
+    private String awakeningLineageTrace;
+    private String awakeningLoreTrace;
+    private String awakeningContinuityTrace;
+    private String awakeningExpressionTrace;
+    private String awakeningMemorySignature;
+
     public Artifact(UUID ownerId, String itemCategory) {
         this(ownerId, ArtifactArchetypeValidator.requireValidArchetype(itemCategory, "artifact construction"));
     }
@@ -115,6 +123,13 @@ public class Artifact {
         this.convergenceContinuityTrace = "none";
         this.convergenceExpressionTrace = "none";
         this.convergenceMemorySignature = "none";
+        this.awakeningVariantId = "none";
+        this.awakeningIdentityShape = "none";
+        this.awakeningLineageTrace = "none";
+        this.awakeningLoreTrace = "none";
+        this.awakeningContinuityTrace = "none";
+        this.awakeningExpressionTrace = "none";
+        this.awakeningMemorySignature = "none";
         this.naming = ArtifactNameResolver.initialize(this);
         this.generatedName = this.naming.getDisplayName();
     }
@@ -159,6 +174,13 @@ public class Artifact {
         convergenceContinuityTrace = "none";
         convergenceExpressionTrace = "none";
         convergenceMemorySignature = "none";
+        awakeningVariantId = "none";
+        awakeningIdentityShape = "none";
+        awakeningLineageTrace = "none";
+        awakeningLoreTrace = "none";
+        awakeningContinuityTrace = "none";
+        awakeningExpressionTrace = "none";
+        awakeningMemorySignature = "none";
     }
 
     public long getArtifactSeed() { return artifactSeed; }
@@ -285,6 +307,20 @@ public class Artifact {
     public void setConvergenceExpressionTrace(String convergenceExpressionTrace) { this.convergenceExpressionTrace = convergenceExpressionTrace; }
     public String getConvergenceMemorySignature() { return convergenceMemorySignature; }
     public void setConvergenceMemorySignature(String convergenceMemorySignature) { this.convergenceMemorySignature = convergenceMemorySignature; }
+    public String getAwakeningVariantId() { return awakeningVariantId; }
+    public void setAwakeningVariantId(String awakeningVariantId) { this.awakeningVariantId = awakeningVariantId; }
+    public String getAwakeningIdentityShape() { return awakeningIdentityShape; }
+    public void setAwakeningIdentityShape(String awakeningIdentityShape) { this.awakeningIdentityShape = awakeningIdentityShape; }
+    public String getAwakeningLineageTrace() { return awakeningLineageTrace; }
+    public void setAwakeningLineageTrace(String awakeningLineageTrace) { this.awakeningLineageTrace = awakeningLineageTrace; }
+    public String getAwakeningLoreTrace() { return awakeningLoreTrace; }
+    public void setAwakeningLoreTrace(String awakeningLoreTrace) { this.awakeningLoreTrace = awakeningLoreTrace; }
+    public String getAwakeningContinuityTrace() { return awakeningContinuityTrace; }
+    public void setAwakeningContinuityTrace(String awakeningContinuityTrace) { this.awakeningContinuityTrace = awakeningContinuityTrace; }
+    public String getAwakeningExpressionTrace() { return awakeningExpressionTrace; }
+    public void setAwakeningExpressionTrace(String awakeningExpressionTrace) { this.awakeningExpressionTrace = awakeningExpressionTrace; }
+    public String getAwakeningMemorySignature() { return awakeningMemorySignature; }
+    public void setAwakeningMemorySignature(String awakeningMemorySignature) { this.awakeningMemorySignature = awakeningMemorySignature; }
 
     public double getSeedAffinity(String statKey) {
         return switch (statKey) {

@@ -340,7 +340,15 @@ public class WorldSimulationHarness {
         if (random.nextDouble() < mutationPressure || driftEngine.shouldDrift(rep)) {
             driftEngine.applyDriftSimulation(agent.artifact(), rep);
         }
-        boolean awakened = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
+        ArtifactIdentityTransition awakeningTransition = awakeningEngine.evaluateSimulation(agent.artifact(), rep);
+        if (awakeningTransition != null) {
+            Artifact previousArtifact = agent.artifact();
+            Artifact replacementArtifact = awakeningTransition.replacement();
+            usageTracker.transitionIdentity(previousArtifact, replacementArtifact);
+            lineageRegistry.recordIdentityTransition(previousArtifact, replacementArtifact, awakeningTransition.reason(), replacementArtifact.getConvergencePath());
+            agent.replaceArtifact(replacementArtifact);
+            usageTracker.trackAwakening(agent.artifact());
+        }
         ArtifactIdentityTransition convergenceTransition = convergenceEngine.evaluateSimulation(agent.artifact(), rep);
         boolean fused = convergenceTransition != null;
         if (fused) {
@@ -350,8 +358,7 @@ public class WorldSimulationHarness {
             lineageRegistry.recordIdentityTransition(previousArtifact, replacementArtifact, convergenceTransition.reason(), replacementArtifact.getConvergencePath());
             agent.replaceArtifact(replacementArtifact);
         }
-        if (awakened) {
-            usageTracker.trackAwakening(agent.artifact());
+        if (awakeningTransition != null) {
             memoryEngine.recordAndProfile(agent.artifact(), ArtifactMemoryEvent.AWAKENING);
             if (random.nextDouble() < 0.02D) lineageRegistry.assignLineage(agent.artifact()).applyMutation(new LineageMutation("awakening", "precision", 0.01D));
         }

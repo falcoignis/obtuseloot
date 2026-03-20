@@ -51,6 +51,13 @@ public class SqlSchemaManager {
                     convergence_continuity_trace TEXT,
                     convergence_expression_trace TEXT,
                     convergence_memory_signature TEXT,
+                    awakening_variant_id TEXT,
+                    awakening_identity_shape TEXT,
+                    awakening_lineage_trace TEXT,
+                    awakening_lore_trace TEXT,
+                    awakening_continuity_trace TEXT,
+                    awakening_expression_trace TEXT,
+                    awakening_memory_signature TEXT,
                     drift_level INT,
                     total_drifts INT,
                     last_drift_timestamp BIGINT,
@@ -143,6 +150,13 @@ public class SqlSchemaManager {
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_continuity_trace TEXT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_expression_trace TEXT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_memory_signature TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_variant_id TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_identity_shape TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_lineage_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_lore_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_continuity_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_expression_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN awakening_memory_signature TEXT");
         }
     }
 
