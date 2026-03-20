@@ -47,6 +47,9 @@ public final class ArtifactSignificanceResolver {
         if (parts.isEmpty() && present(artifact.getLatentLineage())) {
             parts.add(prettyTrace(artifact.getLatentLineage()));
         }
+        if (parts.isEmpty()) {
+            return "Common line";
+        }
         if (parts.size() > 1) {
             return parts.get(0) + "-" + parts.get(1) + " line";
         }
@@ -89,16 +92,10 @@ public final class ArtifactSignificanceResolver {
 
     private String deriveDistinctness(Artifact artifact) {
         UtilityHistoryRollup utility = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
-        int signalCount = distinctSignalCount(artifact, utility);
         NichePopulationTracker tracker = tracker();
         NicheVariantProfile variant = tracker == null ? null : tracker.variantFor(artifact.getArtifactSeed());
         double competition = tracker == null ? 1.0D : tracker.nicheCompetitionFactor(artifact.getArtifactSeed());
-        String context = variant != null
-                ? compactWords(variant.childNiche()) + " offshoot"
-                : competition >= 2.2D ? "crowded-context"
-                : competition <= 1.15D ? "low-overlap"
-                : "cross-current";
-        return context + " " + signalCount + "-signal weave";
+        return distinctContext(variant, competition) + " " + distinctIdentity(artifact, utility);
     }
 
     private String deriveAge(Artifact artifact) {
@@ -106,27 +103,66 @@ public final class ArtifactSignificanceResolver {
         long continuityAgeMs = Math.max(0L, now - artifact.getPersistenceOriginTimestamp());
         long identityAgeMs = Math.max(0L, now - artifact.getIdentityBirthTimestamp());
         String carried = describeAge("carried", continuityAgeMs);
-        if (artifact.getIdentityBirthTimestamp() - artifact.getPersistenceOriginTimestamp() > 60_000L) {
-            return "new shape, " + carried;
-        }
-        if (identityAgeMs < 60_000L) {
+        if (identityAgeMs < 60_000L && continuityAgeMs < 60_000L) {
             return "just formed";
+        }
+        if (artifact.getIdentityBirthTimestamp() - artifact.getPersistenceOriginTimestamp() > 60_000L) {
+            return "newly shaped, " + carried;
         }
         return carried;
     }
 
-    private int distinctSignalCount(Artifact artifact, UtilityHistoryRollup utility) {
-        int count = 0;
-        count += present(artifact.getAwakeningVariantId()) && !"none".equalsIgnoreCase(artifact.getAwakeningVariantId()) ? 1 : 0;
-        count += present(artifact.getConvergenceVariantId()) && !"none".equalsIgnoreCase(artifact.getConvergenceVariantId()) ? 1 : 0;
-        count += present(artifact.getAwakeningIdentityShape()) && !"none".equalsIgnoreCase(artifact.getAwakeningIdentityShape()) ? 1 : 0;
-        count += present(artifact.getConvergenceIdentityShape()) && !"none".equalsIgnoreCase(artifact.getConvergenceIdentityShape()) ? 1 : 0;
-        count += present(artifact.getSpeciesId()) && !"unspeciated".equalsIgnoreCase(artifact.getSpeciesId()) ? 1 : 0;
-        count += artifact.getAwakeningTraits().size();
-        count += Math.min(4, artifact.getNotableEvents().size());
-        count += Math.min(3, utility.signalByMechanicTrigger().size());
-        count += (int) artifact.getMemory().snapshot().entrySet().stream().filter(entry -> entry.getValue() > 0).count();
-        return Math.max(1, count);
+    private String distinctContext(NicheVariantProfile variant, double competition) {
+        if (variant != null) {
+            if (competition >= 2.2D) {
+                return "contested offshoot";
+            }
+            if (competition <= 1.15D) {
+                return "settled offshoot";
+            }
+            return "forked offshoot";
+        }
+        if (competition >= 2.2D) {
+            return "crowded field";
+        }
+        if (competition <= 1.15D) {
+            return "open field";
+        }
+        return "shared field";
+    }
+
+    private String distinctIdentity(Artifact artifact, UtilityHistoryRollup utility) {
+        boolean awakened = present(artifact.getAwakeningVariantId()) && !"none".equalsIgnoreCase(artifact.getAwakeningVariantId());
+        boolean converged = present(artifact.getConvergenceVariantId()) && !"none".equalsIgnoreCase(artifact.getConvergenceVariantId());
+        if (awakened && converged) {
+            return "hybrid";
+        }
+        if (artifact.getAwakeningTraits().size() >= 2) {
+            return "trait-marked";
+        }
+        if (present(artifact.getSpeciesId()) && !"unspeciated".equalsIgnoreCase(artifact.getSpeciesId()) && artifact.getNotableEvents().size() >= 2) {
+            return "story-marked";
+        }
+        if (utility.hasUtilityHistory()) {
+            int breadth = utility.signalByMechanicTrigger().size();
+            if (utility.noOpRate() >= 0.5D) {
+                return "uncertain fit";
+            }
+            if (breadth >= 4 && utility.meaningfulRate() >= 0.4D) {
+                return "broad fit";
+            }
+            if (breadth <= 1 && utility.meaningfulRate() >= 0.4D) {
+                return "specialist";
+            }
+            if (utility.meaningfulRate() >= 0.6D) {
+                return "proven fit";
+            }
+            return "situational fit";
+        }
+        if (!artifact.getNotableEvents().isEmpty()) {
+            return "event-marked";
+        }
+        return "unproven fit";
     }
 
     private String strongestExpression(Artifact artifact) {
@@ -219,13 +255,16 @@ public final class ArtifactSignificanceResolver {
             return "formed";
         }
         StringBuilder out = new StringBuilder();
+        int words = 0;
         for (String part : cleaned.split(" ")) {
-            if (part.isBlank() || "none".equals(part) || "unassigned".equals(part) || "wild".equals(part)) {
+            if (part.isBlank() || "none".equals(part) || "unassigned".equals(part) || "wild".equals(part)
+                    || part.chars().allMatch(Character::isDigit)) {
                 continue;
             }
             if (!out.isEmpty()) out.append(' ');
             out.append(part.length() <= 2 ? part : Character.toUpperCase(part.charAt(0)) + part.substring(1));
-            if (out.length() >= 18) {
+            words++;
+            if (words >= 3) {
                 break;
             }
         }
