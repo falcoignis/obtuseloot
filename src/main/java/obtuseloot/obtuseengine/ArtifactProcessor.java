@@ -20,7 +20,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class ArtifactProcessor {
     private static final ConvergenceEngine CONVERGENCE_ENGINE = new ConvergenceEngine();
@@ -56,7 +55,12 @@ public final class ArtifactProcessor {
             }
         }
 
-        if (plugin.getAwakeningEngine().evaluate(player, artifact, rep)) {
+        ArtifactIdentityTransition awakeningTransition = plugin.getAwakeningEngine().evaluate(player, artifact, rep);
+        if (awakeningTransition != null) {
+            Artifact replacement = plugin.getArtifactManager().replaceIdentity(player.getUniqueId(), awakeningTransition);
+            plugin.getArtifactUsageTracker().transitionIdentity(artifact, replacement);
+            plugin.getLineageRegistry().recordIdentityTransition(artifact, replacement, awakeningTransition.reason(), replacement.getConvergencePath());
+            artifact = replacement;
             plugin.getArtifactUsageTracker().trackAwakening(artifact);
             recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.AWAKENING, "awakening");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
@@ -199,9 +203,9 @@ public final class ArtifactProcessor {
     }
 
     public static void applyReputationGainWithAwakening(Artifact artifact, ArtifactReputation rep, String statKey) {
-        incrementRep(rep, statKey);
         double multiplier = Math.max(1.0D, artifact.getAwakeningGainMultiplier(statKey));
-        if (multiplier > 1.0D && ThreadLocalRandom.current().nextDouble() < (multiplier - 1.0D)) {
+        int applications = Math.max(1, (int) Math.floor(multiplier));
+        for (int i = 0; i < applications; i++) {
             incrementRep(rep, statKey);
         }
     }

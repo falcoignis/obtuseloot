@@ -131,6 +131,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setConvergenceContinuityTrace(yaml.getString("artifact.convergence-continuity-trace", "none"));
         artifact.setConvergenceExpressionTrace(yaml.getString("artifact.convergence-expression-trace", "none"));
         artifact.setConvergenceMemorySignature(yaml.getString("artifact.convergence-memory-signature", "none"));
+        artifact.setAwakeningVariantId(yaml.getString("artifact.awakening-variant-id", "none"));
+        artifact.setAwakeningIdentityShape(yaml.getString("artifact.awakening-identity-shape", "none"));
+        artifact.setAwakeningLineageTrace(yaml.getString("artifact.awakening-lineage-trace", "none"));
+        artifact.setAwakeningLoreTrace(yaml.getString("artifact.awakening-lore-trace", "none"));
+        artifact.setAwakeningContinuityTrace(yaml.getString("artifact.awakening-continuity-trace", "none"));
+        artifact.setAwakeningExpressionTrace(yaml.getString("artifact.awakening-expression-trace", "none"));
+        artifact.setAwakeningMemorySignature(yaml.getString("artifact.awakening-memory-signature", "none"));
         for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
             try {
                 obtuseloot.memory.ArtifactMemoryEvent event = obtuseloot.memory.ArtifactMemoryEvent.valueOf(key.toUpperCase());
@@ -373,6 +380,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "convergence-continuity-trace", artifact.getConvergenceContinuityTrace());
         yaml.set(base + "convergence-expression-trace", artifact.getConvergenceExpressionTrace());
         yaml.set(base + "convergence-memory-signature", artifact.getConvergenceMemorySignature());
+        yaml.set(base + "awakening-variant-id", artifact.getAwakeningVariantId());
+        yaml.set(base + "awakening-identity-shape", artifact.getAwakeningIdentityShape());
+        yaml.set(base + "awakening-lineage-trace", artifact.getAwakeningLineageTrace());
+        yaml.set(base + "awakening-lore-trace", artifact.getAwakeningLoreTrace());
+        yaml.set(base + "awakening-continuity-trace", artifact.getAwakeningContinuityTrace());
+        yaml.set(base + "awakening-expression-trace", artifact.getAwakeningExpressionTrace());
+        yaml.set(base + "awakening-memory-signature", artifact.getAwakeningMemorySignature());
         artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
     }
 
