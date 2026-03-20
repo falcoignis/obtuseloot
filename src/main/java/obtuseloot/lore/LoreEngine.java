@@ -36,6 +36,8 @@ public class LoreEngine {
     public List<String> buildLoreLines(Artifact artifact, ArtifactReputation reputation) {
         List<String> lines = new ArrayList<>();
         lines.add(significanceResolver.resolve(artifact).format());
+        lines.add(fragmentGenerator.epithetFragment(artifact));
+        lines.add(fragmentGenerator.loreFragment(artifact));
         lines.add(fragmentGenerator.lineageFragment(artifact));
         lines.add(fragmentGenerator.identifyFragment(artifact));
         lines.add(fragmentGenerator.driftFragment(artifact));
