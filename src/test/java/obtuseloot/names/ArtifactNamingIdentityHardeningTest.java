@@ -2,8 +2,11 @@ package obtuseloot.names;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.artifacts.EquipmentRole;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -75,6 +78,28 @@ class ArtifactNamingIdentityHardeningTest {
         assertNotEquals(originalName, replacementName);
         assertTrue(Set.of("Wings", "Mantle", "Glider").contains(replacement.getNaming().getRootForm()));
         assertEquals(replacementName, replacement.getGeneratedName());
+    }
+
+    @Test
+    void nonWeaponsNeverAcquireWeaponNamingSemanticsFromRuntimeAffinities() {
+        List<EquipmentArchetype> nonWeapons = Arrays.stream(EquipmentArchetype.values())
+                .filter(archetype -> !archetype.hasRole(EquipmentRole.WEAPON))
+                .toList();
+
+        for (EquipmentArchetype archetype : nonWeapons) {
+            Artifact artifact = seeded(900L + archetype.ordinal(), archetype);
+            artifact.setSeedBrutalityAffinity(0.99D);
+
+            ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
+            String display = naming.getDisplayName().toLowerCase();
+
+            assertFalse(naming.getIdentityTags().contains("weapon"), archetype.id());
+            assertFalse(naming.getIdentityTags().contains("aggression"), archetype.id());
+            assertFalse(display.contains("blade"), archetype.id());
+            assertFalse(display.contains("axe"), archetype.id());
+            assertFalse(display.contains("bow"), archetype.id());
+            assertFalse(display.contains("spear"), archetype.id());
+        }
     }
 
     private Artifact seeded(long seed, EquipmentArchetype archetype) {

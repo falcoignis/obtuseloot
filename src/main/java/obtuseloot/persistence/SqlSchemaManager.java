@@ -19,6 +19,16 @@ public class SqlSchemaManager {
                     artifact_seed BIGINT NOT NULL,
                     owner_uuid VARCHAR(36) NOT NULL,
                     generated_name TEXT,
+                    naming_seed BIGINT,
+                    true_name TEXT,
+                    root_form VARCHAR(64),
+                    naming_archetype VARCHAR(64),
+                    tone_profile VARCHAR(64),
+                    discovery_state VARCHAR(64),
+                    identity_tags_json TEXT,
+                    affinity_lexemes_json TEXT,
+                    epithet_seed INT,
+                    title_seed INT,
                     item_category VARCHAR(64),
                     archetype VARCHAR(64),
                     evolution_path VARCHAR(128),
@@ -108,6 +118,16 @@ public class SqlSchemaManager {
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_archetype ON artifacts(archetype)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_evolution ON artifacts(evolution_path)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_artifact_drift_alignment ON artifacts(drift_alignment)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN naming_seed BIGINT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN true_name TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN root_form VARCHAR(64)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN naming_archetype VARCHAR(64)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN tone_profile VARCHAR(64)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN discovery_state VARCHAR(64)");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN identity_tags_json TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN affinity_lexemes_json TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN epithet_seed INT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN title_seed INT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN utility_history TEXT");
         }
     }
