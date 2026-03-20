@@ -13,15 +13,14 @@ public class ArtifactTextIdentityResolver {
     public ArtifactTextIdentity resolve(Artifact artifact, ArtifactNaming naming) {
         List<String> tags = naming == null || naming.getIdentityTags().isEmpty() ? fallbackTags(artifact) : naming.getIdentityTags();
         ToneProfile tone = naming == null ? ToneProfile.ODD : naming.getToneProfile();
-        ArtifactRank rank = ArtifactRankResolver.resolve(artifact);
         ArtifactDiscoveryState discovery = naming == null ? ArtifactDiscoveryState.OBSCURED : naming.getDiscoveryState();
         String personality = resolvePersonality(tags, tone);
         String voice = resolveVoice(tags, tone);
         String cadence = resolveCadence(tone, discovery);
-        double implication = resolveImplication(tone, rank, discovery, tags);
+        double implication = resolveImplication(tone, discovery, tags);
         List<String> motifs = resolveMotifs(tags, tone, discovery);
         NamingArchetype archetype = naming == null ? NamingArchetype.TRAIT_FORM : naming.getNamingArchetype();
-        return new ArtifactTextIdentity(personality, voice, archetype, tone, implication, cadence, rank, discovery,
+        return new ArtifactTextIdentity(personality, voice, archetype, tone, implication, cadence, discovery,
                 List.copyOf(tags), motifs);
     }
 
@@ -63,8 +62,8 @@ public class ArtifactTextIdentityResolver {
         };
     }
 
-    private double resolveImplication(ToneProfile tone, ArtifactRank rank, ArtifactDiscoveryState discovery, List<String> tags) {
-        double value = 0.25D + (rank.ordinal() * 0.12D) + (discovery.ordinal() * 0.1D);
+    private double resolveImplication(ToneProfile tone, ArtifactDiscoveryState discovery, List<String> tags) {
+        double value = 0.25D + (discovery.ordinal() * 0.1D);
         if (tone == ToneProfile.ELEGIAC || tone == ToneProfile.RITUAL) value += 0.1D;
         if (tags.contains("aggression") || tags.contains("memory")) value += 0.08D;
         return Math.min(0.95D, value);

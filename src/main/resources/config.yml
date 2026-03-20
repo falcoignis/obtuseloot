@@ -47,12 +47,6 @@ persistence:
 
 naming:
   use-deterministic-owner-seed: true
-  true-name-probability:
-    base: 0
-    tempered: 20
-    mythic: 65
-    awakened: 90
-    fused: 100
   discovery-thresholds:
     known: 3
     revealed: 8

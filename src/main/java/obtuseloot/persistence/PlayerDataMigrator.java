@@ -135,7 +135,6 @@ public final class PlayerDataMigrator {
 
         @Override
         public void migrate(YamlConfiguration yaml) {
-            yaml.set("artifact.naming.rank-at-naming", null);
         }
     }
 

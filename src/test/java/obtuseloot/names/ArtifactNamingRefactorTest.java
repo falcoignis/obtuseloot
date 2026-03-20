@@ -8,15 +8,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArtifactNamingRefactorTest {
-    @Test
-    void rankDerivationPriorityFusedBeatsAwakened() {
-        Artifact artifact = new Artifact(UUID.randomUUID());
-        artifact.setEvolutionPath("advanced");
-        artifact.setAwakeningPath("emberwake");
-        artifact.setFusionPath("twin-reliquary");
-
-        assertEquals(ArtifactRank.FUSED, ArtifactRankResolver.resolve(artifact));
-    }
 
     @Test
     void namingIsDeterministicForEquivalentIdentity() {

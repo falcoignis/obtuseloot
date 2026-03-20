@@ -40,7 +40,6 @@ public final class RuntimeSettings {
                 config.getInt("persistence.autosave-interval-seconds", 300),
                 config.getBoolean("naming.use-deterministic-owner-seed", true),
                 readLexemePools(config),
-                readRankProbabilities(config),
                 config.getInt("naming.discovery-thresholds.known", 3),
                 config.getInt("naming.discovery-thresholds.revealed", 8),
                 config.getInt("naming.discovery-thresholds.storied", 14),
@@ -73,15 +72,6 @@ public final class RuntimeSettings {
         return pools;
     }
 
-    private static Map<String, Integer> readRankProbabilities(FileConfiguration config) {
-        Map<String, Integer> probabilities = new LinkedHashMap<>();
-        probabilities.put("BASE", config.getInt("naming.true-name-probability.base", 0));
-        probabilities.put("TEMPERED", config.getInt("naming.true-name-probability.tempered", 20));
-        probabilities.put("MYTHIC", config.getInt("naming.true-name-probability.mythic", 65));
-        probabilities.put("AWAKENED", config.getInt("naming.true-name-probability.awakened", 90));
-        probabilities.put("FUSED", config.getInt("naming.true-name-probability.fused", 100));
-        return probabilities;
-    }
 
     public static Snapshot get() { return current; }
 
@@ -110,7 +100,6 @@ public final class RuntimeSettings {
             int autosaveIntervalSeconds,
             boolean namingUseDeterministicOwnerSeed,
             Map<String, List<String>> namingLexemePools,
-            Map<String, Integer> namingTrueNameProbabilityPercentByRank,
             int namingDiscoveryKnownThreshold,
             int namingDiscoveryRevealedThreshold,
             int namingDiscoveryStoriedThreshold,
@@ -131,7 +120,7 @@ public final class RuntimeSettings {
         private static Snapshot defaults() {
             return new Snapshot(10000L, 6.0D, 12.0D, 8000L, 3, List.of("ENDER_DRAGON", "WITHER", "WARDEN"),
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
-                    true, ArtifactLexemeRegistry.defaultPools(), Map.of("BASE", 0, "TEMPERED", 20, "MYTHIC", 65, "AWAKENED", 90, "FUSED", 100),
+                    true, ArtifactLexemeRegistry.defaultPools(),
                     3, 8, 14, 6,
                     4, 14, 16, 14, 16, 16, 10, 14, true, true, 2048, 300000L);
         }
