@@ -87,9 +87,30 @@ class LoreFragmentGeneratorTest {
         List<String> lines = loreEngine.buildLoreLines(artifact, reputation);
 
         assertFalse(lines.isEmpty());
+        assertEquals(3, lines.size());
         assertTrue(lines.get(0).contains("—"));
         assertNotEquals(lines.get(0), lines.get(1));
         assertNotEquals(lines.get(1), lines.get(2));
+    }
+
+    @Test
+    void loreEnginePlayerFacingStackOmitsInternalStatAndTraceResidue() {
+        Artifact artifact = seeded(303L, EquipmentArchetype.TRIDENT);
+        artifact.setAwakeningPath("undertow choir");
+        artifact.setAwakeningLineageTrace("lineage:undertow-choir:pressure=22");
+        artifact.setConvergenceExpressionTrace("trace=debug-leak");
+        artifact.addNotableEvent("artifact-convergence:horizon-syndicate:aa44bb");
+
+        ArtifactReputation reputation = new ArtifactReputation();
+        reputation.setPrecision(8);
+        reputation.setMobility(9);
+
+        String combined = String.join(" ", loreEngine.buildLoreLines(artifact, reputation)).toLowerCase();
+
+        assertFalse(combined.contains(" p8 "));
+        assertFalse(combined.contains("trace="));
+        assertFalse(combined.contains("pressure"));
+        assertFalse(combined.contains("aa44bb"));
     }
 
     private Artifact seeded(long seed, EquipmentArchetype archetype) {

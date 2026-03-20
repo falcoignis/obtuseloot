@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 public class LoreFragmentGenerator {
     private static final int MAX_EPITHET_WORDS_PER_SENTENCE = 10;
     private static final Pattern CAMEL_CASE_BOUNDARY = Pattern.compile("(?<=[a-z])(?=[A-Z])");
+    private static final Pattern HEX_LIKE_TOKEN = Pattern.compile("(?i)[0-9a-f]{6,}");
 
     private final ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
 
@@ -419,6 +420,9 @@ public class LoreFragmentGenerator {
                 || lower.contains("debug")
                 || lower.startsWith("artifact-")
                 || lower.contains("->")
+                || lower.contains("pressure=")
+                || lower.contains("boss=")
+                || lower.contains("chain=")
                 || lower.matches(".*:[0-9a-f]{6,}.*");
     }
 
@@ -427,6 +431,7 @@ public class LoreFragmentGenerator {
         normalized = normalized.replace('[', ' ').replace(']', ' ')
                 .replace('{', ' ').replace('}', ' ')
                 .replace('/', ' ').replace(':', ' ')
+                .replace('=', ' ')
                 .replace('_', ' ').replace('-', ' ').replace('.', ' ')
                 .replaceAll("\\s+", " ")
                 .trim()
@@ -434,7 +439,27 @@ public class LoreFragmentGenerator {
         if (normalized.isBlank()) {
             return null;
         }
-        return normalized;
+        List<String> words = new ArrayList<>();
+        for (String part : normalized.split(" ")) {
+            if (part.isBlank()
+                    || part.chars().allMatch(Character::isDigit)
+                    || HEX_LIKE_TOKEN.matcher(part).matches()
+                    || "trace".equals(part)
+                    || "debug".equals(part)
+                    || "pressure".equals(part)
+                    || "chain".equals(part)
+                    || "boss".equals(part)) {
+                continue;
+            }
+            words.add(part);
+            if (words.size() == 4) {
+                break;
+            }
+        }
+        if (words.isEmpty()) {
+            return null;
+        }
+        return String.join(" ", words);
     }
 
     private String joinWithAnd(List<String> parts) {

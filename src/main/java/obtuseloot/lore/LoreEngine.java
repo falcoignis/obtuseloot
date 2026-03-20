@@ -38,20 +38,6 @@ public class LoreEngine {
         lines.add(significanceResolver.resolve(artifact).format());
         lines.add(fragmentGenerator.epithetFragment(artifact, reputation));
         lines.add(fragmentGenerator.loreFragment(artifact, reputation));
-        lines.add(fragmentGenerator.lineageFragment(artifact));
-        lines.add(fragmentGenerator.identifyFragment(artifact));
-        lines.add(fragmentGenerator.driftFragment(artifact));
-        lines.add(fragmentGenerator.awakeningFragment(artifact));
-        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) {
-            lines.add(fragmentGenerator.convergenceFragment(artifact));
-        }
-        lines.add(fragmentGenerator.memoryFragment(artifact));
-        if (artifact.hasInstability()) {
-            lines.add(fragmentGenerator.instabilityFragment(artifact));
-        }
-        lines.add("P" + reputation.getPrecision() + " B" + reputation.getBrutality() + " S" + reputation.getSurvival()
-                + " M" + reputation.getMobility() + " C" + reputation.getConsistency() + " X" + reputation.getChaos());
-        lines.addAll(historyFormatter.formatHistory(artifact, 5));
         return lines;
     }
 

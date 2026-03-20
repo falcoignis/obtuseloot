@@ -97,6 +97,24 @@ class ArtifactSignificanceResolverTest {
         assertEquals("carried 26h", profile.age());
     }
 
+    @Test
+    void significanceProfileSanitizesTraceResidueInsteadOfLeakingSystemTokens() {
+        Artifact artifact = new Artifact(UUID.randomUUID(), "diamond_sword");
+        artifact.setAwakeningLineageTrace("lineage:ember-vow:pressure=6");
+        artifact.setConvergenceLineageTrace("artifact-convergence:aa44bb:debug-path");
+        artifact.setAwakeningExpressionTrace("lore:execution-chain:boss=2");
+
+        ArtifactSignificanceProfile profile = resolver.resolve(artifact);
+        String formatted = profile.format().toLowerCase();
+
+        assertTrue(profile.lineage().toLowerCase().contains("ember"));
+        assertFalse(formatted.contains("pressure"));
+        assertFalse(formatted.contains("debug"));
+        assertFalse(formatted.contains("aa44bb"));
+        assertFalse(formatted.contains("boss"));
+        assertFalse(formatted.contains("chain"));
+    }
+
     private static MechanicUtilitySignal signal(String key, double validatedUtility, double utilityDensity, long attempts, long meaningful) {
         return new MechanicUtilitySignal(key, validatedUtility, utilityDensity, 0.5D, 0.1D, 0.05D, 0.02D, attempts, meaningful, 0.5D);
     }
