@@ -2,6 +2,7 @@ package obtuseloot.lore;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.names.ArtifactNaming;
+import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.significance.ArtifactSignificanceProfile;
 import obtuseloot.significance.ArtifactSignificanceResolver;
 
@@ -20,16 +21,21 @@ public class LoreFragmentGenerator {
     private final ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
 
     public String loreFragment(Artifact artifact) {
+        return loreFragment(artifact, null);
+    }
+
+    public String loreFragment(Artifact artifact, ArtifactReputation reputation) {
+        ArtifactDisposition disposition = ArtifactDisposition.resolve(artifact, reputation);
         ArtifactSignificanceProfile significance = significanceResolver.resolve(artifact);
         List<String> beats = new ArrayList<>();
 
-        String transition = transitionBeat(artifact);
+        String transition = transitionBeat(artifact, disposition);
         if (transition != null) {
             beats.add(transition);
         }
 
-        String identity = identityBeat(artifact, significance);
-        String memory = memoryBeat(artifact);
+        String identity = identityBeat(artifact, significance, disposition);
+        String memory = memoryBeat(artifact, disposition);
         String mergedIdentity = mergeIdentityAndMemory(identity, memory);
         if (mergedIdentity != null) {
             beats.add(mergedIdentity);
@@ -37,7 +43,7 @@ public class LoreFragmentGenerator {
             beats.add(memory);
         }
 
-        String state = stateBeat(artifact, significance);
+        String state = stateBeat(artifact, significance, disposition);
         if (state != null) {
             beats.add(state);
         }
@@ -53,11 +59,16 @@ public class LoreFragmentGenerator {
     }
 
     public String epithetFragment(Artifact artifact) {
+        return epithetFragment(artifact, null);
+    }
+
+    public String epithetFragment(Artifact artifact, ArtifactReputation reputation) {
+        ArtifactDisposition disposition = ArtifactDisposition.resolve(artifact, reputation);
         ArtifactNaming naming = Objects.requireNonNull(artifact.getNaming(), "artifact naming");
         int seed = naming.getEpithetSeed();
         List<String> sentences = new ArrayList<>();
-        sentences.add(limitWords(epithetLead(artifact, seed)));
-        String closer = epithetCloser(artifact, seed);
+        sentences.add(limitWords(epithetLead(artifact, disposition, seed)));
+        String closer = epithetCloser(artifact, disposition, seed);
         if (closer != null && !closer.isBlank()) {
             sentences.add(limitWords(closer));
         }
@@ -145,7 +156,7 @@ public class LoreFragmentGenerator {
         return "Instability still tastes of " + naturalize(artifact.getCurrentInstabilityState()) + ".";
     }
 
-    private String transitionBeat(Artifact artifact) {
+    private String transitionBeat(Artifact artifact, ArtifactDisposition disposition) {
         List<String> beats = new ArrayList<>();
         if (present(artifact.getAwakeningPath()) && !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             beats.add("awakening");
@@ -165,24 +176,30 @@ public class LoreFragmentGenerator {
                 artifact.getAwakeningContinuityTrace(),
                 artifact.getConvergenceContinuityTrace());
         String anchorText = anchors.isEmpty() ? "its own changing nature" : joinWithAnd(anchors.subList(0, Math.min(2, anchors.size())));
+        String verb = switch (disposition.direction()) {
+            case BRACING -> "held it toward ";
+            case SPLITTING -> "pulled it apart toward ";
+            case ASCENDING -> "lifted it toward ";
+            default -> "pulled it toward ";
+        };
         if (beats.size() == 2) {
-            return "Awakening and convergence pulled it toward " + anchorText + ".";
+            return "Awakening and convergence " + verb + anchorText + ".";
         }
-        return capitalize(beats.getFirst()) + " pulled it toward " + anchorText + ".";
+        return capitalize(beats.getFirst()) + " " + verb + anchorText + ".";
     }
 
-    private String memoryBeat(Artifact artifact) {
+    private String memoryBeat(Artifact artifact, ArtifactDisposition disposition) {
         List<String> events = naturalEvents(artifact);
         if (events.isEmpty()) {
             return null;
         }
         if (events.size() >= 2) {
-            return "Its retelling lingers on " + events.get(0) + " and " + events.get(1) + ".";
+            return "Its retelling " + memoryVerb(disposition) + " on " + events.get(0) + " and " + events.get(1) + ".";
         }
-        return "Its retelling lingers on " + events.getFirst() + ".";
+        return "Its retelling " + memoryVerb(disposition) + " on " + events.getFirst() + ".";
     }
 
-    private String identityBeat(Artifact artifact, ArtifactSignificanceProfile significance) {
+    private String identityBeat(Artifact artifact, ArtifactSignificanceProfile significance, ArtifactDisposition disposition) {
         List<String> anchors = collectNaturalSignals(
                 significance.functionalIdentity(),
                 artifact.getAwakeningIdentityShape(),
@@ -192,7 +209,7 @@ public class LoreFragmentGenerator {
         if (anchors.isEmpty()) {
             return null;
         }
-        return "Now it answers as " + joinWithAnd(anchors.subList(0, Math.min(2, anchors.size()))) + ".";
+        return "Now it " + identityVerb(disposition) + " as " + joinWithAnd(anchors.subList(0, Math.min(2, anchors.size()))) + ".";
     }
 
 
@@ -209,51 +226,61 @@ public class LoreFragmentGenerator {
         return identityCore + ", still shadowed by " + memoryCore + ".";
     }
 
-    private String stateBeat(Artifact artifact, ArtifactSignificanceProfile significance) {
+    private String stateBeat(Artifact artifact, ArtifactSignificanceProfile significance, ArtifactDisposition disposition) {
         if (artifact.hasInstability()) {
-            return "Even now, it shakes at the edges.";
+            return disposition.pressure() > 0.75D ? "Even now, it strains at the edges." : "Even now, it shakes at the edges.";
         }
         if (artifact.getHistoryScore() >= 6) {
-            return "It wears that past like intent.";
+            return "It wears that past like " + (disposition.direction() == ArtifactDisposition.Direction.BRACING ? "resolve" : "intent") + ".";
         }
         if (present(significance.state()) && !"steady".equalsIgnoreCase(significance.state())) {
-            return "It stands " + naturalize(significance.state()) + ".";
+            return "It stands " + stateAdverb(disposition) + " " + naturalize(significance.state()) + ".";
         }
         return null;
     }
 
-    private String epithetLead(Artifact artifact, int seed) {
+    private String epithetLead(Artifact artifact, ArtifactDisposition disposition, int seed) {
         List<String> toneOptions = new ArrayList<>();
         if (present(artifact.getConvergenceIdentityShape()) && !"none".equalsIgnoreCase(artifact.getConvergenceIdentityShape())) {
-            toneOptions.add("Twin-made, never wholly tame.");
-            toneOptions.add("It courts two hungers without apology.");
+            toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.SPLITTING
+                    ? "Twin-made, still pulling against itself."
+                    : "Twin-made, never wholly tame.");
+            toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.RESTRAINED
+                    ? "It keeps two inheritances under measured lock."
+                    : "It courts two hungers without apology.");
         }
         if (present(artifact.getAwakeningPath()) && !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
-            toneOptions.add("Awake enough to choose its witness.");
-            toneOptions.add("It learned to want a sharper fate.");
+            toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.ASCENDING
+                    ? "Awake enough to lean into its next shape."
+                    : "Awake enough to choose its witness.");
+            toneOptions.add(disposition.drive().equals("precision")
+                    ? "It learned to seek a sharper line."
+                    : "It learned to want a sharper fate.");
         }
         if (artifact.hasInstability()) {
-            toneOptions.add("Unsteady, but never shy.");
-            toneOptions.add("It trembles like a promise kept too long.");
+            toneOptions.add(disposition.pressure() > 0.75D ? "Unsteady, still pressing forward." : "Unsteady, but never shy.");
+            toneOptions.add(disposition.survivalInstinct() > disposition.aggression()
+                    ? "It trembles like something refusing to yield."
+                    : "It trembles like a promise kept too long.");
         }
         if (artifact.getSeedMobilityAffinity() >= 0.75D) {
-            toneOptions.add("Quick hands lose sleep over it.");
+            toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.RESTLESS ? "Quick hands keep reaching for it." : "Quick hands lose sleep over it.");
         }
         if (artifact.getSeedBrutalityAffinity() >= 0.75D) {
-            toneOptions.add("It prefers obedience delivered at reach.");
+            toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.FORCEFUL ? "It presses for obedience at reach." : "It prefers obedience delivered at reach.");
         }
         if (toneOptions.isEmpty()) {
-            toneOptions.add("It keeps its own counsel.");
-            toneOptions.add("Quiet things still leave marks.");
+            toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.RESTRAINED ? "It keeps its own measure." : "It keeps its own counsel.");
+            toneOptions.add(disposition.pressure() > 0.55D ? "Quiet things still keep pressure." : "Quiet things still leave marks.");
         }
         return toneOptions.get(Math.floorMod(seed, toneOptions.size()));
     }
 
-    private String epithetCloser(Artifact artifact, int seed) {
+    private String epithetCloser(Artifact artifact, ArtifactDisposition disposition, int seed) {
         List<String> closers = new ArrayList<>();
         String event = latestNaturalEvent(artifact);
         if (event != null) {
-            closers.add("It still tastes of " + event + ".");
+            closers.add((disposition.pressure() > 0.6D ? "It still carries " : "It still tastes of ") + event + ".");
         }
         List<String> identity = collectNaturalSignals(
                 artifact.getAwakeningExpressionTrace(),
@@ -262,18 +289,48 @@ public class LoreFragmentGenerator {
                 artifact.getConvergenceIdentityShape(),
                 artifact.getLatentLineage());
         if (!identity.isEmpty()) {
-            closers.add("Its smile bends toward " + identity.getFirst() + ".");
+            closers.add("Its edge bends toward " + identity.getFirst() + ".");
         }
         if (present(artifact.getConvergencePath()) && !"none".equalsIgnoreCase(artifact.getConvergencePath())) {
-            closers.add("Two inheritances pull beneath the polish.");
+            closers.add(disposition.direction() == ArtifactDisposition.Direction.SPLITTING ? "Two inheritances pull beneath the polish." : "Two inheritances settle beneath the polish.");
         }
         if (present(artifact.getAwakeningPath()) && !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
-            closers.add("It remembers the moment it answered back.");
+            closers.add(disposition.direction() == ArtifactDisposition.Direction.ASCENDING ? "It remembers the moment it turned upward." : "It remembers the moment it answered back.");
         }
         if (closers.isEmpty()) {
             return null;
         }
         return closers.get(Math.floorMod(seed >>> 3, closers.size()));
+    }
+
+
+    private String memoryVerb(ArtifactDisposition disposition) {
+        return switch (disposition.temperament()) {
+            case FORCEFUL -> "fixes";
+            case WATCHFUL -> "holds";
+            case RESTLESS -> "returns";
+            case FRACTURED -> "catches";
+            case RESTRAINED -> "lingers";
+        };
+    }
+
+    private String identityVerb(ArtifactDisposition disposition) {
+        return switch (disposition.direction()) {
+            case ASCENDING -> "leans";
+            case SPLITTING -> "divides";
+            case BRACING -> "sets itself";
+            case DEEPENING, SETTLING -> "answers";
+        };
+    }
+
+    private String stateAdverb(ArtifactDisposition disposition) {
+        return switch (disposition.temperament()) {
+            case FORCEFUL -> "openly";
+            case WATCHFUL -> "carefully";
+            case RESTLESS -> "restlessly";
+            case FRACTURED -> "tensely";
+            case RESTRAINED -> "quietly";
+        };
     }
 
     private List<String> naturalEvents(Artifact artifact) {
