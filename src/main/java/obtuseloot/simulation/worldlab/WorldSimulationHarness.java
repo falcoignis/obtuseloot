@@ -1948,7 +1948,7 @@ public class WorldSimulationHarness {
                 + "2. **Gate usage rates:** " + gateOpen + "\n"
                 + "3. **Dominant gate combinations:** " + dominantProfile + " from profile distribution " + profileDist + "\n"
                 + "4. **Suspiciously dominant gates:** " + dominantGate + " (watch if a single gate exceeds ~40% share).\n"
-                + "5. **Rare but viable gate profiles:** " + rareProfiles(profileDist, sample) + "\n"
+                + "5. **Underrepresented but viable gate profiles:** " + underrepresentedProfiles(profileDist, sample) + "\n"
                 + "6. **Ecosystem diversity impact:** gateDiversity=" + gateDiversity + ", profileDiversity=" + profileDiversity + ", lineageCount=" + metrics.lineageCounts().size() + "\n";
         Files.writeString(analyticsRoot.resolve("regulatory-gate-report.md"), report);
 
@@ -1973,15 +1973,15 @@ public class WorldSimulationHarness {
         Files.writeString(analyticsRoot.resolve("regulatory-gate-impact-analysis.md"), impact);
     }
 
-    private String rareProfiles(Map<String, Integer> profileDist, int sample) {
-        List<String> rare = new ArrayList<>();
+    private String underrepresentedProfiles(Map<String, Integer> profileDist, int sample) {
+        List<String> underrepresented = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : profileDist.entrySet()) {
             double share = entry.getValue() / (double) sample;
             if (share > 0.01D && share < 0.06D) {
-                rare.add(entry.getKey() + "(" + entry.getValue() + ")");
+                underrepresented.add(entry.getKey() + "(" + entry.getValue() + ")");
             }
         }
-        return rare.isEmpty() ? "none" : rare.toString();
+        return underrepresented.isEmpty() ? "none" : underrepresented.toString();
     }
 
     private String top(Map<String, Integer> map) {

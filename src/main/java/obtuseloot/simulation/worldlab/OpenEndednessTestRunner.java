@@ -126,7 +126,7 @@ public final class OpenEndednessTestRunner {
         summary.put("lineageConcentrationTrend", trend(seasonal, "lineages", OpenEndednessTestRunner::concentration));
         summary.put("nicheCountTrend", trend(seasonal, "branches", m -> (double) m.size()));
         summary.put("noveltyRatePerSeason", noveltyRatePerSeason(seasonal, "branches"));
-        summary.put("rareLineagePersistence", rareLineagePersistence(seasonal));
+        summary.put("lowPopulationLineagePersistence", lowPopulationLineagePersistence(seasonal));
         summary.put("gateDiversityTrend", trend(seasonal, "openGates", OpenEndednessTestRunner::entropy));
         summary.put("regulatoryProfileSurvival", profileSurvival(seasonal));
 
@@ -181,8 +181,8 @@ public final class OpenEndednessTestRunner {
                 + "- Dominant family by season: " + summary.get("dominantFamilyBySeason") + "\n"
                 + "- Dominant branch by season: " + summary.get("dominantBranchBySeason") + "\n"
                 + "- Dominant lineage by season: " + summary.get("dominantLineageBySeason") + "\n\n"
-                + "## 5) Rare but viable systems\n"
-                + "- Rare lineage persistence score: " + summary.get("rareLineagePersistence") + "\n"
+                + "## 5) Low-population but viable systems\n"
+                + "- Low-population lineage persistence score: " + summary.get("lowPopulationLineagePersistence") + "\n"
                 + "- Niche count trend: " + summary.get("nicheCountTrend") + "\n\n"
                 + "## 6) Dead or suspicious systems\n"
                 + "- Top-5 family turnover trend: " + summary.get("top5FamilyTurnoverTrend") + "\n"
@@ -227,12 +227,12 @@ public final class OpenEndednessTestRunner {
                 + "- World B dominant trio: " + worldB.get("dominantFamily") + " / " + worldB.get("dominantBranch") + " / " + worldB.get("dominantLineage") + "\n"
                 + "- World C dominant trio: " + worldC.get("dominantFamily") + " / " + worldC.get("dominantBranch") + " / " + worldC.get("dominantLineage") + "\n"
                 + "- World D dominant trio: " + worldD.get("dominantFamily") + " / " + worldD.get("dominantBranch") + " / " + worldD.get("dominantLineage") + "\n\n"
-                + "## 5) Rare but viable systems\n"
-                + "- Rare lineage persistence A/B/C/D: "
-                + worldA.get("rareLineagePersistence") + " / "
-                + worldB.get("rareLineagePersistence") + " / "
-                + worldC.get("rareLineagePersistence") + " / "
-                + worldD.get("rareLineagePersistence") + "\n"
+                + "## 5) Low-population but viable systems\n"
+                + "- Low-population lineage persistence A/B/C/D: "
+                + worldA.get("lowPopulationLineagePersistence") + " / "
+                + worldB.get("lowPopulationLineagePersistence") + " / "
+                + worldC.get("lowPopulationLineagePersistence") + " / "
+                + worldD.get("lowPopulationLineagePersistence") + "\n"
                 + "- Novelty rate trends remain positive across worlds, but flatten in late seasons in ablation worlds.\n\n"
                 + "## 6) Dead or suspicious systems\n"
                 + "- World C high lineage concentration with lower turnover suggests collapse-prone lock-in risk.\n"
@@ -311,8 +311,8 @@ public final class OpenEndednessTestRunner {
                     .append(" |\n");
         }
 
-        table.append("\n## 5) Rare but viable systems\n")
-                .append("- See `rareLineagePersistence` and `noveltyRatePerSeason` in `meta-divergence-test-data.json`.\n\n")
+        table.append("\n## 5) Low-population but viable systems\n")
+                .append("- See `lowPopulationLineagePersistence` and `noveltyRatePerSeason` in `meta-divergence-test-data.json`.\n\n")
                 .append("## 6) Dead or suspicious systems\n")
                 .append("- World C is the primary suspicious profile due to concentration growth and lower exploratory turnover.\n\n")
                 .append("## 7) Confidence / caveats\n")
@@ -353,8 +353,8 @@ public final class OpenEndednessTestRunner {
                 + "- Generator-only diversity remains balanced; ecosystem divergence appears only with active subsystem interactions.\n\n"
                 + "## 4) Dominant families / branches / lineages / mechanics\n"
                 + "- Full-system world maintains broader branch entropy than ablated worlds in late seasons.\n\n"
-                + "## 5) Rare but viable systems\n"
-                + "- Rare lineage persistence is non-zero in all worlds, highest in the full system run.\n\n"
+                + "## 5) Low-population but viable systems\n"
+                + "- Low-population lineage persistence is non-zero in all worlds, highest in the full system run.\n\n"
                 + "## 6) Dead or suspicious systems\n"
                 + "- No complete dead-zone world, but World C exhibits suspicious lock-in signatures.\n\n"
                 + "## 7) Confidence / caveats\n"
@@ -566,20 +566,20 @@ public final class OpenEndednessTestRunner {
         return recurring.size();
     }
 
-    private static int rareLineagePersistence(List<Map<String, Object>> seasonal) {
+    private static int lowPopulationLineagePersistence(List<Map<String, Object>> seasonal) {
         if (seasonal.isEmpty()) {
             return 0;
         }
         Map<String, Integer> baseline = castCount(seasonal.getFirst().get("lineages"));
         Map<String, Integer> terminal = castCount(seasonal.getLast().get("lineages"));
-        Set<String> rareBaseline = new HashSet<>();
+        Set<String> lowPopulationBaseline = new HashSet<>();
         for (var entry : baseline.entrySet()) {
             if (entry.getValue() <= 2) {
-                rareBaseline.add(entry.getKey());
+                lowPopulationBaseline.add(entry.getKey());
             }
         }
-        rareBaseline.retainAll(terminal.keySet());
-        return rareBaseline.size();
+        lowPopulationBaseline.retainAll(terminal.keySet());
+        return lowPopulationBaseline.size();
     }
 
     private static List<Double> trend(List<Map<String, Object>> seasonal,

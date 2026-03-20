@@ -9,7 +9,7 @@ public class TraitInteractionReportWriter {
     public void write(Path output, TraitCorrelationMatrix matrix) throws IOException {
         Files.createDirectories(output.getParent());
         List<java.util.Map.Entry<String, Integer>> top = matrix.topPairs(5);
-        List<java.util.Map.Entry<String, Integer>> rare = matrix.rarePairs(5);
+        List<java.util.Map.Entry<String, Integer>> leastFrequent = matrix.leastFrequentPairs(5);
         int max = Math.max(1, matrix.maxFrequency());
 
         StringBuilder md = new StringBuilder();
@@ -19,8 +19,8 @@ public class TraitInteractionReportWriter {
         for (var entry : top) {
             md.append("   - ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
         }
-        md.append("3. **Rare or absent trait pairings:**\n");
-        for (var entry : rare) {
+        md.append("3. **Least frequent or absent trait pairings:**\n");
+        for (var entry : leastFrequent) {
             md.append("   - ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
         }
 
@@ -30,8 +30,8 @@ public class TraitInteractionReportWriter {
             md.append("- Suspiciously dominant pairing: **").append(dominant.getKey()).append("** at ")
                     .append(dominant.getValue()).append(" counts. This may indicate hidden weighting in ability branch resolution or genome trait interpolation.\n");
         }
-        if (!rare.isEmpty()) {
-            var suppressed = rare.get(0);
+        if (!leastFrequent.isEmpty()) {
+            var suppressed = leastFrequent.get(0);
             md.append("- Suppressed pairing: **").append(suppressed.getKey()).append("** at ")
                     .append(suppressed.getValue()).append(" counts. This may indicate missing interaction support in mutation, awakening, or lineage inheritance paths.\n");
         }
