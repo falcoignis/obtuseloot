@@ -188,7 +188,9 @@ public class ArtifactManager {
 
     public void regenerateBaselineIdentity(Artifact artifact, long seed) {
         seedFactory.regenerateFromSeed(artifact, seed);
-        artifact.setItemCategory(ArtifactGenerator.resolveCategory(seed));
+        artifact.replaceArchetype(ArtifactArchetypeValidator.requireValidArchetype(
+                ArtifactGenerator.resolveCategory(seed),
+                "artifact baseline identity regeneration"));
         artifact.setNaming(ArtifactNameResolver.initialize(artifact));
     }
 

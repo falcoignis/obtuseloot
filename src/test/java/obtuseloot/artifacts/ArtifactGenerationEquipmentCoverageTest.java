@@ -56,8 +56,6 @@ class ArtifactGenerationEquipmentCoverageTest {
     }
 
     private Artifact artifact(String category) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
-        artifact.setItemCategory(category);
-        return artifact;
+        return new Artifact(UUID.randomUUID(), category);
     }
 }

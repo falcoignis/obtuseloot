@@ -54,7 +54,7 @@ class LineageGenomeInheritanceTest {
     }
 
     private Artifact artifactFor(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         return artifact;
     }

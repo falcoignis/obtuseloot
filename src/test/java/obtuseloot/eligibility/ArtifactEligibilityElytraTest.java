@@ -46,8 +46,6 @@ class ArtifactEligibilityElytraTest {
     }
 
     private Artifact artifact(String itemCategory) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
-        artifact.setItemCategory(itemCategory);
-        return artifact;
+        return new Artifact(UUID.randomUUID(), itemCategory);
     }
 }

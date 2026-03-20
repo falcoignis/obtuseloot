@@ -248,7 +248,7 @@ public class WorldSimulationHarness {
             for (int j = 0; j < config.artifactsPerPlayer(); j++) {
                 long artifactSeed = deterministicSeed(i, j);
                 initialSeedPool.add(artifactSeed);
-                Artifact artifact = new Artifact(UUID.randomUUID());
+                Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
                 artifact.setArtifactSeed(artifactSeed);
                 artifact.resetMutableState();
                 seedFactory.applySeedProfile(artifact, artifactSeed);

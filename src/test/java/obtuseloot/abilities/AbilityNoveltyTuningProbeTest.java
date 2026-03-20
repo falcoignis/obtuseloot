@@ -230,7 +230,7 @@ class AbilityNoveltyTuningProbeTest {
     }
 
     private Artifact artifact(long seed, String lineageId) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         artifact.setLatentLineage(lineageId == null ? "unassigned" : lineageId);

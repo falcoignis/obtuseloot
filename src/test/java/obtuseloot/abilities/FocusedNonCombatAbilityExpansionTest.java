@@ -156,7 +156,7 @@ class FocusedNonCombatAbilityExpansionTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "elytra");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         return artifact;

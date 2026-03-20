@@ -61,12 +61,16 @@ public class Artifact {
     private String lastActivatedLatentTraits;
     private String lastUtilityHistory;
 
-    public Artifact(UUID ownerId) {
+    public Artifact(UUID ownerId, String itemCategory) {
+        this(ownerId, ArtifactArchetypeValidator.requireValidArchetype(itemCategory, "artifact construction"));
+    }
+
+    public Artifact(UUID ownerId, EquipmentArchetype archetype) {
         this.ownerId = ownerId;
         this.naming = new ArtifactNaming();
         this.generatedName = this.naming.getDisplayName();
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
-        this.itemCategory = null;
+        this.itemCategory = Objects.requireNonNull(archetype, "archetype").id();
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
         this.awakeningPath = "dormant";
@@ -173,7 +177,7 @@ public class Artifact {
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return naming.getDisplayName(); }
-    public void setItemCategory(String itemCategory) { this.itemCategory = ArtifactArchetypeValidator.requireValidId(itemCategory, "artifact item category assignment"); }
+    void replaceArchetype(EquipmentArchetype archetype) { this.itemCategory = Objects.requireNonNull(archetype, "archetype").id(); }
     public String getArchetypePath() { return archetypePath; }
     public void setArchetypePath(String archetypePath) { this.archetypePath = archetypePath; }
     public String getEvolutionPath() { return evolutionPath; }

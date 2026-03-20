@@ -30,7 +30,7 @@ class EcosystemTelemetryPipelineTest {
         ArtifactUsageTracker usageTracker = new ArtifactUsageTracker();
         usageTracker.setTelemetryEmitter(emitter);
 
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(42L);
         artifact.setLatentLineage("lineage-a");
 

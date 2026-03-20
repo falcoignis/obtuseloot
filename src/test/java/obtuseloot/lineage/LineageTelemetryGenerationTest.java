@@ -32,7 +32,7 @@ class LineageTelemetryGenerationTest {
         LineageRegistry registry = new LineageRegistry();
         registry.setTelemetryEmitter(emitter);
 
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(91L);
         artifact.setLatentLineage("lin-g");
 
@@ -59,7 +59,7 @@ class LineageTelemetryGenerationTest {
         LineageRegistry registry = new LineageRegistry();
         registry.setTelemetryEmitter(emitter);
 
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(9001L);
         artifact.setLatentLineage("lin-phase57");
         registry.assignLineage(artifact);
@@ -69,7 +69,7 @@ class LineageTelemetryGenerationTest {
         divergent.add(LineageBiasDimension.SPECIALIZATION, 0.30D);
 
         for (int i = 0; i < 20; i++) {
-            Artifact descendant = new Artifact(UUID.randomUUID());
+            Artifact descendant = new Artifact(UUID.randomUUID(), "wooden_sword");
             descendant.setArtifactSeed(9002L + i);
             descendant.setLatentLineage("lin-phase57");
             registry.recordDescendantBias(descendant, divergent, 1.30D, 1.15D);

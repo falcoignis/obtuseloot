@@ -68,7 +68,7 @@ class EvolutionaryAbilityEngineTest {
     }
 
     private Artifact seedArtifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setLatentLineage("lin-evo");
         return artifact;

@@ -79,7 +79,7 @@ class ArtifactTextResolverTest {
 
     private Artifact seeded(long seed, double precision, double brutality, double survival,
                             double mobility, double chaos, double consistency) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setSeedPrecisionAffinity(precision);
         artifact.setSeedBrutalityAffinity(brutality);

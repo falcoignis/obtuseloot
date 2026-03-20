@@ -1,7 +1,9 @@
 package obtuseloot.persistence;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.ArtifactSeedFactory;
+import obtuseloot.artifacts.EquipmentArchetype;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.reputation.ArtifactReputation;
@@ -74,11 +76,11 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
             ps.setString(1, playerId.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return null;
-                Artifact artifact = new Artifact(playerId);
+                EquipmentArchetype archetype = requirePersistedItemCategory(rs.getString("item_category"), playerId);
+                Artifact artifact = new Artifact(playerId, archetype);
                 artifact.setOwnerId(UUID.fromString(rs.getString("owner_uuid")));
                 artifact.setArtifactSeed(rs.getLong("artifact_seed"));
                 seedFactory.applySeedProfile(artifact, artifact.getArtifactSeed());
-                artifact.setItemCategory(requirePersistedItemCategory(rs.getString("item_category"), playerId));
                 artifact.setNaming(ArtifactNameResolver.initialize(artifact));
                 artifact.setDisplayName(nullToDefault(rs.getString("generated_name"), artifact.getDisplayName()));
                 artifact.setArchetypePath(nullToDefault(rs.getString("archetype"), "unformed"));
@@ -173,15 +175,11 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
         }
     }
 
-    private String requirePersistedItemCategory(String rawCategory, UUID playerId) {
+    private EquipmentArchetype requirePersistedItemCategory(String rawCategory, UUID playerId) {
         if (rawCategory == null || rawCategory.isBlank()) {
             throw new IllegalStateException("[Persistence] Missing artifact item_category for " + playerId);
         }
-        try {
-            return obtuseloot.artifacts.EquipmentArchetype.fromId(rawCategory).id();
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalStateException("[Persistence] Invalid artifact item_category '" + rawCategory + "' for " + playerId, exception);
-        }
+        return ArtifactArchetypeValidator.requireValidArchetype(rawCategory, "[Persistence] artifact item_category for " + playerId);
     }
 
     private String playerUpsertSql() { return dialect == Dialect.MYSQL

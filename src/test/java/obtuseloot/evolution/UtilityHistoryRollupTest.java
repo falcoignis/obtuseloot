@@ -16,7 +16,7 @@ class UtilityHistoryRollupTest {
     @Test
     void utilityHistoryRollupPersistsAcrossHydrationCycle() {
         ArtifactUsageTracker tracker = new ArtifactUsageTracker();
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(42L);
 
         ArtifactUsageProfile profile = tracker.profileFor(artifact);

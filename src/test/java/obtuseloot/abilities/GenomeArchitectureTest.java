@@ -146,7 +146,7 @@ class GenomeArchitectureTest {
     }
 
     private Artifact artifactFor(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setSeedPrecisionAffinity(0.3D);
         artifact.setSeedBrutalityAffinity(0.3D);

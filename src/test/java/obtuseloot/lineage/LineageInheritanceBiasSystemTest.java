@@ -211,7 +211,7 @@ class LineageInheritanceBiasSystemTest {
     }
 
     private Artifact artifact(long seed, String lineage) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setLatentLineage(lineage);
         return artifact;

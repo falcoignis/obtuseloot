@@ -67,9 +67,8 @@ class ArtifactNamingRefactorTest {
     }
 
     private Artifact seeded(long seed, String category) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), category);
         artifact.setArtifactSeed(seed);
-        artifact.setItemCategory(category);
         artifact.setSeedPrecisionAffinity(0.7D);
         artifact.setSeedSurvivalAffinity(0.8D);
         artifact.setSeedChaosAffinity(0.2D);
