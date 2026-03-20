@@ -6,11 +6,12 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public final class PlayerDataMigrator {
-    public static final int CURRENT_DATA_VERSION = 2;
+    public static final int CURRENT_DATA_VERSION = 3;
 
     private static final List<DataMigration> MIGRATIONS = List.of(
             new LegacyToV1Migration(),
-            new V1ToV2Migration()
+            new V1ToV2Migration(),
+            new V2ToV3Migration()
     );
 
     private PlayerDataMigrator() {
@@ -118,6 +119,23 @@ public final class PlayerDataMigrator {
                     yaml.set("artifact.instability-expiry", 0L);
                 }
             }
+        }
+    }
+
+    private static final class V2ToV3Migration implements DataMigration {
+        @Override
+        public int fromVersion() {
+            return 2;
+        }
+
+        @Override
+        public int toVersion() {
+            return 3;
+        }
+
+        @Override
+        public void migrate(YamlConfiguration yaml) {
+            yaml.set("artifact.naming.rank-at-naming", null);
         }
     }
 
