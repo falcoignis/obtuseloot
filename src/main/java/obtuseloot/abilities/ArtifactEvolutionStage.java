@@ -9,7 +9,7 @@ public final class ArtifactEvolutionStage {
         if (!"none".equalsIgnoreCase(artifact.getFusionPath())) return 5;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) return 4;
         String path = artifact.getEvolutionPath().toLowerCase();
-        if (path.contains("hybrid") || path.contains("fused") || path.contains("mythic")) return 3;
+        if (path.contains("hybrid") || path.contains("fused") || path.contains("advanced")) return 3;
         if (path.contains("tempered") || path.contains("formed")) return 2;
         return 1;
     }

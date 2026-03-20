@@ -11,7 +11,7 @@ class ArtifactNamingRefactorTest {
     @Test
     void rankDerivationPriorityFusedBeatsAwakened() {
         Artifact artifact = new Artifact(UUID.randomUUID());
-        artifact.setEvolutionPath("mythic");
+        artifact.setEvolutionPath("advanced");
         artifact.setAwakeningPath("emberwake");
         artifact.setFusionPath("twin-reliquary");
 
@@ -31,7 +31,7 @@ class ArtifactNamingRefactorTest {
     @Test
     void trueNamePersistsWhileDisplayEvolvesAcrossDiscovery() {
         Artifact artifact = seeded(7L, "blade");
-        artifact.setEvolutionPath("mythic");
+        artifact.setEvolutionPath("advanced");
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
         naming.setTrueName("Vesper");
         artifact.setNaming(naming);
