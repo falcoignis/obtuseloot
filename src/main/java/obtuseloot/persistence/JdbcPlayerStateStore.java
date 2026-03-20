@@ -98,7 +98,7 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 artifact.setDriftLevel(rs.getInt("drift_level"));
                 artifact.setTotalDrifts(rs.getInt("total_drifts"));
                 artifact.setLastDriftTimestamp(rs.getLong("last_drift_timestamp"));
-                artifact.setLatentLineage(nullToDefault(rs.getString("latent_lineage"), "common"));
+                artifact.setLatentLineage(nullToDefault(rs.getString("latent_lineage"), "unassigned"));
                 artifact.setSpeciesId(nullToDefault(rs.getString("species_id"), "unspeciated"));
                 artifact.setParentSpeciesId(nullToDefault(rs.getString("parent_species_id"), "none"));
                 artifact.setLastSpeciesCompatibilityDistance(rs.getDouble("species_compatibility_distance"));

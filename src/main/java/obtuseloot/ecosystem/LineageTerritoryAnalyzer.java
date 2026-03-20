@@ -30,7 +30,7 @@ public final class LineageTerritoryAnalyzer {
 
     private String normalize(String lineage) {
         if (lineage == null || lineage.isBlank()) {
-            return "common";
+            return "unassigned";
         }
         return lineage;
     }

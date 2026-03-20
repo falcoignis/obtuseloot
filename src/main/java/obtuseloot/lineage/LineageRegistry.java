@@ -60,7 +60,7 @@ public class LineageRegistry {
     public ArtifactLineage assignLineage(Artifact artifact) {
         Random random = new Random(artifact.getArtifactSeed() ^ artifact.getOwnerId().getMostSignificantBits());
         String lineageId = artifact.getLatentLineage();
-        if (lineageId == null || lineageId.isBlank() || "common".equalsIgnoreCase(lineageId)) {
+        if (lineageId == null || lineageId.isBlank() || "unassigned".equalsIgnoreCase(lineageId)) {
             lineageId = random.nextDouble() < 0.65D
                     ? "lineage-" + UUID.nameUUIDFromBytes((artifact.getOwnerId().toString() + artifact.getArtifactSeed()).getBytes())
                     : "wild-" + Long.toUnsignedString(artifact.getArtifactSeed() & 65535L);
