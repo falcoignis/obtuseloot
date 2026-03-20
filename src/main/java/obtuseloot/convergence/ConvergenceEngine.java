@@ -59,6 +59,7 @@ public class ConvergenceEngine {
             if (expansion == null || expansion.target() == null || expansion.target() == current) {
                 continue;
             }
+            assertBoundedTarget(recipe, current, expansion);
 
             convergencePairFound.incrementAndGet();
             Artifact replacement = createReplacement(context, recipe, expansion);
@@ -188,6 +189,23 @@ public class ConvergenceEngine {
 
     private ExpansionBuilder profile(ConvergenceContext context) {
         return new ExpansionBuilder(context);
+    }
+
+    private void assertBoundedTarget(ConvergenceRecipe recipe,
+                                     EquipmentArchetype current,
+                                     ConvergenceExpansion expansion) {
+        EquipmentArchetype target = ArtifactArchetypeValidator.requireValidArchetype(expansion.target().id(),
+                "convergence target " + recipe.id());
+        if (target == current) {
+            throw new IllegalStateException("Convergence recipe " + recipe.id() + " cannot preserve the current identity target " + current.id());
+        }
+        if (!recipe.isValidTarget(target)) {
+            throw new IllegalStateException("Convergence recipe " + recipe.id() + " selected out-of-bounds target " + target.id());
+        }
+        if (!recipe.supportsTarget(target)) {
+            throw new IllegalStateException("Convergence recipe " + recipe.id() + " selected target " + target.id()
+                    + " outside recipe semantic roles " + recipe.semanticRoles());
+        }
     }
 
     private Artifact createReplacement(ConvergenceContext context,
@@ -377,11 +395,21 @@ public class ConvergenceEngine {
             return target != null && validTargets.contains(target);
         }
 
+        boolean supportsTarget(EquipmentArchetype target) {
+            return semanticRoles.stream().anyMatch(target::hasRole);
+        }
+
+        EnumSet<EquipmentRole> semanticRoles() {
+            return semanticRoles.clone();
+        }
+
         abstract ConvergenceExpansion expand(ConvergenceContext context);
     }
 
     private static final class ExpansionBuilder {
         private final ConvergenceContext context;
+        private static final int NOVELTY_SCORE_WINDOW = 3;
+
         private final List<CandidateScore> candidates = new ArrayList<>();
         private String identityBase = "converged";
         private String evolutionBase = "converged";
@@ -411,15 +439,18 @@ public class ConvergenceEngine {
             if (candidates.isEmpty()) {
                 return null;
             }
-            CandidateScore best = candidates.stream()
-                    .max((left, right) -> {
-                        int byScore = Integer.compare(left.score(), right.score());
+            int bestScore = candidates.stream().mapToInt(CandidateScore::score).max().orElse(Integer.MIN_VALUE);
+            List<CandidateScore> finalistPool = candidates.stream()
+                    .filter(candidate -> bestScore - candidate.score() <= NOVELTY_SCORE_WINDOW)
+                    .sorted((left, right) -> {
+                        int byScore = Integer.compare(right.score(), left.score());
                         if (byScore != 0) return byScore;
-                        int tie = tieBreaker(left.target()) - tieBreaker(right.target());
+                        int tie = Integer.compare(noveltyTieBreaker(left.target()), noveltyTieBreaker(right.target()));
                         if (tie != 0) return tie;
                         return left.target().id().compareTo(right.target().id());
                     })
-                    .orElse(null);
+                    .toList();
+            CandidateScore best = finalistPool.get(Math.floorMod(historySalt(), finalistPool.size()));
             if (best == null) {
                 return null;
             }
@@ -448,10 +479,22 @@ public class ConvergenceEngine {
                     shapeAffinities(vector, cadence));
         }
 
-        private int tieBreaker(EquipmentArchetype target) {
+        private int noveltyTieBreaker(EquipmentArchetype target) {
             int memory = context.memoryProfile().pressure() + context.artifact().getHistoryScore();
             int eventHash = context.artifact().getNotableEvents().hashCode() ^ context.artifact().getLoreHistory().hashCode();
             return Math.abs(Objects.hash(context.artifact().getArtifactSeed(), target.id(), memory, eventHash)) % 1000;
+        }
+
+        private int historySalt() {
+            Artifact artifact = context.artifact();
+            return Objects.hash(
+                    artifact.getArtifactSeed(),
+                    artifact.getHistoryScore(),
+                    artifact.getLoreHistory().hashCode(),
+                    artifact.getNotableEvents().hashCode(),
+                    artifact.getMemory().snapshot().hashCode(),
+                    context.rep().getTotalScore(),
+                    context.memoryProfile().pressure());
         }
 
         private String dominantVector() {
