@@ -15,6 +15,8 @@ public record ArtifactTextIdentity(
         String cadence,
         ArtifactDiscoveryState discoveryState,
         List<String> identityTags,
-        List<String> motifs
+        List<String> motifs,
+        List<String> signalTags,
+        List<String> toneLayers
 ) {
 }

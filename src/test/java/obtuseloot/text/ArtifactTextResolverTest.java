@@ -16,6 +16,9 @@ class ArtifactTextResolverTest {
     @Test
     void textIdentityResolvesAcrossChannelsWithLengthBounds() {
         Artifact artifact = seeded(99L, 0.9, 0.8, 0.2, 0.4, 0.8, 0.3);
+        artifact.setDriftLevel(2);
+        artifact.setDriftAlignment("volatile");
+        artifact.addLoreHistory("forge.echo");
         Map<ArtifactTextChannel, String> values = renderAll(artifact);
 
         assertFalse(values.get(ArtifactTextChannel.NAME).isBlank());
@@ -23,6 +26,7 @@ class ArtifactTextResolverTest {
         assertTrue(wordCount(values.get(ArtifactTextChannel.DRIFT)) <= 10);
         assertTrue(wordCount(values.get(ArtifactTextChannel.LORE)) <= 14);
         assertTrue(values.values().stream().allMatch(v -> !v.toLowerCase().contains("fuck")));
+        assertTrue(values.values().stream().allMatch(this::hasAtMostTwoSentences));
     }
 
     @Test
@@ -62,6 +66,27 @@ class ArtifactTextResolverTest {
                 resolver.compose(predatory, ArtifactTextChannel.MEMORY, "close_call"));
     }
 
+    @Test
+    void signalDrivenInnuendoRemainsImplicitAndDeterministic() {
+        Artifact artifact = seeded(404L, 0.6, 0.91, 0.2, 0.82, 0.3, 0.7);
+        artifact.setConvergencePath("braided lineage");
+        artifact.setAwakeningPath("unsealed vow");
+        artifact.setDriftLevel(3);
+        artifact.setDriftAlignment("slipping");
+        artifact.addLoreHistory("old.impact");
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+        artifact.setNaming(ArtifactNameResolver.initialize(artifact));
+
+        String firstLore = resolver.compose(artifact, ArtifactTextChannel.LORE, "");
+        String secondLore = resolver.compose(artifact, ArtifactTextChannel.LORE, "");
+        String name = resolver.compose(artifact, ArtifactTextChannel.NAME, artifact.getNaming().getRootForm()).toLowerCase();
+
+        assertEquals(firstLore, secondLore);
+        assertTrue(firstLore.contains(" "));
+        assertTrue(containsAny(firstLore.toLowerCase(), "hunger", "nearer", "presses", "slips", "closeness", "linger"));
+        assertFalse(containsAny(firstLore.toLowerCase(), "sex", "sexy", "nude", "kiss", "moan"));
+        assertTrue(wordCount(name) <= 4);
+    }
 
     @Test
     void safetyFilterBlocksCrudeLexemes() {
@@ -94,13 +119,27 @@ class ArtifactTextResolverTest {
     }
 
     private boolean sharedMotif(String... channels) {
-        String[] motifs = {"echo", "vigil", "claim", "devotion", "patience", "fracture", "afterimage"};
+        String[] motifs = {"echo", "vigil", "claim", "devotion", "patience", "fracture", "afterimage", "release", "inheritance"};
         for (String motif : motifs) {
             int hits = 0;
             for (String channel : channels) {
                 if (channel.contains(motif)) hits++;
             }
             if (hits >= 2) return true;
+        }
+        return false;
+    }
+
+    private boolean hasAtMostTwoSentences(String text) {
+        long sentences = text.chars().filter(ch -> ch == '.').count();
+        return sentences <= 2;
+    }
+
+    private boolean containsAny(String text, String... needles) {
+        for (String needle : needles) {
+            if (text.contains(needle)) {
+                return true;
+            }
         }
         return false;
     }
