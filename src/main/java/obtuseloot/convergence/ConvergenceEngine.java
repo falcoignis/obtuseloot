@@ -52,8 +52,12 @@ public class ConvergenceEngine {
                 continue;
             }
 
-            convergencePairFound.incrementAndGet();
             EquipmentArchetype target = recipe.resolveTarget(current, artifact, rep);
+            if (target == null || target == current) {
+                continue;
+            }
+
+            convergencePairFound.incrementAndGet();
             Artifact replacement = createReplacement(artifact, current, target, recipe, rep, memoryProfile);
             if (player != null) {
                 player.sendMessage("§6" + textResolver.compose(replacement, ArtifactTextChannel.CONVERGENCE, recipe.id()));
@@ -81,9 +85,19 @@ public class ConvergenceEngine {
 
     private List<ConvergenceRecipe> recipes() {
         return List.of(
-                new ConvergenceRecipe("reaper-vow", EnumSet.of(EquipmentRole.WEAPON, EquipmentRole.MELEE_WEAPON), 96, 1, 6) {
+                new ConvergenceRecipe("reaper-vow", EnumSet.of(EquipmentRole.WEAPON), 96, 1, 6) {
+                    @Override boolean supports(EquipmentArchetype current) {
+                        return current.hasRole(EquipmentRole.MELEE_WEAPON) || current.hasRole(EquipmentRole.TOOL_WEAPON_HYBRID);
+                    }
+
                     @Override EquipmentArchetype resolveTarget(EquipmentArchetype current, Artifact artifact, ArtifactReputation rep) {
-                        return rep.getMobility() >= rep.getPrecision() ? EquipmentArchetype.NETHERITE_AXE : EquipmentArchetype.NETHERITE_SWORD;
+                        if (rep.getChaos() >= 18 || rep.getMobility() >= rep.getBrutality() + 6) {
+                            return EquipmentArchetype.TRIDENT;
+                        }
+                        if (current.id().endsWith("_axe")) {
+                            return EquipmentArchetype.NETHERITE_SWORD;
+                        }
+                        return EquipmentArchetype.NETHERITE_AXE;
                     }
 
                     @Override String evolutionPath(Artifact artifact, ArtifactReputation rep) { return "converged-reaper-vow"; }
@@ -91,7 +105,9 @@ public class ConvergenceEngine {
                 },
                 new ConvergenceRecipe("horizon-syndicate", EnumSet.of(EquipmentRole.RANGED_WEAPON), 92, 1, 5) {
                     @Override EquipmentArchetype resolveTarget(EquipmentArchetype current, Artifact artifact, ArtifactReputation rep) {
-                        return current == EquipmentArchetype.CROSSBOW ? EquipmentArchetype.BOW : EquipmentArchetype.CROSSBOW;
+                        return rep.getMobility() >= rep.getPrecision()
+                                ? EquipmentArchetype.ELYTRA
+                                : EquipmentArchetype.TRIDENT;
                     }
 
                     @Override String evolutionPath(Artifact artifact, ArtifactReputation rep) { return "converged-horizon-syndicate"; }
@@ -103,7 +119,9 @@ public class ConvergenceEngine {
                     }
 
                     @Override EquipmentArchetype resolveTarget(EquipmentArchetype current, Artifact artifact, ArtifactReputation rep) {
-                        return EquipmentArchetype.ELYTRA;
+                        return current == EquipmentArchetype.ELYTRA
+                                ? EquipmentArchetype.NETHERITE_CHESTPLATE
+                                : EquipmentArchetype.ELYTRA;
                     }
 
                     @Override String evolutionPath(Artifact artifact, ArtifactReputation rep) { return "converged-sky-bastion"; }
@@ -111,10 +129,14 @@ public class ConvergenceEngine {
                 },
                 new ConvergenceRecipe("citadel-heart", EnumSet.of(EquipmentRole.DEFENSIVE_ARMOR), 100, 2, 7) {
                     @Override EquipmentArchetype resolveTarget(EquipmentArchetype current, Artifact artifact, ArtifactReputation rep) {
-                        if (current.hasRole(EquipmentRole.HELMET)) return EquipmentArchetype.NETHERITE_HELMET;
-                        if (current.hasRole(EquipmentRole.CHESTPLATE)) return EquipmentArchetype.NETHERITE_CHESTPLATE;
-                        if (current.hasRole(EquipmentRole.LEGGINGS)) return EquipmentArchetype.NETHERITE_LEGGINGS;
-                        return EquipmentArchetype.NETHERITE_BOOTS;
+                        if (rep.getConsistency() >= rep.getSurvival()) {
+                            return current.hasRole(EquipmentRole.HELMET)
+                                    ? EquipmentArchetype.NETHERITE_CHESTPLATE
+                                    : EquipmentArchetype.TURTLE_HELMET;
+                        }
+                        return current == EquipmentArchetype.NETHERITE_CHESTPLATE
+                                ? EquipmentArchetype.TURTLE_HELMET
+                                : EquipmentArchetype.NETHERITE_CHESTPLATE;
                     }
 
                     @Override String evolutionPath(Artifact artifact, ArtifactReputation rep) { return "converged-citadel-heart"; }
@@ -126,7 +148,7 @@ public class ConvergenceEngine {
                     }
 
                     @Override EquipmentArchetype resolveTarget(EquipmentArchetype current, Artifact artifact, ArtifactReputation rep) {
-                        return rep.getMobility() >= rep.getSurvival() ? EquipmentArchetype.ELYTRA : EquipmentArchetype.TRIDENT;
+                        return current == EquipmentArchetype.TRIDENT ? EquipmentArchetype.ELYTRA : EquipmentArchetype.TRIDENT;
                     }
 
                     @Override String evolutionPath(Artifact artifact, ArtifactReputation rep) { return "converged-worldpiercer"; }
@@ -181,18 +203,6 @@ public class ConvergenceEngine {
         replacement.getDriftHistory().addAll(artifact.getDriftHistory());
         replacement.getLoreHistory().addAll(artifact.getLoreHistory());
         replacement.getNotableEvents().addAll(artifact.getNotableEvents());
-        replacement.setLastAbilityBranchPath(artifact.getLastAbilityBranchPath());
-        replacement.setLastMutationHistory(artifact.getLastMutationHistory());
-        replacement.setLastMemoryInfluence(artifact.getLastMemoryInfluence());
-        replacement.setLastRegulatoryProfile(artifact.getLastRegulatoryProfile());
-        replacement.setLastOpenRegulatoryGates(artifact.getLastOpenRegulatoryGates());
-        replacement.setLastGateCandidatePool(artifact.getLastGateCandidatePool());
-        replacement.setLastTriggerProfile(artifact.getLastTriggerProfile());
-        replacement.setLastMechanicProfile(artifact.getLastMechanicProfile());
-        replacement.setLastInterferenceEffects(artifact.getLastInterferenceEffects());
-        replacement.setLastLatentActivationRate(artifact.getLastLatentActivationRate());
-        replacement.setLastActivatedLatentTraits(artifact.getLastActivatedLatentTraits());
-        replacement.setLastUtilityHistory(artifact.getLastUtilityHistory());
         replacement.setNaming(ArtifactNameResolver.initialize(replacement));
         replacement.addLoreHistory("Convergence replaced " + current.id() + " with " + target.id() + " via " + recipe.id());
         replacement.addLoreHistory(textResolver.compose(replacement, ArtifactTextChannel.CONVERGENCE, recipe.id()));
