@@ -63,24 +63,24 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void ecologyPressureIsUtilityAwareNotRarityOnly() {
+    void ecologyPressureIsUtilityAwareNotFrequencyOnly() {
         EcosystemSaturationModel model = new EcosystemSaturationModel();
         NicheUtilityRollup crowdedWeak = new NicheUtilityRollup(MechanicNicheTag.NAVIGATION, 8, 40, 4, 1.5D, 30.0D);
-        NicheUtilityRollup rareUseful = new NicheUtilityRollup(MechanicNicheTag.RITUAL_STRANGE_UTILITY, 1, 12, 9, 6.0D, 10.0D);
+        NicheUtilityRollup lowFrequencyUseful = new NicheUtilityRollup(MechanicNicheTag.RITUAL_STRANGE_UTILITY, 1, 12, 9, 6.0D, 10.0D);
         Map<MechanicNicheTag, NicheUtilityRollup> all = Map.of(
                 crowdedWeak.niche(), crowdedWeak,
-                rareUseful.niche(), rareUseful
+                lowFrequencyUseful.niche(), lowFrequencyUseful
         );
 
         RolePressureMetrics weakPressure = model.pressureFor(crowdedWeak.niche(), crowdedWeak, all);
-        RolePressureMetrics usefulPressure = model.pressureFor(rareUseful.niche(), rareUseful, all);
+        RolePressureMetrics usefulPressure = model.pressureFor(lowFrequencyUseful.niche(), lowFrequencyUseful, all);
 
         assertTrue(weakPressure.netPressure() < usefulPressure.netPressure());
         assertTrue(usefulPressure.retentionBias() > weakPressure.retentionBias());
     }
 
     @Test
-    void endToEndEcologySignalsShowWeakCrowdedSuppressionAndUsefulRareSupportAndSpecialization() {
+    void endToEndEcologySignalsShowWeakCrowdedSuppressionAndUsefulLowFrequencySupportAndSpecialization() {
         NichePopulationTracker tracker = new NichePopulationTracker();
 
         for (int i = 0; i < 6; i++) {
@@ -94,13 +94,13 @@ class NicheEcologySystemTest {
         ));
 
         RolePressureMetrics crowdedWeakPressure = tracker.pressureFor(10L);
-        RolePressureMetrics rareUsefulPressure = tracker.pressureFor(99L);
+        RolePressureMetrics lowFrequencyUsefulPressure = tracker.pressureFor(99L);
 
-        assertTrue(crowdedWeakPressure.netPressure() < rareUsefulPressure.netPressure());
+        assertTrue(crowdedWeakPressure.netPressure() < lowFrequencyUsefulPressure.netPressure());
 
-        ArtifactNicheProfile rareProfile = tracker.nicheProfile(99L);
-        assertNotNull(rareProfile.specialization());
-        assertTrue(rareProfile.specialization().specializationScore() > 0.0D);
+        ArtifactNicheProfile lowFrequencyProfile = tracker.nicheProfile(99L);
+        assertNotNull(lowFrequencyProfile.specialization());
+        assertTrue(lowFrequencyProfile.specialization().specializationScore() > 0.0D);
     }
 
     // -------------------------------------------------------------------------
