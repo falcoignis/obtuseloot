@@ -44,6 +44,18 @@ class ArtifactNamingRefactorTest {
         assertEquals("Blazing Ashen Oathbound Cinder", compressed);
     }
 
+
+    @Test
+    void elytraUsesDedicatedRootForm() {
+        Artifact artifact = seeded(401L, "elytra");
+        artifact.setSeedMobilityAffinity(0.95D);
+
+        ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
+
+        assertEquals("Wings", naming.getRootForm());
+        assertTrue(naming.getDisplayName().contains("Wings"));
+    }
+
     @Test
     void armorIdentityCanProduceEquipmentFlavor() {
         Artifact artifact = seeded(241L, "chainmail_helmet");

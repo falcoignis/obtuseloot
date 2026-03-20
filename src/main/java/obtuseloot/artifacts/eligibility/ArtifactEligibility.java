@@ -31,6 +31,10 @@ public final class ArtifactEligibility {
         return hasRole(artifact, EquipmentRole.ARMOR);
     }
 
+    public static boolean isDefensiveArmorEligible(Artifact artifact) {
+        return hasRole(artifact, EquipmentRole.DEFENSIVE_ARMOR);
+    }
+
     public static boolean isToolEligible(Artifact artifact) {
         return hasRole(artifact, EquipmentRole.TOOL);
     }
