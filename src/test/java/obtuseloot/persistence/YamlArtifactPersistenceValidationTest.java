@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -74,6 +75,56 @@ class YamlArtifactPersistenceValidationTest {
         Artifact reloaded = reloadedStore.loadArtifact(playerId);
 
         assertNotNull(reloaded);
+        assertEquals(originalName, reloaded.getDisplayName());
+        assertEquals(originalNamingSeed, reloaded.getNaming().getNamingSeed());
+    }
+
+
+    @Test
+    void yamlReloadPreservesAwakeningIdentityMetadataAndNamingForReplacementIdentity() {
+        UUID playerId = UUID.randomUUID();
+        YamlPlayerStateStore store = new YamlPlayerStateStore(plugin());
+        Artifact artifact = new Artifact(playerId, "diamond_sword");
+        artifact.setArtifactSeed(45678L);
+        artifact.setSeedPrecisionAffinity(0.82D);
+        artifact.setSeedBrutalityAffinity(0.91D);
+        artifact.setSeedSurvivalAffinity(0.28D);
+        artifact.setSeedMobilityAffinity(0.22D);
+        artifact.setSeedChaosAffinity(0.31D);
+        artifact.setSeedConsistencyAffinity(0.24D);
+        artifact.setAwakeningPath("Executioner's Oath");
+        artifact.setAwakeningVariantId("executioners-oath::reaper-edge::abcd1234");
+        artifact.setAwakeningIdentityShape("reaper-edge");
+        artifact.setAwakeningLineageTrace("lineage:predatory-vow:lineage-alpha:pressure=18");
+        artifact.setAwakeningLoreTrace("lore:execution-chain:boss=2");
+        artifact.setAwakeningContinuityTrace("owner-storage|memory-imprint|lineage-thread|bounded-history");
+        artifact.setAwakeningExpressionTrace("execution|brutality|aggression");
+        artifact.setAwakeningMemorySignature("pressure=7|agg=65|surv=10|disc=5|chaos=8|events=4");
+        artifact.getAwakeningTraits().add("execution");
+        artifact.getAwakeningBiasAdjustments().put("brutality", 1.6D);
+        artifact.getAwakeningGainMultipliers().put("brutality", 2.0D);
+        artifact.refreshNamingProjection();
+        String originalName = artifact.getDisplayName();
+        long originalNamingSeed = artifact.getNaming().getNamingSeed();
+
+        store.saveArtifact(playerId, artifact);
+        store.flushPendingWrites();
+
+        YamlPlayerStateStore reloadedStore = new YamlPlayerStateStore(plugin());
+        Artifact reloaded = reloadedStore.loadArtifact(playerId);
+
+        assertNotNull(reloaded);
+        assertEquals("Executioner's Oath", reloaded.getAwakeningPath());
+        assertEquals("executioners-oath::reaper-edge::abcd1234", reloaded.getAwakeningVariantId());
+        assertEquals("reaper-edge", reloaded.getAwakeningIdentityShape());
+        assertEquals("lineage:predatory-vow:lineage-alpha:pressure=18", reloaded.getAwakeningLineageTrace());
+        assertEquals("lore:execution-chain:boss=2", reloaded.getAwakeningLoreTrace());
+        assertEquals("owner-storage|memory-imprint|lineage-thread|bounded-history", reloaded.getAwakeningContinuityTrace());
+        assertEquals("execution|brutality|aggression", reloaded.getAwakeningExpressionTrace());
+        assertEquals("pressure=7|agg=65|surv=10|disc=5|chaos=8|events=4", reloaded.getAwakeningMemorySignature());
+        assertEquals(Set.of("execution"), reloaded.getAwakeningTraits());
+        assertEquals(1.6D, reloaded.getAwakeningBiasAdjustments().get("brutality"));
+        assertEquals(2.0D, reloaded.getAwakeningGainMultipliers().get("brutality"));
         assertEquals(originalName, reloaded.getDisplayName());
         assertEquals(originalNamingSeed, reloaded.getNaming().getNamingSeed());
     }
