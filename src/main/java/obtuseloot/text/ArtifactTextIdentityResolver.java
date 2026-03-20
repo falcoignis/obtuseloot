@@ -11,42 +11,41 @@ import java.util.Set;
 public class ArtifactTextIdentityResolver {
 
     public ArtifactTextIdentity resolve(Artifact artifact, ArtifactNaming naming) {
-        List<String> tags = naming == null || naming.getIdentityTags().isEmpty() ? fallbackTags(artifact) : naming.getIdentityTags();
-        ToneProfile tone = naming == null ? ToneProfile.ODD : naming.getToneProfile();
-        ArtifactDiscoveryState discovery = naming == null ? ArtifactDiscoveryState.OBSCURED : naming.getDiscoveryState();
+        if (naming == null) {
+            throw new IllegalStateException("Artifact naming must be initialized before text resolution");
+        }
+        if (naming.getIdentityTags().isEmpty()) {
+            throw new IllegalStateException("Artifact naming identity tags must be present before text resolution");
+        }
+        List<String> tags = naming.getIdentityTags();
+        ToneProfile tone = naming.getToneProfile();
+        ArtifactDiscoveryState discovery = naming.getDiscoveryState();
         String personality = resolvePersonality(tags, tone);
         String voice = resolveVoice(tags, tone);
         String cadence = resolveCadence(tone, discovery);
         double implication = resolveImplication(tone, discovery, tags);
         List<String> motifs = resolveMotifs(tags, tone, discovery);
-        NamingArchetype archetype = naming == null ? NamingArchetype.TRAIT_FORM : naming.getNamingArchetype();
+        NamingArchetype archetype = naming.getNamingArchetype();
         return new ArtifactTextIdentity(personality, voice, archetype, tone, implication, cadence, discovery,
                 List.copyOf(tags), motifs);
-    }
-
-    private List<String> fallbackTags(Artifact artifact) {
-        List<String> tags = new ArrayList<>();
-        if (artifact.getSeedSurvivalAffinity() > 0.66D) tags.add("defensive");
-        if (artifact.getSeedChaosAffinity() > 0.66D) tags.add("chaotic");
-        if (artifact.getSeedBrutalityAffinity() > 0.66D) tags.add("aggression");
-        if (artifact.getSeedMobilityAffinity() > 0.66D) tags.add("mobility");
-        if (artifact.getMemory().snapshot().values().stream().mapToInt(Integer::intValue).sum() > 3) tags.add("memory");
-        if (tags.isEmpty()) tags.add("support");
-        return tags;
     }
 
     private String resolvePersonality(List<String> tags, ToneProfile tone) {
         if (tags.contains("aggression") && tone == ToneProfile.RITUAL) return "courtly-predatory";
         if (tags.contains("memory") || tone == ToneProfile.ELEGIAC) return "intimate-elegiac";
         if (tags.contains("ritual") || tone == ToneProfile.RITUAL) return "liturgical";
+        if (tags.contains("mobility") || tags.contains("traversal")) return "windborne";
         if (tags.contains("defensive")) return "vigilant";
         if (tags.contains("chaotic")) return "sly-volatile";
+        if (tags.contains("weapon")) return "disciplined-martial";
         return "patient-strange";
     }
 
     private String resolveVoice(List<String> tags, ToneProfile tone) {
         if (tone == ToneProfile.RITUAL) return "ceremonial";
+        if (tags.contains("mobility") || tags.contains("traversal")) return "aerial-sure";
         if (tone == ToneProfile.MARTIAL && tags.contains("aggression")) return "polite-danger";
+        if (tone == ToneProfile.MARTIAL) return "steady-edge";
         if (tone == ToneProfile.ELEGIAC) return "close-whisper";
         if (tone == ToneProfile.WARDING) return "measured-guardian";
         return "controlled-eerie";
@@ -73,7 +72,7 @@ public class ArtifactTextIdentityResolver {
         Set<String> motifs = new LinkedHashSet<>();
         if (tags.contains("defensive")) {
             motifs.add("vigil");
-            motifs.add("mercy");
+            motifs.add("bulwark");
         }
         if (tags.contains("aggression")) {
             motifs.add("claim");
@@ -87,7 +86,10 @@ public class ArtifactTextIdentityResolver {
             motifs.add("fracture");
             motifs.add("ruin");
         }
-        if (tags.contains("mobility")) motifs.add("threshold");
+        if (tags.contains("mobility") || tags.contains("traversal")) {
+            motifs.add("draft");
+            motifs.add("glide");
+        }
         switch (tone) {
             case RITUAL -> {
                 motifs.add("devotion");

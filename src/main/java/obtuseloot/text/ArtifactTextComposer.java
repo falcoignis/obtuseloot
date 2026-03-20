@@ -35,7 +35,7 @@ public class ArtifactTextComposer {
 
     private String name(ArtifactTextIdentity identity, String context) {
         String motif = cap(identity.motifs().getFirst());
-        String root = context == null || context.isBlank() ? "Artifact" : cap(context);
+        String root = cap(context);
         return switch (identity.namingArchetype()) {
             case TRAIT_FORM -> motif + " " + root;
             case COMPACT_COMPOUND -> motif + cap(lastMotif(identity));
@@ -124,7 +124,7 @@ public class ArtifactTextComposer {
     }
 
     private String cap(String value) {
-        if (value == null || value.isBlank()) return "Unknown";
+        if (value == null || value.isBlank()) throw new IllegalArgumentException("Artifact text requires non-blank value");
         return Character.toUpperCase(value.charAt(0)) + value.substring(1).toLowerCase(Locale.ROOT);
     }
 

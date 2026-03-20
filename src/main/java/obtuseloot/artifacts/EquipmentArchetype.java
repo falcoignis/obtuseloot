@@ -79,17 +79,27 @@ public enum EquipmentArchetype {
         return roles;
     }
 
+    public java.util.List<String> rootForms() {
+        if (this == ELYTRA) return java.util.List.of("Wings", "Mantle", "Glider");
+        if (hasRole(EquipmentRole.HELMET)) return java.util.List.of("Helm");
+        if (hasRole(EquipmentRole.CHESTPLATE)) return java.util.List.of("Cuirass");
+        if (hasRole(EquipmentRole.LEGGINGS)) return java.util.List.of("Greaves");
+        if (hasRole(EquipmentRole.BOOTS)) return java.util.List.of("Boots");
+        if (hasRole(EquipmentRole.SPEAR)) return java.util.List.of("Spear");
+        if (id.endsWith("_sword")) return java.util.List.of("Blade");
+        if (id.endsWith("_axe")) return java.util.List.of("Axe");
+        if (id.endsWith("bow")) return java.util.List.of("Bow");
+        throw new IllegalStateException("No root-form mapping defined for equipment archetype " + name());
+    }
+
     public String rootForm() {
-        if (hasRole(EquipmentRole.MOBILITY) && hasRole(EquipmentRole.TRAVERSAL)) return "Wings";
-        if (hasRole(EquipmentRole.HELMET)) return "Helm";
-        if (hasRole(EquipmentRole.CHESTPLATE)) return "Cuirass";
-        if (hasRole(EquipmentRole.LEGGINGS)) return "Greaves";
-        if (hasRole(EquipmentRole.BOOTS)) return "Boots";
-        if (hasRole(EquipmentRole.SPEAR)) return "Spear";
-        if (id.endsWith("_sword")) return "Blade";
-        if (id.endsWith("_axe")) return "Axe";
-        if (id.endsWith("bow")) return "Bow";
-        return "Artifact";
+        return rootForm(0L);
+    }
+
+    public String rootForm(long namingSeed) {
+        java.util.List<String> rootForms = rootForms();
+        int index = Math.floorMod(Long.hashCode(namingSeed ^ id.hashCode()), rootForms.size());
+        return rootForms.get(index);
     }
 
     public static EquipmentArchetype fromId(String id) {
