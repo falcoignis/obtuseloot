@@ -2,11 +2,13 @@ package obtuseloot.artifacts;
 
 import obtuseloot.names.ArtifactNameResolver;
 
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ArtifactGenerator {
+    private static final List<String> EQUIPMENT_ARCHETYPES = EquipmentArchetype.allIds();
     private static ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
 
     private ArtifactGenerator() {
@@ -29,6 +31,6 @@ public final class ArtifactGenerator {
 
     public static String resolveCategory(long artifactSeed) {
         Random random = new Random(artifactSeed ^ 0xC6BC279692B5C323L);
-        return random.nextDouble() < 0.25D ? "generic" : "artifact";
+        return EQUIPMENT_ARCHETYPES.get(random.nextInt(EQUIPMENT_ARCHETYPES.size()));
     }
 }
