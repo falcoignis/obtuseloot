@@ -66,7 +66,7 @@ public class Artifact {
         this.naming = new ArtifactNaming();
         this.generatedName = this.naming.getDisplayName();
         this.artifactStorageKey = buildDefaultStorageKey(ownerId);
-        this.itemCategory = "artifact";
+        this.itemCategory = null;
         this.archetypePath = "unformed";
         this.evolutionPath = "base";
         this.awakeningPath = "dormant";
@@ -173,7 +173,7 @@ public class Artifact {
     public String getGeneratedName() { return generatedName; }
     public String getItemCategory() { return itemCategory; }
     public String getName() { return naming.getDisplayName(); }
-    public void setItemCategory(String itemCategory) { this.itemCategory = itemCategory; }
+    public void setItemCategory(String itemCategory) { this.itemCategory = ArtifactArchetypeValidator.requireValidId(itemCategory, "artifact item category assignment"); }
     public String getArchetypePath() { return archetypePath; }
     public void setArchetypePath(String archetypePath) { this.archetypePath = archetypePath; }
     public String getEvolutionPath() { return evolutionPath; }

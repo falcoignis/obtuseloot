@@ -13,6 +13,7 @@ import obtuseloot.drift.DriftMutation;
 import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.names.ArtifactNameResolver;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -211,7 +212,8 @@ public final class ArtifactProcessor {
                                                         double value,
                                                         String source,
                                                         AbilityRuntimeContext runtimeContext) {
-        if (!ArtifactEligibility.isAbilityEligible(artifact) || plugin.getItemAbilityManager() == null) {
+        ArtifactArchetypeValidator.requireValid(artifact, "ability dispatch");
+        if (plugin.getItemAbilityManager() == null) {
             return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext), List.of());
         }
         return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext));

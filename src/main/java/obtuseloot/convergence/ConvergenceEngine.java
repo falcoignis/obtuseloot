@@ -1,7 +1,7 @@
 package obtuseloot.convergence;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.eligibility.ArtifactEligibility;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 import obtuseloot.text.ArtifactTextChannel;
@@ -32,7 +32,8 @@ public class ConvergenceEngine {
     private boolean evaluateInternal(Player player, Artifact artifact, ArtifactReputation rep) {
         convergenceAttempted.incrementAndGet();
 
-        if (!ArtifactEligibility.isEvolutionEligible(artifact) || !"none".equalsIgnoreCase(artifact.getConvergencePath())) {
+        ArtifactArchetypeValidator.requireValid(artifact, "convergence evaluation");
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath())) {
             convergenceBlocked.incrementAndGet();
             return false;
         }

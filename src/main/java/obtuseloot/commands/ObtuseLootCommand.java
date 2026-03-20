@@ -65,7 +65,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7/" + label + " debug help §8- §fArtifact ecosystem debug suite (seed + simulate tooling) §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug seed show|reroll|set|export|import §8- §fDeterministic seed controls §8[obtuseloot.debug]");
             sender.sendMessage("§7/" + label + " debug simulate help §8- §fSimulation scenarios and path profiles §8[obtuseloot.debug]");
-            sender.sendMessage("§7/" + label + " addname <pool> <value> §8- §fAdd a name entry to a pool (prefixes/suffixes/generic) §8["
+            sender.sendMessage("§7/" + label + " addname <pool> <value> §8- §fAdd a name entry to a pool (prefixes/suffixes) §8["
                     + PERMISSION_EDIT + "]");
             sender.sendMessage("§7/" + label + " removename <pool> <value> §8- §fRemove a name entry from a pool §8["
                     + PERMISSION_EDIT + "]");
@@ -190,7 +190,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
         if ("addname".equalsIgnoreCase(args[0])) {
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /" + label + " addname <prefixes|suffixes|generic> <value>");
+                sender.sendMessage("§cUsage: /" + label + " addname <prefixes|suffixes> <value>");
                 return true;
             }
 
@@ -199,7 +199,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
         if ("removename".equalsIgnoreCase(args[0])) {
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /" + label + " removename <prefixes|suffixes|generic> <value>");
+                sender.sendMessage("§cUsage: /" + label + " removename <prefixes|suffixes> <value>");
                 return true;
             }
 
@@ -213,7 +213,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private boolean handleNameEdit(CommandSender sender, boolean add, String pool, String value) {
         String normalizedPool = NamePoolManager.normalizePool(pool);
         if (normalizedPool == null) {
-            sender.sendMessage("§cUnknown pool '" + pool + "'. Valid pools: prefixes, suffixes, generic.");
+            sender.sendMessage("§cUnknown pool '" + pool + "'. Valid pools: prefixes, suffixes.");
             return true;
         }
 

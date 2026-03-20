@@ -51,11 +51,7 @@ class ArtifactGenerationEquipmentCoverageTest {
                 "carrot_on_a_stick",
                 "warped_fungus_on_a_stick")) {
             assertFalse(EquipmentArchetype.isEquipment(invalid), () -> "unexpectedly allowed: " + invalid);
-            Artifact artifact = artifact(invalid);
-            assertTrue(ArtifactEligibility.isGenericItem(artifact));
-            assertFalse(ArtifactEligibility.isEvolutionEligible(artifact));
-            assertFalse(ArtifactEligibility.isAbilityEligible(artifact));
-            assertFalse(ArtifactEligibility.isMemoryEligible(artifact));
+            assertThrows(IllegalStateException.class, () -> artifact(invalid));
         }
     }
 

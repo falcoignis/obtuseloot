@@ -269,7 +269,7 @@ final class Suffixes {
             // ── Suggestive — all have legitimate primary meanings ─────────────
             // The double reading should be discovered, not telegraphed.
             // Removed anything too blunt; what remains earns its reading
-            // only in combination with a suggestive prefix or generic name.
+            // only in combination with a suggestive prefix or core form.
             "of the Long Reach", "of the Deep Passage", "of the Hidden Hollow",
             "of the Secret Chamber", "of the Forbidden Depth", "of the Narrow Pass",
             "of the Soft Hollow", "of the Warm Hollow", "of the Secret Depth",

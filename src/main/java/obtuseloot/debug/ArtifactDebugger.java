@@ -35,7 +35,7 @@ public final class ArtifactDebugger {
         lines.add("driftNow=" + new DriftEngine().shouldDrift(rep) + ", lineage=" + artifact.getLatentLineage()
                 + ", instability=" + artifact.getCurrentInstabilityState());
         AbilityProfile profile = ObtuseLoot.get().getItemAbilityManager().profileFor(artifact, rep);
-        lines.add("isGeneric=" + ArtifactEligibility.isGenericItem(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
+        lines.add("isArchetypeValid=" + ArtifactEligibility.isEvolutionEligible(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", memoryEligible=" + ArtifactEligibility.isMemoryEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
         lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList()
                 + ", templates=" + profile.abilities().stream().map(AbilityDefinition::id).toList());
