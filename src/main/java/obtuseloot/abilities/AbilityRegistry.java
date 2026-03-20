@@ -43,7 +43,7 @@ public class AbilityRegistry {
                         "Observed moments imprint into future reactive echoes", "broader witness lexicon", "drift echoes false witness residue", "awakening filters witness truth", "fusion cross-links observer traces", "memory chains witness motifs",
                         metadata(Set.of("memory-history", "social-flavor", "ritual-utility"), Set.of("witness-reactive"), Set.of("memory", "ritual", "watchful"), 0.73D, 0.64D, 0.58D, 0.84D, 0.69D, 0.35D)),
 
-                template("consistency.path_thread", "Path Thread", AbilityCategory.DEFENSE_WARDING, AbilityFamily.CONSISTENCY, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.NAVIGATION_ANCHOR,
+                template("consistency.path_thread", "Path Thread", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.CONSISTENCY, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.NAVIGATION_ANCHOR,
                         "Moving through unfamiliar terrain leaves subtle return-thread trails", "longer route memory", "drift can braid false trails", "awakening steadies reliable routes", "fusion interleaves nearby trail maps", "memory stores trusted route threads",
                         metadata(Set.of("navigation", "memory-history"), Set.of("movement-throttled"), Set.of("exploration", "memory"), 0.75D, 0.90D, 0.62D, 0.28D, 0.30D, 0.55D)),
                 template("survival.weather_omen", "Weather Omen", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.INSIGHT_REVEAL,
@@ -55,7 +55,7 @@ public class AbilityRegistry {
                 template("chaos.ritual_echo", "Ritual Echo", AbilityCategory.RITUAL_STRANGE_UTILITY, AbilityFamily.CHAOS, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.RITUAL_CHANNEL,
                         "Completed rituals leave resonant echoes for follow-up interactions", "longer echo chains", "drift creates misleading echoes", "awakening separates true ritual signatures", "fusion braids compatible echoes", "memory archives ritual cadence",
                         metadata(Set.of("ritual-utility", "memory-history"), Set.of("ritual-completion"), Set.of("ritual", "memory"), 0.80D, 0.60D, 0.65D, 0.94D, 0.36D, 0.40D)),
-                template("consistency.structure_echo", "Structure Echo", AbilityCategory.DEFENSE_WARDING, AbilityFamily.CONSISTENCY, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityMechanic.SENSE_PING,
+                template("consistency.structure_echo", "Structure Echo", AbilityCategory.SENSING_INFORMATION, AbilityFamily.CONSISTENCY, AbilityTrigger.ON_STRUCTURE_SENSE, AbilityMechanic.SENSE_PING,
                         "Ruins and dungeons project directional echo gradients", "higher structure certainty", "drift can offset bearings", "awakening locks ancient signatures", "fusion triangulates echoes", "memory keeps stable structure routes",
                         metadata(Set.of("structure-awareness", "navigation"), Set.of("chunk-structure-entry"), Set.of("exploration", "watchful"), 0.78D, 0.88D, 0.71D, 0.40D, 0.29D, 0.52D)),
                 template("survival.herd_instinct", "Herd Instinct", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_ENTITY_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
