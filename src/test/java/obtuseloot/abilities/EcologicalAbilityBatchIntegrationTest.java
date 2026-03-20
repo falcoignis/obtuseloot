@@ -182,7 +182,7 @@ class EcologicalAbilityBatchIntegrationTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         return artifact;

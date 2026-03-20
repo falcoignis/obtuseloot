@@ -20,11 +20,10 @@ public final class ArtifactGenerator {
 
     public static Artifact generateFor(UUID ownerId) {
         long artifactSeed = ThreadLocalRandom.current().nextLong();
-        Artifact artifact = new Artifact(ownerId);
+        Artifact artifact = new Artifact(ownerId, resolveCategory(artifactSeed));
         artifact.setArtifactSeed(artifactSeed);
         artifact.resetMutableState();
         seedFactory.applySeedProfile(artifact, artifactSeed);
-        artifact.setItemCategory(resolveCategory(artifactSeed));
         artifact.setNaming(ArtifactNameResolver.initialize(artifact));
         return artifact;
     }

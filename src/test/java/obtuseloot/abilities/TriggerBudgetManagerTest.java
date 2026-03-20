@@ -149,7 +149,7 @@ class TriggerBudgetManagerTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactStorageKey("artifact:test:" + seed);
         artifact.setArtifactSeed(seed);
         return artifact;

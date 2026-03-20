@@ -36,7 +36,7 @@ class ChunkAwareExecutionPipelineTest {
         )));
         manager.setTriggerSubscriptionIndexingEnabled(false);
 
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactStorageKey("artifact:chunk:test");
 
         AbilityEventContext context = new AbilityEventContext(

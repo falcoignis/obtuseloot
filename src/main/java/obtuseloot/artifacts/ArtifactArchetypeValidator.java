@@ -4,11 +4,7 @@ public final class ArtifactArchetypeValidator {
     private ArtifactArchetypeValidator() {
     }
 
-    public static EquipmentArchetype requireValid(Artifact artifact, String context) {
-        if (artifact == null) {
-            throw new IllegalStateException("Artifact is required for " + context);
-        }
-        String itemCategory = artifact.getItemCategory();
+    public static EquipmentArchetype requireValidArchetype(String itemCategory, String context) {
         if (itemCategory == null || itemCategory.isBlank()) {
             throw new IllegalStateException("Artifact archetype is missing for " + context);
         }
@@ -19,14 +15,14 @@ public final class ArtifactArchetypeValidator {
         }
     }
 
+    public static EquipmentArchetype requireValid(Artifact artifact, String context) {
+        if (artifact == null) {
+            throw new IllegalStateException("Artifact is required for " + context);
+        }
+        return requireValidArchetype(artifact.getItemCategory(), context);
+    }
+
     public static String requireValidId(String itemCategory, String context) {
-        if (itemCategory == null || itemCategory.isBlank()) {
-            throw new IllegalStateException("Artifact archetype is missing for " + context);
-        }
-        try {
-            return EquipmentArchetype.fromId(itemCategory).id();
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalStateException("Invalid artifact archetype '" + itemCategory + "' for " + context, exception);
-        }
+        return requireValidArchetype(itemCategory, context).id();
     }
 }

@@ -222,7 +222,7 @@ class PostExpansionStabilizationTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID());
+        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setSeedPrecisionAffinity(0.5D);
         artifact.setSeedBrutalityAffinity(0.1D);
