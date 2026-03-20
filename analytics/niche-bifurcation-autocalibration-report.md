@@ -12,7 +12,7 @@
 - Outcome variance not directly exported in rollup snapshots; utility-delta dispersion used as proxy.
 
 ## SECTION 2: BIFURCATION BLOCKERS IDENTIFIED
-- Legacy saturation gate `share-0.20 >= 0.15` was rare (10/500 samples).
+- Legacy saturation gate `share-0.20 >= 0.15` was infrequent (10/500 samples).
 - Missing parent-share gate allowed low-share pressure noise to count toward sustained windows.
 - Missing per-parent cap and missing child-collapse lifecycle could allow dynamic niche persistence/over-concentration.
 

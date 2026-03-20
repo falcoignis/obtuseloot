@@ -9,7 +9,7 @@
 
 ## 2) Method summary
 - Ran full progression stack under high-throughput world pressure.
-- Compared concentration, convergence, and rare-system retention against small-world behavior.
+- Compared concentration, convergence, and low-frequency-system retention against small-world behavior.
 
 ## 3) Key findings
 - Dominant family share: 29.04%.
@@ -24,9 +24,9 @@
 - Mechanics: guardian_pulse (1,969,414), burst_state (1,438,035), revenant_trigger (1,387,683).
 - Interpretation: throughput-heavy combat mechanics continue to dominate late-world volume.
 
-## 5) Rare but viable systems
+## 5) Low-frequency but viable systems
 - chaos.sprawl (0.10%), chaos.paradox (0.11%), survival.awakened-variant (0.18%), survival.awakened-remnant (0.26%).
-- Rare branch survival persists, but practical influence remains limited at this scale.
+- Low-frequency branch survival persists, but practical influence remains limited at this scale.
 
 ## 6) Dead or suspicious systems
 - Dead branch rate: 0.00%.
@@ -39,4 +39,4 @@
 ## 8) Actionable next review steps
 1. Use open-endedness ablation results to target subsystem-level tuning, not blanket family buffs.
 2. Track branch entropy and concentration jointly in next rerun set.
-3. Validate any tuning against both rare-lineage persistence and collapse-risk trend.
+3. Validate any tuning against both low-frequency lineage persistence and collapse-risk trend.
