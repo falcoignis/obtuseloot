@@ -26,8 +26,7 @@ public class LineageInfluenceResolver {
         if (lineage == null) {
             return 1.0D;
         }
-        double mutationBias = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS)
-                + lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RARITY_APPETITE);
+        double mutationBias = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS);
         return clamp(1.0D + lineage.lineageTraits().getOrDefault("mutation", 0.0D) + (mutationBias * 0.25D));
     }
 

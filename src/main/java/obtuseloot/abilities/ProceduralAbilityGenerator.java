@@ -450,7 +450,6 @@ public class ProceduralAbilityGenerator {
         double nicheSpread = templates.stream().map(t -> t.mechanic().name()).distinct().count() / (double) templates.size();
         observed.add(LineageBiasDimension.SPECIALIZATION, (0.6D - nicheSpread) * 0.45D);
         observed.add(LineageBiasDimension.WEIRDNESS, templates.stream().filter(t -> t.family() == AbilityFamily.CHAOS).count() / (double) templates.size() * 0.40D);
-        observed.add(LineageBiasDimension.RARITY_APPETITE, templates.stream().mapToDouble(this::rarityModifier).average().orElse(1.0D) < 1.0D ? -0.08D : 0.08D);
         observed.add(LineageBiasDimension.PATIENCE, templates.stream().filter(t -> t.trigger() == AbilityTrigger.ON_AWAKENING || t.trigger() == AbilityTrigger.ON_FUSION).count() / (double) templates.size() * 0.30D);
         observed.add(LineageBiasDimension.BUDGET_DISCIPLINE, Math.max(-0.25D, Math.min(0.25D, (templates.stream().mapToDouble(t -> t.metadata().triggerEfficiency()).average().orElse(1.0D) - 1.0D) * 0.4D)));
         observed.add(LineageBiasDimension.UTILITY_DENSITY_PREFERENCE, Math.max(-0.25D, Math.min(0.25D, (utilityHistory.utilityDensity() - 0.5D) * 0.40D)));
