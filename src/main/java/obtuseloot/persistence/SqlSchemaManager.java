@@ -44,6 +44,13 @@ public class SqlSchemaManager {
                     trigger_profile TEXT,
                     mechanic_profile TEXT,
                     utility_history TEXT,
+                    convergence_variant_id TEXT,
+                    convergence_identity_shape TEXT,
+                    convergence_lineage_trace TEXT,
+                    convergence_lore_trace TEXT,
+                    convergence_continuity_trace TEXT,
+                    convergence_expression_trace TEXT,
+                    convergence_memory_signature TEXT,
                     drift_level INT,
                     total_drifts INT,
                     last_drift_timestamp BIGINT,
@@ -129,6 +136,13 @@ public class SqlSchemaManager {
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN epithet_seed INT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN title_seed INT");
             tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN utility_history TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_variant_id TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_identity_shape TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_lineage_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_lore_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_continuity_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_expression_trace TEXT");
+            tryAddColumn(statement, "ALTER TABLE artifacts ADD COLUMN convergence_memory_signature TEXT");
         }
     }
 

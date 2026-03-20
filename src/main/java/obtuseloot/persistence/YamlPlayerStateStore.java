@@ -124,6 +124,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         artifact.setLastMechanicProfile(yaml.getString("artifact.last-mechanic-profile", ""));
         artifact.setLastUtilityHistory(yaml.getString("artifact.last-utility-history", ""));
         artifact.setLastMemoryInfluence(yaml.getString("artifact.last-memory-influence", "none"));
+        artifact.setConvergenceVariantId(yaml.getString("artifact.convergence-variant-id", "none"));
+        artifact.setConvergenceIdentityShape(yaml.getString("artifact.convergence-identity-shape", "none"));
+        artifact.setConvergenceLineageTrace(yaml.getString("artifact.convergence-lineage-trace", "none"));
+        artifact.setConvergenceLoreTrace(yaml.getString("artifact.convergence-lore-trace", "none"));
+        artifact.setConvergenceContinuityTrace(yaml.getString("artifact.convergence-continuity-trace", "none"));
+        artifact.setConvergenceExpressionTrace(yaml.getString("artifact.convergence-expression-trace", "none"));
+        artifact.setConvergenceMemorySignature(yaml.getString("artifact.convergence-memory-signature", "none"));
         for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
             try {
                 obtuseloot.memory.ArtifactMemoryEvent event = obtuseloot.memory.ArtifactMemoryEvent.valueOf(key.toUpperCase());
@@ -359,6 +366,13 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "last-mechanic-profile", artifact.getLastMechanicProfile());
         yaml.set(base + "last-utility-history", artifact.getLastUtilityHistory());
         yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
+        yaml.set(base + "convergence-variant-id", artifact.getConvergenceVariantId());
+        yaml.set(base + "convergence-identity-shape", artifact.getConvergenceIdentityShape());
+        yaml.set(base + "convergence-lineage-trace", artifact.getConvergenceLineageTrace());
+        yaml.set(base + "convergence-lore-trace", artifact.getConvergenceLoreTrace());
+        yaml.set(base + "convergence-continuity-trace", artifact.getConvergenceContinuityTrace());
+        yaml.set(base + "convergence-expression-trace", artifact.getConvergenceExpressionTrace());
+        yaml.set(base + "convergence-memory-signature", artifact.getConvergenceMemorySignature());
         artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
     }
 

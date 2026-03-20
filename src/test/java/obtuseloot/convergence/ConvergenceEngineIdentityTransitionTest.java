@@ -42,17 +42,22 @@ class ConvergenceEngineIdentityTransitionTest {
         assertNotNull(transition);
         Artifact replacement = transition.replacement();
         assertNotSame(artifact, replacement);
-        assertEquals("artifact-convergence:horizon-syndicate", transition.reason());
+        assertTrue(transition.reason().startsWith("artifact-convergence:horizon-syndicate:"));
         assertEquals(artifact.getArtifactStorageKey(), replacement.getArtifactStorageKey());
         assertEquals(artifact.getOwnerId(), replacement.getOwnerId());
         assertEquals("lineage-omega", replacement.getLatentLineage());
         assertEquals("horizon-syndicate", replacement.getConvergencePath());
-        assertEquals("horizon", replacement.getArchetypePath());
+        assertTrue(replacement.getArchetypePath().startsWith("horizon-"));
         assertNotEquals(artifact.getArtifactSeed(), replacement.getArtifactSeed());
         assertNotEquals(artifact.getNaming().getNamingSeed(), replacement.getNaming().getNamingSeed());
         assertEquals(EquipmentArchetype.TRIDENT.id(), replacement.getItemCategory());
         assertTrue(replacement.getNotableEvents().stream().anyMatch(event -> event.startsWith("identity.replaced.")));
         assertEquals(artifact.getMemory().pressure(), replacement.getMemory().pressure());
+        assertNotEquals("none", replacement.getConvergenceVariantId());
+        assertNotEquals("none", replacement.getConvergenceIdentityShape());
+        assertNotEquals("none", replacement.getConvergenceLineageTrace());
+        assertNotEquals("none", replacement.getConvergenceLoreTrace());
+        assertNotEquals("none", replacement.getConvergenceExpressionTrace());
     }
 
     @Test
