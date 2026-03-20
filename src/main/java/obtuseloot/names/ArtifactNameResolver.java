@@ -1,13 +1,11 @@
 package obtuseloot.names;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.config.RuntimeSettings;
 import obtuseloot.text.ArtifactTextChannel;
 import obtuseloot.text.ArtifactTextResolver;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public final class ArtifactNameResolver {
     private static final ArtifactTextResolver TEXT_RESOLVER = new ArtifactTextResolver();
@@ -25,63 +23,50 @@ public final class ArtifactNameResolver {
     }
 
     public static void refresh(Artifact artifact, ArtifactNaming naming) {
-        ArtifactRank rank = ArtifactRankResolver.resolve(artifact);
-        ArtifactDiscoveryState discovery = resolveDiscovery(artifact, rank);
+        ArtifactDiscoveryState discovery = resolveDiscovery(artifact);
         List<String> tags = identityTags(artifact);
         List<String> lexemes = ArtifactLexemeRegistry.lexemesFor(tags, artifact.getArtifactSeed() ^ artifact.getTotalDrifts());
         String trueName = naming.getTrueName();
-        if (trueName == null && shouldAssignTrueName(rank, discovery, artifact.getArtifactSeed())) {
+        if (trueName == null && shouldAssignTrueName(artifact)) {
             trueName = titleCase(lexemes.isEmpty() ? "Vesper" : lexemes.getFirst());
         }
 
-        naming.setRankAtNaming(rank);
         naming.setDiscoveryState(discovery);
         naming.setIdentityTags(tags);
         naming.setAffinityLexemes(lexemes);
         naming.setToneProfile(resolveTone(tags));
         naming.setTrueName(trueName);
-        naming.setNamingArchetype(resolveArchetype(rank, discovery, trueName));
+        naming.setNamingArchetype(NamingArchetype.FORM_OF_CONCEPT);
         String displayName = TEXT_RESOLVER.compose(artifact, ArtifactTextChannel.NAME, naming.getRootForm());
         naming.setDisplayName(displayName);
     }
 
-    private static NamingArchetype resolveArchetype(ArtifactRank rank, ArtifactDiscoveryState discovery, String trueName) {
-        if (trueName != null && discovery == ArtifactDiscoveryState.STORIED) {
-            return NamingArchetype.TRUE_NAME_WITH_TITLE;
-        }
-        if (trueName != null && discovery == ArtifactDiscoveryState.REVEALED) {
-            return NamingArchetype.TRUE_NAME_WITH_EPITHET;
-        }
-        if (trueName != null) {
-            return NamingArchetype.TRUE_NAME_ONLY;
-        }
-        return switch (rank) {
-            case BASE -> NamingArchetype.TRAIT_FORM;
-            case TEMPERED -> NamingArchetype.COMPACT_COMPOUND;
-            default -> NamingArchetype.FORM_OF_CONCEPT;
-        };
+    private static boolean shouldAssignTrueName(Artifact artifact) {
+        return hasAwakeningPath(artifact) || hasFusionPath(artifact) || artifact.getHistoryScore() >= 60;
     }
 
-    private static boolean shouldAssignTrueName(ArtifactRank rank, ArtifactDiscoveryState discovery, long seed) {
-        int probability = RuntimeSettings.get().namingTrueNameProbabilityPercentByRank().getOrDefault(rank.name(), 0);
-        int bonus = discovery.ordinal() * 10;
-        Random random = new Random(seed ^ 0xABC98388L ^ discovery.ordinal());
-        return random.nextInt(100) < Math.min(100, probability + bonus);
-    }
-
-    private static ArtifactDiscoveryState resolveDiscovery(Artifact artifact, ArtifactRank rank) {
-        int memoryCount = artifact.getMemory().snapshot().values().stream().mapToInt(Integer::intValue).sum();
-        int historyScore = artifact.getLoreHistory().size() + artifact.getNotableEvents().size() + memoryCount;
-        if (historyScore >= RuntimeSettings.get().namingDiscoveryStoriedThreshold()) {
+    private static ArtifactDiscoveryState resolveDiscovery(Artifact artifact) {
+        int historyScore = artifact.getHistoryScore();
+        if (historyScore >= 80) {
             return ArtifactDiscoveryState.STORIED;
         }
-        if (rank.ordinal() >= ArtifactRank.MYTHIC.ordinal() || historyScore >= RuntimeSettings.get().namingDiscoveryRevealedThreshold()) {
+        if (hasAwakeningPath(artifact) || hasFusionPath(artifact) || historyScore >= 40) {
             return ArtifactDiscoveryState.REVEALED;
         }
-        if (historyScore >= RuntimeSettings.get().namingDiscoveryKnownThreshold()) {
+        if (historyScore >= 20) {
             return ArtifactDiscoveryState.KNOWN;
         }
         return ArtifactDiscoveryState.OBSCURED;
+    }
+
+    private static boolean hasAwakeningPath(Artifact artifact) {
+        String awakeningPath = artifact.getAwakeningPath();
+        return awakeningPath != null && !"dormant".equalsIgnoreCase(awakeningPath);
+    }
+
+    private static boolean hasFusionPath(Artifact artifact) {
+        String fusionPath = artifact.getFusionPath();
+        return fusionPath != null && !"none".equalsIgnoreCase(fusionPath);
     }
 
     private static List<String> identityTags(Artifact artifact) {

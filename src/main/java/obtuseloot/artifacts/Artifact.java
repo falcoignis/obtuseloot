@@ -2,8 +2,6 @@ package obtuseloot.artifacts;
 
 import obtuseloot.memory.ArtifactMemory;
 import obtuseloot.names.ArtifactNaming;
-import obtuseloot.names.ArtifactRank;
-import obtuseloot.names.ArtifactRankResolver;
 
 import java.util.*;
 
@@ -136,7 +134,6 @@ public class Artifact {
         lastUtilityHistory = "";
     }
 
-    public ArtifactRank getRank() { return ArtifactRankResolver.resolve(this); }
     public long getArtifactSeed() { return artifactSeed; }
     public void setArtifactSeed(long artifactSeed) { this.artifactSeed = artifactSeed; }
     public UUID getOwnerId() { return ownerId; }
@@ -267,6 +264,7 @@ public class Artifact {
     public void addDriftHistory(String entry) { addHistoryEntry(driftHistory, entry); }
     public void addLoreHistory(String entry) { addHistoryEntry(loreHistory, entry); }
     public void addNotableEvent(String entry) { addHistoryEntry(notableEvents, entry); }
+    public int getHistoryScore() { return loreHistory.size() + notableEvents.size() + memory.snapshot().values().stream().mapToInt(Integer::intValue).sum(); }
     public void incrementDriftLevel() { driftLevel++; }
     public void incrementTotalDrifts() { totalDrifts++; }
     public boolean hasInstability() { return !"none".equalsIgnoreCase(currentInstabilityState); }

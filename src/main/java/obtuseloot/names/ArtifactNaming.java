@@ -15,7 +15,6 @@ public class ArtifactNaming {
     private int epithetSeed;
     private int titleSeed;
     private ArtifactDiscoveryState discoveryState;
-    private ArtifactRank rankAtNaming;
 
     public ArtifactNaming() {
         this.displayName = "Nameless Artifact";
@@ -25,7 +24,6 @@ public class ArtifactNaming {
         this.identityTags = new ArrayList<>();
         this.affinityLexemes = new ArrayList<>();
         this.discoveryState = ArtifactDiscoveryState.OBSCURED;
-        this.rankAtNaming = ArtifactRank.BASE;
     }
 
     public String getTrueName() { return trueName; }
@@ -48,8 +46,6 @@ public class ArtifactNaming {
     public void setTitleSeed(int titleSeed) { this.titleSeed = titleSeed; }
     public ArtifactDiscoveryState getDiscoveryState() { return discoveryState; }
     public void setDiscoveryState(ArtifactDiscoveryState discoveryState) { this.discoveryState = Objects.requireNonNullElse(discoveryState, ArtifactDiscoveryState.OBSCURED); }
-    public ArtifactRank getRankAtNaming() { return rankAtNaming; }
-    public void setRankAtNaming(ArtifactRank rankAtNaming) { this.rankAtNaming = Objects.requireNonNullElse(rankAtNaming, ArtifactRank.BASE); }
 
     private String blankToNull(String value) {
         if (value == null || value.isBlank()) {

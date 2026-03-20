@@ -5,7 +5,6 @@ import obtuseloot.artifacts.ArtifactSeedFactory;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.names.ArtifactNaming;
 import obtuseloot.names.ArtifactDiscoveryState;
-import obtuseloot.names.ArtifactRank;
 import obtuseloot.names.NamingArchetype;
 import obtuseloot.names.ToneProfile;
 import obtuseloot.reputation.ArtifactReputation;
@@ -102,7 +101,6 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         naming.setNamingArchetype(NamingArchetype.valueOf(yaml.getString("artifact.naming.archetype", naming.getNamingArchetype().name())));
         naming.setToneProfile(ToneProfile.valueOf(yaml.getString("artifact.naming.tone", naming.getToneProfile().name())));
         naming.setDiscoveryState(ArtifactDiscoveryState.valueOf(yaml.getString("artifact.naming.discovery", naming.getDiscoveryState().name())));
-        naming.setRankAtNaming(ArtifactRank.valueOf(yaml.getString("artifact.naming.rank-at-naming", naming.getRankAtNaming().name())));
         naming.setIdentityTags(yaml.getStringList("artifact.naming.identity-tags"));
         naming.setAffinityLexemes(yaml.getStringList("artifact.naming.affinity-lexemes"));
         naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
@@ -315,7 +313,6 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "naming.archetype", artifact.getNaming().getNamingArchetype().name());
         yaml.set(base + "naming.tone", artifact.getNaming().getToneProfile().name());
         yaml.set(base + "naming.discovery", artifact.getNaming().getDiscoveryState().name());
-        yaml.set(base + "naming.rank-at-naming", artifact.getNaming().getRankAtNaming().name());
         yaml.set(base + "naming.identity-tags", artifact.getNaming().getIdentityTags());
         yaml.set(base + "naming.affinity-lexemes", artifact.getNaming().getAffinityLexemes());
         yaml.set(base + "naming.epithet-seed", artifact.getNaming().getEpithetSeed());
