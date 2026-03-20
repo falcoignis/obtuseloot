@@ -65,7 +65,7 @@ public class TraitCorrelationMatrix {
                 .toList();
     }
 
-    public List<Map.Entry<String, Integer>> rarePairs(int limit) {
+    public List<Map.Entry<String, Integer>> leastFrequentPairs(int limit) {
         return pairFrequencies().entrySet().stream()
                 .sorted(Comparator.comparingInt(Map.Entry::getValue))
                 .limit(limit)
