@@ -185,11 +185,13 @@ public class AwakeningEngine {
                     "lineage:endurance-knot:" + artifact.getLatentLineage() + ":pressure=" + (history + rep.getSurvivalStreak()),
                     "lore:survivor-knot:streak=" + rep.getSurvivalStreak(),
                     "survival|precision|unyielding", signature(memoryProfile, artifact));
-            default -> qualify(force || (rep.getTotalScore() >= 84 && memoryProfile.pressure() >= 8 && history >= 16),
+            case "paragon" -> qualify(force || (rep.getTotalScore() >= 84 && memoryProfile.pressure() >= 8 && history >= 16
+                    && rep.getConsistency() >= 12 && rep.getSurvival() >= 12),
                     "crown-of-equilibrium", "Crown of Equilibrium", "harmonic-axis",
                     "lineage:equilibrium-bridge:" + artifact.getLatentLineage() + ":pressure=" + (history + convergencePressure + lineagePressure),
                     "lore:balanced-breach:score=" + rep.getTotalScore(),
                     "consistency|survival|harmonic", signature(memoryProfile, artifact));
+            default -> null;
         };
     }
 

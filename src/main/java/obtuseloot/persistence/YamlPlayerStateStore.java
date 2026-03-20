@@ -94,6 +94,14 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         long artifactSeed = yaml.getLong("artifact.artifact-seed", 0L);
         artifact.setArtifactSeed(artifactSeed);
         seedFactory.applySeedProfile(artifact, artifactSeed);
+        java.util.Map<String, Double> persistedSeedAffinities = new java.util.LinkedHashMap<>();
+        readStatMap(yaml, "artifact.seed-affinities", persistedSeedAffinities);
+        artifact.setSeedPrecisionAffinity(persistedSeedAffinities.getOrDefault("precision", artifact.getSeedPrecisionAffinity()));
+        artifact.setSeedBrutalityAffinity(persistedSeedAffinities.getOrDefault("brutality", artifact.getSeedBrutalityAffinity()));
+        artifact.setSeedSurvivalAffinity(persistedSeedAffinities.getOrDefault("survival", artifact.getSeedSurvivalAffinity()));
+        artifact.setSeedMobilityAffinity(persistedSeedAffinities.getOrDefault("mobility", artifact.getSeedMobilityAffinity()));
+        artifact.setSeedChaosAffinity(persistedSeedAffinities.getOrDefault("chaos", artifact.getSeedChaosAffinity()));
+        artifact.setSeedConsistencyAffinity(persistedSeedAffinities.getOrDefault("consistency", artifact.getSeedConsistencyAffinity()));
         ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
         naming.setNamingSeed(yaml.getLong("artifact.naming.naming-seed", naming.getNamingSeed()));
         naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
