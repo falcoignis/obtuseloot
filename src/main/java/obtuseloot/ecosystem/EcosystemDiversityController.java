@@ -4,7 +4,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class EcosystemDiversityController {
-    private static final double RARE_BOOST_CAP = 0.15D;
     private static final double DOMINANT_SUPPRESSION_CAP = 0.05D;
 
     public Map<String, Double> computeAdjustments(Map<String, Integer> ecosystemFrequencies) {
@@ -17,8 +16,7 @@ public class EcosystemDiversityController {
         ecosystemFrequencies.forEach((archetype, count) -> {
             int population = Math.max(1, count);
             double ecosystemFrequency = population / (double) total;
-            double rarityBoost = 1.0D / ecosystemFrequency;
-            double adjustment = clamp((rarityBoost - 1.0D) * 0.01D, 0.0D, RARE_BOOST_CAP);
+            double adjustment = 0.0D;
 
             if (ecosystemFrequency > 0.35D) {
                 double suppression = clamp((ecosystemFrequency - 0.35D) * 0.1D, 0.0D, DOMINANT_SUPPRESSION_CAP);

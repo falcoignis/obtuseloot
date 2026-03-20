@@ -135,7 +135,6 @@ public class AdaptiveSupportAllocator {
             NicheUtilityRollup rollup = entry.getValue();
             double popShare = rollup.activeArtifacts() / Math.max(1.0D, totalPopulation);
             double utilityAdvantage = rollup.utilityDensity() - avgDensity;
-            double rarityLift = clamp((0.14D - popShare) * 1.8D, 0.0D, 0.35D);
             double crowdedPenalty = clamp((popShare - 0.16D) * 1.8D, 0.0D, 0.56D);
             double specializationDiversity = clamp((1.0D - popShare) * 0.32D + rollup.outcomeYield() * 0.24D, 0.0D, 0.42D);
             double ecologicalPressure = clamp(budget.saturationIndex() * popShare * 1.05D, 0.0D, 0.50D);
@@ -143,7 +142,6 @@ public class AdaptiveSupportAllocator {
             double raw = Math.max(0.05D,
                     1.0D
                             + (utilityAdvantage * 0.80D)
-                            + rarityLift
                             + specializationDiversity
                             - crowdedPenalty
                             - ecologicalPressure
