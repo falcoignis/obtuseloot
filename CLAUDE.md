@@ -209,9 +209,59 @@ CLI commands: `analyze`, `run-spec`, `decide`, `export-accepted`
 
 ---
 
+## Maven Dependencies (IMPORTANT — read before running any `mvn` command)
+
+### Problem
+`repo.maven.apache.org` (Maven Central's default URL) is unreachable in this
+environment. The egress proxy at `21.0.0.125:15004` requires **preemptive**
+Basic auth, but Maven's bundled HTTP client (Apache HttpClient 4.x / wagon-http)
+only supports challenge-response auth — which the proxy rejects with 407.
+`repo.purpurmc.org` suffers the same issue.
+
+### Solution — local Python proxy (one-time per session)
+
+A lightweight Python server (`/usr/local/bin/maven-proxy-server.py`) runs on
+`localhost:18080` and forwards Maven requests to the real repos via Python's
+`urllib`, which correctly reads the `https_proxy` environment variable and
+handles the egress proxy.
+
+`~/.m2/settings.xml` (already configured) routes:
+- Maven Central → `http://127.0.0.1:18080/central/` → `https://repo1.maven.org/maven2/`
+- Purpur repo → `http://127.0.0.1:18080/purpur/` → `https://repo.purpurmc.org/snapshots/`
+
+### Workflow
+
+```bash
+# 1. Start the proxy ONCE per shell session (idempotent — safe to call again)
+./scripts/start-maven-proxy.sh
+
+# 2. Then run any Maven command normally
+mvn -B -ntp clean package -DskipTests
+mvn test
+mvn dependency:resolve
+```
+
+If the proxy is NOT running, Maven downloads will fail silently with connection
+errors. Always run `start-maven-proxy.sh` first.
+
+### What's already set up (don't change these)
+- `~/.m2/settings.xml` — mirror config pointing to localhost:18080
+- `/usr/local/bin/maven-proxy-server.py` — the proxy script
+- `scripts/start-maven-proxy.sh` — idempotent launcher
+
+### If Maven downloads fail
+1. Check the proxy is running: `curl -s http://127.0.0.1:18080/central/org/apache/maven/maven/3.9.11/maven-3.9.11.pom | head -1`
+2. If not running: `./scripts/start-maven-proxy.sh`
+3. Clear Maven's failure cache and retry: `find ~/.m2/repository -name "*.lastUpdated" -delete && mvn ...`
+
+---
+
 ## Build and Test
 
 ```bash
+# Start proxy first (once per session)
+./scripts/start-maven-proxy.sh
+
 # Standard build
 mvn clean package
 
