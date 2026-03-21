@@ -136,6 +136,29 @@ class ArtifactSignificanceResolverTest {
         assertFalse(profile.format().contains("Common line"));
     }
 
+    @Test
+    void consistencyDominantFallbackUsesRoleGroundedIdentityWords() {
+        Artifact artifact = new Artifact(UUID.randomUUID(), "diamond_boots");
+        artifact.setLatentLineage("");
+        artifact.setAwakeningLineageTrace("debug:trace=aa44bb");
+        artifact.setConvergenceLineageTrace("artifact-path:bb55cc");
+        artifact.setAwakeningExpressionTrace("trace=debug");
+        artifact.setConvergenceExpressionTrace("boss=2");
+        artifact.setAwakeningIdentityShape("none");
+        artifact.setConvergenceIdentityShape("none");
+        artifact.setSeedPrecisionAffinity(0.12D);
+        artifact.setSeedBrutalityAffinity(0.08D);
+        artifact.setSeedSurvivalAffinity(0.21D);
+        artifact.setSeedMobilityAffinity(0.18D);
+        artifact.setSeedChaosAffinity(0.05D);
+        artifact.setSeedConsistencyAffinity(0.91D);
+
+        ArtifactSignificanceProfile profile = resolver.resolve(artifact);
+
+        assertEquals("sure-footed path boots", profile.functionalIdentity());
+        assertFalse(profile.format().contains("steady path boots"));
+    }
+
     private static MechanicUtilitySignal signal(String key, double validatedUtility, double utilityDensity, long attempts, long meaningful) {
         return new MechanicUtilitySignal(key, validatedUtility, utilityDensity, 0.5D, 0.1D, 0.05D, 0.02D, attempts, meaningful, 0.5D);
     }

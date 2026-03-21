@@ -4,7 +4,7 @@
 
 ObtuseLoot is a Java 21 Minecraft plugin (Purpur/Bukkit API 1.21) focused on persistent, behavior-driven artifact progression. It combines a live server plugin with an extensive offline analytics and simulation toolchain.
 
-- **Version:** `0.9.26` (`pom.xml` / `plugin.yml`)
+- **Version:** `0.9.28` (`pom.xml` / `plugin.yml`)
 - **Build system:** Single-module Maven JAR project
 - **Runtime target:** Purpur API `1.21.1-R0.1-SNAPSHOT` (declared `provided`)
 - **Plugin main class:** `obtuseloot.ObtuseLoot`

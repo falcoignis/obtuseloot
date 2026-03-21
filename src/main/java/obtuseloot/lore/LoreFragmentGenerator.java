@@ -246,6 +246,7 @@ public class LoreFragmentGenerator {
 
     private String epithetLead(Artifact artifact, ArtifactDisposition disposition, int seed) {
         List<String> toneOptions = new ArrayList<>();
+        String role = lowSignalRolePhrase(artifact);
         if (present(artifact.getConvergenceIdentityShape()) && !"none".equalsIgnoreCase(artifact.getConvergenceIdentityShape())) {
             toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.SPLITTING
                     ? "Twin-made, still pulling against itself."
@@ -253,6 +254,11 @@ public class LoreFragmentGenerator {
             toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.RESTRAINED
                     ? "It keeps two inheritances under measured lock."
                     : "It courts two hungers without apology.");
+            if (role != null) {
+                toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.SPLITTING
+                        ? "Its " + role + " keeps arguing with itself."
+                        : "Its " + role + " carries two claims at once.");
+            }
         }
         if (present(artifact.getAwakeningPath()) && !"dormant".equalsIgnoreCase(artifact.getAwakeningPath())) {
             toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.ASCENDING
@@ -261,6 +267,11 @@ public class LoreFragmentGenerator {
             toneOptions.add(disposition.drive().equals("precision")
                     ? "It learned to seek a sharper line."
                     : "It learned to want a sharper fate.");
+            if (role != null) {
+                toneOptions.add(disposition.direction() == ArtifactDisposition.Direction.ASCENDING
+                        ? "Its " + role + " rises with new intent."
+                        : "Its " + role + " answers with a newer edge.");
+            }
         }
         if (artifact.hasInstability()) {
             toneOptions.add(disposition.pressure() > 0.75D ? "Unsteady, still pressing forward." : "Unsteady, but never shy.");
@@ -421,6 +432,25 @@ public class LoreFragmentGenerator {
             case "survival" -> "staying power";
             case "mobility" -> "quick repositioning";
             case "chaos" -> "uneven openings";
+            default -> consistentAffinityPhrase(artifact);
+        };
+    }
+
+    private String consistentAffinityPhrase(Artifact artifact) {
+        String role = lowSignalRolePhrase(artifact);
+        if (role == null) {
+            return "steady use";
+        }
+        return switch (role) {
+            case "footing" -> "reliable footing";
+            case "watchfulness" -> "measured watch";
+            case "holding ground" -> "settled guard";
+            case "pace" -> "even pace";
+            case "movement" -> "held momentum";
+            case "distance" -> "measured distance";
+            case "reach" -> "set reach";
+            case "close pressure" -> "measured pressure";
+            case "entry work" -> "repeatable entry work";
             default -> "steady use";
         };
     }

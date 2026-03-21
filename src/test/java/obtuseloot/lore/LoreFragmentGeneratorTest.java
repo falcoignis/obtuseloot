@@ -2,11 +2,14 @@ package obtuseloot.lore;
 
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.evolution.MechanicUtilitySignal;
+import obtuseloot.evolution.UtilityHistoryRollup;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.reputation.ArtifactReputation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -159,7 +162,78 @@ class LoreFragmentGeneratorTest {
 
         assertNotEquals(bootsEpithet, helmEpithet);
         assertTrue(bootsEpithet.toLowerCase().contains("footing") || bootsEpithet.toLowerCase().contains("movement"));
-        assertTrue(helmEpithet.toLowerCase().contains("watchfulness") || helmEpithet.toLowerCase().contains("steady use"));
+        assertTrue(helmEpithet.toLowerCase().contains("watchfulness")
+                || helmEpithet.toLowerCase().contains("measured watch")
+                || helmEpithet.toLowerCase().contains("steady use"));
+    }
+
+    @Test
+    void lowSignalConsistencyArtifactsStayQuietWithoutFallingBackToSteadyUse() {
+        Artifact boots = seeded(407L, EquipmentArchetype.DIAMOND_BOOTS);
+        boots.setSeedPrecisionAffinity(0.18D);
+        boots.setSeedBrutalityAffinity(0.12D);
+        boots.setSeedSurvivalAffinity(0.24D);
+        boots.setSeedMobilityAffinity(0.21D);
+        boots.setSeedChaosAffinity(0.09D);
+        boots.setSeedConsistencyAffinity(0.91D);
+        boots.setPersistenceOriginTimestamp(System.currentTimeMillis() - (4L * 24L * 60L * 60L * 1000L));
+        boots.setIdentityBirthTimestamp(boots.getPersistenceOriginTimestamp());
+
+        String epithet = generator.epithetFragment(boots).toLowerCase();
+        String combined = String.join(" ", loreEngine.buildLoreLines(boots, new ArtifactReputation())).toLowerCase();
+
+        assertFalse(epithet.contains("steady use"), epithet);
+        assertFalse(combined.contains("steady path boots"), combined);
+        assertFalse(combined.contains("steady use"), combined);
+        assertTrue(epithet.contains("reliable footing") || epithet.contains("footing"), epithet);
+        assertTrue(combined.contains("sure-footed path boots")
+                || combined.contains("reliable footing")
+                || combined.contains("footing")
+                || combined.contains("time"), combined);
+    }
+
+    @Test
+    void highSignalEpithetVariationUsesMoreThanTinySharedPool() {
+        java.util.Set<String> epithets = new java.util.LinkedHashSet<>();
+        for (long seed = 408L; seed < 414L; seed++) {
+            Artifact chestplate = seeded(seed, EquipmentArchetype.DIAMOND_CHESTPLATE);
+            chestplate.setConvergencePath("bastion braid");
+            chestplate.setConvergenceIdentityShape("shield cantor");
+            chestplate.setConvergenceExpressionTrace("borrowed shelter");
+            chestplate.setAwakeningPath("citadel hymn");
+            chestplate.setAwakeningIdentityShape("ward oath");
+            chestplate.setAwakeningExpressionTrace("held line");
+            epithets.add(generator.epithetFragment(chestplate));
+        }
+
+        assertTrue(epithets.size() >= 4, epithets.toString());
+        assertTrue(epithets.stream().anyMatch(line -> line.toLowerCase().contains("holding ground")
+                || line.toLowerCase().contains("newer edge")
+                || line.toLowerCase().contains("two claims")), epithets.toString());
+    }
+
+    @Test
+    void lowSignalLoreUsesUtilityHistoryAsHonestAnchor() {
+        Artifact boots = seeded(409L, EquipmentArchetype.DIAMOND_BOOTS);
+        boots.setLastUtilityHistory(new UtilityHistoryRollup(
+                0.64D,
+                0.39D,
+                0.58D,
+                0.12D,
+                0.52D,
+                8L,
+                Map.of(
+                        "GLIDE_VECTOR@ON_JUMP", signal("GLIDE_VECTOR@ON_JUMP", 0.52D, 0.31D, 4L, 2L),
+                        "DASH_BURST@ON_SPRINT", signal("DASH_BURST@ON_SPRINT", 0.49D, 0.28D, 4L, 2L)
+                )).encode());
+
+        String lore = generator.loreFragment(boots).toLowerCase();
+
+        assertTrue(lore.contains("learned")
+                || lore.contains("practice")
+                || lore.contains("worth")
+                || lore.contains("path boots"), lore);
+        assertFalse(lore.contains("placeholder"));
     }
 
     private Artifact seeded(long seed, EquipmentArchetype archetype) {
@@ -173,5 +247,9 @@ class LoreFragmentGeneratorTest {
         artifact.setSeedConsistencyAffinity(0.63D);
         artifact.setNaming(ArtifactNameResolver.initialize(artifact));
         return artifact;
+    }
+
+    private static MechanicUtilitySignal signal(String key, double validatedUtility, double utilityDensity, long attempts, long meaningful) {
+        return new MechanicUtilitySignal(key, validatedUtility, utilityDensity, 0.5D, 0.08D, 0.04D, 0.02D, attempts, meaningful, 0.45D);
     }
 }
