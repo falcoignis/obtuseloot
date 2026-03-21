@@ -44,11 +44,12 @@ public class DebugCommand {
     );
 
     private final ObtuseLoot plugin;
-    private final ConvergenceEngine convergenceEngine = new ConvergenceEngine();
+    private final ConvergenceEngine convergenceEngine;
     private final ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
 
     public DebugCommand(ObtuseLoot plugin) {
         this.plugin = plugin;
+        this.convergenceEngine = plugin.getConvergenceEngine();
     }
 
     public boolean execute(CommandSender sender, String label, String[] args) {

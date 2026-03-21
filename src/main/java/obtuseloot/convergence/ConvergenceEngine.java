@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConvergenceEngine {
@@ -130,7 +129,7 @@ public class ConvergenceEngine {
                 new ConvergenceRecipe("sky-bastion", EnumSet.of(EquipmentRole.DEFENSIVE_ARMOR, EquipmentRole.MOBILITY), 94, 1, 5,
                         List.of(EquipmentArchetype.ELYTRA, EquipmentArchetype.NETHERITE_CHESTPLATE, EquipmentArchetype.NETHERITE_BOOTS)) {
                     @Override boolean supports(EquipmentArchetype current) {
-                        return current == EquipmentArchetype.ELYTRA || current.hasRole(EquipmentRole.CHESTPLATE) || current.hasRole(EquipmentRole.BOOTS);
+                        return current.hasRole(EquipmentRole.CHESTPLATE) || current.hasRole(EquipmentRole.BOOTS);
                     }
 
                     @Override ConvergenceExpansion expand(ConvergenceContext context) {
@@ -230,18 +229,18 @@ public class ConvergenceEngine {
         EquipmentArchetype target = expansion.target();
         ArtifactReputation rep = context.rep();
         ArtifactMemoryProfile memoryProfile = context.memoryProfile();
-        long seed = Objects.hash(
-                artifact.getArtifactSeed(),
-                recipe.id(),
-                target.id(),
-                expansion.variantId(),
-                expansion.identityShape(),
-                artifact.getHistoryScore(),
-                rep.getTotalScore(),
-                memoryProfile.pressure(),
-                artifact.getMemory().snapshot().hashCode(),
-                artifact.getNotableEvents().hashCode(),
-                artifact.getLoreHistory().hashCode());
+        long seed = artifact.getArtifactSeed();
+        seed ^= ((long) recipe.id().hashCode() << 32) | (target.id().hashCode() & 0xFFFFFFFFL);
+        seed = Long.rotateLeft(seed, 27) * 0x94D049BB133111EBL;
+        seed ^= (long) expansion.variantId().hashCode() << 17;
+        seed ^= (long) expansion.identityShape().hashCode() << 11;
+        seed ^= (long) artifact.getHistoryScore() * 0x9E3779B97F4A7C15L;
+        seed ^= (long) rep.getTotalScore() * 0x6C62272E07BB0142L;
+        seed ^= (long) memoryProfile.pressure() << 7;
+        seed = Long.rotateLeft(seed, 31) * 0x94D049BB133111EBL;
+        seed ^= artifact.getMemory().snapshot().hashCode() * 0x6C62272E07BB0142L;
+        seed ^= (long) artifact.getNotableEvents().hashCode() << 13;
+        seed ^= (long) artifact.getLoreHistory().hashCode() << 23;
 
         Artifact replacement = new Artifact(artifact.getOwnerId(), target);
         replacement.setPersistenceOriginTimestamp(artifact.getPersistenceOriginTimestamp());
@@ -516,19 +515,23 @@ public class ConvergenceEngine {
         private int noveltyTieBreaker(EquipmentArchetype target) {
             int memory = context.memoryProfile().pressure() + context.artifact().getHistoryScore();
             int eventHash = context.artifact().getNotableEvents().hashCode() ^ context.artifact().getLoreHistory().hashCode();
-            return Math.abs(Objects.hash(context.artifact().getArtifactSeed(), target.id(), memory, eventHash)) % 1000;
+            long h = context.artifact().getArtifactSeed();
+            h ^= ((long) target.id().hashCode() << 32) | (memory & 0xFFFFFFFFL);
+            h = Long.rotateLeft(h, 27) * 0x94D049BB133111EBL;
+            h ^= (long) eventHash << 17;
+            return (int) Math.abs(h % 1000);
         }
 
         private int historySalt() {
             Artifact artifact = context.artifact();
-            return Objects.hash(
-                    artifact.getArtifactSeed(),
-                    artifact.getHistoryScore(),
-                    artifact.getLoreHistory().hashCode(),
-                    artifact.getNotableEvents().hashCode(),
-                    artifact.getMemory().snapshot().hashCode(),
-                    context.rep().getTotalScore(),
-                    context.memoryProfile().pressure());
+            long h = artifact.getArtifactSeed();
+            h ^= ((long) artifact.getHistoryScore() << 32) | (artifact.getLoreHistory().hashCode() & 0xFFFFFFFFL);
+            h = Long.rotateLeft(h, 27) * 0x94D049BB133111EBL;
+            h ^= (long) artifact.getNotableEvents().hashCode() << 17;
+            h ^= artifact.getMemory().snapshot().hashCode() * 0x6C62272E07BB0142L;
+            h = Long.rotateLeft(h, 31);
+            h ^= ((long) context.rep().getTotalScore() << 13) ^ ((long) context.memoryProfile().pressure() << 7);
+            return (int) h;
         }
 
         private String dominantVector() {
@@ -568,7 +571,11 @@ public class ConvergenceEngine {
         }
 
         private String continuitySeed() {
-            return Long.toUnsignedString(Math.abs(Objects.hash(context.artifact().getArtifactSeed(), context.artifact().getDriftHistory().hashCode(), context.artifact().getLoreHistory().hashCode())));
+            long h = context.artifact().getArtifactSeed();
+            h ^= (long) context.artifact().getDriftHistory().hashCode() << 32;
+            h = Long.rotateLeft(h, 27) * 0x94D049BB133111EBL;
+            h ^= (long) context.artifact().getLoreHistory().hashCode() << 17;
+            return Long.toUnsignedString(h);
         }
 
         private String carryOverClass() {

@@ -10,7 +10,6 @@ import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.combat.CombatContext;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.drift.DriftMutation;
-import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
@@ -22,8 +21,6 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import java.util.List;
 
 public final class ArtifactProcessor {
-    private static final ConvergenceEngine CONVERGENCE_ENGINE = new ConvergenceEngine();
-
     private ArtifactProcessor() {
     }
 
@@ -65,7 +62,7 @@ public final class ArtifactProcessor {
             recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.AWAKENING, "awakening");
             triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_AWAKENING, 1D, artifact.getAwakeningPath());
         }
-        ArtifactIdentityTransition convergenceTransition = CONVERGENCE_ENGINE.evaluate(player, artifact, rep);
+        ArtifactIdentityTransition convergenceTransition = plugin.getConvergenceEngine().evaluate(player, artifact, rep);
         if (convergenceTransition != null) {
             Artifact replacement = plugin.getArtifactManager().replaceIdentity(player.getUniqueId(), convergenceTransition);
             plugin.getArtifactUsageTracker().transitionIdentity(artifact, replacement);

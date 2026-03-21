@@ -6,6 +6,7 @@ import obtuseloot.abilities.AbilityRegistry;
 import obtuseloot.abilities.ItemAbilityManager;
 import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.awakening.AwakeningEngine;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.commands.DashboardCommandExecutor;
 import obtuseloot.analytics.EnvironmentalPressureReporter;
@@ -59,6 +60,7 @@ public class ObtuseLoot extends JavaPlugin {
     private EvolutionEngine evolutionEngine;
     private DriftEngine driftEngine;
     private AwakeningEngine awakeningEngine;
+    private ConvergenceEngine convergenceEngine;
     private LoreEngine loreEngine;
     private EngineScheduler engineScheduler;
     private ItemAbilityManager itemAbilityManager;
@@ -124,6 +126,7 @@ public class ObtuseLoot extends JavaPlugin {
         experienceEvolutionEngine.setTelemetryEmitter(ecosystemTelemetryEmitter);
         driftEngine = new DriftEngine();
         awakeningEngine = new AwakeningEngine();
+        convergenceEngine = new ConvergenceEngine();
         artifactMemoryEngine = new ArtifactMemoryEngine();
         ecosystemMapRenderer = new EcosystemMapRenderer(this);
         lineageRegistry = new LineageRegistry();
@@ -246,6 +249,7 @@ public class ObtuseLoot extends JavaPlugin {
     public EvolutionEngine getEvolutionEngine() { return evolutionEngine; }
     public DriftEngine getDriftEngine() { return driftEngine; }
     public AwakeningEngine getAwakeningEngine() { return awakeningEngine; }
+    public ConvergenceEngine getConvergenceEngine() { return convergenceEngine; }
     public LoreEngine getLoreEngine() { return loreEngine; }
     public EngineScheduler getEngineScheduler() { return engineScheduler; }
     public ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
