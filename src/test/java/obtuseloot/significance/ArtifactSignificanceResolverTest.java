@@ -115,6 +115,27 @@ class ArtifactSignificanceResolverTest {
         assertFalse(formatted.contains("chain"));
     }
 
+
+    @Test
+    void significanceFallbacksStayGroundedWhenLineageAndExpressionAreThin() {
+        Artifact artifact = new Artifact(UUID.randomUUID(), "diamond_sword");
+        artifact.setLatentLineage("");
+        artifact.setAwakeningLineageTrace("debug:trace=aa44bb");
+        artifact.setConvergenceLineageTrace("artifact-path:bb55cc");
+        artifact.setAwakeningExpressionTrace("trace=debug");
+        artifact.setConvergenceExpressionTrace("boss=2");
+        artifact.setAwakeningIdentityShape("none");
+        artifact.setConvergenceIdentityShape("none");
+        artifact.setSeedPrecisionAffinity(0.82D);
+
+        ArtifactSignificanceProfile profile = resolver.resolve(artifact);
+
+        assertEquals("Keen Blade Line", profile.lineage());
+        assertEquals("keen close blade", profile.functionalIdentity());
+        assertFalse(profile.format().contains("Formed"));
+        assertFalse(profile.format().contains("Common line"));
+    }
+
     private static MechanicUtilitySignal signal(String key, double validatedUtility, double utilityDensity, long attempts, long meaningful) {
         return new MechanicUtilitySignal(key, validatedUtility, utilityDensity, 0.5D, 0.1D, 0.05D, 0.02D, attempts, meaningful, 0.5D);
     }

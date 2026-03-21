@@ -113,6 +113,55 @@ class LoreFragmentGeneratorTest {
         assertFalse(combined.contains("aa44bb"));
     }
 
+
+    @Test
+    void lowSignalFragmentsStaySpecificWithoutOldSafeFallbacks() {
+        Artifact artifact = seeded(404L, EquipmentArchetype.DIAMOND_BOOTS);
+        artifact.setAwakeningPath("dormant");
+        artifact.setConvergencePath("none");
+        artifact.setLatentLineage("");
+        artifact.setAwakeningLineageTrace("trace=debug");
+        artifact.setConvergenceLineageTrace("artifact-cc44dd");
+        artifact.setAwakeningExpressionTrace("trace=debug");
+        artifact.setConvergenceExpressionTrace("none");
+        artifact.setAwakeningIdentityShape("none");
+        artifact.setConvergenceIdentityShape("none");
+        artifact.setPersistenceOriginTimestamp(System.currentTimeMillis() - (3L * 24L * 60L * 60L * 1000L));
+        artifact.setIdentityBirthTimestamp(artifact.getPersistenceOriginTimestamp());
+
+        String significance = new obtuseloot.significance.ArtifactSignificanceResolver().resolve(artifact).format();
+        String epithet = generator.epithetFragment(artifact);
+        String lore = generator.loreFragment(artifact);
+
+        assertFalse(significance.contains("Formed"));
+        assertFalse(epithet.contains("It keeps its own measure"));
+        assertFalse(epithet.contains("It keeps its own counsel"));
+        assertTrue(epithet.toLowerCase().matches(".*(footing|movement|quick repositioning|steady use).*"), epithet);
+        assertTrue(lore.toLowerCase().matches(".*(footing|called|time|use|pressure|power|path boots).*"), lore);
+    }
+
+    @Test
+    void lowSignalEpithetVariesAcrossSimilarArtifactsByIdentitySeedAndRole() {
+        Artifact boots = seeded(405L, EquipmentArchetype.DIAMOND_BOOTS);
+        Artifact helm = seeded(406L, EquipmentArchetype.DIAMOND_HELMET);
+        for (Artifact artifact : List.of(boots, helm)) {
+            artifact.setAwakeningPath("dormant");
+            artifact.setConvergencePath("none");
+            artifact.setLatentLineage("");
+            artifact.setAwakeningExpressionTrace("none");
+            artifact.setConvergenceExpressionTrace("none");
+            artifact.setAwakeningIdentityShape("none");
+            artifact.setConvergenceIdentityShape("none");
+        }
+
+        String bootsEpithet = generator.epithetFragment(boots);
+        String helmEpithet = generator.epithetFragment(helm);
+
+        assertNotEquals(bootsEpithet, helmEpithet);
+        assertTrue(bootsEpithet.toLowerCase().contains("footing") || bootsEpithet.toLowerCase().contains("movement"));
+        assertTrue(helmEpithet.toLowerCase().contains("watchfulness") || helmEpithet.toLowerCase().contains("steady use"));
+    }
+
     private Artifact seeded(long seed, EquipmentArchetype archetype) {
         Artifact artifact = new Artifact(UUID.randomUUID(), archetype);
         artifact.setArtifactSeed(seed);
