@@ -284,6 +284,126 @@ class ConvergenceEngineIdentityTransitionTest {
         return rep;
     }
 
+    // ---- Phase 6.25: finalist window, lineage, and cadence refinement tests ----
+
+    @Test
+    void finalistWindowNarrowSpreadPermitsCompetitivePool() {
+        // When ELYTRA and TRIDENT score identically (tie), both are within the dynamic window.
+        // Different artifact seeds should select different targets through historySalt variation.
+        // Scores derived analytically: precision=16, bossKills=1, PRECISION_STREAK×1 → TRIDENT=23;
+        //   mobility=20, killChain=1, mobilityWeight=0.45 → ELYTRA=20+1+round(2.25)=23.
+        ConvergenceEngine engine = new ConvergenceEngine();
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setPrecision(16);
+        rep.setMobility(20);
+        rep.setBossKills(1);
+        rep.setRecentKillChain(1);
+        rep.setKills(26); // totalScore = 16+20+52+5 = 93 ≥ 92
+
+        Set<String> targetsSeen = new java.util.HashSet<>();
+        for (long seed = 200L; seed < 220L; seed++) {
+            Artifact artifact = preparedArtifact(seed, EquipmentArchetype.BOW);
+            ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
+            assertNotNull(transition, "Tied-score artifact must converge");
+            targetsSeen.add(transition.replacement().getItemCategory());
+        }
+        assertTrue(targetsSeen.size() >= 2,
+                "Near-tie score spread must allow multiple targets into finalist pool; only saw: " + targetsSeen);
+    }
+
+    @Test
+    void finalistWindowWideSpreadEnforcesSingleWinner() {
+        // When TRIDENT dominates by >10 points over ELYTRA, only TRIDENT enters the finalist pool.
+        // precision=45, bossKills=3, PRECISION_STREAK×1 → TRIDENT=45+9+4=58;
+        //   mobility=5, killChain=0, mobilityWeight=0.45 → ELYTRA=5+0+2=7; gap=51, window=10.
+        ConvergenceEngine engine = new ConvergenceEngine();
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setPrecision(45);
+        rep.setMobility(5);
+        rep.setBossKills(3);
+        rep.setRecentKillChain(0);
+        rep.setKills(14); // totalScore = 45+5+28+15 = 93 ≥ 92
+
+        Set<String> targetsSeen = new java.util.HashSet<>();
+        for (long seed = 300L; seed < 315L; seed++) {
+            Artifact artifact = preparedArtifact(seed, EquipmentArchetype.BOW);
+            ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
+            assertNotNull(transition, "Dominant-score artifact must converge");
+            targetsSeen.add(transition.replacement().getItemCategory());
+        }
+        assertEquals(1, targetsSeen.size(),
+                "Wide score gap must collapse finalist pool to single winner; saw: " + targetsSeen);
+        assertTrue(targetsSeen.contains(EquipmentArchetype.TRIDENT.id()),
+                "Clear winner must be TRIDENT when precision+bossKills dominates");
+    }
+
+    @Test
+    void lineageInfluenceIsNonDominant() {
+        // Lineage bias (max 0.12 primary + 0.05 secondary = 0.17 total) cannot override
+        // a reputation signal that dominates by dozens of points.
+        // With precision=50 and all other stats=0, vector must always be "deadeye" regardless of lineage.
+        ConvergenceEngine engine = new ConvergenceEngine();
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setPrecision(50);
+        rep.setMobility(0);
+        rep.setBossKills(1);
+        rep.setKills(22); // totalScore = 50+44+5 = 99 ≥ 92
+
+        String[] lineages = {"lineage-alpha", "lineage-beta", "lineage-gamma",
+                "lineage-omega", "lineage-zeta", "lineage-theta"};
+        for (String lineage : lineages) {
+            Artifact artifact = preparedArtifact(77L, EquipmentArchetype.BOW);
+            artifact.setLatentLineage(lineage);
+            ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
+            assertNotNull(transition);
+            String variantId = transition.replacement().getConvergenceVariantId();
+            assertTrue(variantId.contains("deadeye"),
+                    "Lineage '" + lineage + "' must not override dominant precision signal; variantId=" + variantId);
+        }
+    }
+
+    @Test
+    void lineageInfluenceIsDeterministicAcrossRuns() {
+        // The same artifact+lineage must always produce the same convergence variant.
+        ConvergenceEngine engine = new ConvergenceEngine();
+        ArtifactReputation rep = rangedRep();
+        Artifact artifact = preparedArtifact(42L, EquipmentArchetype.BOW);
+        artifact.setLatentLineage("lineage-stable");
+
+        ArtifactIdentityTransition first  = engine.evaluateSimulation(artifact, rep);
+        ArtifactIdentityTransition second = engine.evaluateSimulation(artifact, rep);
+
+        assertNotNull(first);
+        assertNotNull(second);
+        assertEquals(first.replacement().getConvergenceVariantId(),
+                second.replacement().getConvergenceVariantId(),
+                "Same artifact state and lineage must always produce the same variant");
+        assertEquals(first.replacement().getConvergenceLineageTrace(),
+                second.replacement().getConvergenceLineageTrace(),
+                "Lineage trace must be stable across repeated evaluations");
+    }
+
+    @Test
+    void cadenceWeightedBossKillsReachesSurge() {
+        // With bossKills=4 and killChain=2, weighted intensity = 2 + 0 + 0 + 1*2 + 4*2 = 12 ≥ 10 → surge.
+        // Verifies that bossKills are no longer drowned out in the intensity calculation.
+        ConvergenceEngine engine = new ConvergenceEngine();
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setPrecision(28);
+        rep.setMobility(16);
+        rep.setBossKills(4);
+        rep.setRecentKillChain(2);
+        rep.setKills(20); // totalScore = 28+16+40+20 = 104 ≥ 92
+
+        Artifact artifact = preparedArtifact(55L, EquipmentArchetype.BOW);
+        ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
+
+        assertNotNull(transition);
+        String variantId = transition.replacement().getConvergenceVariantId();
+        assertTrue(variantId.endsWith("-surge"),
+                "Heavy boss-kill artifact must reach surge cadence; variantId=" + variantId);
+    }
+
     private Artifact seeded(long seed, EquipmentArchetype archetype) {
         Artifact artifact = new Artifact(UUID.randomUUID(), archetype);
         artifact.setArtifactSeed(seed);

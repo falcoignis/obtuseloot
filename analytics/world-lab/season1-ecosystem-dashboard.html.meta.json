@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2026-03-21T18:14:35.432942912Z",
+  "reportType": "season-dashboard",
+  "outputPath": "analytics/world-lab/season1-ecosystem-dashboard.html",
+  "dataSources": [
+    {"id":"ecosystem-balance","path":"analytics/ecosystem-balance-data.json","sourceKind":"SIMULATION_SNAPSHOT","authoritative":true,"notes":"Primary branch/trait/family distributions for dashboard aggregates."},
+    {"id":"ecosystem-gauge","path":"analytics/ecosystem-health-gauge.json","sourceKind":"DERIVED_ANALYTIC","authoritative":true,"notes":"END/TNT/NSER/PNNC gauge rollup from world-lab evidence."},
+    {"id":"ecology-diagnostic","path":"analytics/ecology-diagnostic-state.json","sourceKind":"DERIVED_ANALYTIC","authoritative":true,"notes":"Diagnostic state and confidence used for status light."},
+    {"id":"world-sim-memory","path":"analytics/world-lab/world-sim-data.json","sourceKind":"SIMULATION_SNAPSHOT","authoritative":false,"notes":"Ecological memory context panel input."}
+  ]
+}
