@@ -46,10 +46,18 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             return handleDebugDashboard(sender);
         }
         if (isEcosystemDashboardCommand(args) || isDashboardCommand(args)) {
+            if (!sender.hasPermission("obtuseloot.info")) {
+                sender.sendMessage("§cYou do not have permission: obtuseloot.info");
+                return true;
+            }
             handleDashboardSummary(sender);
             return true;
         }
         if (isEcosystemMapSummary(args)) {
+            if (!sender.hasPermission("obtuseloot.info")) {
+                sender.sendMessage("§cYou do not have permission: obtuseloot.info");
+                return true;
+            }
             sender.sendMessage("§dTrait interaction map: §fanalytics/visualizations/trait-interaction-heatmap.png");
             return true;
         }
