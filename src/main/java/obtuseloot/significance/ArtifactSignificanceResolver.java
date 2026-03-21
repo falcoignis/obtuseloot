@@ -76,7 +76,7 @@ public final class ArtifactSignificanceResolver {
         if (expression != null) {
             return expression + " " + role;
         }
-        String affinity = dominantAffinityLabel(artifact);
+        String affinity = dominantAffinityLabel(artifact, archetype);
         return affinity + " " + role;
     }
 
@@ -208,7 +208,7 @@ public final class ArtifactSignificanceResolver {
         return compactWords(archetype.rootForm().toLowerCase(Locale.ROOT));
     }
 
-    private String dominantAffinityLabel(Artifact artifact) {
+    private String dominantAffinityLabel(Artifact artifact, EquipmentArchetype archetype) {
         return Map.of(
                         "precision", artifact.getSeedPrecisionAffinity() + artifact.getAwakeningBias("precision"),
                         "brutality", artifact.getSeedBrutalityAffinity() + artifact.getAwakeningBias("brutality"),
@@ -219,20 +219,33 @@ public final class ArtifactSignificanceResolver {
                 .entrySet().stream()
                 .max(Comparator.comparingDouble(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
-                .map(this::affinityWord)
+                .map(key -> affinityWord(key, archetype))
                 .orElse("tempered");
     }
 
-    private String affinityWord(String key) {
+    private String affinityWord(String key, EquipmentArchetype archetype) {
         return switch (key) {
             case "precision" -> "keen";
             case "brutality" -> "crushing";
             case "survival" -> "guarding";
             case "mobility" -> "swift";
             case "chaos" -> "volatile";
-            case "consistency" -> "steady";
+            case "consistency" -> consistentAffinityWord(archetype);
             default -> "tempered";
         };
+    }
+
+    private String consistentAffinityWord(EquipmentArchetype archetype) {
+        if (archetype.hasRole(EquipmentRole.BOOTS)) return "sure-footed";
+        if (archetype.hasRole(EquipmentRole.HELMET)) return "watchful";
+        if (archetype.hasRole(EquipmentRole.CHESTPLATE)) return "measured";
+        if (archetype.hasRole(EquipmentRole.LEGGINGS)) return "even-paced";
+        if (archetype.hasRole(EquipmentRole.TRAVERSAL) || archetype.hasRole(EquipmentRole.MOBILITY)) return "steady-winged";
+        if (archetype.hasRole(EquipmentRole.SPEAR)) return "set";
+        if (archetype.hasRole(EquipmentRole.RANGED_WEAPON)) return "true";
+        if (archetype.hasRole(EquipmentRole.TOOL_WEAPON_HYBRID)) return "sure";
+        if (archetype.hasRole(EquipmentRole.MELEE_WEAPON)) return "measured";
+        return "steady";
     }
 
     private ArtifactMemoryProfile memoryProfile(Artifact artifact) {
@@ -297,7 +310,7 @@ public final class ArtifactSignificanceResolver {
 
 
     private String fallbackLineage(Artifact artifact, EquipmentArchetype archetype) {
-        String affinity = dominantAffinityLabel(artifact);
+        String affinity = dominantAffinityLabel(artifact, archetype);
         String role = lineageRoleAnchor(archetype);
         if (present(affinity) && present(role)) {
             return titleCase(affinity + " " + role + " line");
