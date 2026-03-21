@@ -7,6 +7,7 @@ import obtuseloot.memory.ArtifactMemoryEvent;
 import obtuseloot.reputation.ArtifactReputation;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -130,6 +131,92 @@ class ConvergenceEngineIdentityTransitionTest {
         assertConvergesToDistinctTarget(engine, preparedArtifact(17L, EquipmentArchetype.TRIDENT), worldpiercerRep());
     }
 
+    @Test
+    void seedIntegrityDifferentArtifactHistoriesProduceDifferentSeeds() {
+        ConvergenceEngine engine = new ConvergenceEngine();
+
+        Artifact artifactA = preparedArtifact(100L, EquipmentArchetype.BOW);
+        artifactA.addLoreHistory("battle-alpha");
+        artifactA.addNotableEvent("event.alpha");
+
+        Artifact artifactB = preparedArtifact(100L, EquipmentArchetype.BOW);
+        artifactB.addLoreHistory("battle-beta");
+        artifactB.addNotableEvent("event.beta");
+        artifactB.getMemory().record(ArtifactMemoryEvent.CHAOS_RAMPAGE);
+
+        ArtifactReputation rep = rangedRep();
+        ArtifactIdentityTransition transitionA = engine.evaluateSimulation(artifactA, rep);
+        ArtifactIdentityTransition transitionB = engine.evaluateSimulation(artifactB, rep);
+
+        assertNotNull(transitionA);
+        assertNotNull(transitionB);
+        assertNotEquals(transitionA.replacement().getArtifactSeed(), transitionB.replacement().getArtifactSeed(),
+                "Different artifact histories must produce different convergence seeds");
+    }
+
+    @Test
+    void seedIntegritySameArtifactStateProducesIdenticalSeed() {
+        ConvergenceEngine engine = new ConvergenceEngine();
+
+        Artifact artifact = preparedArtifact(77L, EquipmentArchetype.BOW);
+        ArtifactReputation rep = rangedRep();
+
+        ArtifactIdentityTransition first = engine.evaluateSimulation(artifact, rep);
+        ArtifactIdentityTransition second = engine.evaluateSimulation(artifact, rep);
+
+        assertNotNull(first);
+        assertNotNull(second);
+        assertEquals(first.replacement().getArtifactSeed(), second.replacement().getArtifactSeed(),
+                "Same artifact state must produce identical convergence seed");
+        assertEquals(first.replacement().getConvergenceVariantId(), second.replacement().getConvergenceVariantId());
+    }
+
+    @Test
+    void worldpiercerIsReachableForElytra() {
+        ConvergenceEngine engine = new ConvergenceEngine();
+        Artifact artifact = preparedArtifact(55L, EquipmentArchetype.ELYTRA);
+        ArtifactReputation rep = worldpiercerElytraRep();
+
+        ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
+
+        assertNotNull(transition, "ELYTRA must be able to reach a convergence recipe");
+        assertEquals("worldpiercer", transition.replacement().getConvergencePath(),
+                "ELYTRA must resolve to worldpiercer after sky-bastion no longer accepts it");
+        assertTrue(Set.of(EquipmentArchetype.TRIDENT.id(), EquipmentArchetype.ELYTRA.id())
+                        .contains(transition.replacement().getItemCategory()),
+                "worldpiercer targets must be TRIDENT or ELYTRA");
+        assertNotEquals(EquipmentArchetype.ELYTRA.id(), transition.replacement().getItemCategory(),
+                "Convergence must produce a distinct identity target");
+    }
+
+    @Test
+    void engineUnificationDiagnosticCountersAccumulateAcrossAllCalls() {
+        ConvergenceEngine engine = new ConvergenceEngine();
+
+        Artifact a1 = preparedArtifact(10L, EquipmentArchetype.BOW);
+        Artifact a2 = preparedArtifact(20L, EquipmentArchetype.DIAMOND_SWORD);
+        ArtifactReputation rep1 = rangedRep();
+        ArtifactReputation rep2 = meleeRep();
+
+        engine.evaluateSimulation(a1, rep1);
+        engine.evaluateSimulation(a2, rep2);
+
+        Map<String, Integer> counters = engine.diagnosticCounters();
+        assertTrue(counters.get("convergence_attempted") >= 2,
+                "Shared engine must accumulate attempted count across all callers");
+        assertTrue(counters.get("convergence_applied") >= 1,
+                "Shared engine must reflect all applied convergences");
+    }
+
+    private ArtifactReputation worldpiercerElytraRep() {
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setMobility(28);
+        rep.setSurvival(18);
+        rep.setKills(24);
+        rep.setBossKills(2);
+        return rep;
+    }
+
     private void assertConvergesToDistinctTarget(ConvergenceEngine engine, Artifact artifact, ArtifactReputation rep) {
         ArtifactIdentityTransition transition = engine.evaluateSimulation(artifact, rep);
         assertNotNull(transition, () -> "Expected convergence for " + artifact.getItemCategory());
@@ -183,7 +270,7 @@ class ConvergenceEngineIdentityTransitionTest {
         ArtifactReputation rep = new ArtifactReputation();
         rep.setSurvival(18);
         rep.setMobility(28);
-        rep.setKills(20);
+        rep.setKills(24);
         rep.setBossKills(2);
         return rep;
     }
