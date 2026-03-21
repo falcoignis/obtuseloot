@@ -1,6 +1,10 @@
 package obtuseloot.lore;
 
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
+import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.artifacts.EquipmentRole;
+import obtuseloot.evolution.UtilityHistoryRollup;
 import obtuseloot.names.ArtifactNaming;
 import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.significance.ArtifactSignificanceProfile;
@@ -50,7 +54,7 @@ public class LoreFragmentGenerator {
         }
 
         if (beats.isEmpty()) {
-            return "Its history is still too quiet to retell.";
+            return lowSignalLore(artifact, significance, disposition);
         }
 
         if (beats.size() == 1) {
@@ -271,8 +275,7 @@ public class LoreFragmentGenerator {
             toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.FORCEFUL ? "It presses for obedience at reach." : "It prefers obedience delivered at reach.");
         }
         if (toneOptions.isEmpty()) {
-            toneOptions.add(disposition.temperament() == ArtifactDisposition.Temperament.RESTRAINED ? "It keeps its own measure." : "It keeps its own counsel.");
-            toneOptions.add(disposition.pressure() > 0.55D ? "Quiet things still keep pressure." : "Quiet things still leave marks.");
+            toneOptions.addAll(lowSignalEpithetLeads(artifact, disposition));
         }
         return toneOptions.get(Math.floorMod(seed, toneOptions.size()));
     }
@@ -304,6 +307,170 @@ public class LoreFragmentGenerator {
         return closers.get(Math.floorMod(seed >>> 3, closers.size()));
     }
 
+
+    private String lowSignalLore(Artifact artifact, ArtifactSignificanceProfile significance, ArtifactDisposition disposition) {
+        List<String> sentences = new ArrayList<>();
+        String tendency = lowSignalTendency(artifact, disposition);
+        if (tendency != null) {
+            sentences.add(tendency);
+        }
+        String role = lowSignalRolePressure(artifact, significance, disposition);
+        if (role != null && !sentences.contains(role)) {
+            sentences.add(role);
+        }
+        if (sentences.isEmpty()) {
+            return "It stays readable in use, if not in legend.";
+        }
+        if (sentences.size() == 1) {
+            return sentences.getFirst();
+        }
+        return sentences.get(0) + " " + sentences.get(1);
+    }
+
+    private List<String> lowSignalEpithetLeads(Artifact artifact, ArtifactDisposition disposition) {
+        UtilityHistoryRollup utility = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
+        List<String> options = new ArrayList<>();
+        String role = lowSignalRolePhrase(artifact);
+        String tendency = lowSignalDriveVerb(disposition);
+        if (role != null) {
+            options.add("It " + tendency + " through " + role + ".");
+            options.add(role + " is where it settles.");
+        }
+        String affinity = lowSignalAffinityPhrase(artifact, disposition);
+        if (affinity != null) {
+            options.add("It favors " + affinity + ".");
+            options.add(disposition.direction() == ArtifactDisposition.Direction.BRACING
+                    ? "It braces around " + affinity + "."
+                    : "It leans toward " + affinity + ".");
+        }
+        String age = lowSignalAgePhrase(artifact);
+        if (age != null) {
+            options.add(role == null ? age + " it speaks plainly." : age + " it stays with " + role + ".");
+        }
+        String utilityLine = lowSignalUtilityPhrase(utility, disposition);
+        if (utilityLine != null) {
+            options.add(utilityLine);
+        }
+        if (options.isEmpty()) {
+            options.add("It answers to its work.");
+            options.add("It stays plain, but not vacant.");
+        }
+        return options;
+    }
+
+    private String lowSignalTendency(Artifact artifact, ArtifactDisposition disposition) {
+        UtilityHistoryRollup utility = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
+        String affinity = lowSignalAffinityPhrase(artifact, disposition);
+        if (utility.hasUtilityHistory()) {
+            if (utility.noOpRate() >= 0.5D) {
+                return disposition.temperament() == ArtifactDisposition.Temperament.RESTLESS
+                        ? "It tests several approaches before one holds."
+                        : "It works by trial more than certainty.";
+            }
+            if (utility.meaningfulRate() >= 0.45D) {
+                return affinity == null
+                        ? "It has learned where its effort lands."
+                        : "It has learned to press its " + affinity + ".";
+            }
+        }
+        if (disposition.pressure() >= 0.58D) {
+            return disposition.direction() == ArtifactDisposition.Direction.BRACING
+                    ? "Pressure keeps it set against waste."
+                    : "Pressure keeps its use narrow and deliberate.";
+        }
+        if (affinity != null) {
+            return "It tends toward " + affinity + " when called.";
+        }
+        return null;
+    }
+
+    private String lowSignalRolePressure(Artifact artifact, ArtifactSignificanceProfile significance, ArtifactDisposition disposition) {
+        String role = lowSignalRolePhrase(artifact);
+        if (role == null) {
+            return null;
+        }
+        if (present(significance.age()) && significance.age().startsWith("newly shaped")) {
+            return "Its " + role + " is newer than its carry.";
+        }
+        if (present(significance.age()) && significance.age().startsWith("carried ")) {
+            return disposition.direction() == ArtifactDisposition.Direction.SETTLING
+                    ? "Time has kept it close to " + role + "."
+                    : "Time has pared it back to " + role + ".";
+        }
+        return "Its shape still resolves around " + role + ".";
+    }
+
+    private String lowSignalRolePhrase(Artifact artifact) {
+        EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(artifact, "lore low-signal role");
+        if (archetype.hasRole(EquipmentRole.TRAVERSAL) || archetype.hasRole(EquipmentRole.MOBILITY)) return "movement";
+        if (archetype.hasRole(EquipmentRole.SPEAR)) return "reach";
+        if (archetype.hasRole(EquipmentRole.RANGED_WEAPON)) return "distance";
+        if (archetype.hasRole(EquipmentRole.TOOL_WEAPON_HYBRID)) return "entry work";
+        if (archetype.hasRole(EquipmentRole.MELEE_WEAPON)) return "close pressure";
+        if (archetype.hasRole(EquipmentRole.HELMET)) return "watchfulness";
+        if (archetype.hasRole(EquipmentRole.CHESTPLATE)) return "holding ground";
+        if (archetype.hasRole(EquipmentRole.LEGGINGS)) return "pace";
+        if (archetype.hasRole(EquipmentRole.BOOTS)) return "footing";
+        return null;
+    }
+
+    private String lowSignalAffinityPhrase(Artifact artifact, ArtifactDisposition disposition) {
+        return switch (disposition.drive()) {
+            case "precision" -> "clean timing";
+            case "brutality" -> "direct force";
+            case "survival" -> "staying power";
+            case "mobility" -> "quick repositioning";
+            case "chaos" -> "uneven openings";
+            default -> "steady use";
+        };
+    }
+
+    private String lowSignalDriveVerb(ArtifactDisposition disposition) {
+        return switch (disposition.temperament()) {
+            case FORCEFUL -> "drives";
+            case WATCHFUL -> "holds";
+            case RESTLESS -> "moves";
+            case FRACTURED -> "pulls";
+            case RESTRAINED -> "settles";
+        };
+    }
+
+    private String lowSignalAgePhrase(Artifact artifact) {
+        long now = System.currentTimeMillis();
+        long carryMs = Math.max(0L, now - artifact.getPersistenceOriginTimestamp());
+        long identityMs = Math.max(0L, now - artifact.getIdentityBirthTimestamp());
+        if (identityMs < 60_000L && carryMs < 60_000L) {
+            return "New to hand,";
+        }
+        if (artifact.getIdentityBirthTimestamp() - artifact.getPersistenceOriginTimestamp() > 60_000L) {
+            return "Its newer shape is still settling,";
+        }
+        if (carryMs >= 2L * 24L * 60L * 60L * 1000L) {
+            return "Long-carried,";
+        }
+        if (carryMs >= 60L * 60L * 1000L) {
+            return "After some use,";
+        }
+        return null;
+    }
+
+    private String lowSignalUtilityPhrase(UtilityHistoryRollup utility, ArtifactDisposition disposition) {
+        if (!utility.hasUtilityHistory()) {
+            return null;
+        }
+        if (utility.signalByMechanicTrigger().size() >= 3 && utility.meaningfulRate() >= 0.35D) {
+            return disposition.temperament() == ArtifactDisposition.Temperament.RESTLESS
+                    ? "It adapts across more than one task."
+                    : "It finds use in more than one role.";
+        }
+        if (utility.meaningfulRate() >= 0.5D) {
+            return "Practice has made its habits legible.";
+        }
+        if (utility.noOpRate() >= 0.4D) {
+            return "Its use still asks for careful matching.";
+        }
+        return "It shows its worth in small repeats.";
+    }
 
     private String memoryVerb(ArtifactDisposition disposition) {
         return switch (disposition.temperament()) {
@@ -472,7 +639,7 @@ public class LoreFragmentGenerator {
     private String limitWords(String sentence) {
         String normalized = sentence == null ? "" : sentence.trim().replaceAll("\\s+", " ");
         if (normalized.isBlank()) {
-            return "It keeps its own counsel.";
+            return "It answers in a low register.";
         }
         String punctuation = normalized.endsWith("!") ? "!" : normalized.endsWith("?") ? "?" : ".";
         String core = normalized.replaceAll("[.!?]+$", "");

@@ -43,11 +43,13 @@ public final class ArtifactSignificanceResolver {
     private String deriveLineage(Artifact artifact) {
         List<String> parts = new ArrayList<>();
         if (present(artifact.getAwakeningLineageTrace())) {
-            parts.add(prettyTrace(artifact.getAwakeningLineageTrace()));
+            String trace = prettyTrace(artifact.getAwakeningLineageTrace());
+            if (present(trace)) parts.add(trace);
         }
         if (present(artifact.getConvergenceLineageTrace())
                 && !equalsNormalized(artifact.getConvergenceLineageTrace(), artifact.getAwakeningLineageTrace())) {
-            parts.add(prettyTrace(artifact.getConvergenceLineageTrace()));
+            String trace = prettyTrace(artifact.getConvergenceLineageTrace());
+            if (present(trace)) parts.add(trace);
         }
         if (present(artifact.getSpeciesId()) && !"unspeciated".equalsIgnoreCase(artifact.getSpeciesId())) {
             parts.add(prettySpecies(artifact.getSpeciesId()));
@@ -55,10 +57,12 @@ public final class ArtifactSignificanceResolver {
             parts.add(prettySpecies(artifact.getParentSpeciesId()));
         }
         if (parts.isEmpty() && present(artifact.getLatentLineage())) {
-            parts.add(prettyTrace(artifact.getLatentLineage()));
+            String latent = prettyTrace(artifact.getLatentLineage());
+            if (present(latent)) parts.add(latent);
         }
         if (parts.isEmpty()) {
-            return "Common line";
+            EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(artifact, "artifact significance lineage");
+            return fallbackLineage(artifact, archetype);
         }
         if (parts.size() > 1) {
             return parts.get(0) + "-" + parts.get(1) + " line";
@@ -182,7 +186,10 @@ public final class ArtifactSignificanceResolver {
                 artifact.getAwakeningIdentityShape(),
                 artifact.getConvergenceIdentityShape())) {
             if (present(value) && !"none".equalsIgnoreCase(value)) {
-                return compactWords(value);
+                String compact = compactWords(value);
+                if (present(compact)) {
+                    return compact;
+                }
             }
         }
         return null;
@@ -266,7 +273,7 @@ public final class ArtifactSignificanceResolver {
                 .trim()
                 .toLowerCase(Locale.ROOT);
         if (cleaned.isBlank()) {
-            return "formed";
+            return "";
         }
         StringBuilder out = new StringBuilder();
         int words = 0;
@@ -285,7 +292,46 @@ public final class ArtifactSignificanceResolver {
                 break;
             }
         }
-        return out.isEmpty() ? "Formed" : out.toString();
+        return out.toString();
+    }
+
+
+    private String fallbackLineage(Artifact artifact, EquipmentArchetype archetype) {
+        String affinity = dominantAffinityLabel(artifact);
+        String role = lineageRoleAnchor(archetype);
+        if (present(affinity) && present(role)) {
+            return titleCase(affinity + " " + role + " line");
+        }
+        if (present(role)) {
+            return titleCase(role + " line");
+        }
+        return "Quiet line";
+    }
+
+    private String lineageRoleAnchor(EquipmentArchetype archetype) {
+        if (archetype.hasRole(EquipmentRole.TRAVERSAL) || archetype.hasRole(EquipmentRole.MOBILITY)) return "path";
+        if (archetype.hasRole(EquipmentRole.SPEAR)) return "reach";
+        if (archetype.hasRole(EquipmentRole.RANGED_WEAPON)) return "shot";
+        if (archetype.hasRole(EquipmentRole.TOOL_WEAPON_HYBRID)) return "breach";
+        if (archetype.hasRole(EquipmentRole.MELEE_WEAPON)) return "blade";
+        if (archetype.hasRole(EquipmentRole.HELMET)) return "watch";
+        if (archetype.hasRole(EquipmentRole.CHESTPLATE)) return "guard";
+        if (archetype.hasRole(EquipmentRole.LEGGINGS)) return "stride";
+        if (archetype.hasRole(EquipmentRole.BOOTS)) return "footing";
+        return compactWords(archetype.rootForm().toLowerCase(Locale.ROOT)).toLowerCase(Locale.ROOT);
+    }
+
+    private String titleCase(String value) {
+        if (!present(value)) {
+            return value;
+        }
+        StringBuilder out = new StringBuilder();
+        for (String part : value.split(" ")) {
+            if (part.isBlank()) continue;
+            if (!out.isEmpty()) out.append(' ');
+            out.append(part.length() <= 2 ? part : Character.toUpperCase(part.charAt(0)) + part.substring(1));
+        }
+        return out.toString();
     }
 
     private String describeAge(String prefix, long ageMs) {
