@@ -74,7 +74,9 @@ public class DebugTabCompleter {
             return filter(PROJECTION_ACTIONS, args[2]);
         }
         if (args.length == 3 && "subscriptions".equalsIgnoreCase(args[1])) {
-            return filter(SUBSCRIPTION_ACTIONS, args[2]);
+            List<String> combined = new ArrayList<>(SUBSCRIPTION_ACTIONS);
+            combined.addAll(onlinePlayers());
+            return filter(combined, args[2]);
         }
         if (args.length == 3 && "artifact".equalsIgnoreCase(args[1])) {
             return filter(ARTIFACT_ACTIONS, args[2]);

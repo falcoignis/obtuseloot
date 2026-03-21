@@ -6,7 +6,6 @@ import obtuseloot.abilities.AbilityProfile;
 import obtuseloot.abilities.ArtifactEvolutionStage;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.drift.DriftEngine;
 import obtuseloot.reputation.ArtifactReputation;
 
 import java.util.ArrayList;
@@ -32,10 +31,10 @@ public final class ArtifactDebugger {
                 + ", drift=" + artifact.getDriftLevel() + " (total=" + artifact.getTotalDrifts() + ", align=" + artifact.getDriftAlignment() + ")");
         lines.add("reputation={precision=" + rep.precision() + ", brutality=" + rep.brutality() + ", survival=" + rep.survival()
                 + ", mobility=" + rep.mobility() + ", chaos=" + rep.chaos() + ", consistency=" + rep.consistency() + "}");
-        lines.add("driftNow=" + new DriftEngine().shouldDrift(rep) + ", lineage=" + artifact.getLatentLineage()
+        lines.add("driftNow=" + ObtuseLoot.get().getDriftEngine().shouldDrift(rep) + ", lineage=" + artifact.getLatentLineage()
                 + ", instability=" + artifact.getCurrentInstabilityState());
         AbilityProfile profile = ObtuseLoot.get().getItemAbilityManager().profileFor(artifact, rep);
-        lines.add("isArchetypeValid=" + ArtifactEligibility.isEvolutionEligible(artifact) + ", evolveEligible=" + ArtifactEligibility.isEvolutionEligible(artifact)
+        lines.add("equipmentValid=" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + ", abilityEligible=" + ArtifactEligibility.isAbilityEligible(artifact) + ", memoryEligible=" + ArtifactEligibility.isMemoryEligible(artifact) + ", stage=" + ArtifactEvolutionStage.resolveStage(artifact));
         lines.add("abilityProfile=" + profile.profileId() + ", triggers=" + profile.abilities().stream().map(a -> a.trigger().name()).toList()
                 + ", templates=" + profile.abilities().stream().map(AbilityDefinition::id).toList());
