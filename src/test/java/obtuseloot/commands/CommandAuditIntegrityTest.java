@@ -177,14 +177,15 @@ class CommandAuditIntegrityTest {
     }
 
     @Test
-    void forceAwakeningReturnsNullForIneligibleEquipmentType() {
-        // Elytra is not in any awakening profile's eligible set.
+    void forceAwakeningReturnsNullForIneligibleArchetype() {
+        // Artifacts with archetype "unformed" have no awakening profile in the engine's switch —
+        // resolve() returns null, so forceAwakening must return null.
         // The `simulate path awaken` null-check must handle this cleanly.
         AwakeningEngine engine = new AwakeningEngine();
 
-        Artifact artifact = new Artifact(UUID.randomUUID(), "elytra");
+        Artifact artifact = new Artifact(UUID.randomUUID(), "netherite_sword");
         artifact.setArtifactSeed(33L);
-        artifact.setArchetypePath("strider");
+        artifact.setArchetypePath("unformed");
         for (int i = 0; i < 10; i++) artifact.getMemory().record(ArtifactMemoryEvent.MULTIKILL_CHAIN);
 
         ArtifactReputation rep = new ArtifactReputation();
@@ -193,10 +194,168 @@ class CommandAuditIntegrityTest {
         rep.setBossKills(3);
 
         assertNull(engine.forceAwakening(null, artifact, rep),
-                "forceAwakening must return null for equipment types not covered by awakening profiles");
+                "forceAwakening must return null for archetypes with no awakening profile (e.g. unformed)");
     }
 
     // ─── ConvergenceEngine: evaluate returns complete transition for fuse ─────
+
+    // ─── Post-transition inspect correctness ─────────────────────────────────
+
+    /**
+     * Verifies that the replacement returned by forceAwakening reflects the post-transition
+     * artifact state that `debug inspect` must show. No stale pre-awakening values must leak.
+     */
+    @Test
+    void inspectReflectsReplacementAfterAwakening() {
+        AwakeningEngine engine = new AwakeningEngine();
+
+        Artifact artifact = new Artifact(UUID.randomUUID(), "netherite_sword");
+        artifact.setArtifactSeed(100L);
+        artifact.setArchetypePath("ravager");
+        artifact.setLatentLineage("common");
+        for (int i = 0; i < 6; i++) artifact.getMemory().record(ArtifactMemoryEvent.MULTIKILL_CHAIN);
+        artifact.getMemory().record(ArtifactMemoryEvent.FIRST_KILL);
+        artifact.addLoreHistory("battle-one");
+        artifact.addLoreHistory("battle-two");
+        artifact.addLoreHistory("battle-three");
+
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setBrutality(15);
+        rep.setKills(6);
+
+        long originalSeed = artifact.getArtifactSeed();
+        String originalAwakeningPath = artifact.getAwakeningPath();
+
+        // Command equivalent of `debug awaken`
+        ArtifactIdentityTransition transition = engine.forceAwakening(null, artifact, rep);
+        assertNotNull(transition, "forceAwakening must return a transition for an eligible artifact");
+
+        // `debug inspect` must resolve the replacement, not the stale original
+        Artifact replacement = transition.replacement();
+
+        // namingSeed has changed
+        assertNotEquals(originalSeed, replacement.getArtifactSeed(),
+                "inspect must show the new seed, not the pre-awakening seed");
+
+        // awakeningPath is set (not dormant)
+        assertEquals("dormant", originalAwakeningPath,
+                "original artifact must have been dormant before transition");
+        assertNotEquals("dormant", replacement.getAwakeningPath(),
+                "inspect must show the replacement's named awakening path, not the original dormant state");
+
+        // identity fields reflect replacement, not stale pre-awakening values
+        assertNotEquals(artifact.getArtifactSeed(), replacement.getArtifactSeed(),
+                "replacement seed must differ from original");
+
+        // storageKey and ownerId stable (required for inspect to resolve the correct record)
+        assertEquals(artifact.getArtifactStorageKey(), replacement.getArtifactStorageKey(),
+                "storage key must be stable across awakening so inspect resolves correctly");
+        assertEquals(artifact.getOwnerId(), replacement.getOwnerId(),
+                "owner ID must be stable across awakening");
+
+        // no stale convergence field carried from pre-awakening state
+        assertEquals("none", replacement.getConvergencePath(),
+                "convergence path must remain none after awakening (no stale pre-transition value)");
+    }
+
+    /**
+     * Verifies the awakening → convergence identity chain is correct and observable.
+     * The valid game sequence is: awaken first (A → B), then converge (B → C).
+     * Convergence requires the artifact to already be awakened (awakeningPath != "dormant"),
+     * so awakening is always the prerequisite step.
+     *
+     * Asserts:
+     *   - B has awakening metadata (awakeningPath set, seed changed)
+     *   - C has convergence metadata (convergencePath set, seed changed again)
+     *   - C retains B's awakening metadata (awakening fields carried through convergence)
+     *   - namingSeed differs at each stage A → B → C
+     *   - storageKey and ownerId remain stable across all transitions
+     *   - no stale fields from A (dormant awakening, none convergence) leak into C
+     */
+    @Test
+    void convergenceThenAwakeningProducesCleanReplacementChain() {
+        AwakeningEngine awakeningEngine = new AwakeningEngine();
+        ConvergenceEngine convergenceEngine = new ConvergenceEngine();
+
+        // Step 1: artifact A eligible for awakening (netherite_sword / ravager)
+        Artifact artifactA = new Artifact(UUID.randomUUID(), "netherite_sword");
+        artifactA.setArtifactSeed(200L);
+        artifactA.setArchetypePath("ravager");
+        artifactA.setLatentLineage("ancient-blade");
+        for (int i = 0; i < 6; i++) artifactA.getMemory().record(ArtifactMemoryEvent.MULTIKILL_CHAIN);
+        artifactA.getMemory().record(ArtifactMemoryEvent.FIRST_KILL);
+        artifactA.addLoreHistory("campaign-alpha");
+        artifactA.addLoreHistory("campaign-beta");
+        artifactA.addLoreHistory("campaign-gamma");
+
+        ArtifactReputation repA = new ArtifactReputation();
+        repA.setBrutality(20);
+        repA.setKills(6);
+
+        // Step 2: `debug awaken` on A — A → B
+        ArtifactIdentityTransition transitionAB = awakeningEngine.forceAwakening(null, artifactA, repA);
+        assertNotNull(transitionAB, "forceAwakening must produce a transition for an eligible artifact A");
+
+        Artifact artifactB = transitionAB.replacement();
+
+        // B has awakening metadata; convergence path is still clean
+        assertNotEquals("dormant", artifactB.getAwakeningPath(),
+                "B must carry a named awakening path");
+        assertEquals("none", artifactB.getConvergencePath(),
+                "B must not yet have convergence metadata");
+        assertNotEquals(artifactA.getArtifactSeed(), artifactB.getArtifactSeed(),
+                "B seed must differ from A seed");
+        assertEquals(artifactA.getArtifactStorageKey(), artifactB.getArtifactStorageKey(),
+                "storage key must be stable A→B");
+        assertEquals(artifactA.getOwnerId(), artifactB.getOwnerId(),
+                "owner ID must be stable A→B");
+
+        // Step 3: `debug fuse` on B — B → C
+        // reaper-vow supports MELEE_WEAPON (netherite_sword), requires totalScore >= 96,
+        // bossKills >= 1, memoryPressure >= 5 (B inherits A's 7 memory events → pressure=7 ✓)
+        ArtifactReputation repB = new ArtifactReputation();
+        repB.setBrutality(25);
+        repB.setPrecision(25);
+        repB.setSurvival(15);
+        repB.setKills(12);
+        repB.setBossKills(2);
+        // totalScore = 25+25+15+(12*2)+(2*5) = 99 >= 96 ✓
+
+        ArtifactIdentityTransition transitionBC = convergenceEngine.evaluateSimulation(artifactB, repB);
+        assertNotNull(transitionBC, "convergence must produce a transition for an awakened artifact B");
+
+        Artifact artifactC = transitionBC.replacement();
+
+        // C has convergence metadata
+        assertNotEquals("none", artifactC.getConvergencePath(),
+                "C must carry a named convergence path");
+
+        // C retains B's awakening metadata — convergence createReplacement must not drop awakening fields
+        assertEquals(artifactB.getAwakeningPath(), artifactC.getAwakeningPath(),
+                "C must retain B's awakening path");
+
+        // namingSeed differs at each stage
+        assertNotEquals(artifactA.getArtifactSeed(), artifactB.getArtifactSeed(),
+                "A and B seeds must differ");
+        assertNotEquals(artifactB.getArtifactSeed(), artifactC.getArtifactSeed(),
+                "B and C seeds must differ");
+        assertNotEquals(artifactA.getArtifactSeed(), artifactC.getArtifactSeed(),
+                "A and C seeds must differ");
+
+        // storageKey and ownerId stable across entire chain
+        assertEquals(artifactA.getArtifactStorageKey(), artifactC.getArtifactStorageKey(),
+                "storage key must be stable A→B→C");
+        assertEquals(artifactA.getOwnerId(), artifactC.getOwnerId(),
+                "owner ID must be stable A→B→C");
+
+        // no stale A fields in C: A was dormant and unconverged, C must carry both
+        assertEquals("dormant", artifactA.getAwakeningPath(),
+                "original A was dormant before any transition");
+        assertNotEquals("dormant", artifactC.getAwakeningPath(),
+                "C must not revert to A's dormant awakening state");
+        assertNotEquals("none", artifactC.getConvergencePath(),
+                "C must not revert to A's none convergence path");
+    }
 
     @Test
     void convergenceEvaluateReturnsTransitionWithReasonForLineageRecording() {
@@ -207,12 +366,17 @@ class CommandAuditIntegrityTest {
         artifact.setArchetypePath("deadeye");
         artifact.setEvolutionPath("advanced-deadeye");
         artifact.setLatentLineage("lineage-omega");
+        // Convergence requires awakeningPath != "dormant" (artifact must have been awakened first)
+        artifact.setAwakeningPath("Stormblade");
         artifact.getMemory().record(ArtifactMemoryEvent.AWAKENING);
         artifact.getMemory().record(ArtifactMemoryEvent.FIRST_BOSS_KILL);
         artifact.getMemory().record(ArtifactMemoryEvent.PRECISION_STREAK);
         artifact.getMemory().record(ArtifactMemoryEvent.MULTIKILL_CHAIN);
         artifact.getMemory().record(ArtifactMemoryEvent.CHAOS_RAMPAGE);
         artifact.getMemory().record(ArtifactMemoryEvent.LONG_BATTLE);
+        // historyScore = loreHistory(0) + notableEvents(1) + memory pressure(6) = 7
+        // horizon-syndicate minHistoryScore = max(6, 92/12) = 7
+        artifact.addNotableEvent("awakening.stormblade");
 
         ArtifactReputation rep = new ArtifactReputation();
         rep.setPrecision(28);
