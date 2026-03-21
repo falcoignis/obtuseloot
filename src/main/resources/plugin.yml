@@ -1,5 +1,5 @@
 name:        ObtuseLoot
-version:     0.9.30
+version:     0.9.31
 main:        obtuseloot.ObtuseLoot
 description: Persistent artifact progression with evolution, awakening, and drift.
 authors:     [ falcoignis ]

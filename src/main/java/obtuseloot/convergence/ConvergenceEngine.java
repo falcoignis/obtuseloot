@@ -233,14 +233,20 @@ public class ConvergenceEngine {
         seed ^= ((long) recipe.id().hashCode() << 32) | (target.id().hashCode() & 0xFFFFFFFFL);
         seed = Long.rotateLeft(seed, 27) * 0x94D049BB133111EBL;
         seed ^= (long) expansion.variantId().hashCode() << 17;
-        seed ^= (long) expansion.identityShape().hashCode() << 11;
+        seed ^= (long) expansion.identityShape().hashCode() << 41;     // upper region, avoids crowding with variantId
+        seed = Long.rotateLeft(seed, 13) * 0x9E3779B97F4A7C15L;        // intermediate mix before history/rep inputs
         seed ^= (long) artifact.getHistoryScore() * 0x9E3779B97F4A7C15L;
         seed ^= (long) rep.getTotalScore() * 0x6C62272E07BB0142L;
-        seed ^= (long) memoryProfile.pressure() << 7;
+        seed ^= (long) memoryProfile.pressure() * 0xBF58476D1CE4E5B9L;  // multiplicative spread (was << 7, low-entropy)
         seed = Long.rotateLeft(seed, 31) * 0x94D049BB133111EBL;
         seed ^= artifact.getMemory().snapshot().hashCode() * 0x6C62272E07BB0142L;
         seed ^= (long) artifact.getNotableEvents().hashCode() << 13;
-        seed ^= (long) artifact.getLoreHistory().hashCode() << 23;
+        seed ^= (long) artifact.getLoreHistory().hashCode() << 37;      // upper region, separates from notableEvents << 13
+        String latentLineage = artifact.getLatentLineage();
+        if (latentLineage != null && !latentLineage.isBlank()) {
+            seed ^= (long) latentLineage.hashCode() * 0x94D049BB133111EBL;
+            seed = Long.rotateLeft(seed, 19);
+        }
 
         Artifact replacement = new Artifact(artifact.getOwnerId(), target);
         replacement.setPersistenceOriginTimestamp(artifact.getPersistenceOriginTimestamp());
@@ -441,7 +447,7 @@ public class ConvergenceEngine {
 
     private static final class ExpansionBuilder {
         private final ConvergenceContext context;
-        private static final int NOVELTY_SCORE_WINDOW = 3;
+        private static final int NOVELTY_SCORE_WINDOW = 7;
 
         private final List<CandidateScore> candidates = new ArrayList<>();
         private String identityBase = "converged";
@@ -519,6 +525,10 @@ public class ConvergenceEngine {
             h ^= ((long) target.id().hashCode() << 32) | (memory & 0xFFFFFFFFL);
             h = Long.rotateLeft(h, 27) * 0x94D049BB133111EBL;
             h ^= (long) eventHash << 17;
+            String lineage = context.artifact().getLatentLineage();
+            if (lineage != null && !lineage.isBlank()) {
+                h ^= (long) lineage.hashCode() << 41;
+            }
             return (int) Math.abs(h % 1000);
         }
 
@@ -530,7 +540,12 @@ public class ConvergenceEngine {
             h ^= (long) artifact.getNotableEvents().hashCode() << 17;
             h ^= artifact.getMemory().snapshot().hashCode() * 0x6C62272E07BB0142L;
             h = Long.rotateLeft(h, 31);
-            h ^= ((long) context.rep().getTotalScore() << 13) ^ ((long) context.memoryProfile().pressure() << 7);
+            h ^= ((long) context.rep().getTotalScore() << 13)
+                    ^ ((long) context.memoryProfile().pressure() * 0xBF58476D1CE4E5B9L);  // was << 7, low-entropy
+            String lineage = artifact.getLatentLineage();
+            if (lineage != null && !lineage.isBlank()) {
+                h ^= (long) lineage.hashCode() * 0x94D049BB133111EBL;
+            }
             return (int) h;
         }
 
@@ -541,19 +556,39 @@ public class ConvergenceEngine {
             double mobility = context.rep().getMobility() + context.memoryProfile().mobilityWeight();
             double chaos = context.rep().getChaos() + context.memoryProfile().chaosWeight();
             double consistency = context.rep().getConsistency() + context.memoryProfile().bossWeight();
+
+            // latentLineage nudges one vector deterministically, activating it as a real signal
+            String latentLineage = context.artifact().getLatentLineage();
+            if (latentLineage != null && !latentLineage.isBlank()) {
+                double lineageBias = 0.15D;
+                switch (Math.floorMod(latentLineage.hashCode(), 6)) {
+                    case 0 -> precision += lineageBias;
+                    case 1 -> brutality += lineageBias;
+                    case 2 -> survival += lineageBias;
+                    case 3 -> mobility += lineageBias;
+                    case 4 -> chaos += lineageBias;
+                    default -> consistency += lineageBias;
+                }
+            }
+
             double max = Math.max(Math.max(Math.max(precision, brutality), Math.max(survival, mobility)), Math.max(chaos, consistency));
-            if (max == precision) return "deadeye";
-            if (max == brutality) return "harrow";
-            if (max == survival) return "bulwark";
-            if (max == mobility) return "glide";
-            if (max == chaos) return "rift";
-            return "vow";
+
+            // Collect all tied-at-max vectors; use artifact seed to select stably (no randomness)
+            String[] labels = {"deadeye", "harrow", "bulwark", "glide", "rift", "vow"};
+            double[] scores = {precision, brutality, survival, mobility, chaos, consistency};
+            List<String> tied = new ArrayList<>();
+            for (int i = 0; i < scores.length; i++) {
+                if (scores[i] >= max - 1e-9) tied.add(labels[i]);
+            }
+            if (tied.size() == 1) return tied.get(0);
+            return tied.get((int) Math.floorMod(context.artifact().getArtifactSeed(), tied.size()));
         }
 
         private String convergenceCadence() {
             int recentIntensity = context.rep().getRecentKillChain() + context.rep().getSurvivalStreak()
                     + context.artifact().getMemory().count(ArtifactMemoryEvent.CONVERGENCE)
-                    + context.artifact().getMemory().count(ArtifactMemoryEvent.FIRST_BOSS_KILL);
+                    + context.artifact().getMemory().count(ArtifactMemoryEvent.FIRST_BOSS_KILL)
+                    + context.rep().getBossKills();
             if (recentIntensity >= 10) return "surge";
             if (context.memoryProfile().traumaWeight() >= 2.0D || context.rep().getChaos() > context.rep().getConsistency()) return "fracture";
             if (context.memoryProfile().disciplineWeight() >= context.memoryProfile().chaosWeight()) return "rite";
@@ -562,12 +597,21 @@ public class ConvergenceEngine {
 
         private String memorySignature() {
             List<String> tags = new ArrayList<>();
-            if (context.artifact().getMemory().count(ArtifactMemoryEvent.PRECISION_STREAK) > 0) tags.add("precision");
-            if (context.artifact().getMemory().count(ArtifactMemoryEvent.LOW_HEALTH_SURVIVAL) > 0) tags.add("survival");
-            if (context.artifact().getMemory().count(ArtifactMemoryEvent.CHAOS_RAMPAGE) > 0) tags.add("chaos");
-            if (context.artifact().getMemory().count(ArtifactMemoryEvent.FIRST_BOSS_KILL) > 0) tags.add("boss");
-            if (context.artifact().getMemory().count(ArtifactMemoryEvent.LONG_BATTLE) > 0) tags.add("endurance");
+            addMemoryTag(tags, ArtifactMemoryEvent.PRECISION_STREAK, "precision");
+            addMemoryTag(tags, ArtifactMemoryEvent.LOW_HEALTH_SURVIVAL, "survival");
+            addMemoryTag(tags, ArtifactMemoryEvent.CHAOS_RAMPAGE, "chaos");
+            addMemoryTag(tags, ArtifactMemoryEvent.FIRST_BOSS_KILL, "boss");
+            addMemoryTag(tags, ArtifactMemoryEvent.LONG_BATTLE, "endurance");
             return tags.isEmpty() ? "memory-muted" : String.join("+", tags);
+        }
+
+        // Tags with count depth: single occurrence, marked (2-4), or deep (5+)
+        private void addMemoryTag(List<String> tags, ArtifactMemoryEvent event, String label) {
+            int count = context.artifact().getMemory().count(event);
+            if (count <= 0) return;
+            if (count >= 5) tags.add(label + "-deep");
+            else if (count >= 2) tags.add(label + "-marked");
+            else tags.add(label);
         }
 
         private String continuitySeed() {
