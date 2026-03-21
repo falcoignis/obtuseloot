@@ -159,8 +159,7 @@ public class DebugCommand {
         sender.sendMessage("§7awakening multipliers: §f" + artifact.getAwakeningGainMultipliers());
         sender.sendMessage("§7awakening traits: §f" + artifact.getAwakeningTraits());
         AbilityProfile abilityProfile = plugin.getItemAbilityManager().profileFor(artifact, rep);
-        sender.sendMessage("§7isArchetypeValid=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
-                + " §7evolutionEligible=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
+        sender.sendMessage("§7equipmentValid=§f" + ArtifactEligibility.isEvolutionEligible(artifact)
                 + " §7abilityEligible=§f" + ArtifactEligibility.isAbilityEligible(artifact)
                 + " §7memoryEligible=§f" + ArtifactEligibility.isMemoryEligible(artifact));
         sender.sendMessage("§7evolutionStage=§f" + ArtifactEvolutionStage.resolveStage(artifact)
@@ -504,7 +503,7 @@ public class DebugCommand {
 
 
     private boolean memory(CommandSender sender, String label, String[] args) {
-        Player target = resolveTarget(sender, label, args, 2, "memory");
+        Player target = resolveTarget(sender, label, args, 1, "memory");
         if (target == null) return true;
         Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
         sender.sendMessage("§dMemory for " + target.getName() + ": §f" + artifact.getMemory().snapshot());
@@ -734,10 +733,18 @@ public class DebugCommand {
             }
             case "awaken" -> {
                 for (int i = 0; i < 5; i++) ArtifactProcessor.processSimulatedKill(target);
-                Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+                Artifact preAwaken = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
                 ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
-                plugin.getAwakeningEngine().forceAwakening(target, artifact, rep);
-                plugin.getLoreEngine().refreshLore(target, artifact, rep);
+                ArtifactIdentityTransition awakenTransition = plugin.getAwakeningEngine().forceAwakening(target, preAwaken, rep);
+                if (awakenTransition != null) {
+                    Artifact replacement = plugin.getArtifactManager().replaceIdentity(target.getUniqueId(), awakenTransition);
+                    plugin.getArtifactUsageTracker().transitionIdentity(preAwaken, replacement);
+                    plugin.getLineageRegistry().recordIdentityTransition(preAwaken, replacement, awakenTransition.reason(), replacement.getConvergencePath());
+                    plugin.getArtifactUsageTracker().trackAwakening(replacement);
+                    plugin.getLoreEngine().refreshLore(target, replacement, rep);
+                } else {
+                    plugin.getLoreEngine().refreshLore(target, preAwaken, rep);
+                }
             }
             case "drift" -> {
                 for (int i = 0; i < 5; i++) ArtifactProcessor.processSimulatedKill(target);
@@ -1100,7 +1107,7 @@ public class DebugCommand {
                 "/" + label + " debug seed export [player]",
                 "/" + label + " debug seed import <seed> [player]",
                 "/" + label + " debug ability [player]",
-                "/" + label + " debug memory [show|reset] [player]",
+                "/" + label + " debug memory [player]",
                 "/" + label + " debug persistence [status|migrate <sqlite|mysql>]",
                 "/" + label + " debug artifact [storage|resolve|cache|stats] [player]",
                 "/" + label + " debug ecosystem [bias|balance]",
