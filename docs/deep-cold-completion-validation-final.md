@@ -7,26 +7,26 @@
 
 ### Scenario category exposure snapshots
 
-- **explorer**: Stealth / trickery / disruption=755, Crafting / engineering / automation=280, Resource / farming / logistics=273, Traversal / mobility=226
-- **builder**: Crafting / engineering / automation=428, Resource / farming / logistics=382, Survival / adaptation=226, Ritual / strange utility=199
-- **fighter**: Sensing / information=707, Survival / adaptation=318, Social / support / coordination=183, Traversal / mobility=142
+- **explorer**: Stealth / trickery / disruption=749, Crafting / engineering / automation=282, Resource / farming / logistics=270, Traversal / mobility=224
+- **builder**: Crafting / engineering / automation=431, Resource / farming / logistics=371, Survival / adaptation=238, Ritual / strange utility=196
+- **fighter**: Sensing / information=692, Survival / adaptation=324, Social / support / coordination=179, Traversal / mobility=143
 - **ritualist**: Sensing / information=536, Stealth / trickery / disruption=498, Ritual / strange utility=323, Traversal / mobility=214
-- **survivor**: Survival / adaptation=1073, Combat / tactical control=201, Resource / farming / logistics=163, Social / support / coordination=126
+- **survivor**: Survival / adaptation=1076, Combat / tactical control=209, Resource / farming / logistics=160, Social / support / coordination=131
 
 ### Normal-probe category metrics
 
 | Category | Total hits | Reached | Zero-hit templates | Top template % | Top-3 % | Templates with >1 hit |
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
-| Traversal / mobility | 692 | 9/9 | none | 21.2% | 56.1% | 9 |
-| Sensing / information | 1561 | 10/10 | none | 18.5% | 48.1% | 10 |
-| Survival / adaptation | 1813 | 13/13 | none | 19.7% | 35.9% | 13 |
-| Combat / tactical control | 556 | 6/6 | none | 34.9% | 71.8% | 6 |
-| Defense / warding | 448 | 5/5 | none | 40.4% | 77.7% | 5 |
-| Resource / farming / logistics | 987 | 8/8 | none | 33.1% | 58.6% | 8 |
-| Crafting / engineering / automation | 1093 | 5/5 | none | 30.5% | 70.3% | 5 |
-| Social / support / coordination | 615 | 8/8 | none | 22.1% | 51.9% | 8 |
-| Ritual / strange utility | 744 | 12/12 | none | 13.4% | 35.1% | 12 |
-| Stealth / trickery / disruption | 1491 | 9/9 | none | 21.9% | 53.1% | 9 |
+| Traversal / mobility | 689 | 9/9 | none | 20.2% | 54.9% | 9 |
+| Sensing / information | 1550 | 10/10 | none | 18.5% | 48.1% | 10 |
+| Survival / adaptation | 1832 | 13/13 | none | 19.1% | 35.1% | 13 |
+| Combat / tactical control | 565 | 6/6 | none | 34.9% | 72.2% | 6 |
+| Defense / warding | 449 | 5/5 | none | 41.6% | 79.5% | 5 |
+| Resource / farming / logistics | 970 | 8/8 | none | 32.5% | 59.0% | 8 |
+| Crafting / engineering / automation | 1109 | 5/5 | none | 30.0% | 70.0% | 5 |
+| Social / support / coordination | 613 | 8/8 | none | 23.5% | 52.0% | 8 |
+| Ritual / strange utility | 741 | 12/12 | none | 12.8% | 34.7% | 12 |
+| Stealth / trickery / disruption | 1482 | 9/9 | none | 21.5% | 51.9% | 9 |
 
 ## SECTION 2: CATEGORY-FORCED RESULTS
 
