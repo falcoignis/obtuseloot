@@ -447,8 +447,6 @@ public class ConvergenceEngine {
 
     private static final class ExpansionBuilder {
         private final ConvergenceContext context;
-        private static final int NOVELTY_SCORE_WINDOW = 7;
-
         private final List<CandidateScore> candidates = new ArrayList<>();
         private String identityBase = "converged";
         private String evolutionBase = "converged";
@@ -479,8 +477,14 @@ public class ConvergenceEngine {
                 return null;
             }
             int bestScore = candidates.stream().mapToInt(CandidateScore::score).max().orElse(Integer.MIN_VALUE);
+            int worstScore = candidates.stream().mapToInt(CandidateScore::score).min().orElse(bestScore);
+            // Dynamic finalist window: scales with candidate score spread to balance over-collapse vs over-expansion.
+            // A third of the total score range, clamped to [2, 10], keeps the window proportional to the actual
+            // candidate landscape without admitting obviously weak options or collapsing to a single finalist.
+            int scoreRange = bestScore - worstScore;
+            int finalistWindow = Math.max(2, Math.min(10, scoreRange / 3));
             List<CandidateScore> finalistPool = candidates.stream()
-                    .filter(candidate -> bestScore - candidate.score() <= NOVELTY_SCORE_WINDOW)
+                    .filter(candidate -> bestScore - candidate.score() <= finalistWindow)
                     .sorted((left, right) -> {
                         int byScore = Integer.compare(right.score(), left.score());
                         if (byScore != 0) return byScore;
@@ -557,17 +561,30 @@ public class ConvergenceEngine {
             double chaos = context.rep().getChaos() + context.memoryProfile().chaosWeight();
             double consistency = context.rep().getConsistency() + context.memoryProfile().bossWeight();
 
-            // latentLineage nudges one vector deterministically, activating it as a real signal
+            // latentLineage maps to one of three semantic families (aggression, endurance, agility),
+            // each nudging two structurally related vectors with a primary and secondary weight.
+            // This produces more meaningful affinity pressure than arbitrary single-slot injection.
             String latentLineage = context.artifact().getLatentLineage();
             if (latentLineage != null && !latentLineage.isBlank()) {
-                double lineageBias = 0.15D;
-                switch (Math.floorMod(latentLineage.hashCode(), 6)) {
-                    case 0 -> precision += lineageBias;
-                    case 1 -> brutality += lineageBias;
-                    case 2 -> survival += lineageBias;
-                    case 3 -> mobility += lineageBias;
-                    case 4 -> chaos += lineageBias;
-                    default -> consistency += lineageBias;
+                long lineageHash = (long) latentLineage.hashCode() * 0x9E3779B97F4A7C15L;
+                lineageHash = Long.rotateLeft(lineageHash, 17);
+                int family   = (int) Math.floorMod(lineageHash, 3);        // 3 semantic families
+                int splitBit = (int) Math.floorMod(lineageHash >> 32, 2);  // primary/secondary split within family
+                double primaryBias   = 0.12D;
+                double secondaryBias = 0.05D;
+                switch (family) {
+                    case 0 -> { // aggression family: precision + brutality
+                        if (splitBit == 0) { precision += primaryBias; brutality += secondaryBias; }
+                        else               { brutality += primaryBias; precision += secondaryBias; }
+                    }
+                    case 1 -> { // endurance family: survival + consistency
+                        if (splitBit == 0) { survival += primaryBias; consistency += secondaryBias; }
+                        else               { consistency += primaryBias; survival += secondaryBias; }
+                    }
+                    default -> { // agility family: mobility + chaos
+                        if (splitBit == 0) { mobility += primaryBias; chaos += secondaryBias; }
+                        else               { chaos += primaryBias; mobility += secondaryBias; }
+                    }
                 }
             }
 
@@ -585,13 +602,17 @@ public class ConvergenceEngine {
         }
 
         private String convergenceCadence() {
+            // Boss kills are weighted double: each boss kill is a more significant achievement
+            // than a regular kill-chain entry and should meaningfully push toward surge cadence.
             int recentIntensity = context.rep().getRecentKillChain() + context.rep().getSurvivalStreak()
                     + context.artifact().getMemory().count(ArtifactMemoryEvent.CONVERGENCE)
-                    + context.artifact().getMemory().count(ArtifactMemoryEvent.FIRST_BOSS_KILL)
-                    + context.rep().getBossKills();
+                    + context.artifact().getMemory().count(ArtifactMemoryEvent.FIRST_BOSS_KILL) * 2
+                    + context.rep().getBossKills() * 2;
             if (recentIntensity >= 10) return "surge";
             if (context.memoryProfile().traumaWeight() >= 2.0D || context.rep().getChaos() > context.rep().getConsistency()) return "fracture";
-            if (context.memoryProfile().disciplineWeight() >= context.memoryProfile().chaosWeight()) return "rite";
+            // Rite cadence: discipline-dominant artifacts, or high-pressure veterans with proven boss kills.
+            if (context.memoryProfile().disciplineWeight() >= context.memoryProfile().chaosWeight()
+                    || (context.memoryProfile().pressure() >= 7 && context.rep().getBossKills() >= 2)) return "rite";
             return "wake";
         }
 
