@@ -49,9 +49,11 @@ record ArtifactDisposition(
         double consistency = blend(artifact.getSeedConsistencyAffinity(), usageScore(reputation == null ? 0 : reputation.getConsistency(), 18.0D), memory.disciplineWeight() / 12.0D);
 
         double convergencePull = shapeSignal(artifact.getConvergenceIdentityShape(), artifact.getConvergenceExpressionTrace(), artifact.getConvergencePath(),
-                "split", "twin", "horizon", "echo", "borrowed", "mirror", "merge", "syndicate", "reef", "choir");
+                "split", "twin", "horizon", "echo", "borrowed", "mirror", "merge", "syndicate", "reef", "choir",
+                "reaper", "bastion", "citadel", "piercer");
         double awakeningPull = shapeSignal(artifact.getAwakeningIdentityShape(), artifact.getAwakeningExpressionTrace(), artifact.getAwakeningPath(),
-                "oath", "wake", "storm", "ascendant", "last", "crown", "vow", "anchor", "unyielding", "waking");
+                "oath", "wake", "storm", "ascendant", "last", "crown", "vow", "anchor", "unyielding", "waking",
+                "tempest");
         double pressure = clamp((memory.pressure() / 10.0D)
                 + memory.traumaWeight() * 0.06D
                 + artifact.getDriftLevel() * 0.08D
