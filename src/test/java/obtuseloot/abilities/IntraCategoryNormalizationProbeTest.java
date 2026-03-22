@@ -37,8 +37,8 @@ class IntraCategoryNormalizationProbeTest {
         assertTrue(stealth.totalHits >= 25, "Stealth probe should generate enough observations for reachability auditing.");
         assertEquals(categoryTemplateCount(registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION), stealth.distribution.size(),
                 "All stealth templates must remain reachable.");
-        assertTrue(stealth.topShare() < 0.60D, "Stealth normalization should reduce runaway concentration in the probe.");
-        assertTrue(stealth.topThreeShare() < 0.85D, "Stealth tail templates should still remain in the mix.");
+        assertTrue(stealth.topShare() < 0.50D, "Stealth normalization must prevent single-template dominance above 50%.");
+        assertTrue(stealth.topThreeShare() < 0.80D, "Stealth top-3 share must leave meaningful probability mass for tail templates.");
 
         assertTrue(survival.totalHits >= 25, "Survival probe should remain active.");
         assertTrue(survival.topThreeShare() < 0.66D, "Survival top-3 should remain below 66%.");
