@@ -180,12 +180,24 @@ public class ArtifactTextComposer {
 
 
     private String stableNameMotif(ArtifactTextIdentity identity) {
-        if (identity.identityTags().contains("aggression") || identity.identityTags().contains("weapon")) return "oath";
-        if (identity.identityTags().contains("defensive")) return "vigil";
-        if (identity.identityTags().contains("mobility") || identity.identityTags().contains("traversal")) return "draft";
+        if (identity.identityTags().contains("aggression"))
+            return pickStable(identity, "aggression", List.of("oath", "claim", "edge", "mark"));
+        if (identity.identityTags().contains("weapon"))
+            return pickStable(identity, "weapon", List.of("oath", "edge", "mark", "vigil"));
+        if (identity.identityTags().contains("defensive"))
+            return pickStable(identity, "defensive", List.of("vigil", "bulwark", "ward", "hold"));
+        if (identity.identityTags().contains("mobility") || identity.identityTags().contains("traversal"))
+            return pickStable(identity, "mobility", List.of("draft", "current", "reach", "trace"));
         if (identity.toneProfile() == obtuseloot.names.ToneProfile.RITUAL) return "devotion";
         if (identity.toneProfile() == obtuseloot.names.ToneProfile.ELEGIAC) return "echo";
         return identity.motifs().getFirst();
+    }
+
+    // Selects deterministically from a pool using only stable identity dimensions (tags + tone).
+    // Excludes signalTags and toneLayers which shift with runtime state mutations.
+    private String pickStable(ArtifactTextIdentity identity, String salt, List<String> options) {
+        int seed = Math.abs((identity.identityTags().toString() + identity.toneProfile().name() + salt).hashCode());
+        return options.get(seed % options.size());
     }
 
     private String suggestiveModifier(ArtifactTextIdentity identity) {
