@@ -43,7 +43,7 @@ public class ProceduralAbilityGenerator {
     private static final double MODERATE_SIMILARITY_THRESHOLD = 0.62D;
     private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.68D;
     private static final double GLOBAL_NOVELTY_WEIGHT = 0.32D;
-    private static final double NICHE_WEIGHT_EXPONENT = 1.85D;
+    private static final double NICHE_WEIGHT_EXPONENT = 1.65D;
     private static final int RECENT_TEMPLATE_WINDOW_LIMIT = 96;
     private static final int RECENT_CATEGORY_WINDOW_LIMIT = 144;
     private static final double TEMPLATE_RECENCY_MAX_SWING = 0.28D;
@@ -54,11 +54,11 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 1.75D;
-    private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.24D;
-    private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.50D;
-    private static final double CATEGORY_TOP_THREE_SHARE_THRESHOLD = 0.70D;
-    private static final double CATEGORY_TOP_THREE_SHARE_TARGET = 0.62D;
+    private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 2.50D;
+    private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.35D;
+    private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.28D;
+    private static final double CATEGORY_TOP_THREE_SHARE_THRESHOLD = 0.55D;
+    private static final double CATEGORY_TOP_THREE_SHARE_TARGET = 0.50D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
@@ -371,10 +371,10 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().affinities().contains("ritual")) score += memoryProfile.chaosWeight() * 0.05D;
         if (template.metadata().affinities().contains("gathering")) score += memoryProfile.survivalWeight() * 0.045D;
         if (template.metadata().affinities().contains("social")) score += memoryProfile.aggressionWeight() * 0.04D;
-        if (template.metadata().affinities().contains("stealth")) score += memoryProfile.mobilityWeight() * 0.15D;
+        if (template.metadata().affinities().contains("stealth")) score += memoryProfile.mobilityWeight() * 0.05D;
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
-        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.5D;
-        if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && template.trigger() == AbilityTrigger.ON_CONVERGENCE) score += 0.5D;
+        if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.20D;
+        if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && template.trigger() == AbilityTrigger.ON_CONVERGENCE) score += 0.20D;
         double utilityBias = utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger());
         if (utilityHistory.hasUtilityHistory()) {
             double confidence = utilityHistory.confidence();
