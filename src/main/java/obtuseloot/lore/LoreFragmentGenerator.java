@@ -628,7 +628,7 @@ public class LoreFragmentGenerator {
         normalized = normalized.replace('[', ' ').replace(']', ' ')
                 .replace('{', ' ').replace('}', ' ')
                 .replace('/', ' ').replace(':', ' ')
-                .replace('=', ' ')
+                .replace('=', ' ').replace('>', ' ')
                 .replace('_', ' ').replace('-', ' ').replace('.', ' ')
                 .replaceAll("\\s+", " ")
                 .trim()

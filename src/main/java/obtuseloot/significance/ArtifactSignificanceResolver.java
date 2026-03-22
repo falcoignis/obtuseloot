@@ -181,10 +181,10 @@ public final class ArtifactSignificanceResolver {
 
     private String strongestExpression(Artifact artifact) {
         for (String value : List.of(
-                artifact.getAwakeningExpressionTrace(),
                 artifact.getConvergenceExpressionTrace(),
-                artifact.getAwakeningIdentityShape(),
-                artifact.getConvergenceIdentityShape())) {
+                artifact.getAwakeningExpressionTrace(),
+                artifact.getConvergenceIdentityShape(),
+                artifact.getAwakeningIdentityShape())) {
             if (present(value) && !"none".equalsIgnoreCase(value)) {
                 String compact = compactWords(value);
                 if (present(compact)) {
@@ -280,7 +280,7 @@ public final class ArtifactSignificanceResolver {
                 .replaceAll("->", " ")
                 .replaceAll("[=]", " ")
                 .replaceAll("[\\[\\]{}()]", " ")
-                .replaceAll("[:_/\\\\|-]+", " ")
+                .replaceAll("[:_/\\\\|>-]+", " ")
                 .replaceAll("([a-z])([A-Z])", "$1 $2")
                 .replaceAll("\\s+", " ")
                 .trim()
