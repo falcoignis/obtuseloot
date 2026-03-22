@@ -325,7 +325,7 @@ public class ProceduralAbilityGenerator {
         }
         if (supportScore > max) {
             dominant = memoryProfile.aggressionWeight() > memoryProfile.disciplineWeight()
-                    ? MechanicNicheTag.SOCIAL_WORLD_INTERACTION
+                    ? MechanicNicheTag.PROTECTION_WARDING
                     : MechanicNicheTag.SUPPORT_COHESION;
         }
         return dominant;
@@ -373,6 +373,8 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().affinities().contains("social")) score += memoryProfile.aggressionWeight() * 0.04D;
         if (template.metadata().affinities().contains("stealth")) score += memoryProfile.mobilityWeight() * 0.05D;
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
+        if (template.metadata().affinities().contains("aggression")) score += memoryProfile.aggressionWeight() * 0.07D;
+        if (template.mechanic() == AbilityMechanic.BURST_STATE || template.mechanic() == AbilityMechanic.RETALIATION || template.mechanic() == AbilityMechanic.BATTLEFIELD_FIELD) score += memoryProfile.aggressionWeight() * 0.06D;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.20D;
         if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && template.trigger() == AbilityTrigger.ON_CONVERGENCE) score += 0.20D;
         double utilityBias = utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger());
@@ -470,9 +472,9 @@ public class ProceduralAbilityGenerator {
             case PRECISION -> artifact.getSeedPrecisionAffinity() + artifact.getDriftBias("precision") + memoryProfile.disciplineWeight() + (memoryProfile.bossWeight() * 0.2D);
             case BRUTALITY -> artifact.getSeedBrutalityAffinity()
                     + (artifact.getDriftBias("brutality") * 0.15D)
-                    + (memoryProfile.aggressionWeight() * 0.10D)
-                    + (memoryProfile.mobilityWeight() * 0.35D)
-                    + (memoryProfile.disciplineWeight() * 0.25D);
+                    + (memoryProfile.aggressionWeight() * 0.35D)
+                    + (memoryProfile.mobilityWeight() * 0.10D)
+                    + (memoryProfile.disciplineWeight() * 0.15D);
             case SURVIVAL -> artifact.getSeedSurvivalAffinity() + artifact.getDriftBias("survival") + memoryProfile.survivalWeight() + (memoryProfile.traumaWeight() * 0.4D);
             case MOBILITY -> artifact.getSeedMobilityAffinity() + artifact.getDriftBias("mobility") + memoryProfile.mobilityWeight();
             case CHAOS -> artifact.getSeedChaosAffinity() + artifact.getDriftBias("chaos") + memoryProfile.chaosWeight() + (memoryProfile.traumaWeight() * 0.3D);
