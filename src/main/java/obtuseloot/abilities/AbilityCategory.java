@@ -38,7 +38,7 @@ public enum AbilityCategory {
             "Base thresholds, perimeter upkeep, ritual tending, proximity checks, and reactive fortification moments.",
             "Wards, barriers, stabilization, anti-ambush cues, and safe-zone reinforcement.",
             "Supports base defense, builders, wardens, and settlement-focused SMP play.",
-            Set.of(MechanicNicheTag.PROTECTION_WARDING, MechanicNicheTag.SUPPORT_COHESION),
+            Set.of(MechanicNicheTag.PROTECTION_WARDING, MechanicNicheTag.SUPPORT_COHESION, MechanicNicheTag.ENVIRONMENTAL_ADAPTATION),
             Set.of("defense", "warding", "fortress")),
     RESOURCE_FARMING_LOGISTICS(
             "Resource / farming / logistics",
@@ -73,7 +73,7 @@ public enum AbilityCategory {
             "Silent movement, misdirection, contraband routing, witness confusion, and threshold interference.",
             "Decoys, spoofed signals, smuggling cues, denial fields, and infiltration-friendly setup.",
             "Supports rogues, spies, factions, infiltration, and mischievous adventure/minigame play.",
-            Set.of(MechanicNicheTag.MOBILITY_UTILITY, MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.INSPECT_INFORMATION),
+            Set.of(MechanicNicheTag.NAVIGATION, MechanicNicheTag.MOBILITY_UTILITY, MechanicNicheTag.SOCIAL_WORLD_INTERACTION, MechanicNicheTag.INSPECT_INFORMATION),
             Set.of("stealth", "trickery", "disruption"));
 
     private final String label;
