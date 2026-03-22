@@ -371,6 +371,7 @@ public class ProceduralAbilityGenerator {
         if (template.metadata().affinities().contains("ritual")) score += memoryProfile.chaosWeight() * 0.05D;
         if (template.metadata().affinities().contains("gathering")) score += memoryProfile.survivalWeight() * 0.045D;
         if (template.metadata().affinities().contains("social")) score += memoryProfile.aggressionWeight() * 0.04D;
+        if (template.metadata().affinities().contains("stealth")) score += memoryProfile.mobilityWeight() * 0.15D;
         if (template.metadata().hasAffinity("memory")) score += memoryProfile.disciplineWeight() * 0.05D;
         if (!"dormant".equalsIgnoreCase(artifact.getAwakeningPath()) && template.trigger() == AbilityTrigger.ON_AWAKENING) score += 0.5D;
         if (!"none".equalsIgnoreCase(artifact.getConvergencePath()) && template.trigger() == AbilityTrigger.ON_CONVERGENCE) score += 0.5D;
@@ -1360,7 +1361,7 @@ public class ProceduralAbilityGenerator {
             case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D) + (memoryProfile.survivalWeight() * 0.04D);
             case SOCIAL_SUPPORT_COORDINATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.02D) + (memoryProfile.aggressionWeight() * 0.03D);
             case RITUAL_STRANGE_UTILITY -> 1.0D + (memoryProfile.chaosWeight() * 0.05D);
-            case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.03D) + (memoryProfile.chaosWeight() * 0.02D);
+            case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.07D) + (memoryProfile.chaosWeight() * 0.04D);
         };
         double lineageBias = lineage == null ? 1.0D : switch (category) {
             case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.08D);

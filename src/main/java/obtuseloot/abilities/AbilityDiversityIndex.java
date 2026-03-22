@@ -145,13 +145,13 @@ public final class AbilityDiversityIndex {
         double effects = jaccard(a.effectTokens(), b.effectTokens());
         double signature = jaccard(a.mechanicSignature(), b.mechanicSignature());
         double stats = 1.0D - normalizedDistance(a.statVector(), b.statVector());
-        return (category * 0.10D)
-                + (family * 0.06D)
-                + (trigger * 0.11D)
-                + (mechanic * 0.13D)
-                + (effects * 0.25D)
-                + (signature * 0.19D)
-                + (stats * 0.16D);
+        return (category * 0.08D)
+                + (family * 0.05D)
+                + (trigger * 0.09D)
+                + (mechanic * 0.11D)
+                + (effects * 0.20D)
+                + (signature * 0.16D)
+                + (stats * 0.13D);
     }
 
     private static double normalizedDistance(double[] a, double[] b) {
