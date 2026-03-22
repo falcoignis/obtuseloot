@@ -1,7 +1,7 @@
 # Gate Divergence Review
 
-- Regulatory profile diversity: 1.286057336874379
-- Gate diversity: 1.0208880675106418
+- Regulatory profile diversity: 1.0751393240053733
+- Gate diversity: 0.7298712099831165
 - Dominant profile: [lineageMilestoneGate]
 - Dominant family share: 0.2916666666666667
 - Lineage concentration: 1.0
