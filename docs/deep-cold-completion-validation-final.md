@@ -7,26 +7,26 @@
 
 ### Scenario category exposure snapshots
 
-- **explorer**: Stealth / trickery / disruption=749, Crafting / engineering / automation=282, Resource / farming / logistics=270, Traversal / mobility=224
-- **builder**: Crafting / engineering / automation=431, Resource / farming / logistics=371, Survival / adaptation=238, Ritual / strange utility=196
-- **fighter**: Sensing / information=692, Survival / adaptation=324, Social / support / coordination=179, Traversal / mobility=143
-- **ritualist**: Sensing / information=536, Stealth / trickery / disruption=498, Ritual / strange utility=323, Traversal / mobility=214
-- **survivor**: Survival / adaptation=1076, Combat / tactical control=209, Resource / farming / logistics=160, Social / support / coordination=131
+- **explorer**: Stealth / trickery / disruption=820, Crafting / engineering / automation=278, Traversal / mobility=253, Social / support / coordination=216
+- **builder**: Crafting / engineering / automation=864, Survival / adaptation=317, Ritual / strange utility=236, Sensing / information=166
+- **fighter**: Sensing / information=1063, Social / support / coordination=132, Stealth / trickery / disruption=117, Resource / farming / logistics=116
+- **ritualist**: Sensing / information=543, Stealth / trickery / disruption=513, Ritual / strange utility=308, Traversal / mobility=212
+- **survivor**: Survival / adaptation=928, Combat / tactical control=293, Crafting / engineering / automation=168, Resource / farming / logistics=149
 
 ### Normal-probe category metrics
 
 | Category | Total hits | Reached | Zero-hit templates | Top template % | Top-3 % | Templates with >1 hit |
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
-| Traversal / mobility | 689 | 9/9 | none | 20.2% | 54.9% | 9 |
-| Sensing / information | 1550 | 10/10 | none | 18.5% | 48.1% | 10 |
-| Survival / adaptation | 1832 | 13/13 | none | 19.1% | 35.1% | 13 |
-| Combat / tactical control | 565 | 6/6 | none | 34.9% | 72.2% | 6 |
-| Defense / warding | 449 | 5/5 | none | 41.6% | 79.5% | 5 |
-| Resource / farming / logistics | 970 | 8/8 | none | 32.5% | 59.0% | 8 |
-| Crafting / engineering / automation | 1109 | 5/5 | none | 30.0% | 70.0% | 5 |
-| Social / support / coordination | 613 | 8/8 | none | 23.5% | 52.0% | 8 |
-| Ritual / strange utility | 741 | 12/12 | none | 12.8% | 34.7% | 12 |
-| Stealth / trickery / disruption | 1482 | 9/9 | none | 21.5% | 51.9% | 9 |
+| Traversal / mobility | 704 | 9/9 | none | 13.2% | 37.4% | 9 |
+| Sensing / information | 1952 | 10/10 | none | 11.5% | 32.4% | 10 |
+| Survival / adaptation | 1526 | 13/13 | none | 8.6% | 25.2% | 13 |
+| Combat / tactical control | 511 | 6/6 | none | 18.2% | 52.4% | 6 |
+| Defense / warding | 316 | 5/5 | none | 20.9% | 60.8% | 5 |
+| Resource / farming / logistics | 502 | 8/8 | none | 14.5% | 41.4% | 8 |
+| Crafting / engineering / automation | 1571 | 5/5 | none | 21.5% | 62.1% | 5 |
+| Social / support / coordination | 551 | 8/8 | none | 13.8% | 40.7% | 8 |
+| Ritual / strange utility | 764 | 12/12 | none | 9.7% | 28.3% | 12 |
+| Stealth / trickery / disruption | 1603 | 9/9 | none | 12.7% | 36.3% | 9 |
 
 ## SECTION 2: CATEGORY-FORCED RESULTS
 
@@ -36,13 +36,13 @@
 | Category | Total hits | Reached | Zero-hit templates | Top template % | Top-3 % | Templates with >1 hit |
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
 | Traversal / mobility | 500 | 9/9 | none | 67.4% | 98.8% | 2 |
-| Sensing / information | 500 | 10/10 | none | 71.4% | 98.6% | 2 |
+| Sensing / information | 500 | 10/10 | none | 70.6% | 98.6% | 2 |
 | Survival / adaptation | 500 | 13/13 | none | 87.2% | 98.0% | 2 |
-| Combat / tactical control | 500 | 6/6 | none | 67.8% | 99.4% | 2 |
+| Combat / tactical control | 500 | 6/6 | none | 66.6% | 99.4% | 2 |
 | Defense / warding | 500 | 5/5 | none | 74.6% | 99.6% | 2 |
 | Resource / farming / logistics | 500 | 2/8 | gathering.forager_memory, gathering.ecological_sense, gathering.gatherers_intuition, logistics.stockpile_tide, logistics.relay_mesh, logistics.spoilage_audit | 96.0% | 100.0% | 2 |
 | Crafting / engineering / automation | 500 | 1/5 | engineering.redstone_sympathy, engineering.sequence_splice, engineering.machine_rhythm, engineering.fault_isolate | 100.0% | 100.0% | 1 |
-| Social / support / coordination | 500 | 2/8 | social.witness_imprint, social.collective_insight, social.trader_whisper, support.role_call, support.convoy_accord, support.cover_exchange | 74.4% | 100.0% | 2 |
+| Social / support / coordination | 500 | 2/8 | social.witness_imprint, social.collective_insight, social.trader_whisper, support.role_call, support.convoy_accord, support.cover_exchange | 72.4% | 100.0% | 2 |
 | Ritual / strange utility | 500 | 12/12 | none | 90.4% | 98.2% | 2 |
 | Stealth / trickery / disruption | 500 | 9/9 | none | 98.4% | 98.8% | 1 |
 
@@ -79,11 +79,11 @@
 - Total hits: 500
 - Templates reached: 10 / 10
 - Zero-hit templates: none
-- Top template share: 71.4%
+- Top template share: 70.6%
 - Top-3 share: 98.6%
 - Templates with >1 hit: 2
 - No uniform flattening: PASS
-- Distribution: precision.echo_locator=71.4%, precision.vein_whisper=27.0%, sensing.witness_lag=0.2%, precision.artifact_sympathy=0.2%, precision.material_insight=0.2%, sensing.route_grammar=0.2%, consistency.structure_echo=0.2%, sensing.faultline_ledger=0.2%, sensing.contraband_tell=0.2%, sensing.cache_resonance=0.2%
+- Distribution: precision.echo_locator=70.6%, precision.vein_whisper=27.8%, sensing.witness_lag=0.2%, precision.artifact_sympathy=0.2%, precision.material_insight=0.2%, sensing.route_grammar=0.2%, consistency.structure_echo=0.2%, sensing.faultline_ledger=0.2%, sensing.contraband_tell=0.2%, sensing.cache_resonance=0.2%
 
 ### Survival / adaptation
 
@@ -101,11 +101,11 @@
 - Total hits: 500
 - Templates reached: 6 / 6
 - Zero-hit templates: none
-- Top template share: 67.8%
+- Top template share: 66.6%
 - Top-3 share: 99.4%
 - Templates with >1 hit: 2
 - No uniform flattening: PASS
-- Distribution: tactical.tempo_extract=67.8%, tactical.reposition_snare=31.4%, tactical.killzone_lattice=0.2%, tactical.feint_window=0.2%, tactical.rush_damper=0.2%, sensing.battlefield_read=0.2%
+- Distribution: tactical.tempo_extract=66.6%, tactical.reposition_snare=32.6%, tactical.killzone_lattice=0.2%, tactical.feint_window=0.2%, tactical.rush_damper=0.2%, sensing.battlefield_read=0.2%
 
 ### Defense / warding
 
@@ -145,11 +145,11 @@
 - Total hits: 500
 - Templates reached: 2 / 8
 - Zero-hit templates: social.witness_imprint, social.collective_insight, social.trader_whisper, support.role_call, support.convoy_accord, support.cover_exchange
-- Top template share: 74.4%
+- Top template share: 72.4%
 - Top-3 share: 100.0%
 - Templates with >1 hit: 2
 - No uniform flattening: PASS
-- Distribution: support.rally_ledger=74.4%, support.mercy_link=25.6%
+- Distribution: support.rally_ledger=72.4%, support.mercy_link=27.6%
 
 ### Ritual / strange utility
 
