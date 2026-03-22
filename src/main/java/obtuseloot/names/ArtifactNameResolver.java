@@ -42,7 +42,7 @@ public final class ArtifactNameResolver {
         naming.setAffinityLexemes(lexemes);
         naming.setToneProfile(resolveTone(tags));
         naming.setTrueName(trueName);
-        naming.setNamingArchetype(NamingArchetype.FORM_OF_CONCEPT);
+        naming.setNamingArchetype(resolveNamingArchetype(namingSeed));
         String displayName = TEXT_RESOLVER.compose(artifact, ArtifactTextChannel.NAME, naming.getRootForm());
         naming.setDisplayName(displayName);
     }
@@ -69,6 +69,13 @@ public final class ArtifactNameResolver {
     private static String resolveRootForm(Artifact artifact, long namingSeed) {
         EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(artifact, "artifact naming");
         return archetype.rootForm(namingSeed);
+    }
+
+    // Selects naming archetype from the naming seed — stable across all runtime mutations.
+    // FORM_OF_CONCEPT (even seed) and TRAIT_FORM (odd seed) each produce structurally
+    // distinct names while both always including the artifact's root form word.
+    private static NamingArchetype resolveNamingArchetype(long namingSeed) {
+        return (namingSeed & 1L) == 0L ? NamingArchetype.FORM_OF_CONCEPT : NamingArchetype.TRAIT_FORM;
     }
 
     private static ToneProfile resolveTone(List<String> tags) {
