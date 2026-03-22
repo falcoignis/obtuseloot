@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class RegulatoryEligibilityFilter {
-    private static final double MIN_ELIGIBILITY = 0.10D;
+    private static final double MIN_ELIGIBILITY = 0.25D;
 
     public List<AbilityTemplate> filter(List<AbilityTemplate> candidates, AbilityRegulatoryProfile profile) {
         List<AbilityTemplate> eligible = new ArrayList<>();
