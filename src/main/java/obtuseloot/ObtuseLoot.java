@@ -17,6 +17,7 @@ import obtuseloot.dashboard.DashboardWebServer;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.ecosystem.EcosystemMapRenderer;
+import obtuseloot.ecosystem.ProductionSafetyConfig;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.drift.DriftEngine;
@@ -122,6 +123,7 @@ public class ObtuseLoot extends JavaPlugin {
         artifactUsageTracker = new ArtifactUsageTracker();
         artifactUsageTracker.setTelemetryEmitter(ecosystemTelemetryEmitter);
         ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
+        ecosystemEngine.configure(ProductionSafetyConfig.from(getConfig()), getLogger());
         experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine(), new obtuseloot.evolution.AdaptiveSupportAllocator(), evolutionParameterRegistry);
         experienceEvolutionEngine.setTelemetryEmitter(ecosystemTelemetryEmitter);
         driftEngine = new DriftEngine();
@@ -240,6 +242,7 @@ public class ObtuseLoot extends JavaPlugin {
     }
 
     public static ObtuseLoot get() { return instance; }
+    public obtuseloot.ecosystem.EcosystemHealthMonitor getEcosystemHealthMonitor() { return ecosystemEngine != null ? ecosystemEngine.healthMonitor() : null; }
     public PlayerStateStore getPlayerStateStore() { return playerStateStore; }
     public PersistenceManager getPersistenceManager() { return persistenceManager; }
     public ArtifactManager getArtifactManager() { return artifactManager; }

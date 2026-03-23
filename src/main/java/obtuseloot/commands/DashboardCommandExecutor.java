@@ -8,6 +8,8 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.dashboard.DashboardMetrics;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
+import obtuseloot.ecosystem.EcosystemHealthMonitor;
+import obtuseloot.ecosystem.ProductionSafetySnapshot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -44,6 +46,20 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (isDebugDashboardCommand(args)) {
             return handleDebugDashboard(sender);
+        }
+        if (isEcosystemDump(args)) {
+            if (!sender.hasPermission("obtuseloot.info")) {
+                sender.sendMessage("§cYou do not have permission: obtuseloot.info");
+                return true;
+            }
+            return handleEcosystemDump(sender);
+        }
+        if (isEcosystemResetMetrics(args)) {
+            if (!sender.hasPermission("obtuseloot.admin")) {
+                sender.sendMessage("§cYou do not have permission: obtuseloot.admin");
+                return true;
+            }
+            return handleEcosystemResetMetrics(sender);
         }
         if (isEcosystemDashboardCommand(args) || isDashboardCommand(args)) {
             if (!sender.hasPermission("obtuseloot.info")) {
@@ -82,6 +98,52 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleEcosystemDump(CommandSender sender) {
+        EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
+        if (monitor == null) {
+            sender.sendMessage("§cEcosystem health monitor is not available.");
+            return true;
+        }
+        ProductionSafetySnapshot snap = monitor.captureSnapshot();
+        String json = snap.toJson();
+
+        // Write to analytics directory as well
+        Path dumpPath = Path.of("analytics/safety/ecosystem-safety-dump.json");
+        try {
+            Files.createDirectories(dumpPath.getParent());
+            Files.writeString(dumpPath, json);
+            sender.sendMessage("§aSafety snapshot written to: §f" + dumpPath);
+        } catch (IOException ex) {
+            sender.sendMessage("§cFailed to write dump file: " + ex.getMessage());
+        }
+
+        // Send abbreviated output to chat (full JSON can be large)
+        sender.sendMessage("§d=== Ecosystem Safety Dump ===");
+        sender.sendMessage("§7Timestamp: §f" + java.time.Instant.ofEpochMilli(snap.timestampMs()));
+        sender.sendMessage(String.format(Locale.ROOT, "§7Diversity Index: §f%.4f", snap.diversityIndex()));
+        sender.sendMessage(String.format(Locale.ROOT, "§7Avg Pool Size:   §f%.2f", snap.averageCandidatePoolSize()));
+        sender.sendMessage(String.format(Locale.ROOT, "§7Window Fill:     §f%d", snap.windowFill()));
+        if (!snap.activeGuards().isEmpty()) {
+            sender.sendMessage("§cGuards Active: " + String.join(", ", snap.activeGuards()));
+        }
+        if (!snap.activeFailureSignals().isEmpty()) {
+            sender.sendMessage("§4Failure Signals: " + String.join(", ", snap.activeFailureSignals()));
+        }
+        sender.sendMessage("§7Full JSON: §f" + dumpPath);
+        return true;
+    }
+
+    private boolean handleEcosystemResetMetrics(CommandSender sender) {
+        EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
+        if (monitor == null) {
+            sender.sendMessage("§cEcosystem health monitor is not available.");
+            return true;
+        }
+        monitor.resetMetrics();
+        sender.sendMessage("§aEcosystem safety rolling metrics cleared.");
+        return true;
+    }
+
     private void regenerateHeatmapAndReport() throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -112,6 +174,10 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 player.sendMessage("§7Lineage Concentration: §f" + format(metrics.lineageConcentration()));
                 player.sendMessage("§7Collapse Risk: §f" + metrics.collapseRisk().name());
                 player.sendMessage("§7Summary: §f" + "Dominance " + format(metrics.dominanceIndex()) + ", Risk " + metrics.collapseRisk().name());
+
+                // Append production safety summary
+                appendSafetySummary(player);
+
                 player.sendMessage("§8Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json.");
                 if (dashboardWebServer.isRunning()) {
                     TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
@@ -134,8 +200,26 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage("Web endpoint: " + dashboardUrl);
             sender.sendMessage("Latest season snapshot: " + latestSeason);
             sender.sendMessage("Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json (not online-player-only telemetry).");
+
+            // Append production safety summary for console
+            EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
+            if (monitor != null) {
+                ProductionSafetySnapshot snap = monitor.captureSnapshot();
+                sender.sendMessage(String.format(Locale.ROOT,
+                        "Safety: diversityIndex=%.4f avgPool=%.2f windowFill=%d guards=%s",
+                        snap.diversityIndex(), snap.averageCandidatePoolSize(),
+                        snap.windowFill(), snap.activeGuards()));
+            }
         } catch (IOException exception) {
             sender.sendMessage("§cUnable to read ecosystem analytics: " + exception.getMessage());
+        }
+    }
+
+    private void appendSafetySummary(CommandSender sender) {
+        EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
+        if (monitor == null) return;
+        for (String line : monitor.formatSummary()) {
+            sender.sendMessage(line);
         }
     }
 
@@ -175,6 +259,15 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         return args.length == 2 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1]);
     }
 
+    private boolean isEcosystemDump(String[] args) {
+        return args.length == 2 && "ecosystem".equalsIgnoreCase(args[0]) && "dump".equalsIgnoreCase(args[1]);
+    }
+
+    private boolean isEcosystemResetMetrics(String[] args) {
+        return args.length == 2 && "ecosystem".equalsIgnoreCase(args[0])
+                && "reset-metrics".equalsIgnoreCase(args[1]);
+    }
+
     private boolean isDebugDashboardCommand(String[] args) {
         return args.length >= 2 && "debug".equalsIgnoreCase(args[0]) && "dashboard".equalsIgnoreCase(args[1]);
     }
@@ -193,6 +286,10 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             addIfMissing(merged, "health", args[1]);
             addIfMissing(merged, "dashboard", args[1]);
             addIfMissing(merged, "map", args[1]);
+            addIfMissing(merged, "dump", args[1]);
+            if (sender.hasPermission("obtuseloot.admin")) {
+                addIfMissing(merged, "reset-metrics", args[1]);
+            }
             return merged;
         }
 
