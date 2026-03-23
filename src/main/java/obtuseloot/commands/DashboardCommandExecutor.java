@@ -32,6 +32,8 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
     private final DashboardService dashboardService;
     private final DashboardWebServer dashboardWebServer;
 
+    private DumpCooldownTracker dumpCooldown = null; // lazily initialised after plugin config is available
+
     public DashboardCommandExecutor(ObtuseLoot plugin,
                                     ObtuseLootCommand delegate,
                                     DashboardService dashboardService,
@@ -104,6 +106,19 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cEcosystem health monitor is not available.");
             return true;
         }
+
+        if (dumpCooldown == null) {
+            dumpCooldown = new DumpCooldownTracker(
+                    monitor.guards().config().dumpCooldownMs(),
+                    System::currentTimeMillis);
+        }
+        if (!dumpCooldown.tryExecute()) {
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "§cEcosystem dump is on cooldown. Try again in %.1fs.",
+                    dumpCooldown.remainingMs() / 1000.0));
+            return true;
+        }
+
         ProductionSafetySnapshot snap = monitor.captureSnapshot();
         String json = snap.toJson();
 

@@ -27,7 +27,14 @@ public record ProductionSafetyConfig(
         /** When true, logs a safety summary to console every {@code periodicConsoleLogIntervalTicks} ticks. */
         boolean periodicConsoleLog,
         /** Tick interval for periodic console logging when {@code periodicConsoleLog} is enabled. */
-        int periodicConsoleLogIntervalTicks
+        int periodicConsoleLogIntervalTicks,
+        /**
+         * Floor applied to the combined category × template suppression multiplier.
+         * Prevents guard stacking from reducing scores below this bound (0.75 = 25% max combined reduction).
+         */
+        double minCombinedSuppression,
+        /** Minimum milliseconds between successive {@code /ol ecosystem dump} executions. */
+        long dumpCooldownMs
 ) {
 
     public static ProductionSafetyConfig defaults() {
@@ -39,7 +46,9 @@ public record ProductionSafetyConfig(
                 false,
                 500,
                 false,
-                1200
+                1200,
+                0.75,
+                3000L
         );
     }
 
@@ -55,7 +64,9 @@ public record ProductionSafetyConfig(
                 config.getBoolean("safety.telemetryVerbose", d.telemetryVerbose()),
                 config.getInt("safety.snapshotIntervalEvents", d.snapshotIntervalEvents()),
                 config.getBoolean("safety.periodicConsoleLog", d.periodicConsoleLog()),
-                config.getInt("safety.periodicConsoleLogIntervalTicks", d.periodicConsoleLogIntervalTicks())
+                config.getInt("safety.periodicConsoleLogIntervalTicks", d.periodicConsoleLogIntervalTicks()),
+                config.getDouble("safety.guard.minCombinedSuppression", d.minCombinedSuppression()),
+                config.getLong("safety.dump.cooldownMs", d.dumpCooldownMs())
         );
     }
 }
