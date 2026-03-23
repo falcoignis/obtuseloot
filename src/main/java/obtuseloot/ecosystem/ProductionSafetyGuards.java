@@ -137,6 +137,20 @@ public final class ProductionSafetyGuards {
         return 1.0;
     }
 
+    /**
+     * Returns the combined guard multiplier for a category + template pair, clamped so the
+     * product never falls below {@link ProductionSafetyConfig#minCombinedSuppression()}.
+     *
+     * <p>This prevents guard stacking from over-suppressing scores when both guards fire
+     * simultaneously (e.g. 0.85 × 0.90 = 0.765 would be raised to 0.75 minimum).
+     *
+     * @return {@code Math.max(config.minCombinedSuppression(), categoryMultiplier × templateMultiplier)}
+     */
+    public double combinedGuardMultiplier(String category, String template) {
+        double combined = categoryGuardMultiplier(category) * templateGuardMultiplier(template);
+        return Math.max(config.minCombinedSuppression(), combined);
+    }
+
     // -------------------------------------------------------------------------
     // Pool state
     // -------------------------------------------------------------------------

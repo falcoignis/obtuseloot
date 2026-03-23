@@ -176,3 +176,10 @@ safety:
   # Log a safety summary to console periodically.
   periodicConsoleLog: false
   periodicConsoleLogIntervalTicks: 1200
+  guard:
+    # Floor for the combined category × template suppression multiplier.
+    # Prevents guard stacking from reducing scores below this bound (0.75 = 25% max combined reduction).
+    minCombinedSuppression: 0.75
+  dump:
+    # Minimum milliseconds between successive /ol ecosystem dump executions (rate limit).
+    cooldownMs: 3000
