@@ -1,7 +1,9 @@
 package obtuseloot.ecosystem;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,7 +42,8 @@ public final class EcosystemHealthMonitor {
 
     private int eventCount = 0;
     private ProductionSafetySnapshot lastSnapshot = ProductionSafetySnapshot.empty();
-    private final List<ProductionSafetySnapshot> snapshotHistory = new ArrayList<>();
+    // ArrayDeque gives O(1) addLast/pollFirst vs ArrayList.remove(0) which is O(n).
+    private final Deque<ProductionSafetySnapshot> snapshotHistoryDeque = new ArrayDeque<>();
 
     public EcosystemHealthMonitor(
             ProductionSafetyGuards guards,
@@ -139,10 +142,10 @@ public final class EcosystemHealthMonitor {
 
     private void captureAndStore() {
         ProductionSafetySnapshot snap = captureSnapshot();
-        if (snapshotHistory.size() >= HISTORY_CAPACITY) {
-            snapshotHistory.remove(0);
+        if (snapshotHistoryDeque.size() >= HISTORY_CAPACITY) {
+            snapshotHistoryDeque.pollFirst();
         }
-        snapshotHistory.add(snap);
+        snapshotHistoryDeque.addLast(snap);
         if (periodicConsoleLog) {
             logger.info(String.format(Locale.ROOT,
                     "[Ecosystem] Safety snapshot #%d: diversity=%.4f avgPool=%.2f guards=%s signals=%s",
@@ -219,9 +222,9 @@ public final class EcosystemHealthMonitor {
         return lastSnapshot;
     }
 
-    /** Snapshot history (up to last {@value #HISTORY_CAPACITY} captures). */
+    /** Snapshot history (up to last {@value #HISTORY_CAPACITY} captures), oldest-first. */
     public List<ProductionSafetySnapshot> snapshotHistory() {
-        return Collections.unmodifiableList(snapshotHistory);
+        return Collections.unmodifiableList(new ArrayList<>(snapshotHistoryDeque));
     }
 
     /** Total evaluation cycles recorded since last reset. */
@@ -238,7 +241,7 @@ public final class EcosystemHealthMonitor {
     public void resetMetrics() {
         guards.resetMetrics();
         eventCount = 0;
-        snapshotHistory.clear();
+        snapshotHistoryDeque.clear();
         lastSnapshot = ProductionSafetySnapshot.empty();
     }
 

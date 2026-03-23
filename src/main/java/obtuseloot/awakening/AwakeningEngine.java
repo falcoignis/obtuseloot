@@ -282,11 +282,18 @@ public class AwakeningEngine {
         return base + "-" + tier + ":" + prefix + signal;
     }
 
-    // Returns the dominant memory weight label, or "balanced" if the top two are within 1.0.
-    private String dominantSignal(ArtifactMemoryProfile mem) {
+    // Weight labels in a fixed, consistent order used by signal resolution.
+    private static final String[] SIGNAL_LABELS =
+            {"aggression", "survival", "discipline", "chaos", "boss", "trauma", "mobility"};
+
+    /**
+     * Resolves both the dominant and secondary memory-weight signals in one pass.
+     * Returns a two-element array: [dominant, secondary].
+     * dominant is "balanced" if the top-two weights are within 1.0 of each other.
+     */
+    private String[] resolveSignals(ArtifactMemoryProfile mem) {
         double[] w = {mem.aggressionWeight(), mem.survivalWeight(), mem.disciplineWeight(),
                 mem.chaosWeight(), mem.bossWeight(), mem.traumaWeight(), mem.mobilityWeight()};
-        String[] n = {"aggression", "survival", "discipline", "chaos", "boss", "trauma", "mobility"};
         int best = 0;
         for (int i = 1; i < w.length; i++) {
             if (w[i] > w[best]) best = i;
@@ -295,24 +302,18 @@ public class AwakeningEngine {
         for (int i = 0; i < w.length; i++) {
             if (i != best && w[i] > w[second]) second = i;
         }
-        if ((w[best] - w[second]) < 1.0) return "balanced";
-        return n[best];
+        String dominant = (w[best] - w[second]) < 1.0 ? "balanced" : SIGNAL_LABELS[best];
+        return new String[]{dominant, SIGNAL_LABELS[second]};
+    }
+
+    // Returns the dominant memory weight label, or "balanced" if the top two are within 1.0.
+    private String dominantSignal(ArtifactMemoryProfile mem) {
+        return resolveSignals(mem)[0];
     }
 
     // Returns the secondary (second-highest) memory weight label.
     private String secondarySignal(ArtifactMemoryProfile mem) {
-        double[] w = {mem.aggressionWeight(), mem.survivalWeight(), mem.disciplineWeight(),
-                mem.chaosWeight(), mem.bossWeight(), mem.traumaWeight(), mem.mobilityWeight()};
-        String[] n = {"aggression", "survival", "discipline", "chaos", "boss", "trauma", "mobility"};
-        int best = 0;
-        for (int i = 1; i < w.length; i++) {
-            if (w[i] > w[best]) best = i;
-        }
-        int second = (best == 0) ? 1 : 0;
-        for (int i = 0; i < w.length; i++) {
-            if (i != best && w[i] > w[second]) second = i;
-        }
-        return n[second];
+        return resolveSignals(mem)[1];
     }
 
     // Builds a signal-derived expression trace: {dominant}>{secondary}:{context}:{pathTag}.
@@ -321,8 +322,10 @@ public class AwakeningEngine {
                                    ArtifactReputation rep,
                                    boolean convergencePreceded,
                                    String pathTag) {
-        String dom = dominantSignal(mem);
-        String sec = secondarySignal(mem);
+        // Single resolveSignals call to avoid two separate O(n) weight scans.
+        String[] signals = resolveSignals(mem);
+        String dom = signals[0];
+        String sec = signals[1];
         String context;
         if (convergencePreceded) {
             context = "convergence-inflected";
