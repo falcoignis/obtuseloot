@@ -246,6 +246,7 @@ public class ArtifactLineage {
                 after = BranchLifecycleState.UNSTABLE;
                 grace = UNSTABLE_GRACE_WINDOWS;
                 reason = "low-survival-score";
+                branch.resetStagnation();
             } else if (before == BranchLifecycleState.UNSTABLE) {
                 if (recoverWindows >= RECOVERY_WINDOWS) {
                     after = BranchLifecycleState.STABLE;

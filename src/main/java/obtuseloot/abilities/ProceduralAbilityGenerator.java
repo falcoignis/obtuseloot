@@ -309,6 +309,10 @@ public class ProceduralAbilityGenerator {
     }
 
 
+    private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile) {
+        return resolveScoringNicheProfile(utilityHistory, memoryProfile, null);
+    }
+
     private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage) {
         ArtifactNicheProfile classified = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
         if (utilityHistory.hasUtilityHistory() || classified.dominantNiche() != MechanicNicheTag.GENERALIST) {
