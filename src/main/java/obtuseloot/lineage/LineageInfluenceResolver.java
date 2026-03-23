@@ -19,7 +19,7 @@ public class LineageInfluenceResolver {
             case "brutality" -> lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RISK_APPETITE);
             default -> 0.0D;
         };
-        return clamp(1.0D + trait + (bias * 0.45D));
+        return clamp(1.0D + trait + (bias * 0.35D));
     }
 
     public double resolveMutationInfluence(ArtifactLineage lineage) {
@@ -35,10 +35,10 @@ public class LineageInfluenceResolver {
             return 1.0D;
         }
         EvolutionaryBiasGenome biasGenome = lineage.evolutionaryBiasGenome();
-        double memoryBias = metadata.hasAffinity("memory") ? biasGenome.tendency(LineageBiasDimension.MEMORY_REACTIVITY) * 0.45D : 0.0D;
-        double ritualBias = metadata.utilityDomains().contains("ritual-utility") ? biasGenome.tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.40D : 0.0D;
-        double supportBias = metadata.affinities().contains("support") ? biasGenome.tendency(LineageBiasDimension.SUPPORT_PREFERENCE) * 0.35D : 0.0D;
-        double explorationBias = metadata.affinities().contains("exploration") ? biasGenome.tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.35D : 0.0D;
+        double memoryBias = metadata.hasAffinity("memory") ? biasGenome.tendency(LineageBiasDimension.MEMORY_REACTIVITY) * 0.38D : 0.0D;
+        double ritualBias = metadata.utilityDomains().contains("ritual-utility") ? biasGenome.tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.32D : 0.0D;
+        double supportBias = metadata.affinities().contains("support") ? biasGenome.tendency(LineageBiasDimension.SUPPORT_PREFERENCE) * 0.28D : 0.0D;
+        double explorationBias = metadata.affinities().contains("exploration") ? biasGenome.tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.28D : 0.0D;
         double utilityDensityBias = biasGenome.tendency(LineageBiasDimension.UTILITY_DENSITY_PREFERENCE) * (metadata.triggerEfficiency() - 1.0D) * 0.18D;
         return clamp(1.0D + memoryBias + ritualBias + supportBias + explorationBias + utilityDensityBias);
     }
