@@ -1,10 +1,10 @@
 {
   "familyDistribution": {
-    "chaos": 9,
+    "chaos": 7,
     "consistency": 11,
-    "mobility": 10,
-    "precision": 5,
-    "survival": 13
+    "mobility": 8,
+    "precision": 7,
+    "survival": 15
   },
   "gateDiversity": 0.8314025204956377,
   "lineageDistribution": {
