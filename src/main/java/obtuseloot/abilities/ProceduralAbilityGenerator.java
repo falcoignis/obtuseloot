@@ -43,7 +43,7 @@ public class ProceduralAbilityGenerator {
     private static final double MODERATE_SIMILARITY_THRESHOLD = 0.62D;
     private static final double SAME_NICHE_NOVELTY_WEIGHT = 0.68D;
     private static final double GLOBAL_NOVELTY_WEIGHT = 0.32D;
-    private static final double NICHE_WEIGHT_EXPONENT = 1.80D;
+    private static final double NICHE_WEIGHT_EXPONENT = 1.58D;
     private static final int RECENT_TEMPLATE_WINDOW_LIMIT = 96;
     private static final int RECENT_CATEGORY_WINDOW_LIMIT = 144;
     private static final double TEMPLATE_RECENCY_MAX_SWING = 0.28D;
@@ -306,18 +306,25 @@ public class ProceduralAbilityGenerator {
         }
 
         MechanicNicheTag inferredDominant = inferDominantNiche(memoryProfile);
-        if (lineage != null) {
-            double explorationTendency = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE);
-            if (explorationTendency > 0.20D) {
-                inferredDominant = MechanicNicheTag.NAVIGATION;
-            }
-        }
         Map<MechanicNicheTag, Double> scores = new EnumMap<>(MechanicNicheTag.class);
         scores.put(inferredDominant, 1.0D + dominantNicheWeight(memoryProfile, inferredDominant));
         scores.put(MechanicNicheTag.GENERALIST, 0.35D);
+        if (lineage != null) {
+            double explorationTendency = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE);
+            if (explorationTendency > 0.20D) {
+                double navScore = 1.0D + dominantNicheWeight(memoryProfile, MechanicNicheTag.NAVIGATION)
+                        + (explorationTendency * 1.20D);
+                double currentScore = scores.getOrDefault(inferredDominant, 0.0D);
+                scores.merge(MechanicNicheTag.NAVIGATION, navScore, Math::max);
+                if (navScore > currentScore) {
+                    inferredDominant = MechanicNicheTag.NAVIGATION;
+                }
+            }
+        }
+        EnumSet<MechanicNicheTag> activeNiches = EnumSet.copyOf(scores.keySet());
         return new ArtifactNicheProfile(
                 inferredDominant,
-                EnumSet.of(inferredDominant, MechanicNicheTag.GENERALIST),
+                activeNiches,
                 Map.copyOf(scores),
                 classified.specialization());
     }
@@ -882,7 +889,7 @@ public class ProceduralAbilityGenerator {
         double categoryExposureBias = categoryExposureBias(category, dominantNiche, activePool);
         double lowVolumeBoost = lowVolumeCategoryBoost(bestTemplate, nicheProfile, activePool, artifact, lineage, variantProfile, selected);
         double categoryStageBias = Math.sqrt(categoryWeight(bestTemplate, nicheProfile, memoryProfile, lineage, variantProfile));
-        double nicheStageBias = nicheWeight(bestTemplate, nicheProfile, memoryProfile);
+        double nicheStageBias = Math.pow(nicheWeight(bestTemplate, nicheProfile, memoryProfile), 0.65D);
         return Math.max(0.0001D, bestTemplateScore * categoryStageBias * nicheStageBias * boundedPenaltyMultiplier(categoryExposureBias, 1.0D) * lowVolumeBoost);
     }
 
@@ -1358,15 +1365,15 @@ public class ProceduralAbilityGenerator {
         boolean matches = templateNiches.contains(dominant);
         boolean adjacent = !matches && nicheAdjacent(templateNiches, dominant);
         double familyBias = switch (dominant) {
-            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.60D : 0.62D;
-            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.60D : 0.62D;
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.60D : 0.62D;
-            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.50D : 0.65D;
+            case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.58D : 0.63D;
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.58D : 0.63D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.58D : 0.63D;
+            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.48D : 0.68D;
             default -> 1.0D;
         };
         double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
         double nicheMatchWeight = matches ? 1.42D : (adjacent ? 1.10D : 0.70D);
-        return clamp(nicheMatchWeight * familyBias * memoryTuning, 0.42D, 2.10D);
+        return clamp(nicheMatchWeight * familyBias * memoryTuning, 0.48D, 2.20D);
     }
 
     private double categoryWeight(AbilityTemplate template,
@@ -1388,9 +1395,9 @@ public class ProceduralAbilityGenerator {
             case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.07D) + (memoryProfile.chaosWeight() * 0.04D);
         };
         double lineageBias = lineage == null ? 1.0D : switch (category) {
-            case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.25D);
+            case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.18D);
             case SOCIAL_SUPPORT_COORDINATION, DEFENSE_WARDING, RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE) * 0.07D);
-            case RITUAL_STRANGE_UTILITY -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.20D) + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.30D);
+            case RITUAL_STRANGE_UTILITY -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.14D) + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.22D);
             case STEALTH_TRICKERY_DISRUPTION, COMBAT_TACTICAL_CONTROL -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.06D);
             case SURVIVAL_ADAPTATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY) * 0.05D);
         };
@@ -1585,13 +1592,13 @@ public class ProceduralAbilityGenerator {
         double support = bias.tendency(LineageBiasDimension.SUPPORT_PREFERENCE);
         double weirdness = bias.tendency(LineageBiasDimension.WEIRDNESS);
         double value = 1.0D;
-        if (template.metadata().affinities().contains("exploration")) value += exploration * 0.75D;
-        if (template.metadata().affinities().contains("ritual")) value += ritual * 0.75D;
+        if (template.metadata().affinities().contains("exploration")) value += exploration * 1.20D;
+        if (template.metadata().affinities().contains("ritual")) value += ritual * 0.55D;
         if (template.metadata().affinities().contains("support")) value += support * 0.08D;
-        if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 0.50D;
+        if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 0.36D;
         if (template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION || template.category() == AbilityCategory.COMBAT_TACTICAL_CONTROL) value += weirdness * 0.05D;
         if (template.category() == AbilityCategory.RESOURCE_FARMING_LOGISTICS || template.category() == AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION) value += support * 0.04D;
-        return clamp(value, 0.60D, 1.80D);
+        return clamp(value, 0.50D, 1.55D);
     }
 
     private double motifAnchorBias(AbilityDiversityIndex.AbilitySignature candidate, AbilityDiversityIndex.AbilitySignature anchor, NicheVariantProfile variantProfile) {

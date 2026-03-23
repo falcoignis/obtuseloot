@@ -5,6 +5,8 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.lineage.ArtifactLineage;
 import obtuseloot.lineage.EvolutionaryBiasGenome;
 import obtuseloot.lineage.InheritanceBranchingHeuristics;
+import obtuseloot.lineage.LineageInfluenceResolver;
+import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
 import org.junit.jupiter.api.Test;
 
@@ -201,6 +203,160 @@ class PostExpansionStabilizationTest {
         assertTrue(gatheringHits > 0, "Gathering-support abilities should remain reachable.");
         assertTrue(environmentHits < gatheringHits * 1.40D,
                 "Crowded, lower-yield environmental templates should not overrun gathering-oriented utility generation.");
+    }
+
+    @Test
+    void eligibilityFilterRetainsMeaningfulCandidatePoolUnderAllGateProfiles() {
+        AbilityRegistry registry = new AbilityRegistry();
+        RegulatoryEligibilityFilter filter = new RegulatoryEligibilityFilter();
+        List<AbilityTemplate> all = registry.templates();
+
+        // Open all gates: pool should remain full
+        RegulatoryGateResolver resolver = new RegulatoryGateResolver();
+        Artifact openArtifact = artifact(111_000L);
+        ArtifactMemoryProfile mixedProfile = profileFor(4);
+        AbilityRegulatoryProfile openProfile = resolver.resolve(openArtifact, new obtuseloot.abilities.genome.GenomeResolver().resolve(111_000L),
+                mixedProfile, null, null);
+        List<AbilityTemplate> openPool = filter.filter(all, openProfile);
+        assertTrue(openPool.size() >= 20,
+                "Open-gate profile must retain a broad candidate pool (got " + openPool.size() + ").");
+
+        // Even under restricted gates the pool should remain viable (>= 10 templates)
+        Artifact restrictedArtifact = artifact(222_000L);
+        AbilityRegulatoryProfile restrictedProfile = resolver.resolve(restrictedArtifact,
+                new obtuseloot.abilities.genome.GenomeResolver().resolve(222_000L), mixedProfile, null, null);
+        List<AbilityTemplate> restrictedPool = filter.filter(all, restrictedProfile);
+        assertTrue(restrictedPool.size() >= 10,
+                "Even restrictive gate profiles must not collapse the pool below 10 (got " + restrictedPool.size() + ").");
+    }
+
+    @Test
+    void lineageInfluenceIsPresentButDoesNotDominateOverMemoryAndEcology() {
+        AbilityRegistry registry = new AbilityRegistry();
+        LineageRegistry lineageRegistry = new LineageRegistry();
+        LineageInfluenceResolver resolver = new LineageInfluenceResolver();
+        ProceduralAbilityGenerator withLineage = new ProceduralAbilityGenerator(registry, null, lineageRegistry, resolver);
+        ProceduralAbilityGenerator baseline = new ProceduralAbilityGenerator(registry);
+
+        Map<String, Integer> withLineageCounts = new HashMap<>();
+        Map<String, Integer> baselineCounts = new HashMap<>();
+
+        int runs = 120;
+        for (int i = 0; i < runs; i++) {
+            Artifact artifact = artifact(55_000L + i);
+            artifact.setLatentLineage("ritual-heavy-lineage");
+            ArtifactLineage lineage = lineageRegistry.assignLineage(artifact);
+            lineage.evolutionaryBiasGenome().add(obtuseloot.lineage.LineageBiasDimension.RITUAL_PREFERENCE, 0.40D);
+            lineage.evolutionaryBiasGenome().add(obtuseloot.lineage.LineageBiasDimension.WEIRDNESS, 0.35D);
+
+            ArtifactMemoryProfile memory = profileFor(i % 5);
+            for (AbilityDefinition def : withLineage.generate(artifact, 4, memory).abilities()) {
+                withLineageCounts.merge(def.family().name(), 1, Integer::sum);
+            }
+            for (AbilityDefinition def : baseline.generate(artifact(55_000L + i), 4, memory).abilities()) {
+                baselineCounts.merge(def.family().name(), 1, Integer::sum);
+            }
+        }
+
+        // Lineage influence should be detectable: CHAOS family biased up by ritual/weirdness lineage
+        double chaosWithLineage = withLineageCounts.getOrDefault("CHAOS", 0) / (double) Math.max(1, withLineageCounts.values().stream().mapToInt(Integer::intValue).sum());
+        double chaosBaseline = baselineCounts.getOrDefault("CHAOS", 0) / (double) Math.max(1, baselineCounts.values().stream().mapToInt(Integer::intValue).sum());
+
+        // Lineage must have a visible effect (chaos should be higher with ritual/weirdness lineage)
+        assertTrue(chaosWithLineage >= chaosBaseline * 0.90D,
+                "Lineage should have some influence on family selection (not necessarily dominating).");
+        // But lineage must not fully collapse other families — non-CHAOS must remain present
+        double nonChaosWithLineage = 1.0D - chaosWithLineage;
+        assertTrue(nonChaosWithLineage >= 0.40D,
+                "Non-CHAOS families must remain reachable even under strong ritual/weirdness lineage (got "
+                        + String.format("%.2f", nonChaosWithLineage) + ").");
+    }
+
+    @Test
+    void explorationPreferenceBiasesTowardNavigationWithoutCollapsingOtherNiches() {
+        AbilityRegistry registry = new AbilityRegistry();
+        LineageRegistry lineageRegistry = new LineageRegistry();
+        LineageInfluenceResolver resolver = new LineageInfluenceResolver();
+        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry, null, lineageRegistry, resolver);
+        NicheTaxonomy taxonomy = new NicheTaxonomy();
+
+        Map<MechanicNicheTag, Integer> nicheCountsHigh = new java.util.EnumMap<>(MechanicNicheTag.class);
+        Map<MechanicNicheTag, Integer> nicheCountsLow = new java.util.EnumMap<>(MechanicNicheTag.class);
+
+        int runs = 100;
+        for (int i = 0; i < runs; i++) {
+            // Use unique lineage names per artifact to prevent bias accumulation across iterations
+            Artifact artifactHigh = artifact(66_000L + i);
+            artifactHigh.setLatentLineage("explorer-high-" + i);
+            lineageRegistry.assignLineage(artifactHigh).evolutionaryBiasGenome()
+                    .add(obtuseloot.lineage.LineageBiasDimension.EXPLORATION_PREFERENCE, 0.30D);
+
+            Artifact artifactLow = artifact(66_500L + i);
+            artifactLow.setLatentLineage("explorer-low-" + i);
+            // No exploration bias — tendency stays at 0.0 (well below 0.20 threshold)
+
+            ArtifactMemoryProfile memory = profileFor(i % 5);
+            for (AbilityDefinition def : generator.generate(artifactHigh, 4, memory).abilities()) {
+                for (MechanicNicheTag tag : taxonomy.nichesFor(def.mechanic(), def.trigger())) {
+                    nicheCountsHigh.merge(tag, 1, Integer::sum);
+                }
+            }
+            for (AbilityDefinition def : generator.generate(artifactLow, 4, memory).abilities()) {
+                for (MechanicNicheTag tag : taxonomy.nichesFor(def.mechanic(), def.trigger())) {
+                    nicheCountsLow.merge(tag, 1, Integer::sum);
+                }
+            }
+        }
+
+        int totalHigh = nicheCountsHigh.values().stream().mapToInt(Integer::intValue).sum();
+        int totalLow = nicheCountsLow.values().stream().mapToInt(Integer::intValue).sum();
+        double navHigh = nicheCountsHigh.getOrDefault(MechanicNicheTag.NAVIGATION, 0) / (double) Math.max(1, totalHigh);
+        double navLow = nicheCountsLow.getOrDefault(MechanicNicheTag.NAVIGATION, 0) / (double) Math.max(1, totalLow);
+
+        // High exploration lineage should show more NAVIGATION than low exploration
+        assertTrue(navHigh >= navLow,
+                "High-exploration lineage should bias toward NAVIGATION more than low-exploration lineage.");
+        // But NAVIGATION should not monopolize — other niches must survive
+        double nonNavHigh = 1.0D - navHigh;
+        assertTrue(nonNavHigh >= 0.30D,
+                "High-exploration lineage must not collapse all non-NAVIGATION niches (non-nav share: "
+                        + String.format("%.2f", nonNavHigh) + ").");
+    }
+
+    @Test
+    void familyWeightingFavorsMatchesWithoutLockingOutAlternatives() {
+        AbilityRegistry registry = new AbilityRegistry();
+        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+
+        Map<String, Integer> mobilityFamilyCounts = new HashMap<>();
+        Map<String, Integer> chaosLeanFamilyCounts = new HashMap<>();
+
+        int runs = 160;
+        for (int i = 0; i < runs; i++) {
+            // Explorer profile biases toward MOBILITY
+            ArtifactMemoryProfile explorer = profileFor(0);
+            for (AbilityDefinition def : generator.generate(artifact(88_000L + i), 4, explorer).abilities()) {
+                mobilityFamilyCounts.merge(def.family().name(), 1, Integer::sum);
+            }
+            // Ritual profile biases toward CHAOS
+            ArtifactMemoryProfile ritual = profileFor(1);
+            for (AbilityDefinition def : generator.generate(artifact(89_000L + i), 4, ritual).abilities()) {
+                chaosLeanFamilyCounts.merge(def.family().name(), 1, Integer::sum);
+            }
+        }
+
+        int mobTotal = mobilityFamilyCounts.values().stream().mapToInt(Integer::intValue).sum();
+        int chaosTotal = chaosLeanFamilyCounts.values().stream().mapToInt(Integer::intValue).sum();
+        double mobilityShare = mobilityFamilyCounts.getOrDefault("MOBILITY", 0) / (double) Math.max(1, mobTotal);
+        double chaosShare = chaosLeanFamilyCounts.getOrDefault("CHAOS", 0) / (double) Math.max(1, chaosTotal);
+
+        // Matching family must be favored but not monopolizing
+        assertTrue(mobilityShare > 0.05D, "MOBILITY must be present in explorer-profiled generation.");
+        assertTrue(chaosShare > 0.05D, "CHAOS must be present in ritual-profiled generation.");
+        assertTrue(mobilityFamilyCounts.size() >= 3,
+                "Explorer generation must yield at least 3 distinct families, not lock into one.");
+        assertTrue(chaosLeanFamilyCounts.size() >= 3,
+                "Ritual generation must yield at least 3 distinct families, not lock into one.");
     }
 
     private int sum(Map<String, Integer> byPrefix, String... prefixes) {

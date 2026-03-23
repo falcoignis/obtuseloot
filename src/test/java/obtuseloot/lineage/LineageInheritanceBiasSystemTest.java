@@ -210,6 +210,42 @@ class LineageInheritanceBiasSystemTest {
         assertTrue(highDistance > mildDistance, "Higher ecology pressure should accelerate drift away from locked inheritance.");
     }
 
+    @Test
+    void lineageTemplateInfluenceRemainsWithinBoundedRange() {
+        ArtifactLineage maxExplorer = new ArtifactLineage("lineage-max-explorer");
+        maxExplorer.evolutionaryBiasGenome().add(LineageBiasDimension.EXPLORATION_PREFERENCE, 0.50D);
+        maxExplorer.evolutionaryBiasGenome().add(LineageBiasDimension.RITUAL_PREFERENCE, 0.50D);
+        maxExplorer.evolutionaryBiasGenome().add(LineageBiasDimension.MEMORY_REACTIVITY, 0.50D);
+        maxExplorer.evolutionaryBiasGenome().add(LineageBiasDimension.SUPPORT_PREFERENCE, 0.50D);
+        LineageInfluenceResolver resolver = new LineageInfluenceResolver();
+
+        AbilityMetadata heavyTemplate = AbilityMetadata.of(
+                Set.of("navigation", "ritual-utility"), Set.of("region-cache", "history-event"),
+                Set.of("exploration", "ritual", "memory", "support"), 0.80D, 0.75D, 0.80D, 0.55D, 0.40D, 0.60D);
+
+        double maxInfluence = resolver.resolveTemplateInfluence(maxExplorer, heavyTemplate);
+        // Even under maximum stacked lineage biases, the influence must stay within a non-runaway range
+        assertTrue(maxInfluence <= 1.45D,
+                "Stacked template influence must not exceed 1.45 (got " + maxInfluence + ").");
+        assertTrue(maxInfluence >= 0.72D,
+                "Template influence must not collapse below floor (got " + maxInfluence + ").");
+    }
+
+    @Test
+    void familyInfluenceRemainsModerateUnderHighBias() {
+        ArtifactLineage lineage = new ArtifactLineage("lineage-high-chaos");
+        lineage.evolutionaryBiasGenome().add(LineageBiasDimension.WEIRDNESS, 0.50D);
+        lineage.lineageTraits().put("chaos", 0.30D);
+        LineageInfluenceResolver resolver = new LineageInfluenceResolver();
+
+        double chaosFamilyInfluence = resolver.resolveFamilyInfluence(lineage, "chaos");
+        // Even maxed weirdness + trait should not create runaway family dominance
+        assertTrue(chaosFamilyInfluence <= 1.28D,
+                "Family influence must not exceed clamp ceiling (got " + chaosFamilyInfluence + ").");
+        assertTrue(chaosFamilyInfluence > 1.0D,
+                "High-bias family influence must still exceed neutral (got " + chaosFamilyInfluence + ").");
+    }
+
     private Artifact artifact(long seed, String lineage) {
         Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
         artifact.setArtifactSeed(seed);
