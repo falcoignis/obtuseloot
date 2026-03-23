@@ -1115,9 +1115,12 @@ public class NichePopulationTracker {
 
     public RolePressureMetrics pressureFor(long artifactSeed) {
         Map<MechanicNicheTag, NicheUtilityRollup> all = rollups();
+        if (all.isEmpty()) {
+            return new RolePressureMetrics(0.0D, 0.0D, 0.0D, 0.0D, 0.0D, 1.0D, 1.0D);
+        }
         ArtifactNicheProfile profile = nicheProfile(artifactSeed);
         NicheUtilityRollup nicheRollup = all.getOrDefault(profile.dominantNiche(), new NicheUtilityRollup(profile.dominantNiche(), 1, 0L, 0L, 0.0D, 1.0D));
-        return saturationModel.pressureFor(profile.dominantNiche(), nicheRollup, all.isEmpty() ? Map.of(profile.dominantNiche(), nicheRollup) : all);
+        return saturationModel.pressureFor(profile.dominantNiche(), nicheRollup, all);
     }
 
     public Map<String, Object> analyticsSnapshot() {

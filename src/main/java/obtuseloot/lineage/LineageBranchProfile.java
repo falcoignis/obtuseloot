@@ -69,6 +69,8 @@ public class LineageBranchProfile {
         ageWindows++;
         if (!contributedInWindow) {
             windowsSinceLastContribution++;
+        } else {
+            windowsSinceLastContribution = 0;
         }
     }
 

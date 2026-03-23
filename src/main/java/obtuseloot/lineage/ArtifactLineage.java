@@ -45,7 +45,7 @@ public class ArtifactLineage {
 
     public ArtifactLineage(String lineageId) {
         this.lineageId = lineageId;
-        this.evolutionaryBiasGenome = EvolutionaryBiasGenome.seeded(lineageId.hashCode());
+        this.evolutionaryBiasGenome = new EvolutionaryBiasGenome();
         for (GenomeTrait trait : GenomeTrait.values()) {
             genomeTraits.put(trait, 0.0D);
         }
@@ -160,7 +160,8 @@ public class ArtifactLineage {
             repeatedDivergences = 0;
         }
 
-        evaluateBranchLifecycle(formedSignature);
+        String contributingSignature = (formedSignature != null) ? formedSignature : branchSignature(observedBias);
+        evaluateBranchLifecycle(contributingSignature);
         branchSurvivors = (int) branches.values().stream().filter(candidate -> candidate.lifecycleState() == BranchLifecycleState.STABLE).count();
     }
 

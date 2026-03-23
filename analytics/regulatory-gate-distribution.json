@@ -1,26 +1,25 @@
 {
   "familyDistribution": {
-    "chaos": 5,
-    "consistency": 14,
-    "mobility": 9,
-    "precision": 11,
-    "survival": 9
+    "chaos": 3,
+    "mobility": 24,
+    "precision": 1,
+    "survival": 20
   },
-  "gateDiversity": 0.7298712099831165,
+  "gateDiversity": 1.0376517997982746,
   "lineageDistribution": {
     "common": 12
   },
   "openGateCounts": {
     "lineageMilestoneGate": 11,
-    "memoryGate": 3,
-    "survivalGate": 1
+    "memoryGate": 6,
+    "survivalGate": 5
   },
   "profileDistribution": {
     "[]": 1,
-    "[lineageMilestoneGate+memoryGate]": 3,
-    "[lineageMilestoneGate+survivalGate]": 1,
-    "[lineageMilestoneGate]": 7
+    "[lineageMilestoneGate+memoryGate+survivalGate]": 5,
+    "[lineageMilestoneGate+memoryGate]": 1,
+    "[lineageMilestoneGate]": 5
   },
-  "profileDiversity": 1.0751393240053733,
+  "profileDiversity": 1.14370838942625,
   "sampleSize": 12
 }
