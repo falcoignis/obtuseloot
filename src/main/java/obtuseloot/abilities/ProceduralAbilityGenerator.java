@@ -107,6 +107,12 @@ public class ProceduralAbilityGenerator {
     private final Map<AbilityCategory, Integer> recentCategoryUsage;
     private final Map<String, Integer> recentTemplateUsage;
     private final Map<String, Integer> lifetimeTemplateUsage;
+    // Precomputed at construction time from the immutable registry — never change at runtime.
+    private final Map<AbilityTrigger, Long> triggerTemplateCounts;
+    private final Map<AbilityCategory, Integer> categoryTemplateCounts;
+    private final Map<AbilityFamily, List<AbilityTemplate>> templatesByFamily;
+    // Incremental per-category template-usage total (mirrors recentTemplateUsage but keyed by category).
+    private final Map<AbilityCategory, Integer> recentCategoryTemplateUsage;
 
     public ProceduralAbilityGenerator(AbilityRegistry registry) {
         this(registry, null, null, null, null, true, ScoringMode.PROJECTION_WITH_CACHE, new AbilityDiversityIndex());
@@ -195,6 +201,10 @@ public class ProceduralAbilityGenerator {
         this.recentCategoryUsage = new EnumMap<>(AbilityCategory.class);
         this.recentTemplateUsage = new java.util.HashMap<>();
         this.lifetimeTemplateUsage = new java.util.HashMap<>();
+        this.triggerTemplateCounts = computeTriggerTemplateCounts();
+        this.categoryTemplateCounts = computeCategoryTemplateCounts2();
+        this.templatesByFamily = computeTemplatesByFamily();
+        this.recentCategoryTemplateUsage = new EnumMap<>(AbilityCategory.class);
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
@@ -425,7 +435,7 @@ public class ProceduralAbilityGenerator {
     }
 
     private double triggerSaturationPenalty(AbilityTemplate template) {
-        long total = registry.templates().stream().filter(candidate -> candidate.trigger() == template.trigger()).count();
+        long total = triggerTemplateCounts.getOrDefault(template.trigger(), 0L);
         double pressureWeight = TRIGGER_SATURATION_WEIGHTS.getOrDefault(template.trigger(), 1.0D);
         double pressure = Math.max(0.0D, total - 1.0D) * 0.045D * pressureWeight;
         return clamp(1.0D - pressure, 0.72D, 1.02D);
@@ -455,6 +465,33 @@ public class ProceduralAbilityGenerator {
             pressure.put(niche, crowded * 0.08D);
         });
         return Map.copyOf(pressure);
+    }
+
+    private Map<AbilityTrigger, Long> computeTriggerTemplateCounts() {
+        Map<AbilityTrigger, Long> counts = new EnumMap<>(AbilityTrigger.class);
+        for (AbilityTemplate t : registry.templates()) {
+            counts.merge(t.trigger(), 1L, Long::sum);
+        }
+        return Map.copyOf(counts);
+    }
+
+    private Map<AbilityCategory, Integer> computeCategoryTemplateCounts2() {
+        Map<AbilityCategory, Integer> counts = new EnumMap<>(AbilityCategory.class);
+        for (AbilityTemplate t : registry.templates()) {
+            counts.merge(t.category(), 1, Integer::sum);
+        }
+        return Map.copyOf(counts);
+    }
+
+    private Map<AbilityFamily, List<AbilityTemplate>> computeTemplatesByFamily() {
+        Map<AbilityFamily, List<AbilityTemplate>> map = new EnumMap<>(AbilityFamily.class);
+        for (AbilityTemplate t : registry.templates()) {
+            map.computeIfAbsent(t.family(), ignored -> new ArrayList<>()).add(t);
+        }
+        // Wrap each list as unmodifiable so callers cannot mutate registry state.
+        Map<AbilityFamily, List<AbilityTemplate>> result = new EnumMap<>(AbilityFamily.class);
+        map.forEach((family, list) -> result.put(family, List.copyOf(list)));
+        return Map.copyOf(result);
     }
 
     private Map<AbilityCategory, Double> computeCategoryTemplatePressure() {
@@ -514,9 +551,9 @@ public class ProceduralAbilityGenerator {
         double lineageInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveFamilyInfluence(lineage, key);
         double mutationInfluence = (lineageResolver == null) ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);
         double profileScore = base * ecosystem * lineageInfluence * mutationInfluence;
+        List<AbilityTemplate> familyTemplates = templatesByFamily.getOrDefault(family, List.of());
         if (experienceEvolutionEngine != null) {
-            double familyEcology = registry.templates().stream()
-                    .filter(template -> template.family() == family)
+            double familyEcology = familyTemplates.stream()
                     .mapToDouble(template -> experienceEvolutionEngine.ecologyModifierFor(artifact.getArtifactSeed(), template.mechanic(), template.trigger(), lineage == null ? null : lineage.lineageId(), lineageRegistry))
                     .average()
                     .orElse(1.0D);
@@ -525,8 +562,7 @@ public class ProceduralAbilityGenerator {
         if (!utilityHistory.hasUtilityHistory()) {
             return profileScore;
         }
-        double utilityFamilyBias = registry.templates().stream()
-                .filter(template -> template.family() == family)
+        double utilityFamilyBias = familyTemplates.stream()
                 .mapToDouble(template -> utilityHistory.utilityScoreForTemplate(template.mechanic(), template.trigger()))
                 .max()
                 .orElse(0.0D);
@@ -588,8 +624,12 @@ public class ProceduralAbilityGenerator {
     }
 
     private Map<AbilityTemplate, Double> compositeTemplateScores(List<AbilityTemplate> templates, Artifact artifact, ArtifactMemoryProfile memoryProfile, int stage, UtilityHistoryRollup utilityHistory, ArtifactLineage lineage, AdaptiveSupportAllocation supportAllocation, ArtifactNicheProfile nicheProfile, NicheVariantProfile variantProfile, List<AbilityDiversityIndex.AbilitySignature> activePool, AbilityDiversityIndex.AbilitySignature motifAnchor, List<AbilityTemplate> selected) {
-        Map<AbilityTemplate, Double> scores = new HashMap<>();
-        Map<AbilityCategory, List<AbilityTemplate>> byCategory = templates.stream().collect(Collectors.groupingBy(AbilityTemplate::category, () -> new EnumMap<>(AbilityCategory.class), Collectors.toList()));
+        Map<AbilityTemplate, Double> scores = new HashMap<>(templates.size() * 2);
+        // Manual grouping avoids stream collector allocation and intermediate list wrappers.
+        Map<AbilityCategory, List<AbilityTemplate>> byCategory = new EnumMap<>(AbilityCategory.class);
+        for (AbilityTemplate template : templates) {
+            byCategory.computeIfAbsent(template.category(), ignored -> new ArrayList<>()).add(template);
+        }
         for (List<AbilityTemplate> categoryTemplates : byCategory.values()) {
             Map<AbilityTemplate, Double> baseScores = new HashMap<>();
             for (AbilityTemplate template : categoryTemplates) {
@@ -771,8 +811,12 @@ public class ProceduralAbilityGenerator {
         if (normalizedScores.length <= 1) {
             return 1.0D;
         }
-        double min = java.util.Arrays.stream(normalizedScores).min().orElse(normalizedScores[index]);
-        double max = java.util.Arrays.stream(normalizedScores).max().orElse(normalizedScores[index]);
+        // Single-pass min/max — avoids two separate boxing stream traversals.
+        double min = normalizedScores[0], max = normalizedScores[0];
+        for (int i = 1; i < normalizedScores.length; i++) {
+            if (normalizedScores[i] < min) min = normalizedScores[i];
+            if (normalizedScores[i] > max) max = normalizedScores[i];
+        }
         double span = Math.max(max - min, 1.0E-9D);
         double relative = (normalizedScores[index] - min) / span;
         return SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR
@@ -861,12 +905,14 @@ public class ProceduralAbilityGenerator {
         if (weights.length == 0 || totalWeight <= 0.0D) {
             return 0.0D;
         }
-        return java.util.Arrays.stream(weights)
-                .boxed()
-                .sorted(Comparator.reverseOrder())
-                .limit(3)
-                .mapToDouble(weight -> weight / totalWeight)
-                .sum();
+        // Manual top-3 extraction — avoids boxing, allocation, and a full array sort.
+        double first = 0.0D, second = 0.0D, third = 0.0D;
+        for (double w : weights) {
+            if (w > first) { third = second; second = first; first = w; }
+            else if (w > second) { third = second; second = w; }
+            else if (w > third) { third = w; }
+        }
+        return (first + second + third) / totalWeight;
     }
 
 
@@ -932,10 +978,18 @@ public class ProceduralAbilityGenerator {
     private void pushRecentTemplate(String templateId) {
         recentTemplateSelections.addLast(templateId);
         recentTemplateUsage.merge(templateId, 1, Integer::sum);
+        AbilityTemplate addedTemplate = templateById(templateId);
+        if (addedTemplate != null) {
+            recentCategoryTemplateUsage.merge(addedTemplate.category(), 1, Integer::sum);
+        }
         while (recentTemplateSelections.size() > RECENT_TEMPLATE_WINDOW_LIMIT) {
             String expired = recentTemplateSelections.pollFirst();
             if (expired != null) {
                 decrementCount(recentTemplateUsage, expired);
+                AbilityTemplate expiredTemplate = templateById(expired);
+                if (expiredTemplate != null) {
+                    decrementCount(recentCategoryTemplateUsage, expiredTemplate.category());
+                }
             }
         }
     }
@@ -984,9 +1038,7 @@ public class ProceduralAbilityGenerator {
         if (sameCategoryTotal <= 0) {
             return lifetimeCount <= COLD_LIFETIME_WARM_THRESHOLD;
         }
-        long categoryTemplates = registry.templates().stream()
-                .filter(candidate -> candidate.category() == template.category())
-                .count();
+        long categoryTemplates = categoryTemplateCounts.getOrDefault(template.category(), 1);
         double expectedShare = 1.0D / Math.max(1.0D, categoryTemplates);
         double observedShare = recentCount / (double) Math.max(1, sameCategoryTotal);
         return lifetimeCount <= 1 && observedShare <= (expectedShare * 0.25D);
@@ -1020,11 +1072,7 @@ public class ProceduralAbilityGenerator {
             return 1.03D;
         }
         int templateCount = recentTemplateUsage.getOrDefault(template.id(), 0);
-        long uniqueCategoryTemplates = registry.templates().stream()
-                .filter(candidate -> candidate.category() == template.category())
-                .map(AbilityTemplate::id)
-                .distinct()
-                .count();
+        long uniqueCategoryTemplates = categoryTemplateCounts.getOrDefault(template.category(), 1);
         double expectedShare = 1.0D / Math.max(1.0D, uniqueCategoryTemplates);
         double observedShare = templateCount / (double) sameCategoryTotal;
         double pressure = clamp((expectedShare - observedShare) / Math.max(expectedShare, 0.0001D), -1.0D, 1.0D);
@@ -1201,9 +1249,7 @@ public class ProceduralAbilityGenerator {
     }
 
     private int categoryTemplateCount(AbilityCategory category) {
-        return (int) registry.templates().stream()
-                .filter(template -> template.category() == category)
-                .count();
+        return categoryTemplateCounts.getOrDefault(category, 0);
     }
 
     private double categoryExposureBias(AbilityCategory category, MechanicNicheTag dominantNiche, List<AbilityDiversityIndex.AbilitySignature> activePool) {
@@ -1269,11 +1315,7 @@ public class ProceduralAbilityGenerator {
     }
 
     private int recentCategoryTemplateTotal(AbilityCategory category) {
-        return recentTemplateUsage.entrySet().stream()
-                .map(entry -> Map.entry(templateById(entry.getKey()), entry.getValue()))
-                .filter(entry -> entry.getKey() != null && entry.getKey().category() == category)
-                .mapToInt(Map.Entry::getValue)
-                .sum();
+        return recentCategoryTemplateUsage.getOrDefault(category, 0);
     }
 
     private AbilitySimilarityProfile abilitySimilarityProfile(AbilityDiversityIndex.AbilitySignature candidate,
