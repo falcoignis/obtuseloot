@@ -151,3 +151,28 @@ ecosystem:
     telemetryArchiveBatchSize: 256
     telemetryRollupIntervalMs: 5000
     telemetryRehydrateReplayWindowEvents: 512
+
+# Production safety guards (Phase 8.1)
+# Guards are bounded, deterministic, and reversible — they apply only while the rolling
+# window shows dominance and revert automatically once distributions normalise.
+safety:
+  guards:
+    # Category dominance: if a family's rolling-average share exceeds this, apply suppression.
+    categoryDominanceThreshold: 0.65
+    # Multiplicative factor applied to a dominant category's final weight (< 1.0 = suppression).
+    categorySuppressionFactor: 0.85
+    # Template dominance: if a template/trigger type's rolling-average share exceeds this, apply suppression.
+    templateDominanceThreshold: 0.55
+    # Multiplicative factor applied to a dominant template's final weight.
+    templateSuppressionFactor: 0.90
+    # Candidate pool size below which a pool-collapse guard fires and eligibility relaxation activates.
+    candidatePoolCollapseThreshold: 2
+    # Number of evaluation snapshots held in the rolling window.
+    rollingWindowSize: 100
+  # Emit a logger WARNING each time a guard threshold is crossed (useful for debugging; disable in production).
+  telemetryVerbose: false
+  # How many evaluation events between automatic snapshot captures (0 = disabled).
+  snapshotIntervalEvents: 500
+  # Log a safety summary to console periodically.
+  periodicConsoleLog: false
+  periodicConsoleLogIntervalTicks: 1200
