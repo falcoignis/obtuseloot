@@ -7,6 +7,7 @@ import obtuseloot.lineage.LineageBiasDimension;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.memory.ArtifactMemoryProfile;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -20,6 +21,11 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AbilityNoveltyTuningProbeTest {
+
+    @BeforeEach
+    void resetDiversityIndex() {
+        AbilityDiversityIndex.instance().reset();
+    }
 
     @Test
     void noveltyTuningProbeReportsHealthyNoveltyWithoutDivergenceRegression() {

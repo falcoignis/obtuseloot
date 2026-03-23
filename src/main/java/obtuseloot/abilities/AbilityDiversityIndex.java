@@ -28,6 +28,10 @@ public final class AbilityDiversityIndex {
         return INSTANCE;
     }
 
+    public void reset() {
+        recent.clear();
+    }
+
     public List<AbilitySignature> activePool(long excludeSeed) {
         List<AbilitySignature> out = new ArrayList<>();
         ObtuseLoot plugin = ObtuseLoot.get();

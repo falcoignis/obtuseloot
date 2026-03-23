@@ -1366,7 +1366,8 @@ public class ProceduralAbilityGenerator {
         };
         double memoryTuning = template.metadata().hasAffinity("exploration") ? 1.0D + (memoryProfile.mobilityWeight() * 0.04D) : 1.0D;
         double nicheMatchWeight = matches ? 1.42D : (adjacent ? 1.10D : 0.70D);
-        return clamp(nicheMatchWeight * familyBias * memoryTuning, 0.42D, 2.10D);
+        double effectiveFamilyBias = matches ? familyBias : Math.min(1.0D, familyBias);
+        return clamp(nicheMatchWeight * effectiveFamilyBias * memoryTuning, 0.42D, 2.10D);
     }
 
     private double categoryWeight(AbilityTemplate template,

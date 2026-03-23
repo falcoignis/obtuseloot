@@ -15,9 +15,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BroadSkillCategoryExpansionProbeTest {
+
+    @BeforeEach
+    void resetDiversityIndex() {
+        AbilityDiversityIndex.instance().reset();
+    }
 
     @Test
     void expandedCategoriesAreSampledAcrossNichesAndLineages() {
