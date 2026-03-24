@@ -1,5 +1,5 @@
 name:        ObtuseLoot
-version:     0.9.43
+version:     0.9.50-beta
 main:        obtuseloot.ObtuseLoot
 description: Persistent artifact progression with evolution, awakening, and drift.
 authors:     [ falcoignis ]
@@ -17,7 +17,7 @@ commands:
       /<command> reset [player]
       /<command> reload
       /<command> debug help
-      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate|ability|memory|persistence|ecosystem|lineage|genome|projection
+      /<command> debug inspect|rep|evolve|drift|awaken|fuse|lore|reset|save|reload|instability|archetype|path|seed|simulate|ability|memory|persistence|ecosystem|lineage|genome|projection|subscriptions|artifact
       /<command> debug seed show|reroll|set|export|import
       /<command> debug ecosystem [bias|balance]
       /<command> debug projection [cache|stats]
@@ -37,20 +37,26 @@ commands:
 
 permissions:
   obtuseloot.help:
-    description: Allows /obtuseloot help.
+    description: View the /obtuseloot command reference.
     default: true
   obtuseloot.info:
-    description: Allows /obtuseloot info.
+    description: View plugin runtime status, ecosystem health, dashboard summaries, and map visualizations.
     default: true
   obtuseloot.inspect:
-    description: Allows /obtuseloot inspect.
+    description: Inspect a player's tracked artifact and reputation state.
     default: op
   obtuseloot.admin:
-    description: Allows /obtuseloot refresh, reset, and reload.
+    description: Administrative access — refresh, reset, reload config, and clear ecosystem rolling metrics.
     default: op
   obtuseloot.edit:
-    description: Allows /obtuseloot addname and /obtuseloot removename.
+    description: Edit name pools in full (addname / removename for all pools). Grants all scoped obtuseloot.edit.* nodes implicitly.
+    default: op
+  obtuseloot.edit.prefixes:
+    description: Edit the artifact prefix name pool only (addname / removename prefixes).
+    default: op
+  obtuseloot.edit.suffixes:
+    description: Edit the artifact suffix name pool only (addname / removename suffixes).
     default: op
   obtuseloot.debug:
-    description: Allows /obtuseloot debug, /obtuseloot debug simulate, and /obtuseloot debug seed commands for progression testing.
+    description: Access the full debug surface — artifact inspection, progression simulation, seed control, ecosystem debug, and runtime diagnostics.
     default: op

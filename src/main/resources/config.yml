@@ -1,10 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ObtuseLoot — config.yml
+# Version: 0.9.50-beta
+#
+# This file is deployed to plugins/ObtuseLoot/config.yml on first run.
+# Reload at runtime with: /ol reload
+#
+# BETA NOTE: Some balance settings may still evolve across beta releases.
+# Monitor ecosystem metrics with /ol ecosystem health and /ol ecosystem dump.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STORAGE
+# Select the persistence backend. Options: yaml, sqlite, mysql
+#   yaml   — Default. File-based, no external dependencies. Fine for small servers.
+#   sqlite — Single-file embedded database. Better for larger player counts.
+#   mysql  — External MySQL/MariaDB. Required for multi-server / proxy setups.
+#
+# fallbackToYamlOnFailure: if the selected backend fails to initialize, fall
+#   back to YAML rather than aborting. Set false in production to fail loudly.
+# ─────────────────────────────────────────────────────────────────────────────
 storage:
   backend: yaml
   fallbackToYamlOnFailure: false
 
+# SQLite configuration (used when storage.backend = sqlite)
 sqlite:
   file: plugins/ObtuseLoot/data/obtuseloot.db
 
+# MySQL configuration (used when storage.backend = mysql)
+# IMPORTANT: Change credentials before deploying to a live server.
 mysql:
   host: localhost
   port: 3306
@@ -16,6 +41,34 @@ mysql:
     enabled: false
     maxPoolSize: 10
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PERSISTENCE
+# autosave-interval-seconds: How often player artifact and reputation data is
+#   saved to disk. Default 300 (5 minutes). Lower values reduce data-loss window
+#   at the cost of more I/O.
+# ─────────────────────────────────────────────────────────────────────────────
+persistence:
+  autosave-interval-seconds: 300
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REPUTATION
+# Tuning for the behavior-tracking window that drives artifact progression.
+#
+# combat-window-ms: Time window for grouping combat events into a single context.
+# low-health-threshold: HP value at or below which a player is considered in a
+#   survival/low-health state for reputation scoring.
+# mobility-distance-threshold: Movement distance (blocks) required for a single
+#   tick to score as a mobility action.
+# kill-chain-window-ms: Time window for multi-kill chain tracking.
+# multi-target-chaos-threshold: Distinct targets required in one combat window
+#   to register as chaos-style combat.
+# boss-types: Entity types treated as bosses for boss-kill reputation scoring.
+# volatile-decay-interval-seconds: How often volatile reputation stats decay.
+# volatile-decay-factor: Multiplicative factor applied each decay tick (< 1.0).
+# context-cleanup-seconds: How long before a stale combat context is discarded.
+# ─────────────────────────────────────────────────────────────────────────────
 reputation:
   combat-window-ms: 10000
   low-health-threshold: 6.0
@@ -27,6 +80,13 @@ reputation:
   volatile-decay-factor: 0.96
   context-cleanup-seconds: 120
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EVOLUTION
+# Score thresholds that determine when an artifact's archetype tier advances.
+# The current-archetype-inertia and archetype-switch-margin prevent thrashing
+# when an artifact hovers near a boundary.
+# ─────────────────────────────────────────────────────────────────────────────
 evolution:
   archetype-threshold: 10
   tempered-threshold: 25
@@ -35,6 +95,17 @@ evolution:
   archetype-switch-margin: 4.0
   current-archetype-inertia: 2.0
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DRIFT
+# Probabilistic stat drift that introduces natural variation in artifact stats.
+#
+# base-chance: Baseline probability of a drift event per eligible tick.
+# max-chance: Maximum probability cap after chaos buildup.
+# chaos-multiplier: How much each unit of chaos score increases drift chance.
+# consistency-reduction: How much each unit of consistency score reduces drift chance.
+# instability-duration-seconds: How long an instability state persists before expiring.
+# ─────────────────────────────────────────────────────────────────────────────
 drift:
   base-chance: 0.05
   max-chance: 0.40
@@ -42,9 +113,27 @@ drift:
   consistency-reduction: 0.005
   instability-duration-seconds: 600
 
-persistence:
-  autosave-interval-seconds: 300
 
+# ─────────────────────────────────────────────────────────────────────────────
+# COMBAT
+# precision-threshold-damage: Minimum single-hit damage required to register
+#   as a precision strike for reputation scoring.
+# ─────────────────────────────────────────────────────────────────────────────
+combat:
+  precision-threshold-damage: 10.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NAMING
+# Controls how artifact names are generated and discovered over time.
+#
+# use-deterministic-owner-seed: When true, each artifact's name is seeded from
+#   its owner UUID, producing stable names across reloads.
+# discovery-thresholds: Kill milestones at which richer name fragments unlock.
+# compression.max-words: Maximum word count for compressed/short-form names.
+# lexeme-pools: In-memory fallback lexeme pools per reputation axis. These are
+#   used if the flat-file name pools are not populated.
+# ─────────────────────────────────────────────────────────────────────────────
 naming:
   use-deterministic-owner-seed: true
   discovery-thresholds:
@@ -64,20 +153,44 @@ naming:
     support: [mercy, bloom, ward]
     control: [warden, vigil, glass]
 
-combat:
-  precision-threshold-damage: 10.0
 
+# ─────────────────────────────────────────────────────────────────────────────
+# DASHBOARD
+# ADVANCED: The embedded web server exposes ecosystem metrics over HTTP.
+# webServerEnabled: Keep false unless you specifically want the HTTP dashboard.
+#   Enabling this on a public server without firewalling the port is a security risk.
+# port: Listening port for the embedded HTTP server (if enabled).
+# ─────────────────────────────────────────────────────────────────────────────
 dashboard:
   webServerEnabled: false
   port: 8085
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# RUNTIME
+# Performance and feature-flag settings for the live plugin engine.
+#
+# triggerSubscriptionIndexing: Enables an index that accelerates ability trigger
+#   lookup. Recommended true for servers with many active artifacts.
+# activeArtifactCache: Caches recently accessed artifacts in memory to reduce
+#   repeated persistence reads. Recommended true.
+# activeArtifactCacheMaxEntries: Maximum number of artifacts held in the cache.
+# activeArtifactCacheIdleExpireMs: How long an idle cache entry is retained
+#   before eviction (milliseconds). Default 300000 (5 minutes).
+# ─────────────────────────────────────────────────────────────────────────────
 runtime:
   triggerSubscriptionIndexing: true
   activeArtifactCache: true
   activeArtifactCacheMaxEntries: 2048
   activeArtifactCacheIdleExpireMs: 300000
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TEXT
+# Per-channel word-count caps for generated artifact text (lore, names, etc.).
+# Reducing these values produces shorter output; increasing them allows richer
+# but potentially wordier text.
+# ─────────────────────────────────────────────────────────────────────────────
 text:
   channels:
     name:
@@ -97,6 +210,13 @@ text:
     convergence:
       max-words: 14
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ANALYTICS — ECOLOGY
+# ADVANCED: Parameters for the offline and runtime ecological analytics engine.
+# These drive niche modeling, fitness sharing, and mutation bias calculations.
+# Do not tune these on a live server without reviewing analytics output first.
+# ─────────────────────────────────────────────────────────────────────────────
 analytics:
   ecology:
     behavioralProjection:
@@ -139,6 +259,23 @@ analytics:
       interactionWeight: 0.01
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ECOSYSTEM
+# ADVANCED: Runtime telemetry pipeline and ecological parameter tuning.
+#
+# nicheSaturationSensitivity: How strongly niche saturation affects fitness scores.
+# lineageMomentumInfluence: Weight of historical lineage momentum on evolution paths.
+# mutationAmplitudeMin/Max: Bounds on randomized mutation amplitude.
+# driftWindowDurationTicks: How many ticks constitute a drift evaluation window.
+# competitionReinforcementCurve: Curvature of competitive pressure reinforcement.
+#
+# Telemetry pipeline:
+#   telemetryFlushIntervalTicks: How often the telemetry buffer is flushed (ticks).
+#   telemetryArchiveBatchSize: Events per archive write batch.
+#   telemetryRollupIntervalMs: Rollup aggregation interval (milliseconds).
+#   telemetryRehydrateReplayWindowEvents: Number of archive events replayed on
+#     startup to restore rollup state.
+# ─────────────────────────────────────────────────────────────────────────────
 ecosystem:
   parameters:
     nicheSaturationSensitivity: 0.90
@@ -152,34 +289,45 @@ ecosystem:
     telemetryRollupIntervalMs: 5000
     telemetryRehydrateReplayWindowEvents: 512
 
-# Production safety guards (Phase 8.1)
-# Guards are bounded, deterministic, and reversible — they apply only while the rolling
-# window shows dominance and revert automatically once distributions normalise.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAFETY GUARDS
+# Automatic guards that prevent any single ability category or trigger template
+# from dominating the artifact ecosystem. Guards are bounded, deterministic,
+# and self-reverting — suppression is lifted automatically once distributions
+# normalise within the rolling window.
+#
+# Recommended for beta: leave defaults. Use /ol ecosystem health to observe
+# guard activations. Adjust thresholds only after reviewing telemetry output.
+#
+# guards.categoryDominanceThreshold: Share above which a category is suppressed.
+# guards.categorySuppressionFactor: Multiplier applied to dominant category weight.
+# guards.templateDominanceThreshold: Share above which a template type is suppressed.
+# guards.templateSuppressionFactor: Multiplier applied to dominant template weight.
+# guards.candidatePoolCollapseThreshold: Pool size below which collapse guard fires.
+# guards.rollingWindowSize: Number of evaluation snapshots in the rolling window.
+#
+# telemetryVerbose: Emit WARNING log each time a guard threshold is crossed.
+#   Useful for debugging; leave false in normal operation.
+# snapshotIntervalEvents: Events between automatic safety snapshots (0 = disabled).
+# periodicConsoleLog: Periodically log a safety summary to console.
+# guard.minCombinedSuppression: Floor for the combined suppression multiplier.
+#   Prevents guard stacking from reducing scores below this bound.
+# dump.cooldownMs: Minimum milliseconds between /ol ecosystem dump executions.
+# ─────────────────────────────────────────────────────────────────────────────
 safety:
   guards:
-    # Category dominance: if a family's rolling-average share exceeds this, apply suppression.
     categoryDominanceThreshold: 0.65
-    # Multiplicative factor applied to a dominant category's final weight (< 1.0 = suppression).
     categorySuppressionFactor: 0.85
-    # Template dominance: if a template/trigger type's rolling-average share exceeds this, apply suppression.
     templateDominanceThreshold: 0.55
-    # Multiplicative factor applied to a dominant template's final weight.
     templateSuppressionFactor: 0.90
-    # Candidate pool size below which a pool-collapse guard fires and eligibility relaxation activates.
     candidatePoolCollapseThreshold: 2
-    # Number of evaluation snapshots held in the rolling window.
     rollingWindowSize: 100
-  # Emit a logger WARNING each time a guard threshold is crossed (useful for debugging; disable in production).
   telemetryVerbose: false
-  # How many evaluation events between automatic snapshot captures (0 = disabled).
   snapshotIntervalEvents: 500
-  # Log a safety summary to console periodically.
   periodicConsoleLog: false
   periodicConsoleLogIntervalTicks: 1200
   guard:
-    # Floor for the combined category × template suppression multiplier.
-    # Prevents guard stacking from reducing scores below this bound (0.75 = 25% max combined reduction).
     minCombinedSuppression: 0.75
   dump:
-    # Minimum milliseconds between successive /ol ecosystem dump executions (rate limit).
     cooldownMs: 3000
