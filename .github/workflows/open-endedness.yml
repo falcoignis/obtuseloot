@@ -3,6 +3,9 @@ name: Open Endedness Experiment
 on:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   open-endedness:
     runs-on: ubuntu-latest
