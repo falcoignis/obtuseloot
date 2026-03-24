@@ -128,6 +128,30 @@ Additional loose/unwired code remediation completed:
 2. Run:
    - `./scripts/publish.sh`
 
+## 2026-03-24 build + publish execution (v0.9.50-beta)
+
+### Checks run
+1. `./scripts/build.sh clean package -DskipTests`
+2. `./scripts/publish.sh`
+
+### Results
+
+1. **Build status (Pass)**
+   - Maven package build completed successfully for `0.9.50-beta`.
+   - Artifact generated: `target/ObtuseLoot-0.9.50-beta.jar`.
+
+2. **Publish status (Blocked by missing credentials)**
+   - Publish helper exited early because `GITHUB_TOKEN` is not set in this environment.
+   - No package was published from this workspace.
+
+### Action needed to complete publishing
+
+1. Set publish credentials/environment:
+   - `export GITHUB_TOKEN="<token-with-packages-write>"`
+   - `export GITHUB_REPOSITORY="<owner>/<repo>"` (required when no resolvable `origin` slug exists)
+2. Re-run publish:
+   - `./scripts/publish.sh`
+
 ## 2026-03-09 command/perms/full-file audit pass
 
 ### Checks run
