@@ -18,7 +18,7 @@ public class ArtifactLineage {
     private static final int SURVIVAL_WINDOW = 8;
     private static final double UNSTABLE_THRESHOLD = 0.22D;
     private static final double COLLAPSING_THRESHOLD = 0.05D;
-    private static final int UNSTABLE_GRACE_WINDOWS = 3;
+    private static final int UNSTABLE_GRACE_WINDOWS = 4;
     private static final int COLLAPSING_GRACE_WINDOWS = 3;
     private static final int RECOVERY_WINDOWS = 2;
 
