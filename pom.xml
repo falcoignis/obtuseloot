@@ -21,7 +21,7 @@
 
     <groupId>com.falcoignis</groupId>
     <artifactId>obtuseloot</artifactId>
-    <version>0.9.43</version>
+    <version>0.9.50-beta</version>
     <packaging>jar</packaging>
 
     <name>ObtuseLoot</name>
