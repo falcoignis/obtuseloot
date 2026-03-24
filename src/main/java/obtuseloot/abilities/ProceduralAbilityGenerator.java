@@ -309,6 +309,10 @@ public class ProceduralAbilityGenerator {
     }
 
 
+    private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile) {
+        return resolveScoringNicheProfile(utilityHistory, memoryProfile, null);
+    }
+
     private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage) {
         ArtifactNicheProfile classified = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
         if (utilityHistory.hasUtilityHistory() || classified.dominantNiche() != MechanicNicheTag.GENERALIST) {
@@ -402,8 +406,9 @@ public class ProceduralAbilityGenerator {
         double utilityYield = clamp(template.metadata().ecologicalYieldScore(), 0.42D, 1.28D);
         score *= utilityYield;
         if (template.trigger() == AbilityTrigger.ON_MEMORY_EVENT || template.trigger() == AbilityTrigger.ON_WITNESS_EVENT) score += memoryProfile.pressure() * 0.08D;
+        if (template.trigger() == AbilityTrigger.ON_RITUAL_INTERACT && template.mechanic() == AbilityMechanic.RITUAL_CHANNEL) score += memoryProfile.pressure() * 0.06D;
         if (template.trigger() == AbilityTrigger.ON_STRUCTURE_SENSE) score += memoryProfile.bossWeight() * 0.06D;
-        if (template.mechanic() == AbilityMechanic.RITUAL_CHANNEL || template.mechanic() == AbilityMechanic.REVENANT_TRIGGER) score += memoryProfile.chaosWeight() * 0.07D;
+        if (template.mechanic() == AbilityMechanic.RITUAL_CHANNEL || template.mechanic() == AbilityMechanic.REVENANT_TRIGGER || template.mechanic() == AbilityMechanic.ALTAR_SIGNAL_BOOST) score += memoryProfile.chaosWeight() * 0.07D;
         if (template.mechanic() == AbilityMechanic.NAVIGATION_ANCHOR || template.trigger() == AbilityTrigger.ON_WORLD_SCAN) score += memoryProfile.mobilityWeight() * 0.1D;
         if (template.mechanic() == AbilityMechanic.HARVEST_RELAY || template.trigger() == AbilityTrigger.ON_BLOCK_HARVEST) score += memoryProfile.survivalWeight() * 0.08D;
         if (template.metadata().affinities().contains("exploration")) score += memoryProfile.mobilityWeight() * 0.05D;
@@ -1408,8 +1413,8 @@ public class ProceduralAbilityGenerator {
         boolean adjacent = !matches && nicheAdjacent(templateNiches, dominant);
         double familyBias = switch (dominant) {
             case NAVIGATION, ENVIRONMENTAL_SENSING -> template.family() == AbilityFamily.MOBILITY ? 1.58D : 0.63D;
-            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.58D : 0.63D;
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.58D : 0.63D;
+            case FARMING_WORLDKEEPING, PROTECTION_WARDING, ENVIRONMENTAL_ADAPTATION -> template.family() == AbilityFamily.SURVIVAL ? 1.64D : 0.63D;
+            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> template.family() == AbilityFamily.CHAOS ? 1.74D : 0.63D;
             case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> template.family() == AbilityFamily.CONSISTENCY ? 1.48D : 0.68D;
             default -> 1.0D;
         };
@@ -1427,23 +1432,23 @@ public class ProceduralAbilityGenerator {
         AbilityCategory category = template.category();
         double nicheMatch = category.niches().contains(dominant) ? 1.10D : (nicheAdjacent(category.niches(), dominant) ? 1.02D : 0.94D);
         double memoryBias = switch (category) {
-            case TRAVERSAL_MOBILITY -> 1.0D + (memoryProfile.mobilityWeight() * 0.05D);
+            case TRAVERSAL_MOBILITY -> 1.0D + (memoryProfile.mobilityWeight() * 0.18D);
             case SENSING_INFORMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D);
-            case SURVIVAL_ADAPTATION, DEFENSE_WARDING -> 1.0D + (memoryProfile.survivalWeight() * 0.05D);
+            case SURVIVAL_ADAPTATION, DEFENSE_WARDING -> 1.0D + (memoryProfile.survivalWeight() * 0.18D);
             case COMBAT_TACTICAL_CONTROL -> 1.0D + (memoryProfile.aggressionWeight() * 0.04D);
-            case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D) + (memoryProfile.survivalWeight() * 0.04D);
+            case RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.06D) + (memoryProfile.survivalWeight() * 0.12D);
             case SOCIAL_SUPPORT_COORDINATION -> 1.0D + (memoryProfile.disciplineWeight() * 0.02D) + (memoryProfile.aggressionWeight() * 0.03D);
-            case RITUAL_STRANGE_UTILITY -> 1.0D + (memoryProfile.chaosWeight() * 0.05D);
+            case RITUAL_STRANGE_UTILITY -> 1.0D + (memoryProfile.chaosWeight() * 0.08D) + (memoryProfile.bossWeight() * 0.12D);
             case STEALTH_TRICKERY_DISRUPTION -> 1.0D + (memoryProfile.mobilityWeight() * 0.07D) + (memoryProfile.chaosWeight() * 0.04D);
         };
         double lineageBias = lineage == null ? 1.0D : switch (category) {
-            case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.18D);
+            case TRAVERSAL_MOBILITY, SENSING_INFORMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE) * 0.68D);
             case SOCIAL_SUPPORT_COORDINATION, DEFENSE_WARDING, RESOURCE_FARMING_LOGISTICS, CRAFTING_ENGINEERING_AUTOMATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.SUPPORT_PREFERENCE) * 0.07D);
-            case RITUAL_STRANGE_UTILITY -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.14D) + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.22D);
-            case STEALTH_TRICKERY_DISRUPTION, COMBAT_TACTICAL_CONTROL -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.06D);
+            case RITUAL_STRANGE_UTILITY -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.52D) + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RITUAL_PREFERENCE) * 0.70D);
+            case STEALTH_TRICKERY_DISRUPTION, COMBAT_TACTICAL_CONTROL -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.WEIRDNESS) * 0.06D) - (Math.max(0.0D, lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE)) * 0.22D);
             case SURVIVAL_ADAPTATION -> 1.0D + (lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.RELIABILITY) * 0.05D);
         };
-        return clamp(nicheMatch * memoryBias * lineageBias * variantCategoryBias(template, variantProfile), 0.80D, 1.42D);
+        return clamp(nicheMatch * memoryBias * lineageBias * variantCategoryBias(template, variantProfile), 0.80D, 1.55D);
     }
 
 
@@ -1603,7 +1608,7 @@ public class ProceduralAbilityGenerator {
             case NAVIGATION -> right == MechanicNicheTag.MOBILITY_UTILITY || right == MechanicNicheTag.STRUCTURE_SENSING;
             case MOBILITY_UTILITY -> right == MechanicNicheTag.NAVIGATION || right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION;
             case STRUCTURE_SENSING -> right == MechanicNicheTag.ENVIRONMENTAL_SENSING || right == MechanicNicheTag.INSPECT_INFORMATION || right == MechanicNicheTag.NAVIGATION;
-            case ENVIRONMENTAL_SENSING -> right == MechanicNicheTag.STRUCTURE_SENSING || right == MechanicNicheTag.INSPECT_INFORMATION;
+            case ENVIRONMENTAL_SENSING -> right == MechanicNicheTag.STRUCTURE_SENSING || right == MechanicNicheTag.INSPECT_INFORMATION || right == MechanicNicheTag.NAVIGATION;
             case INSPECT_INFORMATION -> right == MechanicNicheTag.ENVIRONMENTAL_SENSING || right == MechanicNicheTag.STRUCTURE_SENSING || right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION;
             case SOCIAL_WORLD_INTERACTION -> right == MechanicNicheTag.MOBILITY_UTILITY || right == MechanicNicheTag.INSPECT_INFORMATION || right == MechanicNicheTag.SUPPORT_COHESION;
             case SUPPORT_COHESION -> right == MechanicNicheTag.SOCIAL_WORLD_INTERACTION || right == MechanicNicheTag.PROTECTION_WARDING;
@@ -1634,13 +1639,15 @@ public class ProceduralAbilityGenerator {
         double support = bias.tendency(LineageBiasDimension.SUPPORT_PREFERENCE);
         double weirdness = bias.tendency(LineageBiasDimension.WEIRDNESS);
         double value = 1.0D;
-        if (template.metadata().affinities().contains("exploration")) value += exploration * 1.20D;
-        if (template.metadata().affinities().contains("ritual")) value += ritual * 0.55D;
+        if (template.metadata().affinities().contains("exploration") && template.family() != AbilityFamily.CHAOS) value += exploration * 2.40D;
+        if (template.metadata().affinities().contains("ritual")) value += ritual * 1.15D;
         if (template.metadata().affinities().contains("support")) value += support * 0.08D;
-        if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 0.36D;
+        if (template.family() == AbilityFamily.CHAOS || template.metadata().utilityDomains().contains("ritual-utility")) value += weirdness * 1.40D;
+        if (template.family() == AbilityFamily.MOBILITY) value += Math.max(0.0D, exploration) * 0.90D;
+        if (template.family() == AbilityFamily.CHAOS) value -= Math.max(0.0D, exploration) * 0.95D;
         if (template.category() == AbilityCategory.STEALTH_TRICKERY_DISRUPTION || template.category() == AbilityCategory.COMBAT_TACTICAL_CONTROL) value += weirdness * 0.05D;
         if (template.category() == AbilityCategory.RESOURCE_FARMING_LOGISTICS || template.category() == AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION) value += support * 0.04D;
-        return clamp(value, 0.50D, 1.55D);
+        return clamp(value, 0.50D, 1.85D);
     }
 
     private double motifAnchorBias(AbilityDiversityIndex.AbilitySignature candidate, AbilityDiversityIndex.AbilitySignature anchor, NicheVariantProfile variantProfile) {

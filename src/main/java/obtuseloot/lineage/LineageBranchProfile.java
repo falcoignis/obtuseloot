@@ -103,4 +103,8 @@ public class LineageBranchProfile {
     public void setLastCollapseReason(String lastCollapseReason) {
         this.lastCollapseReason = lastCollapseReason == null || lastCollapseReason.isBlank() ? "na" : lastCollapseReason;
     }
+
+    public void resetStagnation() {
+        windowsSinceLastContribution = 0;
+    }
 }
