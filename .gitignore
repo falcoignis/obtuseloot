@@ -1,6 +1,3 @@
-# Maven
-target/
-
 # local artifact outputs
 dist/
 artifacts/
