@@ -1,48 +1,59 @@
 # ObtuseLoot
 
-ObtuseLoot is a progression plugin for **Purpur / Paper-compatible Minecraft Java servers** where each player develops a persistent artifact identity over time. Player behavior (combat style, risk profile, movement, kill chains, and long-term patterns) drives reputation, evolution, drift, lore, and ecosystem outcomes.
+Deterministic artifact progression for **Minecraft Java 1.21.11** servers running **Purpur / Paper-compatible APIs**.
 
-> **Beta Status (v0.9.50-beta):** this is a **beta** release. Core systems are playable, but balancing, defaults, and operational tuning may continue to change during beta.
+> **Beta status:** `0.9.50-beta` is a **beta release**. Core systems are implemented, but balance and tuning are still being refined.
 
 ---
 
-## Systems Overview
+## What ObtuseLoot Is
+
+ObtuseLoot tracks each player through a persistent artifact identity instead of disposable loot rolls.
+
+At runtime, player behavior feeds deterministic progression systems:
+
+- **Reputation** (precision, brutality, survival, mobility, chaos, consistency, kill patterns)
+- **Evolution and archetype routing**
+- **Drift and instability**
+- **Awakening and convergence identity transitions**
+- **Significance/lore expression** with epithets and personality feel
+- **Ecosystem-level balancing and safeguards**
+
+The plugin is built around repeatable identity state, not random one-off item rarity tiers.
+
+---
+
+## Core Systems Overview
 
 ### Artifacts
-- Each player is tracked as a persistent artifact profile (not just a random loot roll).
-- Artifact state includes identity, progression paths, drift history, lineage/species metadata, and generated text.
+Persistent per-player artifact records include seeded identity, storage key, archetype/evolution paths, awakening/convergence state, drift history, lineage/species data, memory traces, and notable events.
 
 ### Reputation
-- Reputation is built from observed behavior (precision, brutality, survival, mobility, chaos, consistency, kills/boss chains).
-- These signals feed evolution and other progression systems.
+Reputation is continuously updated from combat/movement context and kill-chain signals. These values are the primary input for progression and identity shifts.
 
 ### Evolution
-- Evolution tiers advance using threshold-based progression and archetype resolution.
-- Inertia and switch margins reduce rapid archetype thrashing near boundaries.
+`EvolutionEngine` resolves archetype + evolution tier from reputation thresholds and hybrid logic. Runtime thresholds are configurable.
 
 ### Drift / Instability
-- Drift applies probabilistic variation over time.
-- Chaos and consistency influence drift chance; instability has a configurable duration window.
+Drift chance is probabilistic and influenced by chaos vs consistency. Drift mutations modify bias maps and can apply temporary instability states.
 
 ### Awakening
-- Awakening can trigger identity replacement at milestone conditions.
-- This updates artifact identity state while preserving longitudinal progression context.
+Awakening performs deterministic identity replacement when memory + progression conditions are met (or via debug force), preserving continuity fields while reshaping expression traits.
 
 ### Convergence
-- Convergence applies identity transitions based on accumulated progression context.
-- It is surfaced in debug/admin tooling as part of progression diagnostics.
+Convergence evaluates bounded recipe paths and can shift artifact equipment identity/profile when prerequisites are met.
 
 ### Significance
-- Artifact significance is computed from identity/progression metadata and surfaced in debug inspection.
+Significance is derived from lineage traces, functional role, current state (steady/awakened/converged/unstable, etc.), distinctness context, and age/continuity.
 
 ### Lore / Epithets / Personality Feel
-- Naming and lore generation are seeded and discovery-gated.
-- Discovery thresholds and text channel limits control readability and reveal pacing.
+Lore lines combine significance formatting + generated fragments. Naming and text channels are controlled by deterministic seed behavior and per-channel text limits.
 
-### Ecosystem Health, Safety, and Dashboard Tooling
-- Ecosystem telemetry tracks aggregate diversity and collapse risk indicators.
-- Safety guards suppress dominant categories/templates and self-revert when distributions normalize.
-- Operator-facing tools include health summaries, JSON dumps, map rendering modes, and dashboard generation.
+### Ecosystem Safeguards / Telemetry / Monitoring
+The ecosystem engine includes category/template dominance guards, rolling safety windows, failure-signal detection, telemetry flush/rollups, snapshots, and safety dump tools.
+
+### Dashboard Surfaces
+ObtuseLoot generates analytics/dashboard files under `analytics/` and can optionally serve them via an embedded HTTP server (`dashboard.webServerEnabled`).
 
 ---
 
@@ -50,118 +61,170 @@ ObtuseLoot is a progression plugin for **Purpur / Paper-compatible Minecraft Jav
 
 | Component | Requirement |
 |---|---|
-| Minecraft Java | **1.21.11 target deployment** (plugin declares API `1.21`) |
-| Server software | **Purpur** or **Paper-compatible** server implementing the 1.21 API |
-| Java runtime | **Java 21** |
-| Build tool (source builds) | **Maven 3.9+** recommended |
+| Minecraft | Java Edition **1.21.11** target deployment |
+| Server | **Purpur** or compatible Paper/Bukkit 1.21 API implementation |
+| Java | **Java 21** |
+| Build tool | **Maven** (for source builds) |
+
+Notes:
+- `plugin.yml` declares `api-version: "1.21"`.
+- `pom.xml` uses Java 21 and Purpur API `1.21.1-R0.1-SNAPSHOT` as provided dependency.
 
 ---
 
 ## Installation
 
-1. Download or build `ObtuseLoot-0.9.50-beta.jar`.
-2. Place the JAR in your server `plugins/` directory.
-3. Start the server once to generate `plugins/ObtuseLoot/config.yml` and data folders.
-4. Review configuration before production use (especially storage and safety settings).
-5. Restart server after major storage/backend changes. For normal config edits, `/ol reload` is available.
+1. Build or obtain `ObtuseLoot-0.9.50-beta.jar`.
+2. Place it in your server `plugins/` directory.
+3. Start the server once (first-run generates `plugins/ObtuseLoot/config.yml` and plugin data directories).
+4. Configure storage backend (`yaml`, `sqlite`, or `mysql`) and review safety/runtime settings.
+5. Restart after backend changes. For normal config/name-pool updates, use `/ol reload`.
 
-### Storage setup during install
-- Set `storage.backend` to `yaml`, `sqlite`, or `mysql`.
-- If using MySQL, set real credentials before live deployment.
-- Optional: set `storage.fallbackToYamlOnFailure` if you want automatic YAML fallback on backend init failure.
+### First-run behavior
+- Default config is written via `saveDefaultConfig()`.
+- Runtime settings and evolution parameter profiles are loaded from config.
+- Persistence backend initializes at startup; startup aborts if backend fails and fallback is disabled.
+- Dashboard artifacts and telemetry files are generated under `analytics/`.
 
 ---
 
 ## Configuration Overview
 
-`config.yml` is organized into operator-facing sections:
+`src/main/resources/config.yml` is organized as follows:
 
-| Section | What it controls |
+| Section | Purpose |
 |---|---|
-| `storage`, `sqlite`, `mysql` | Backend selection and connection settings |
-| `persistence` | Autosave interval |
-| `reputation` | Combat windows, decay, chain logic, boss types |
-| `evolution` | Tier thresholds and archetype switching behavior |
+| `storage` | Select backend and fallback behavior (`fallbackToYamlOnFailure`) |
+| `sqlite` / `mysql` | Backend-specific connection/file settings |
+| `persistence` | Autosave cadence (`autosave-interval-seconds`) |
+| `reputation` | Combat windows, chaos thresholds, decay, boss types, context cleanup |
+| `evolution` | Archetype/tier thresholds and switch inertia |
 | `drift` | Drift probability bounds and instability duration |
-| `combat` | Precision damage threshold |
-| `naming` | Deterministic naming, discovery thresholds, lexeme pools |
-| `dashboard` | Embedded HTTP dashboard server toggle + port |
-| `runtime` | Cache/index performance toggles |
-| `text` | Word caps for generated channels (name/lore/awakening/etc.) |
-| `analytics.ecology` | Advanced ecological weighting and niche model controls |
-| `ecosystem.parameters` | Runtime ecosystem and telemetry-rollup parameters |
-| `safety` | Dominance guards, suppression behavior, dump cooldown/logging |
-
-**Dashboard note:** `dashboard.webServerEnabled` defaults to `false`. Keep it firewalled if enabled.
+| `combat` | Precision-hit threshold tuning |
+| `naming` | Deterministic name seeding, discovery thresholds, lexeme pools |
+| `dashboard` | Optional embedded web server and port |
+| `runtime` | Trigger subscription indexing + active artifact cache tuning |
+| `text` | Word-count caps per generated text channel |
+| `analytics.ecology` | Advanced ecological projection/fitness-sharing/adaptive niche tuning |
+| `ecosystem.parameters` | Environment pressure and telemetry rollup/rehydration parameters |
+| `safety` | Dominance thresholds, suppression bounds, snapshot cadence, dump cooldown |
 
 ---
 
 ## Commands
 
-Primary command: `/obtuseloot` (alias: `/ol`).
+Base command: `/obtuseloot` (alias: `/ol`).
 
-| Command | Description | Permission |
+### Operator commands
+
+| Syntax | Description | Permission |
 |---|---|---|
-| `/ol help` | Show command help | `obtuseloot.help` |
-| `/ol info` | Show runtime status | `obtuseloot.info` |
-| `/ol inspect [player]` | Inspect a tracked player artifact profile | `obtuseloot.inspect` |
-| `/ol refresh [player]` | Regenerate a player's artifact profile | `obtuseloot.admin` |
+| `/ol help` | Command reference | `obtuseloot.help` |
+| `/ol info` | Runtime status summary | `obtuseloot.info` |
+| `/ol inspect [player]` | Inspect tracked artifact/reputation state | `obtuseloot.inspect` |
+| `/ol refresh [player]` | Regenerate a player artifact profile | `obtuseloot.admin` |
 | `/ol reset [player]` | Clear tracked artifact + reputation state | `obtuseloot.admin` |
 | `/ol reload` | Reload config/runtime settings and name pools | `obtuseloot.admin` |
-| `/ol dashboard` | Show ecosystem dashboard/health summary | `obtuseloot.info` |
-| `/ol ecosystem [health\|dashboard]` | Show ecosystem health summary | `obtuseloot.info` |
-| `/ol ecosystem environment` | Show active environmental pressure multipliers | `obtuseloot.info` |
-| `/ol ecosystem dump` | Write ecosystem safety JSON dump | `obtuseloot.info` |
+| `/ol addname <prefixes\|suffixes> <value>` | Add name pool entry | `obtuseloot.edit` or scoped edit node |
+| `/ol removename <prefixes\|suffixes> <value>` | Remove name pool entry | `obtuseloot.edit` or scoped edit node |
+
+### Ecosystem / dashboard commands
+
+| Syntax | Description | Permission |
+|---|---|---|
+| `/ol dashboard` | Dashboard/health summary output | `obtuseloot.info` |
+| `/ol ecosystem` | Health summary output | `obtuseloot.info` |
+| `/ol ecosystem health` | Health summary output | `obtuseloot.info` |
+| `/ol ecosystem dashboard` | Health summary output | `obtuseloot.info` |
+| `/ol ecosystem environment` | Active environmental pressure multipliers | `obtuseloot.info` |
+| `/ol ecosystem dump` | Write safety snapshot JSON to `analytics/safety/ecosystem-safety-dump.json` | `obtuseloot.info` |
 | `/ol ecosystem reset-metrics` | Reset rolling ecosystem safety metrics | `obtuseloot.admin` |
-| `/ol ecosystem map [lineage\|species\|collapse]` | Start live map visualization mode | `obtuseloot.info` |
-| `/ol ecosystem map genome <trait>` | Render genome trait hotspot map | `obtuseloot.info` |
-| `/ol ecosystem map off` | Disable ecosystem map rendering | `obtuseloot.info` |
-| `/ol addname <prefixes\|suffixes> <value>` | Add entry to a name pool | `obtuseloot.edit` or scoped edit node |
-| `/ol removename <prefixes\|suffixes> <value>` | Remove entry from a name pool | `obtuseloot.edit` or scoped edit node |
-| `/ol debug help` | Show debug command surface | `obtuseloot.debug` |
-| `/ol debug <subcommand>` | Debug/admin tooling (rep/evolve/drift/awaken/fuse/lore/seed/simulate/projection/ecosystem/etc.) | `obtuseloot.debug` |
+| `/ol ecosystem map` | Console hotspot summary (or player live map default mode) | `obtuseloot.info` |
+| `/ol ecosystem map lineage\|species\|collapse` | Start live map mode | `obtuseloot.info` |
+| `/ol ecosystem map genome <trait>` | Start genome-trait hotspot rendering | `obtuseloot.info` |
+| `/ol ecosystem map off` | Stop live map rendering for player | `obtuseloot.info` |
+
+### Debug suite
+
+All debug subcommands require `obtuseloot.debug`.
+
+| Syntax | Purpose |
+|---|---|
+| `/ol debug help` | Debug command index |
+| `/ol debug inspect [player]` | Deep artifact state dump |
+| `/ol debug rep set\|add\|reset ...` | Reputation manipulation |
+| `/ol debug evolve\|drift\|awaken\|fuse\|lore [player]` | Force progression stages |
+| `/ol debug seed show\|reroll\|set\|export\|import ...` | Deterministic seed controls |
+| `/ol debug simulate ...` | Simulation inputs (`hit`, `move`, `lowhp`, `kill`, `multikill`, `bosses`, `chaos`, `cycle`, `path`, `resetcontext`) |
+| `/ol debug ability ...` | Ability profile inspection/refresh/explain/tree |
+| `/ol debug memory [player]` | Memory snapshot view |
+| `/ol debug lineage [player]` | Lineage assignment/trace |
+| `/ol debug genome interactions` | Trait interaction exports/heatmap |
+| `/ol debug projection cache\|stats` | Trait projection cache and scoring stats |
+| `/ol debug subscriptions [stats\|player]` | Trigger subscription index diagnostics |
+| `/ol debug artifact [storage\|resolve\|cache\|stats] [player]` | Artifact storage/cache inspection |
+| `/ol debug persistence [backend\|test\|migrate ...]` | Persistence status + migrations |
+| `/ol debug ecosystem [bias\|balance]` | Ecosystem snapshot internals |
+| `/ol debug dashboard` | Regenerate dashboard + heatmap artifacts |
 
 ---
 
 ## Permissions
 
-| Permission | Default | Purpose |
+| Permission | Default | Operator meaning |
 |---|---|---|
-| `obtuseloot.help` | `true` | Access command reference |
-| `obtuseloot.info` | `true` | Runtime status, ecosystem health, dashboard summaries, map views |
-| `obtuseloot.inspect` | `op` | Inspect tracked player state |
-| `obtuseloot.admin` | `op` | Refresh/reset/reload and ecosystem metric reset |
-| `obtuseloot.edit` | `op` | Full name pool editing (`addname` / `removename`) |
+| `obtuseloot.help` | `true` | Use `/ol help` |
+| `obtuseloot.info` | `true` | View runtime info, ecosystem summaries, dashboard output, map tools |
+| `obtuseloot.inspect` | `op` | Inspect tracked player artifact state |
+| `obtuseloot.admin` | `op` | Refresh/reset/reload and reset ecosystem rolling metrics |
+| `obtuseloot.edit` | `op` | Full name pool editing across all pools |
 | `obtuseloot.edit.prefixes` | `op` | Edit prefixes pool only |
 | `obtuseloot.edit.suffixes` | `op` | Edit suffixes pool only |
-| `obtuseloot.debug` | `op` | Full debug/diagnostic command surface |
+| `obtuseloot.debug` | `op` | Full debug/admin diagnostics surface |
 
 ---
 
-## Storage Backends
+## Storage / Persistence
 
-ObtuseLoot supports three persistence backends:
+ObtuseLoot supports three backends:
 
-| Backend | Operator expectations |
-|---|---|
-| `yaml` | Default file-based storage (`plugins/ObtuseLoot/playerdata/`) |
-| `sqlite` | Embedded single-file DB (configured path in `sqlite.file`) |
-| `mysql` | External MySQL/MariaDB backend for shared or larger deployments |
+- **YAML** (`storage.backend: yaml`) — default file-based storage.
+- **SQLite** (`storage.backend: sqlite`) — embedded DB file (`sqlite.file`).
+- **MySQL** (`storage.backend: mysql`) — external database (`mysql.*`).
 
-Additional operational notes:
-- Backend is selected by `storage.backend`.
-- `storage.fallbackToYamlOnFailure` controls fallback behavior if chosen backend fails at startup.
-- Debug migration paths exist for YAML to SQLite/MySQL (`/ol debug persistence migrate ...`).
+Operator notes:
+
+- Backend initialization happens during plugin startup.
+- If initialization fails:
+  - plugin startup stops by default, or
+  - falls back to YAML when `storage.fallbackToYamlOnFailure: true`.
+- Debug migrations exist for YAML → SQLite/MySQL (`/ol debug persistence migrate yaml-to-sqlite|yaml-to-mysql`).
+- Species snapshots are persisted/restored through the same player state store abstraction.
 
 ---
 
-## Beta Notes for Operators
+## Monitoring / Ecosystem Health
 
-- **This is a beta build (`0.9.50-beta`)**; expect tuning changes across beta versions.
-- Use `/ol ecosystem health`, `/ol dashboard`, and `/ol ecosystem dump` to monitor ecosystem state.
-- Review safety behavior and dominance trends before changing guard thresholds.
-- Keep routine backups, especially before changing storage backend or running migration/debug operations.
-- Validate updates in a staging world before production rollout.
+For beta operation, these are the primary monitoring surfaces:
+
+- `/ol ecosystem health` (or `/ol dashboard`) for live summary metrics and collapse risk.
+- `/ol ecosystem dump` for JSON safety snapshots with active guard/failure signals.
+- `/ol ecosystem map ...` for in-world or console hotspot views.
+- Dashboard artifacts under `analytics/dashboard/` (and optional web serving).
+- Telemetry artifacts under `analytics/telemetry/`.
+
+Safety guards are designed to be deterministic and self-reverting: suppression is automatically relaxed when rolling distributions normalize.
+
+---
+
+## Beta Guidance
+
+`0.9.50-beta` should be treated as an actively tuned beta:
+
+- Balance values and defaults may change between beta updates.
+- Monitor ecosystem metrics regularly instead of relying on one-time checks.
+- Keep backups before storage backend changes, migration commands, or major config retuning.
+- Validate production settings in a staging environment first when possible.
 
 ---
 
@@ -171,13 +234,13 @@ Additional operational notes:
 mvn -B -ntp clean package
 ```
 
-Output artifact:
+Output JAR:
 
 ```text
 target/ObtuseLoot-0.9.50-beta.jar
 ```
 
-To include tests:
+Optional test run:
 
 ```bash
 mvn -B -ntp clean test package
@@ -185,10 +248,21 @@ mvn -B -ntp clean test package
 
 ---
 
+## Known Limits / Notes
+
+Grounded operational notes for the current codebase:
+
+- The embedded dashboard web server is **disabled by default** and should be firewalled if enabled.
+- Several diagnostics (map rendering, debug player targets) depend on online players and loaded artifacts.
+- `analytics/` telemetry and report files can grow over time; monitor disk usage on busy servers.
+- Some command usage text in `plugin.yml` is intentionally broad shorthand; in-code handlers/tabs are the exact behavior source.
+
+---
+
 ## License
 
-This repository is licensed under the **MIT License**. See `LICENSE`.
+This project includes an MIT license (`LICENSE`).
 
 ## Contribution / Support
 
-There is currently no dedicated `CONTRIBUTING.md` or support policy document in this repository. For beta feedback, use the repository issue tracker/process used by the project maintainers.
+No dedicated `CONTRIBUTING.md` or formal support policy is present in this repository at this time.
