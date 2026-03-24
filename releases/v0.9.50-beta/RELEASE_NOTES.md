@@ -73,4 +73,4 @@ No migration steps are required when upgrading from `0.9.x` pre-beta builds. Exi
 ObtuseLoot-0.9.50-beta.jar
 ```
 
-SHA-256 checksum: `704ed6482efef0a52871c4fa412180c68540cc27b042e1f86761a9afa1e5511f`
+SHA-256 checksum: `457e09e2f74c08113998b5a403ca14d44dbfeca5ac51152541e1d1f3ea3d652f`
