@@ -3,16 +3,23 @@ package obtuseloot.commands;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.artifacts.Artifact;
+import obtuseloot.artifacts.ArtifactArchetypeValidator;
+import obtuseloot.artifacts.ArtifactIdentityTransition;
+import obtuseloot.artifacts.EquipmentArchetype;
 import obtuseloot.config.RuntimeSettings;
-import obtuseloot.debug.ArtifactDebugger;
+import obtuseloot.reputation.ArtifactReputation;
+import obtuseloot.significance.ArtifactSignificanceResolver;
 import obtuseloot.names.NamePoolManager;
-import obtuseloot.ecosystem.EcosystemMapRenderer;
 
+import org.bukkit.Material;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,9 +31,13 @@ import java.util.List;
 public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION_HELP = "obtuseloot.help";
     private static final String PERMISSION_INFO = "obtuseloot.info";
-    private static final String PERMISSION_INSPECT = "obtuseloot.inspect";
     private static final String PERMISSION_ADMIN = "obtuseloot.admin";
     private static final String PERMISSION_EDIT = "obtuseloot.edit";
+    private static final String PERMISSION_COMMAND_GIVE = "obtuseloot.command.give";
+    private static final String PERMISSION_COMMAND_CONVERT = "obtuseloot.command.convert";
+    private static final String PERMISSION_COMMAND_REROLL = "obtuseloot.command.reroll";
+    private static final String PERMISSION_COMMAND_INSPECT = "obtuseloot.command.inspect";
+    private static final String PERMISSION_COMMAND_FORCE_AWAKEN = "obtuseloot.command.forceawaken";
 
     private final ObtuseLoot plugin;
     private final DebugCommand debugCommand;
@@ -48,8 +59,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§dObtuseLoot command reference:");
             sender.sendMessage("§7/" + label + " help §8- §fShow this command list §8[" + PERMISSION_HELP + "]");
             sender.sendMessage("§7/" + label + " info §8- §fShow plugin runtime status §8[" + PERMISSION_INFO + "]");
-            sender.sendMessage("§7/" + label + " inspect [player] §8- §fInspect tracked artifact state for a player §8["
-                    + PERMISSION_INSPECT + "]");
+            sender.sendMessage("§7/" + label + " inspect §8- §fInspect held artifact identity details §8[" + PERMISSION_COMMAND_INSPECT + "]");
             sender.sendMessage("§7/" + label + " refresh [player] §8- §fRegenerate a player's artifact profile §8["
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " reset [player] §8- §fClear a player's tracked artifact and reputation state §8["
@@ -71,6 +81,10 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_EDIT + "]");
             sender.sendMessage("§7/" + label + " removename <pool> <value> §8- §fRemove a name entry from a pool §8["
                     + PERMISSION_EDIT + "]");
+            sender.sendMessage("§7/" + label + " give <player> §8- §fGenerate and deliver a fresh artifact item §8[" + PERMISSION_COMMAND_GIVE + "]");
+            sender.sendMessage("§7/" + label + " convert §8- §fConvert held equipment into a fresh artifact identity §8[" + PERMISSION_COMMAND_CONVERT + "]");
+            sender.sendMessage("§7/" + label + " reroll §8- §fReroll held artifact identity §8[" + PERMISSION_COMMAND_REROLL + "]");
+            sender.sendMessage("§7/" + label + " force-awaken §8- §fForce awakening on held artifact identity §8[" + PERMISSION_COMMAND_FORCE_AWAKEN + "]");
             return true;
         }
 
@@ -83,31 +97,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if ("inspect".equalsIgnoreCase(args[0])) {
-            if (!hasPermission(sender, PERMISSION_INSPECT)) {
-                return true;
-            }
-
-            Player target;
-            if (args.length >= 2) {
-                target = sender.getServer().getPlayerExact(args[1]);
-                if (target == null) {
-                    sender.sendMessage("§cPlayer not found: " + args[1]);
-                    return true;
-                }
-            } else if (sender instanceof Player player) {
-                target = player;
-            } else {
-                sender.sendMessage("§cConsole must provide a player: /" + label + " inspect <player>");
-                return true;
-            }
-
-            sender.sendMessage("§d=== Obtuse Inspect: " + target.getName() + " ===");
-            for (String line : ArtifactDebugger.describeLines(target.getUniqueId())) {
-                sender.sendMessage("§7" + line);
-            }
-            return true;
-        }
+        if ("inspect".equalsIgnoreCase(args[0])) return inspectHeldArtifact(sender);
+        if ("give".equalsIgnoreCase(args[0])) return handleGive(sender, label, args);
+        if ("convert".equalsIgnoreCase(args[0])) return handleConvert(sender);
+        if ("reroll".equalsIgnoreCase(args[0])) return handleReroll(sender);
+        if ("force-awaken".equalsIgnoreCase(args[0])) return handleForceAwaken(sender);
 
         if ("refresh".equalsIgnoreCase(args[0])) {
             if (!hasPermission(sender, PERMISSION_ADMIN)) {
@@ -271,7 +265,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             List<String> candidates = new ArrayList<>();
             addIfPermitted(sender, candidates, "help", PERMISSION_HELP);
             addIfPermitted(sender, candidates, "info", PERMISSION_INFO);
-            addIfPermitted(sender, candidates, "inspect", PERMISSION_INSPECT);
+            addIfPermitted(sender, candidates, "give", PERMISSION_COMMAND_GIVE);
+            addIfPermitted(sender, candidates, "convert", PERMISSION_COMMAND_CONVERT);
+            addIfPermitted(sender, candidates, "reroll", PERMISSION_COMMAND_REROLL);
+            addIfPermitted(sender, candidates, "inspect", PERMISSION_COMMAND_INSPECT);
+            addIfPermitted(sender, candidates, "force-awaken", PERMISSION_COMMAND_FORCE_AWAKEN);
             addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
@@ -287,7 +285,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 2 && isPlayerTargetCommand(args[0])) {
-            if ((("inspect".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_INSPECT))
+            if ((("give".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_COMMAND_GIVE))
                     || (("refresh".equalsIgnoreCase(args[0]) || "reset".equalsIgnoreCase(args[0]))
                     && !sender.hasPermission(PERMISSION_ADMIN)))) {
                 return List.of();
@@ -363,9 +361,204 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean isPlayerTargetCommand(String subcommand) {
-        return "inspect".equalsIgnoreCase(subcommand)
+        return "give".equalsIgnoreCase(subcommand)
                 || "refresh".equalsIgnoreCase(subcommand)
                 || "reset".equalsIgnoreCase(subcommand);
+    }
+
+    private boolean handleGive(CommandSender sender, String label, String[] args) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_GIVE)) {
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /" + label + " give <player>");
+            return true;
+        }
+        Player target = sender.getServer().getPlayerExact(args[1]);
+        if (target == null) {
+            sender.sendMessage("§cInvalid player: " + args[1]);
+            return true;
+        }
+        try {
+            Artifact artifact = plugin.getArtifactManager().recreate(target.getUniqueId());
+            ArtifactReputation reputation = plugin.getReputationManager().get(target.getUniqueId());
+            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, reputation, "command-give");
+            plugin.getLoreEngine().refreshLore(target, artifact, reputation);
+            plugin.getLineageRegistry().assignLineage(artifact);
+            plugin.getArtifactManager().markDirty(target.getUniqueId());
+            plugin.getArtifactManager().save(target.getUniqueId());
+            ItemStack item = renderArtifactItem(artifact, reputation);
+            var leftovers = target.getInventory().addItem(item);
+            if (!leftovers.isEmpty()) {
+                leftovers.values().forEach(drop -> target.getWorld().dropItemNaturally(target.getLocation(), drop));
+                sender.sendMessage("§eInventory full. Artifact dropped at " + target.getName() + "'s feet.");
+                target.sendMessage("§eYour inventory was full; artifact dropped at your feet.");
+            } else {
+                sender.sendMessage("§aGave artifact to " + target.getName() + ": §f" + artifact.getDisplayName());
+            }
+            return true;
+        } catch (RuntimeException ex) {
+            plugin.getLogger().severe("[Command] /obtuseloot give failed for " + args[1] + ": " + ex.getMessage());
+            sender.sendMessage("§cArtifact generation failed. Check server logs.");
+            return true;
+        }
+    }
+
+    private boolean handleConvert(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_CONVERT)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot convert");
+        if (player == null) return true;
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (held == null || held.getType() == Material.AIR) {
+            sender.sendMessage("§cHold an equipment item first.");
+            return true;
+        }
+        if (plugin.getArtifactItemStorage().isArtifactItem(held)) {
+            sender.sendMessage("§cHeld item is already an artifact.");
+            return true;
+        }
+        EquipmentArchetype archetype = resolveEquipmentArchetype(held);
+        if (archetype == null) {
+            sender.sendMessage("§cHeld item is not valid equipment (weapon/tool/armor).");
+            return true;
+        }
+        Artifact replacement = plugin.getArtifactManager().recreateWithArchetype(
+                player.getUniqueId(), archetype, "command-convert:" + archetype.id());
+        finalizeIdentityReplacement(player, null, replacement, "command-convert");
+        sender.sendMessage("§aConverted held item into artifact identity: §f" + replacement.getDisplayName());
+        return true;
+    }
+
+    private boolean handleReroll(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_REROLL)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot reroll");
+        if (player == null) return true;
+        ItemStack held = player.getInventory().getItemInMainHand();
+        Artifact current = resolveHeldArtifact(player, held, true);
+        if (current == null) return true;
+        EquipmentArchetype archetype = ArtifactArchetypeValidator.requireValid(current, "command-reroll");
+        Artifact replacement = plugin.getArtifactManager().recreateWithArchetype(
+                player.getUniqueId(), archetype, "command-reroll:" + archetype.id());
+        finalizeIdentityReplacement(player, current, replacement, "command-reroll");
+        sender.sendMessage("§aRerolled artifact identity: §f" + replacement.getDisplayName());
+        return true;
+    }
+
+    private boolean inspectHeldArtifact(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_INSPECT)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot inspect");
+        if (player == null) return true;
+        Artifact artifact = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (artifact == null) return true;
+        ArtifactSignificanceResolver significanceResolver = new ArtifactSignificanceResolver();
+        sender.sendMessage("§d=== Held Artifact ===");
+        sender.sendMessage("§7name=§f" + artifact.getDisplayName());
+        sender.sendMessage("§7archetype=§f" + artifact.getArchetypePath() + " §7item=§f" + artifact.getItemCategory());
+        sender.sendMessage("§7namingSeed=§f" + artifact.getNaming().getNamingSeed() + " §7lineage=§f" + artifact.getLatentLineage());
+        sender.sendMessage("§7awakening=§f" + artifact.getAwakeningPath() + " §7convergence=§f" + artifact.getConvergencePath());
+        sender.sendMessage("§7identityBirthTimestamp=§f" + artifact.getIdentityBirthTimestamp());
+        sender.sendMessage("§7persistenceOriginTimestamp=§f" + artifact.getPersistenceOriginTimestamp());
+        sender.sendMessage("§7significance=§f" + significanceResolver.resolve(artifact).format());
+        sender.sendMessage("§7profile=§f" + artifact.getLastRegulatoryProfile() + " §7trigger=§f" + artifact.getLastTriggerProfile());
+        sender.sendMessage("§7posture=§f" + artifact.getDriftAlignment() + " §7instability=§f" + artifact.getCurrentInstabilityState());
+        return true;
+    }
+
+    private boolean handleForceAwaken(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_FORCE_AWAKEN)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot force-awaken");
+        if (player == null) return true;
+        Artifact current = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (current == null) return true;
+        if (!"dormant".equalsIgnoreCase(current.getAwakeningPath())) {
+            sender.sendMessage("§cHeld artifact is already awakened.");
+            return true;
+        }
+        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        ArtifactIdentityTransition transition = plugin.getAwakeningEngine().forceAwakening(player, current, rep);
+        if (transition == null) {
+            sender.sendMessage("§cNo valid awakening path for held artifact.");
+            return true;
+        }
+        Artifact replacement = plugin.getArtifactManager().replaceIdentity(player.getUniqueId(), transition);
+        finalizeIdentityReplacement(player, current, replacement, "command-force-awaken");
+        plugin.getArtifactUsageTracker().trackAwakening(replacement);
+        sender.sendMessage("§aAwakening forced: §f" + replacement.getAwakeningPath());
+        return true;
+    }
+
+    private void finalizeIdentityReplacement(Player player, Artifact previous, Artifact replacement, String reason) {
+        ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
+        if (previous != null) {
+            plugin.getArtifactUsageTracker().transitionIdentity(previous, replacement);
+            plugin.getLineageRegistry().recordIdentityTransition(previous, replacement, reason, replacement.getConvergencePath());
+        } else {
+            plugin.getLineageRegistry().assignLineage(replacement);
+        }
+        plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), replacement, reputation, reason);
+        plugin.getLoreEngine().refreshLore(player, replacement, reputation);
+        player.getInventory().setItemInMainHand(renderArtifactItem(replacement, reputation));
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
+        plugin.getArtifactManager().save(player.getUniqueId());
+        plugin.getReputationManager().save(player.getUniqueId());
+    }
+
+    private Artifact resolveHeldArtifact(Player player, ItemStack held, boolean notify) {
+        if (held == null || held.getType() == Material.AIR) {
+            if (notify) player.sendMessage("§cHold an artifact item first.");
+            return null;
+        }
+        if (!plugin.getArtifactItemStorage().isArtifactItem(held)) {
+            if (notify) player.sendMessage("§cHeld item is not an artifact.");
+            return null;
+        }
+        Artifact artifact = plugin.getArtifactItemStorage().resolve(held, player.getUniqueId());
+        if (artifact == null) {
+            throw new IllegalStateException("Artifact storage key could not be resolved for held item.");
+        }
+        return artifact;
+    }
+
+    private EquipmentArchetype resolveEquipmentArchetype(ItemStack item) {
+        if (item == null || item.getType() == null) return null;
+        String id = item.getType().name().toLowerCase(java.util.Locale.ROOT);
+        if (!EquipmentArchetype.isEquipment(id)) return null;
+        return EquipmentArchetype.fromId(id);
+    }
+
+    private ItemStack renderArtifactItem(Artifact artifact, ArtifactReputation reputation) {
+        Material material = Material.matchMaterial(artifact.getItemCategory().toUpperCase(java.util.Locale.ROOT));
+        if (material == null || material == Material.AIR) {
+            throw new IllegalStateException("Unable to render artifact item for category " + artifact.getItemCategory());
+        }
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            throw new IllegalStateException("Unable to render item meta for " + material);
+        }
+        meta.setDisplayName("§d" + artifact.getDisplayName());
+        meta.setLore(plugin.getLoreEngine().buildLoreLines(artifact, reputation));
+        item.setItemMeta(meta);
+        plugin.getArtifactItemStorage().stampMinimalIdentity(item, artifact);
+        return item;
+    }
+
+    private Player requirePlayer(CommandSender sender, String usage) {
+        if (sender instanceof Player player) {
+            return player;
+        }
+        if (sender instanceof BlockCommandSender || !(sender instanceof Player)) {
+            sender.sendMessage("§cPlayer-only command. Usage: " + usage);
+        }
+        return null;
     }
 
     private Player resolveTarget(CommandSender sender, String[] args, String label, String subcommand) {
