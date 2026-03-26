@@ -39,11 +39,22 @@ Artifacts remember how they are used. The more time you spend with one, the more
 ## Commands
 | Command | Description |
 | ------- | ----------- |
-| `/obtuseloot give <player>` | Give a random artifact |
+| `/obtuseloot` / `/obtuseloot help` | Show command help |
+| `/obtuseloot info` | Show plugin and ecosystem status summary |
+| `/obtuseloot ecosystem ...` | View ecosystem health, dashboard, map, environment, and dump tools |
+| `/obtuseloot give <player>` | Generate and give a fresh artifact |
+| `/obtuseloot give-specific <player> <archetype\|family>` | Give a constrained artifact by archetype or family |
 | `/obtuseloot convert` | Turn your held item into an artifact |
-| `/obtuseloot reroll` | Replace your held artifact with a new one |
-| `/obtuseloot inspect` | View artifact details |
-| `/obtuseloot force-awaken` | Force an awakening (admin) |
+| `/obtuseloot reroll` | Reroll your held artifact identity |
+| `/obtuseloot inspect` | View held artifact details |
+| `/obtuseloot force-awaken` / `/obtuseloot force-converge` | Force major artifact transitions |
+| `/obtuseloot refresh` / `/obtuseloot reset` / `/obtuseloot reload` | Admin profile reset and plugin reload commands |
+| `/obtuseloot addname` / `/obtuseloot removename` | Edit artifact name pools |
+| `/obtuseloot repair-state` / `/obtuseloot debug-profile` / `/obtuseloot dump-held` | Artifact repair and diagnostic tools |
+| `/obtuseloot debug ...` (incl. `debug dashboard`) | Full debug command suite |
+| `/ol ...` | Alias for matching `/obtuseloot` commands |
+
+For full command details and permissions, see [`commands and permissions.md`](./commands%20and%20permissions.md).
 
 ## Installation
 - Requires **Paper** or **Purpur**
