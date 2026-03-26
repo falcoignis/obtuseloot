@@ -2,14 +2,17 @@ package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.abilities.genome.GenomeTrait;
+import obtuseloot.abilities.AbilityFamily;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.ArtifactIdentityTransition;
 import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.memory.MemoryInfluenceResolver;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.significance.ArtifactSignificanceResolver;
 import obtuseloot.names.NamePoolManager;
+import obtuseloot.names.ArtifactNameResolver;
 
 import org.bukkit.Material;
 import org.bukkit.command.BlockCommandSender;
@@ -38,6 +41,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION_COMMAND_REROLL = "obtuseloot.command.reroll";
     private static final String PERMISSION_COMMAND_INSPECT = "obtuseloot.command.inspect";
     private static final String PERMISSION_COMMAND_FORCE_AWAKEN = "obtuseloot.command.forceawaken";
+    private static final String PERMISSION_COMMAND_FORCE_CONVERGE = "obtuseloot.command.forceconverge";
+    private static final String PERMISSION_COMMAND_REPAIR_STATE = "obtuseloot.command.repairstate";
+    private static final String PERMISSION_COMMAND_DEBUG_PROFILE = "obtuseloot.command.debugprofile";
+    private static final String PERMISSION_COMMAND_GIVE_SPECIFIC = "obtuseloot.command.givespecific";
+    private static final String PERMISSION_COMMAND_DUMP_HELD = "obtuseloot.command.dumpheld";
 
     private final ObtuseLoot plugin;
     private final DebugCommand debugCommand;
@@ -85,6 +93,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7/" + label + " convert §8- §fConvert held equipment into a fresh artifact identity §8[" + PERMISSION_COMMAND_CONVERT + "]");
             sender.sendMessage("§7/" + label + " reroll §8- §fReroll held artifact identity §8[" + PERMISSION_COMMAND_REROLL + "]");
             sender.sendMessage("§7/" + label + " force-awaken §8- §fForce awakening on held artifact identity §8[" + PERMISSION_COMMAND_FORCE_AWAKEN + "]");
+            sender.sendMessage("§7/" + label + " force-converge §8- §fForce convergence via the real convergence pipeline §8[" + PERMISSION_COMMAND_FORCE_CONVERGE + "]");
+            sender.sendMessage("§7/" + label + " repair-state §8- §fRebuild held artifact derived state without identity mutation §8[" + PERMISSION_COMMAND_REPAIR_STATE + "]");
+            sender.sendMessage("§7/" + label + " debug-profile §8- §fShow structured held artifact deep diagnostics §8[" + PERMISSION_COMMAND_DEBUG_PROFILE + "]");
+            sender.sendMessage("§7/" + label + " give-specific <player> <archetype|family> §8- §fGenerate constrained artifact identity §8[" + PERMISSION_COMMAND_GIVE_SPECIFIC + "]");
+            sender.sendMessage("§7/" + label + " dump-held §8- §fLog structured snapshot for held artifact §8[" + PERMISSION_COMMAND_DUMP_HELD + "]");
             return true;
         }
 
@@ -102,6 +115,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         if ("convert".equalsIgnoreCase(args[0])) return handleConvert(sender);
         if ("reroll".equalsIgnoreCase(args[0])) return handleReroll(sender);
         if ("force-awaken".equalsIgnoreCase(args[0])) return handleForceAwaken(sender);
+        if ("force-converge".equalsIgnoreCase(args[0])) return handleForceConverge(sender);
+        if ("repair-state".equalsIgnoreCase(args[0])) return handleRepairState(sender);
+        if ("debug-profile".equalsIgnoreCase(args[0])) return handleDebugProfile(sender);
+        if ("give-specific".equalsIgnoreCase(args[0])) return handleGiveSpecific(sender, label, args);
+        if ("dump-held".equalsIgnoreCase(args[0])) return handleDumpHeld(sender);
 
         if ("refresh".equalsIgnoreCase(args[0])) {
             if (!hasPermission(sender, PERMISSION_ADMIN)) {
@@ -270,6 +288,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             addIfPermitted(sender, candidates, "reroll", PERMISSION_COMMAND_REROLL);
             addIfPermitted(sender, candidates, "inspect", PERMISSION_COMMAND_INSPECT);
             addIfPermitted(sender, candidates, "force-awaken", PERMISSION_COMMAND_FORCE_AWAKEN);
+            addIfPermitted(sender, candidates, "force-converge", PERMISSION_COMMAND_FORCE_CONVERGE);
+            addIfPermitted(sender, candidates, "repair-state", PERMISSION_COMMAND_REPAIR_STATE);
+            addIfPermitted(sender, candidates, "debug-profile", PERMISSION_COMMAND_DEBUG_PROFILE);
+            addIfPermitted(sender, candidates, "give-specific", PERMISSION_COMMAND_GIVE_SPECIFIC);
+            addIfPermitted(sender, candidates, "dump-held", PERMISSION_COMMAND_DUMP_HELD);
             addIfPermitted(sender, candidates, "refresh", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reset", PERMISSION_ADMIN);
             addIfPermitted(sender, candidates, "reload", PERMISSION_ADMIN);
@@ -286,6 +309,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 2 && isPlayerTargetCommand(args[0])) {
             if ((("give".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_COMMAND_GIVE))
+                    || ("give-specific".equalsIgnoreCase(args[0]) && !sender.hasPermission(PERMISSION_COMMAND_GIVE_SPECIFIC))
                     || (("refresh".equalsIgnoreCase(args[0]) || "reset".equalsIgnoreCase(args[0]))
                     && !sender.hasPermission(PERMISSION_ADMIN)))) {
                 return List.of();
@@ -318,6 +342,14 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 3 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])) {
             return filterByPrefix(List.of("lineage", "genome", "collapse", "species", "off"), args[2]);
+        }
+
+        if (args.length == 3 && "give-specific".equalsIgnoreCase(args[0])) {
+            List<String> constrainedTypes = new ArrayList<>(EquipmentArchetype.allIds());
+            for (AbilityFamily family : AbilityFamily.values()) {
+                constrainedTypes.add(family.name().toLowerCase(java.util.Locale.ROOT));
+            }
+            return filterByPrefix(constrainedTypes, args[2]);
         }
 
         if (args.length == 4 && "ecosystem".equalsIgnoreCase(args[0]) && "map".equalsIgnoreCase(args[1])
@@ -362,6 +394,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
 
     private boolean isPlayerTargetCommand(String subcommand) {
         return "give".equalsIgnoreCase(subcommand)
+                || "give-specific".equalsIgnoreCase(subcommand)
                 || "refresh".equalsIgnoreCase(subcommand)
                 || "reset".equalsIgnoreCase(subcommand);
     }
@@ -495,6 +528,150 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleForceConverge(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_FORCE_CONVERGE)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot force-converge");
+        if (player == null) return true;
+        Artifact current = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (current == null) return true;
+        ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
+        ArtifactIdentityTransition transition = plugin.getConvergenceEngine().evaluate(player, current, reputation);
+        if (transition == null) {
+            sender.sendMessage("§cConvergence rejected: no valid/non-no-op convergence path for held artifact.");
+            return true;
+        }
+        Artifact replacement = transition.replacement();
+        if (replacement == current || replacement.getArtifactSeed() == current.getArtifactSeed()) {
+            throw new IllegalStateException("Force convergence must produce a replacement identity.");
+        }
+        if ("none".equalsIgnoreCase(replacement.getConvergencePath())
+                || "none".equalsIgnoreCase(replacement.getConvergenceVariantId())
+                || "none".equalsIgnoreCase(replacement.getConvergenceIdentityShape())
+                || "none".equalsIgnoreCase(replacement.getConvergenceLineageTrace())
+                || "none".equalsIgnoreCase(replacement.getConvergenceExpressionTrace())
+                || "none".equalsIgnoreCase(replacement.getConvergenceMemorySignature())) {
+            throw new IllegalStateException("Force convergence replacement missing required convergence metadata.");
+        }
+        plugin.getArtifactManager().replaceIdentity(player.getUniqueId(), transition);
+        finalizeIdentityReplacement(player, current, replacement, "command-force-converge");
+        plugin.getArtifactUsageTracker().trackConvergenceParticipation(replacement);
+        sender.sendMessage("§aConvergence forced: §f" + replacement.getConvergencePath() + " §7variant=§f" + replacement.getConvergenceVariantId());
+        return true;
+    }
+
+    private boolean handleRepairState(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_REPAIR_STATE)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot repair-state");
+        if (player == null) return true;
+        Artifact artifact = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (artifact == null) return true;
+        ArtifactArchetypeValidator.requireValid(artifact, "command-repair-state");
+        ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
+        artifact.setNaming(ArtifactNameResolver.initialize(artifact));
+        plugin.getLineageRegistry().assignLineage(artifact);
+        plugin.getItemAbilityManager().profileFor(artifact, reputation);
+        plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), artifact, reputation, "command-repair-state");
+        plugin.getLoreEngine().refreshLore(player, artifact, reputation);
+        player.getInventory().setItemInMainHand(renderArtifactItem(artifact, reputation));
+        plugin.getArtifactManager().markDirty(player.getUniqueId());
+        plugin.getArtifactManager().save(player.getUniqueId());
+        plugin.getReputationManager().save(player.getUniqueId());
+        sender.sendMessage("§aRebuilt held artifact derived state (lore, naming, projections) without identity mutation.");
+        return true;
+    }
+
+    private boolean handleDebugProfile(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_DEBUG_PROFILE)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot debug-profile");
+        if (player == null) return true;
+        Artifact artifact = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (artifact == null) return true;
+        ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
+        var memoryProfile = new MemoryInfluenceResolver().profileFor(artifact.getMemory());
+        var significance = new ArtifactSignificanceResolver().resolve(artifact);
+        sender.sendMessage("§d=== Artifact Debug Profile ===");
+        sender.sendMessage("§7identity: §fname=" + artifact.getDisplayName()
+                + " §7storage=§f" + artifact.getArtifactStorageKey()
+                + " §7shape=§f" + artifact.getConvergenceIdentityShape());
+        sender.sendMessage("§7lineage trace: §flatent=" + artifact.getLatentLineage()
+                + " §7conv=" + artifact.getConvergenceLineageTrace()
+                + " §7species=" + artifact.getSpeciesId());
+        sender.sendMessage("§7awakening/convergence: §f" + artifact.getAwakeningPath()
+                + " §7/ §f" + artifact.getConvergencePath()
+                + " §7variant=§f" + artifact.getConvergenceVariantId());
+        sender.sendMessage("§7memory signature: §f" + artifact.getConvergenceMemorySignature()
+                + " §7pressure=§f" + memoryProfile.pressure()
+                + " §7snapshot=§f" + artifact.getMemory().snapshot());
+        sender.sendMessage("§7state/posture: §fdrift=" + artifact.getDriftAlignment()
+                + " §7instability=§f" + artifact.getCurrentInstabilityState()
+                + " §7evolution=§f" + artifact.getEvolutionPath());
+        sender.sendMessage("§7significance inputs: §fhistory=" + artifact.getHistoryScore()
+                + " §7repTotal=§f" + reputation.getTotalScore()
+                + " §7resolved=§f" + significance.format());
+        return true;
+    }
+
+    private boolean handleGiveSpecific(CommandSender sender, String label, String[] args) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_GIVE_SPECIFIC)) {
+            return true;
+        }
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /" + label + " give-specific <player> <archetype|family>");
+            return true;
+        }
+        Player target = sender.getServer().getPlayerExact(args[1]);
+        if (target == null) {
+            sender.sendMessage("§cInvalid player: " + args[1]);
+            return true;
+        }
+        String selector = args[2].toLowerCase(java.util.Locale.ROOT);
+        EquipmentArchetype constrainedArchetype = resolveConstrainedArchetype(selector, target.getUniqueId());
+        if (constrainedArchetype == null) {
+            sender.sendMessage("§cInvalid type '" + args[2] + "'. Use a valid equipment archetype id or family "
+                    + java.util.Arrays.stream(AbilityFamily.values()).map(v -> v.name().toLowerCase(java.util.Locale.ROOT)).toList());
+            return true;
+        }
+        Artifact artifact = plugin.getArtifactManager().recreateWithArchetype(
+                target.getUniqueId(),
+                constrainedArchetype,
+                "command-give-specific:" + selector + ":" + constrainedArchetype.id());
+        deliverGeneratedArtifact(sender, target, artifact);
+        return true;
+    }
+
+    private boolean handleDumpHeld(CommandSender sender) {
+        if (!hasPermission(sender, PERMISSION_COMMAND_DUMP_HELD)) {
+            return true;
+        }
+        Player player = requirePlayer(sender, "/obtuseloot dump-held");
+        if (player == null) return true;
+        Artifact artifact = resolveHeldArtifact(player, player.getInventory().getItemInMainHand(), true);
+        if (artifact == null) return true;
+        String snapshot = "artifact_snapshot{owner=" + player.getUniqueId()
+                + ", storageKey=" + artifact.getArtifactStorageKey()
+                + ", name=" + artifact.getDisplayName()
+                + ", item=" + artifact.getItemCategory()
+                + ", archetypePath=" + artifact.getArchetypePath()
+                + ", evolutionPath=" + artifact.getEvolutionPath()
+                + ", awakeningPath=" + artifact.getAwakeningPath()
+                + ", convergencePath=" + artifact.getConvergencePath()
+                + ", lineage=" + artifact.getLatentLineage()
+                + ", convergenceLineageTrace=" + artifact.getConvergenceLineageTrace()
+                + ", identityBirthTimestamp=" + artifact.getIdentityBirthTimestamp()
+                + ", persistenceOriginTimestamp=" + artifact.getPersistenceOriginTimestamp()
+                + ", lastDriftTimestamp=" + artifact.getLastDriftTimestamp()
+                + '}';
+        plugin.getLogger().info("[Command] /obtuseloot dump-held " + snapshot);
+        sender.sendMessage("§aStructured held artifact snapshot logged.");
+        return true;
+    }
+
     private void finalizeIdentityReplacement(Player player, Artifact previous, Artifact replacement, String reason) {
         ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
         if (previous != null) {
@@ -549,6 +726,55 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         item.setItemMeta(meta);
         plugin.getArtifactItemStorage().stampMinimalIdentity(item, artifact);
         return item;
+    }
+
+    private void deliverGeneratedArtifact(CommandSender sender, Player target, Artifact artifact) {
+        ArtifactReputation reputation = plugin.getReputationManager().get(target.getUniqueId());
+        plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, reputation, "command-give-specific");
+        plugin.getLoreEngine().refreshLore(target, artifact, reputation);
+        plugin.getLineageRegistry().assignLineage(artifact);
+        plugin.getArtifactManager().markDirty(target.getUniqueId());
+        plugin.getArtifactManager().save(target.getUniqueId());
+        ItemStack item = renderArtifactItem(artifact, reputation);
+        var leftovers = target.getInventory().addItem(item);
+        if (!leftovers.isEmpty()) {
+            leftovers.values().forEach(drop -> target.getWorld().dropItemNaturally(target.getLocation(), drop));
+            sender.sendMessage("§eInventory full. Artifact dropped at " + target.getName() + "'s feet.");
+            target.sendMessage("§eYour inventory was full; artifact dropped at your feet.");
+            return;
+        }
+        sender.sendMessage("§aGave constrained artifact to " + target.getName() + ": §f" + artifact.getDisplayName()
+                + " §7(" + artifact.getItemCategory() + ")");
+    }
+
+    private EquipmentArchetype resolveConstrainedArchetype(String selector, java.util.UUID ownerId) {
+        if (EquipmentArchetype.isEquipment(selector)) {
+            return EquipmentArchetype.fromId(selector);
+        }
+        AbilityFamily family;
+        try {
+            family = AbilityFamily.valueOf(selector.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+        List<EquipmentArchetype> choices = archetypesForFamily(family);
+        if (choices.isEmpty()) {
+            throw new IllegalStateException("No constrained archetypes configured for family " + family.name().toLowerCase(java.util.Locale.ROOT));
+        }
+        long seed = plugin.getArtifactManager().rollSeed() ^ ownerId.getMostSignificantBits() ^ ownerId.getLeastSignificantBits();
+        int index = (int) Math.floorMod(seed, choices.size());
+        return choices.get(index);
+    }
+
+    static List<EquipmentArchetype> archetypesForFamily(AbilityFamily family) {
+        return switch (family) {
+            case PRECISION -> List.of(EquipmentArchetype.BOW, EquipmentArchetype.CROSSBOW, EquipmentArchetype.TRIDENT);
+            case BRUTALITY -> List.of(EquipmentArchetype.NETHERITE_AXE, EquipmentArchetype.NETHERITE_SWORD, EquipmentArchetype.DIAMOND_AXE);
+            case SURVIVAL -> List.of(EquipmentArchetype.NETHERITE_CHESTPLATE, EquipmentArchetype.TURTLE_HELMET, EquipmentArchetype.NETHERITE_HELMET);
+            case MOBILITY -> List.of(EquipmentArchetype.ELYTRA, EquipmentArchetype.NETHERITE_BOOTS, EquipmentArchetype.DIAMOND_BOOTS);
+            case CHAOS -> List.of(EquipmentArchetype.TRIDENT, EquipmentArchetype.GOLDEN_SWORD, EquipmentArchetype.GOLDEN_AXE);
+            case CONSISTENCY -> List.of(EquipmentArchetype.NETHERITE_HELMET, EquipmentArchetype.NETHERITE_CHESTPLATE, EquipmentArchetype.NETHERITE_LEGGINGS);
+        };
     }
 
     private Player requirePlayer(CommandSender sender, String usage) {

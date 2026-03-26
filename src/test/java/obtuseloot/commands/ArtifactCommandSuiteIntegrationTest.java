@@ -1,8 +1,10 @@
 package obtuseloot.commands;
 
+import obtuseloot.abilities.AbilityFamily;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.artifacts.EquipmentArchetype;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.persistence.PlayerStateStore;
 import obtuseloot.reputation.ArtifactReputation;
 import org.junit.jupiter.api.Test;
@@ -65,6 +67,23 @@ class ArtifactCommandSuiteIntegrationTest {
         assertTrue(pluginYml.contains("obtuseloot.command.reroll"));
         assertTrue(pluginYml.contains("obtuseloot.command.inspect"));
         assertTrue(pluginYml.contains("obtuseloot.command.forceawaken"));
+        assertTrue(pluginYml.contains("obtuseloot.command.forceconverge"));
+        assertTrue(pluginYml.contains("obtuseloot.command.repairstate"));
+        assertTrue(pluginYml.contains("obtuseloot.command.debugprofile"));
+        assertTrue(pluginYml.contains("obtuseloot.command.givespecific"));
+        assertTrue(pluginYml.contains("obtuseloot.command.dumpheld"));
+    }
+
+    @Test
+    void giveSpecificFamilyConstraintsResolveToRealEquipmentArchetypes() {
+        for (AbilityFamily family : AbilityFamily.values()) {
+            var constrained = ObtuseLootCommand.archetypesForFamily(family);
+            assertFalse(constrained.isEmpty(), "family " + family + " must have explicit constrained archetypes");
+            for (EquipmentArchetype archetype : constrained) {
+                assertTrue(EquipmentArchetype.isEquipment(archetype.id()),
+                        "constrained archetype must be real equipment: " + archetype.id());
+            }
+        }
     }
 
     @Test
@@ -86,6 +105,37 @@ class ArtifactCommandSuiteIntegrationTest {
         var transition = awakeningEngine.forceAwakening(null, artifact, rep);
         assertNotNull(transition, "force-awaken should produce a replacement when path is valid");
         assertNotEquals(artifact.getArtifactSeed(), transition.replacement().getArtifactSeed(), "force-awaken must replace identity");
+    }
+
+    @Test
+    void forceConvergePipelineProducesReplacementWithConvergenceMetadata() {
+        ConvergenceEngine convergenceEngine = new ConvergenceEngine();
+        Artifact artifact = new Artifact(UUID.randomUUID(), "trident");
+        artifact.setArchetypePath("deadeye");
+        artifact.setAwakeningPath("awakened-path");
+        artifact.setConvergencePath("none");
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+
+        ArtifactReputation rep = new ArtifactReputation();
+        rep.setPrecision(60);
+        rep.setMobility(24);
+        rep.setBossKills(2);
+        rep.setKills(24);
+        rep.setConsistency(22);
+
+        var transition = convergenceEngine.evaluate(null, artifact, rep);
+        assertNotNull(transition, "force-converge should produce a replacement for a valid awakened profile");
+        Artifact replacement = transition.replacement();
+        assertNotSame(artifact, replacement, "force-converge must replace identity instance");
+        assertNotEquals(artifact.getArtifactSeed(), replacement.getArtifactSeed(), "force-converge must replace identity seed");
+        assertNotEquals("none", replacement.getConvergencePath(), "replacement must carry convergence path");
+        assertNotEquals("none", replacement.getConvergenceVariantId(), "replacement must carry convergence variant");
+        assertNotEquals("none", replacement.getConvergenceIdentityShape(), "replacement must carry convergence identity shape");
+        assertNotEquals("none", replacement.getConvergenceLineageTrace(), "replacement must carry convergence lineage trace");
+        assertNotEquals("none", replacement.getConvergenceExpressionTrace(), "replacement must carry convergence expression trace");
+        assertNotEquals("none", replacement.getConvergenceMemorySignature(), "replacement must carry convergence memory signature");
     }
 
     private static final class InMemoryStateStore implements PlayerStateStore {

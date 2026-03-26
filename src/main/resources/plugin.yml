@@ -38,6 +38,11 @@ commands:
       /<command> reroll
       /<command> inspect
       /<command> force-awaken
+      /<command> force-converge
+      /<command> repair-state
+      /<command> debug-profile
+      /<command> give-specific <player> <archetype|family>
+      /<command> dump-held
     aliases:      [ ol ]
     permission:   obtuseloot.command
 
@@ -83,4 +88,19 @@ permissions:
     default: op
   obtuseloot.command.forceawaken:
     description: Force awakening via the real awakening pipeline on held artifact.
+    default: op
+  obtuseloot.command.forceconverge:
+    description: Force convergence via the real convergence pipeline on held artifact.
+    default: op
+  obtuseloot.command.repairstate:
+    description: Rebuild derived held artifact state (lore, naming, projections) without identity mutation.
+    default: op
+  obtuseloot.command.debugprofile:
+    description: Show structured deep held artifact diagnostics.
+    default: op
+  obtuseloot.command.givespecific:
+    description: Generate constrained artifact identity by archetype or family, with no generic fallback.
+    default: op
+  obtuseloot.command.dumpheld:
+    description: Log concise structured snapshot for the held artifact identity.
     default: op
