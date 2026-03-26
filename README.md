@@ -86,6 +86,9 @@ Notes:
 - Persistence backend initializes at startup; startup aborts if backend fails and fallback is disabled.
 - Dashboard artifacts and telemetry files are generated under `analytics/`.
 
+### Item discovery sources
+- ObtuseLoot-enabled items can be discovered from naturally generated chest loot, trial vault rewards, and items enchanted through an enchanting table.
+
 ---
 
 ## Configuration Overview
