@@ -39,6 +39,7 @@ This is **not** a feature-complete final release. Balance settings, config struc
 - `plugin.yml` — permission descriptions updated for clarity
 - `config.yml` — all sections now have comments explaining purpose, tuning guidance, and safety notes
 - `README.md` — full rewrite as beta-ready operator and tester documentation
+- Loot/enchantment identity stamping now supports naturally generated chests, trial vault rewards, and enchanting-table outcomes.
 
 ---
 
