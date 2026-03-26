@@ -8,11 +8,11 @@ api-version: "1.21"
 
 commands:
   obtuseloot:
-    description:  ObtuseLoot administration and debug command root.
+    description:  ObtuseLoot core command.
     usage:        |
       /<command> help
       /<command> info
-      /<command> inspect [player]
+      /<command> inspect
       /<command> refresh [player]
       /<command> reset [player]
       /<command> reload
@@ -33,7 +33,13 @@ commands:
       /<command> debug dashboard
       /<command> addname <pool> <value>
       /<command> removename <pool> <value>
+      /<command> give <player>
+      /<command> convert
+      /<command> reroll
+      /<command> inspect
+      /<command> force-awaken
     aliases:      [ ol ]
+    permission:   obtuseloot.command
 
 permissions:
   obtuseloot.help:
@@ -59,4 +65,22 @@ permissions:
     default: op
   obtuseloot.debug:
     description: Access the full debug surface — artifact inspection, progression simulation, seed control, ecosystem debug, and runtime diagnostics.
+    default: op
+  obtuseloot.command:
+    description: Root permission for expanded artifact command suite.
+    default: op
+  obtuseloot.command.give:
+    description: Generate and deliver a fresh artifact item to a target player.
+    default: op
+  obtuseloot.command.convert:
+    description: Convert held non-artifact equipment into a fresh artifact identity.
+    default: op
+  obtuseloot.command.reroll:
+    description: Reroll held artifact identity while preserving equipment family.
+    default: op
+  obtuseloot.command.inspect:
+    description: Inspect structured held artifact runtime state.
+    default: op
+  obtuseloot.command.forceawaken:
+    description: Force awakening via the real awakening pipeline on held artifact.
     default: op

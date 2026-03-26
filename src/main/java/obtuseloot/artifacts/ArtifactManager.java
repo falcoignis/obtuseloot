@@ -85,12 +85,29 @@ public class ArtifactManager {
         return loadedArtifacts;
     }
 
+
+    public Artifact recreateWithArchetype(UUID playerId, EquipmentArchetype archetype, String reason) {
+        EquipmentArchetype validated = java.util.Objects.requireNonNull(archetype, "archetype");
+        Artifact existing = loadedArtifacts.get(playerId);
+        if (existing != null && ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
+        }
+        Artifact fresh = createReplacementArtifact(existing, playerId, validated, true);
+        ArtifactIdentityTransition transition = new ArtifactIdentityTransition(existing, fresh,
+                reason == null || reason.isBlank() ? "artifact-recreate-with-archetype" : reason);
+        replaceLoadedArtifact(playerId, transition, true);
+        if (ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
+        }
+        return fresh;
+    }
+
     public Artifact recreate(UUID playerId) {
         Artifact existing = loadedArtifacts.get(playerId);
         if (existing != null && ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
         }
-        Artifact fresh = ArtifactGenerator.generateFor(playerId);
+        Artifact fresh = createReplacementArtifact(existing, playerId, null, false);
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackCreated(fresh);
         }
@@ -186,6 +203,32 @@ public class ArtifactManager {
 
     public long rollSeed() {
         return ThreadLocalRandom.current().nextLong();
+    }
+
+
+    private Artifact createReplacementArtifact(Artifact previous,
+                                               UUID ownerId,
+                                               EquipmentArchetype forcedArchetype,
+                                               boolean preservePersistenceOrigin) {
+        long seed = rollSeed();
+        EquipmentArchetype archetype = forcedArchetype != null
+                ? forcedArchetype
+                : ArtifactArchetypeValidator.requireValidArchetype(ArtifactGenerator.resolveCategory(seed),
+                "artifact baseline identity regeneration");
+
+        Artifact replacement = new Artifact(ownerId, archetype);
+        if (preservePersistenceOrigin && previous != null) {
+            replacement.setPersistenceOriginTimestamp(previous.getPersistenceOriginTimestamp());
+        }
+        replacement.setIdentityBirthTimestamp(System.currentTimeMillis());
+        if (previous != null && previous.getArtifactStorageKey() != null && !previous.getArtifactStorageKey().isBlank()) {
+            replacement.setArtifactStorageKey(previous.getArtifactStorageKey());
+        }
+        replacement.setOwnerId(ownerId);
+        replacement.resetMutableState();
+        seedFactory.regenerateFromSeed(replacement, seed);
+        replacement.setNaming(ArtifactNameResolver.initialize(replacement));
+        return replacement;
     }
 
     private Artifact createRegeneratedArtifact(Artifact previous, long seed) {
