@@ -4,6 +4,7 @@ import obtuseloot.analytics.EcosystemStatus;
 import obtuseloot.analytics.EcologyDiagnosticState;
 import obtuseloot.analytics.RankAbundanceAnalyzer;
 import obtuseloot.analytics.RankAbundanceAnalyzer.RankAbundanceResult;
+import obtuseloot.bootstrap.PluginPathLayout;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -21,14 +22,18 @@ public class DashboardService {
 
     private final RankAbundanceAnalyzer analyzer = new RankAbundanceAnalyzer();
     private final EcosystemDashboard ecosystemDashboard = new EcosystemDashboard();
-    private final Path analyticsRoot;
+    private final PluginPathLayout paths;
 
     public DashboardService(Path analyticsRoot) {
-        this.analyticsRoot = analyticsRoot;
+        this(PluginPathLayout.forAnalyticsRoot(analyticsRoot));
+    }
+
+    public DashboardService(PluginPathLayout paths) {
+        this.paths = paths;
     }
 
     public Path dashboardRoot() {
-        return analyticsRoot.resolve("dashboard");
+        return paths.dashboardRoot();
     }
 
     public Path dashboardFile() {
@@ -36,7 +41,7 @@ public class DashboardService {
     }
 
     public DashboardMetrics calculateMetrics() throws IOException {
-        String content = Files.readString(analyticsRoot.resolve("ecosystem-balance-data.json"));
+        String content = Files.readString(paths.ecosystemBalanceDataPath());
 
         Map<String, Integer> ecosystemMap = parseIntegerMap(content, "familyDistribution");
         Map<String, Integer> branchMap = parseIntegerMap(content, "branchDistribution");
@@ -87,31 +92,31 @@ public class DashboardService {
 
     public Path regenerateDashboard() throws IOException {
         DashboardMetrics metrics = calculateMetrics();
-        Path output = ecosystemDashboard.generate(analyticsRoot, metrics, dashboardFile());
+        Path output = ecosystemDashboard.generate(paths.analyticsRoot(), metrics, dashboardFile());
         writeGenerationMetadata(new ReportGenerationMetadata(Instant.now(), "runtime-dashboard", output.toString(), metrics.dataSources()), output);
         return output;
     }
 
     public Path generateSeasonDashboard(int season) throws IOException {
-        Path output = analyticsRoot.resolve("world-lab").resolve("season" + season + "-ecosystem-dashboard.html");
+        Path output = paths.seasonDashboard(season);
         DashboardMetrics metrics = calculateMetrics();
-        Path rendered = ecosystemDashboard.generate(analyticsRoot, metrics, output);
+        Path rendered = ecosystemDashboard.generate(paths.analyticsRoot(), metrics, output);
         writeGenerationMetadata(new ReportGenerationMetadata(Instant.now(), "season-dashboard", rendered.toString(), metrics.dataSources()), rendered);
         return rendered;
     }
 
     private java.util.List<DashboardDataSourceDescriptor> buildDataSourceDescriptors() {
         return java.util.List.of(
-                new DashboardDataSourceDescriptor("ecosystem-balance", analyticsRoot.resolve("ecosystem-balance-data.json").toString(),
+                new DashboardDataSourceDescriptor("ecosystem-balance", paths.ecosystemBalanceDataPath().toString(),
                         DashboardDataSourceDescriptor.DashboardSourceKind.SIMULATION_SNAPSHOT, true,
                         "Primary branch/trait/family distributions for dashboard aggregates."),
-                new DashboardDataSourceDescriptor("ecosystem-gauge", analyticsRoot.resolve("ecosystem-health-gauge.json").toString(),
+                new DashboardDataSourceDescriptor("ecosystem-gauge", paths.analyticsRoot().resolve("ecosystem-health-gauge.json").toString(),
                         DashboardDataSourceDescriptor.DashboardSourceKind.DERIVED_ANALYTIC, true,
                         "END/TNT/NSER/PNNC gauge rollup from world-lab evidence."),
-                new DashboardDataSourceDescriptor("ecology-diagnostic", analyticsRoot.resolve("ecology-diagnostic-state.json").toString(),
+                new DashboardDataSourceDescriptor("ecology-diagnostic", paths.analyticsRoot().resolve("ecology-diagnostic-state.json").toString(),
                         DashboardDataSourceDescriptor.DashboardSourceKind.DERIVED_ANALYTIC, true,
                         "Diagnostic state and confidence used for status light."),
-                new DashboardDataSourceDescriptor("world-sim-memory", analyticsRoot.resolve("world-lab").resolve("world-sim-data.json").toString(),
+                new DashboardDataSourceDescriptor("world-sim-memory", paths.analyticsRoot().resolve("world-lab").resolve("world-sim-data.json").toString(),
                         DashboardDataSourceDescriptor.DashboardSourceKind.SIMULATION_SNAPSHOT, false,
                         "Ecological memory context panel input.")
         );
@@ -203,7 +208,7 @@ public class DashboardService {
     }
 
     private EcosystemGaugeData loadEcosystemGaugeData() throws IOException {
-        Path truthPath = analyticsRoot.resolve("ecology-truth-snapshot.json");
+        Path truthPath = paths.analyticsRoot().resolve("ecology-truth-snapshot.json");
         if (Files.exists(truthPath)) {
             String truth = Files.readString(truthPath);
             double endArtifacts = extractNumber(truth, "END");
@@ -224,7 +229,7 @@ public class DashboardService {
             return new EcosystemGaugeData(endArtifacts, endSpecies, latestTnt, latestNser, latestPnnc, endTrend, tntTrend, nserTrend, pnncTrend,
                     "Derived from authoritative ecology truth snapshot.", status, diagnosticState, confidence, warnings);
         }
-        Path path = analyticsRoot.resolve("ecosystem-health-gauge.json");
+        Path path = paths.analyticsRoot().resolve("ecosystem-health-gauge.json");
         if (!Files.exists(path)) {
             return new EcosystemGaugeData(0.0D, null, 0.0D, 0.0D, 0, List.of(), List.of(), List.of(), List.of(), "NSER not available.", EcosystemStatus.STAGNANT, EcologyDiagnosticState.STAGNANT_ATTRACTOR, 0.0D, List.of("stagnation"));
         }
@@ -261,7 +266,7 @@ public class DashboardService {
 
 
     private EcologicalMemoryData loadEcologicalMemoryData() throws IOException {
-        Path path = analyticsRoot.resolve("world-lab").resolve("world-sim-data.json");
+        Path path = paths.analyticsRoot().resolve("world-lab").resolve("world-sim-data.json");
         if (!Files.exists(path)) {
             return new EcologicalMemoryData(false, 0.0D, 0.0D);
         }
@@ -278,7 +283,7 @@ public class DashboardService {
     }
 
     private EcologyDiagnosticState loadDiagnosticState() throws IOException {
-        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        Path path = paths.analyticsRoot().resolve("ecology-diagnostic-state.json");
         if (!Files.exists(path)) {
             return EcologyDiagnosticState.STAGNANT_ATTRACTOR;
         }
@@ -291,7 +296,7 @@ public class DashboardService {
     }
 
     private double loadDiagnosticConfidence() throws IOException {
-        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        Path path = paths.analyticsRoot().resolve("ecology-diagnostic-state.json");
         if (!Files.exists(path)) {
             return 0.0D;
         }
@@ -299,7 +304,7 @@ public class DashboardService {
     }
 
     private List<String> loadDiagnosticWarnings() throws IOException {
-        Path path = analyticsRoot.resolve("ecology-diagnostic-state.json");
+        Path path = paths.analyticsRoot().resolve("ecology-diagnostic-state.json");
         if (!Files.exists(path)) {
             return List.of();
         }
@@ -351,7 +356,7 @@ public class DashboardService {
 
 
     private int loadCurrentPnncFromReport() throws IOException {
-        Path pnncPath = analyticsRoot.resolve("persistent-novel-niche.json");
+        Path pnncPath = paths.analyticsRoot().resolve("persistent-novel-niche.json");
         if (!Files.exists(pnncPath)) {
             return 0;
         }

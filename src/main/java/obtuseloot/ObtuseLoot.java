@@ -128,7 +128,7 @@ public class ObtuseLoot extends JavaPlugin {
         writeInitialReports();
 
         environmentalPressureTask = EngineBootstrap.scheduleEnvironmentalPressureTask(this, experienceEvolutionEngine,
-                environmentalPressureReporter, paths.environmentPressureReport());
+                environmentalPressureReporter, paths.environmentPressureReportPath());
         telemetryRollupTask = TelemetryBootstrap.scheduleFlushTask(this, ecosystemTelemetryEmitter,
                 tuningProfile.telemetryFlushIntervalTicks());
 
@@ -172,7 +172,7 @@ public class ObtuseLoot extends JavaPlugin {
             dashboardWebServer.stop();
         }
         try {
-            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReport(), itemAbilityManager);
+            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReportPath(), itemAbilityManager);
         } catch (Exception exception) {
             getLogger().warning("[Runtime] Failed to write trigger subscription report on disable: " + exception.getMessage());
         }
@@ -183,13 +183,13 @@ public class ObtuseLoot extends JavaPlugin {
 
     private void writeInitialReports() {
         try {
-            environmentalPressureReporter.writeReport(paths.environmentPressureReport(),
+            environmentalPressureReporter.writeReport(paths.environmentPressureReportPath(),
                     experienceEvolutionEngine.pressureEngine());
         } catch (Exception exception) {
             getLogger().warning("[Ecosystem] Failed to write environment pressure report: " + exception.getMessage());
         }
         try {
-            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReport(), itemAbilityManager);
+            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReportPath(), itemAbilityManager);
         } catch (Exception exception) {
             getLogger().warning("[Runtime] Failed to write trigger subscription report: " + exception.getMessage());
         }

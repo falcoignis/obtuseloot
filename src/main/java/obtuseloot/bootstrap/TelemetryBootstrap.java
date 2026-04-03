@@ -22,9 +22,9 @@ public final class TelemetryBootstrap {
                                     obtuseloot.evolution.params.EcosystemTuningProfile tuningProfile,
                                     PluginPathLayout paths) {
         TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
-        EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(paths.telemetryArchive());
+        EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(paths.telemetryArchivePath());
         ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, tuningProfile.telemetryRollupIntervalMs());
-        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(paths.telemetryRollupSnapshot());
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(paths.telemetrySnapshotPath());
         RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, telemetryArchive, tuningProfile.telemetryRehydrateReplayWindowEvents());
 
         TelemetryAggregationService aggregationService = new TelemetryAggregationService(
