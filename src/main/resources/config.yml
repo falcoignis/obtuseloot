@@ -167,6 +167,15 @@ dashboard:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PATHS
+# analyticsRoot: Root directory for runtime analytics, telemetry, and reports.
+# Relative paths resolve under plugins/ObtuseLoot/.
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+  analyticsRoot: analytics
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # RUNTIME
 # Performance and feature-flag settings for the live plugin engine.
 #

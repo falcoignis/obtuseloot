@@ -2,6 +2,7 @@ package obtuseloot.commands;
 
 import obtuseloot.ObtuseLoot;
 import obtuseloot.analytics.InteractionHeatmapExporter;
+import obtuseloot.bootstrap.PluginPathLayout;
 import obtuseloot.analytics.TraitInteractionAnalyzer;
 import obtuseloot.analytics.TraitInteractionReportWriter;
 import obtuseloot.artifacts.Artifact;
@@ -31,17 +32,20 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
     private final ObtuseLootCommand delegate;
     private final DashboardService dashboardService;
     private final DashboardWebServer dashboardWebServer;
+    private final PluginPathLayout paths;
 
     private DumpCooldownTracker dumpCooldown = null; // lazily initialised after plugin config is available
 
     public DashboardCommandExecutor(ObtuseLoot plugin,
                                     ObtuseLootCommand delegate,
                                     DashboardService dashboardService,
-                                    DashboardWebServer dashboardWebServer) {
+                                    DashboardWebServer dashboardWebServer,
+                                    PluginPathLayout paths) {
         this.plugin = plugin;
         this.delegate = delegate;
         this.dashboardService = dashboardService;
         this.dashboardWebServer = dashboardWebServer;
+        this.paths = paths;
     }
 
     @Override
@@ -76,7 +80,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cYou do not have permission: obtuseloot.info");
                 return true;
             }
-            sender.sendMessage("§dTrait interaction map: §fanalytics/visualizations/trait-interaction-heatmap.png");
+            sender.sendMessage("§dTrait interaction map: §f" + paths.traitInteractionHeatmap());
             return true;
         }
 
@@ -93,7 +97,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             regenerateHeatmapAndReport();
             Path output = dashboardService.regenerateDashboard();
             sender.sendMessage("§aDashboard regenerated at: §f" + output);
-            sender.sendMessage("§aHeatmap regenerated at: §fanalytics/visualizations/trait-interaction-heatmap.png");
+            sender.sendMessage("§aHeatmap regenerated at: §f" + paths.traitInteractionHeatmap());
         } catch (IOException exception) {
             sender.sendMessage("§cFailed to regenerate dashboard: " + exception.getMessage());
         }
@@ -123,7 +127,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         String json = snap.toJson();
 
         // Write to analytics directory as well
-        Path dumpPath = Path.of("analytics/safety/ecosystem-safety-dump.json");
+        Path dumpPath = paths.safetyDump();
         try {
             Files.createDirectories(dumpPath.getParent());
             Files.writeString(dumpPath, json);
@@ -167,11 +171,11 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         var matrix = new TraitInteractionAnalyzer().analyze(artifacts, plugin.getLineageRegistry().lineages().values());
         new InteractionHeatmapExporter().export(
                 matrix,
-                Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
-                Path.of("analytics/visualizations/trait-interaction-matrix.csv"),
-                Path.of("analytics/visualizations/trait-interaction-matrix.json")
+                paths.traitInteractionHeatmap(),
+                paths.traitInteractionMatrixCsv(),
+                paths.traitInteractionMatrixJson()
         );
-        new TraitInteractionReportWriter().write(Path.of("analytics/trait-interaction-report.md"), matrix);
+        new TraitInteractionReportWriter().write(paths.traitInteractionReport(), matrix);
     }
 
     private void handleDashboardSummary(CommandSender sender) {
@@ -193,7 +197,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 // Append production safety summary
                 appendSafetySummary(player);
 
-                player.sendMessage("§8Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json.");
+                player.sendMessage("§8Data scope: generator/ecology aggregate from " + paths.analyticsRoot().resolve("ecosystem-balance-data.json") + ".");
                 if (dashboardWebServer.isRunning()) {
                     TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
                     link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, dashboardUrl));
@@ -214,7 +218,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage("Dashboard generation succeeded: " + Files.exists(dashboardPath));
             sender.sendMessage("Web endpoint: " + dashboardUrl);
             sender.sendMessage("Latest season snapshot: " + latestSeason);
-            sender.sendMessage("Data scope: generator/ecology aggregate from analytics/ecosystem-balance-data.json (not online-player-only telemetry).");
+            sender.sendMessage("Data scope: generator/ecology aggregate from " + paths.analyticsRoot().resolve("ecosystem-balance-data.json") + " (not online-player-only telemetry).");
 
             // Append production safety summary for console
             EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
@@ -240,7 +244,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
 
     private String latestSeasonSnapshot() {
         for (int season = 3; season >= 1; season--) {
-            Path snapshot = Path.of("analytics/world-lab/season" + season + "-ecosystem-dashboard.html");
+            Path snapshot = paths.seasonDashboard(season);
             if (Files.exists(snapshot)) {
                 return snapshot.toString();
             }

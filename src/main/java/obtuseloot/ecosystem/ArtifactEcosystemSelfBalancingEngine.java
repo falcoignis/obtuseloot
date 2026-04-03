@@ -22,6 +22,7 @@ public class ArtifactEcosystemSelfBalancingEngine {
     private final GeneratorWeightController weightController = new GeneratorWeightController();
     private final EnvironmentPressureEngine pressureEngine = new EnvironmentPressureEngine();
     private final EnvironmentalPressureReporter environmentalPressureReporter = new EnvironmentalPressureReporter();
+    private Path environmentalPressureReportPath = Path.of("analytics/environment-pressure-report.md");
     private final Map<String, Double> branchShares = new ConcurrentHashMap<>();
 
     private ProductionSafetyGuards safetyGuards;
@@ -59,9 +60,16 @@ public class ArtifactEcosystemSelfBalancingEngine {
         healthMonitor.recordEvaluation(categoryShares, templateShares, -1);
 
         try {
-            environmentalPressureReporter.writeReport(Path.of("analytics/environment-pressure-report.md"), pressureEngine);
+            environmentalPressureReporter.writeReport(environmentalPressureReportPath, pressureEngine);
         } catch (IOException ignored) {
             // report generation is best-effort for analytics integration.
+        }
+    }
+
+
+    public void setEnvironmentalPressureReportPath(Path reportPath) {
+        if (reportPath != null) {
+            this.environmentalPressureReportPath = reportPath;
         }
     }
 

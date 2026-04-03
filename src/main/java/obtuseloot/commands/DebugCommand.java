@@ -348,8 +348,8 @@ public class DebugCommand {
         try {
             var result = exporter.export(
                     matrix,
-                    java.nio.file.Path.of("analytics/visualizations/trait-interaction-heatmap.png"),
-                    java.nio.file.Path.of("analytics/visualizations/trait-interaction-matrix.csv")
+                    plugin.getPaths().traitInteractionHeatmap(),
+                    plugin.getPaths().traitInteractionMatrixCsv()
             );
             sender.sendMessage("§aGenerated trait interaction heatmap: " + result.heatmapPath());
             sender.sendMessage("§aGenerated trait interaction matrix: " + result.matrixCsvPath());

@@ -1,7 +1,7 @@
 name:        ObtuseLoot
 version:     0.9.50-beta
 main:        obtuseloot.ObtuseLoot
-description: Persistent artifact progression with evolution, awakening, and drift.
+description: Convergence-based artifact progression with awakening, adaptive evolution, and ecosystem telemetry.
 authors:     [ falcoignis ]
 website:     ""
 api-version: "1.21"
@@ -24,7 +24,7 @@ commands:
       /<command> debug genome interactions
       /<command> debug simulate hit|move|lowhp|kill|multikill|bosses|chaos|cycle|resetcontext|path
       /<command> dashboard
-      /<command> ecosystem [health|dashboard]
+      /<command> ecosystem [health|dashboard|environment]
       /<command> ecosystem dump
       /<command> ecosystem reset-metrics
       /<command> ecosystem map [lineage|species|collapse]
