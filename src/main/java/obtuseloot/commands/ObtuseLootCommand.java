@@ -76,7 +76,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " dashboard §8- §fShow ecosystem health and dashboard link §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem [health] §8- §fShow ecosystem health and live safety metrics §8[" + PERMISSION_INFO + "]");
-            sender.sendMessage("§7/" + label + " ecosystem dump §8- §fOutput a JSON safety snapshot to " + plugin.getPaths().analyticsRoot().resolve("safety") + "/ §8[" + PERMISSION_INFO + "]");
+            sender.sendMessage("§7/" + label + " ecosystem dump §8- §fOutput a JSON safety snapshot to " + plugin.getPaths().safetyDumpPath().getParent() + "/ §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem reset-metrics §8- §fClear rolling safety metrics §8[" + PERMISSION_ADMIN + "]");
             sender.sendMessage("§7/" + label + " ecosystem map [lineage|species|collapse] §8- §fStart live ecosystem hotspot rendering §8[" + PERMISSION_INFO + "]");
             sender.sendMessage("§7/" + label + " ecosystem map genome <trait> §8- §fRender genome trait intensity hotspots §8[" + PERMISSION_INFO + "]");

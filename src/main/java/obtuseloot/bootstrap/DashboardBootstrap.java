@@ -9,7 +9,7 @@ public final class DashboardBootstrap {
     }
 
     public static Result initialize(ObtuseLoot plugin, PluginPathLayout paths) {
-        DashboardService dashboardService = new DashboardService(paths.analyticsRoot());
+        DashboardService dashboardService = new DashboardService(paths);
         int dashboardPort = plugin.getConfig().getInt("dashboard.port", 8085);
         boolean dashboardWebEnabled = plugin.getConfig().getBoolean("dashboard.webServerEnabled", false);
         DashboardWebServer dashboardWebServer = new DashboardWebServer(dashboardService.dashboardRoot(), dashboardPort);

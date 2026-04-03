@@ -13,10 +13,22 @@ public final class PluginPathLayout {
         this.analyticsRoot = analyticsRoot;
     }
 
+    public static PluginPathLayout forAnalyticsRoot(Path analyticsRoot) {
+        if (analyticsRoot == null) {
+            throw new IllegalArgumentException("analyticsRoot must not be null.");
+        }
+        Path normalized = analyticsRoot.toAbsolutePath().normalize();
+        return new PluginPathLayout(normalized, normalized);
+    }
+
     public static PluginPathLayout from(JavaPlugin plugin) {
         Path dataRoot = plugin.getDataFolder().toPath();
-        String configuredAnalyticsRoot = plugin.getConfig().getString("paths.analyticsRoot", "analytics");
-        Path analyticsRoot = Path.of(configuredAnalyticsRoot == null || configuredAnalyticsRoot.isBlank() ? "analytics" : configuredAnalyticsRoot);
+        String configuredAnalyticsRoot = plugin.getConfig().getString("paths.analyticsRoot");
+        String analyticsRootValue = configuredAnalyticsRoot == null ? "analytics" : configuredAnalyticsRoot.trim();
+        if (analyticsRootValue.isBlank()) {
+            throw new IllegalStateException("Invalid config value for paths.analyticsRoot: value must not be blank.");
+        }
+        Path analyticsRoot = Path.of(analyticsRootValue);
         Path resolvedAnalyticsRoot = analyticsRoot.isAbsolute() ? analyticsRoot : dataRoot.resolve(analyticsRoot).normalize();
         return new PluginPathLayout(dataRoot, resolvedAnalyticsRoot);
     }
@@ -29,27 +41,41 @@ public final class PluginPathLayout {
         return analyticsRoot;
     }
 
+    /**
+     * Single source of truth for plugin-owned runtime analytics and reporting outputs.
+     * <p>
+     * Callers must request intent-named paths from this type instead of composing
+     * ad-hoc directories or filenames (for example with {@code resolve("telemetry")}).
+     */
     public Path dashboardRoot() {
         return analyticsRoot.resolve("dashboard");
     }
 
-    public Path telemetryArchive() {
+    public Path telemetryRoot() {
+        return analyticsRoot.resolve("telemetry");
+    }
+
+    public Path telemetryArchivePath() {
         return analyticsRoot.resolve("telemetry/ecosystem-events.log");
     }
 
-    public Path telemetryRollupSnapshot() {
+    public Path telemetrySnapshotPath() {
         return analyticsRoot.resolve("telemetry/rollup-snapshot.properties");
     }
 
-    public Path environmentPressureReport() {
+    public Path ecosystemBalanceDataPath() {
+        return analyticsRoot.resolve("ecosystem-balance-data.json");
+    }
+
+    public Path environmentPressureReportPath() {
         return analyticsRoot.resolve("environment-pressure-report.md");
     }
 
-    public Path triggerSubscriptionReport() {
+    public Path triggerSubscriptionReportPath() {
         return analyticsRoot.resolve("performance/trigger-subscription-index-report.md");
     }
 
-    public Path safetyDump() {
+    public Path safetyDumpPath() {
         return analyticsRoot.resolve("safety/ecosystem-safety-dump.json");
     }
 

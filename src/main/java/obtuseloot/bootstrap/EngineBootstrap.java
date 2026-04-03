@@ -51,7 +51,7 @@ public final class EngineBootstrap {
 
         ArtifactEcosystemSelfBalancingEngine ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
         ecosystemEngine.configure(ProductionSafetyConfig.from(config), plugin.getLogger());
-        ecosystemEngine.setEnvironmentalPressureReportPath(paths.environmentPressureReport());
+        ecosystemEngine.setEnvironmentalPressureReportPath(paths.environmentPressureReportPath());
 
         ExperienceEvolutionEngine experienceEvolutionEngine = new ExperienceEvolutionEngine(
                 artifactUsageTracker,

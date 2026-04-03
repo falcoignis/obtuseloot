@@ -127,7 +127,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
         String json = snap.toJson();
 
         // Write to analytics directory as well
-        Path dumpPath = paths.safetyDump();
+        Path dumpPath = paths.safetyDumpPath();
         try {
             Files.createDirectories(dumpPath.getParent());
             Files.writeString(dumpPath, json);
@@ -197,7 +197,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
                 // Append production safety summary
                 appendSafetySummary(player);
 
-                player.sendMessage("§8Data scope: generator/ecology aggregate from " + paths.analyticsRoot().resolve("ecosystem-balance-data.json") + ".");
+                player.sendMessage("§8Data scope: generator/ecology aggregate from " + paths.ecosystemBalanceDataPath() + ".");
                 if (dashboardWebServer.isRunning()) {
                     TextComponent link = new TextComponent("§b[View Ecosystem Dashboard]");
                     link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, dashboardUrl));
@@ -218,7 +218,7 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage("Dashboard generation succeeded: " + Files.exists(dashboardPath));
             sender.sendMessage("Web endpoint: " + dashboardUrl);
             sender.sendMessage("Latest season snapshot: " + latestSeason);
-            sender.sendMessage("Data scope: generator/ecology aggregate from " + paths.analyticsRoot().resolve("ecosystem-balance-data.json") + " (not online-player-only telemetry).");
+            sender.sendMessage("Data scope: generator/ecology aggregate from " + paths.ecosystemBalanceDataPath() + " (not online-player-only telemetry).");
 
             // Append production safety summary for console
             EcosystemHealthMonitor monitor = plugin.getEcosystemHealthMonitor();
