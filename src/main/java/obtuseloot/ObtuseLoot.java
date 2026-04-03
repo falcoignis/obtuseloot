@@ -2,24 +2,22 @@ package obtuseloot;
 
 import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.artifacts.ArtifactItemStorage;
-import obtuseloot.abilities.AbilityRegistry;
-import obtuseloot.abilities.ItemAbilityManager;
-import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.awakening.AwakeningEngine;
-import obtuseloot.convergence.ConvergenceEngine;
+import obtuseloot.bootstrap.CommandBootstrap;
+import obtuseloot.bootstrap.DashboardBootstrap;
+import obtuseloot.bootstrap.EngineBootstrap;
+import obtuseloot.bootstrap.PersistenceBootstrap;
+import obtuseloot.bootstrap.PluginPathLayout;
+import obtuseloot.bootstrap.TelemetryBootstrap;
 import obtuseloot.combat.CombatContextManager;
-import obtuseloot.commands.DashboardCommandExecutor;
 import obtuseloot.analytics.EnvironmentalPressureReporter;
 import obtuseloot.analytics.TriggerSubscriptionIndexReporter;
-import obtuseloot.commands.ObtuseLootCommand;
 import obtuseloot.dashboard.DashboardService;
 import obtuseloot.dashboard.DashboardWebServer;
 import obtuseloot.config.RuntimeSettings;
+import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.ecosystem.EcosystemMapRenderer;
-import obtuseloot.ecosystem.ProductionSafetyConfig;
-import obtuseloot.lineage.LineageInfluenceResolver;
-import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.drift.DriftEngine;
 import obtuseloot.evolution.ArchetypeResolver;
 import obtuseloot.evolution.ArtifactFitnessEvaluator;
@@ -28,29 +26,25 @@ import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.EvolutionEngine;
 import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.evolution.params.EvolutionParameterRegistry;
+import obtuseloot.lineage.LineageInfluenceResolver;
+import obtuseloot.lineage.LineageRegistry;
 import obtuseloot.lore.LoreEngine;
+import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.obtuseengine.EngineScheduler;
 import obtuseloot.obtuseengine.ObtuseEngine;
-import obtuseloot.persistence.PersistenceConfig;
 import obtuseloot.persistence.PersistenceManager;
 import obtuseloot.persistence.PlayerStateStore;
-import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.reputation.ReputationManager;
-import obtuseloot.telemetry.EcosystemHistoryArchive;
 import obtuseloot.telemetry.EcosystemTelemetryEmitter;
-import obtuseloot.telemetry.RollupStateHydrator;
-import obtuseloot.telemetry.ScheduledEcosystemRollups;
 import obtuseloot.telemetry.TelemetryAggregationAnalytics;
-import obtuseloot.telemetry.TelemetryAggregationBuffer;
-import obtuseloot.telemetry.TelemetryAggregationService;
-import obtuseloot.telemetry.TelemetryRollupSnapshotStore;
-import obtuseloot.telemetry.TelemetryFlushScheduler;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 public class ObtuseLoot extends JavaPlugin {
     private static ObtuseLoot instance;
     private ObtuseEngine engine;
+
+    private PluginPathLayout paths;
 
     private PersistenceManager persistenceManager;
     private PlayerStateStore playerStateStore;
@@ -64,7 +58,7 @@ public class ObtuseLoot extends JavaPlugin {
     private ConvergenceEngine convergenceEngine;
     private LoreEngine loreEngine;
     private EngineScheduler engineScheduler;
-    private ItemAbilityManager itemAbilityManager;
+    private obtuseloot.abilities.ItemAbilityManager itemAbilityManager;
     private ArtifactMemoryEngine artifactMemoryEngine;
     private ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private LineageRegistry lineageRegistry;
@@ -87,109 +81,55 @@ public class ObtuseLoot extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         RuntimeSettings.load(getConfig());
+        paths = PluginPathLayout.from(this);
+
         evolutionParameterRegistry = new EvolutionParameterRegistry();
         evolutionParameterRegistry.load(getConfig());
         var tuningProfile = evolutionParameterRegistry.profile();
 
-        TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
-        EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(java.nio.file.Path.of("analytics/telemetry/ecosystem-events.log"));
-        ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, tuningProfile.telemetryRollupIntervalMs());
-        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(java.nio.file.Path.of("analytics/telemetry/rollup-snapshot.properties"));
-        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, telemetryArchive, tuningProfile.telemetryRehydrateReplayWindowEvents());
-        TelemetryAggregationService aggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups,
-                tuningProfile.telemetryArchiveBatchSize(), snapshotStore, hydrator);
-        aggregationService.initializeFromHistory();
-        getLogger().info("[Telemetry] initialization mode=" + aggregationService.initialization().mode()
-                + ", replayedEvents=" + aggregationService.initialization().replayedEvents()
-                + ", durationMs=" + aggregationService.initialization().durationMs());
-        ecosystemTelemetryEmitter = new EcosystemTelemetryEmitter(aggregationService);
-        telemetryAggregationAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);
+        TelemetryBootstrap.Result telemetry = TelemetryBootstrap.initialize(getLogger(), tuningProfile, paths);
+        ecosystemTelemetryEmitter = telemetry.emitter();
+        telemetryAggregationAnalytics = telemetry.analytics();
 
-        persistenceManager = new PersistenceManager(this, PersistenceConfig.from(getConfig(), getDataFolder()));
-        try {
-            persistenceManager.initialize();
-        } catch (RuntimeException ex) {
-            getLogger().severe("[Persistence] Startup aborted: " + ex.getMessage());
+        PersistenceBootstrap.Result persistence = PersistenceBootstrap.initialize(this, getConfig());
+        if (persistence == null) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        playerStateStore = persistenceManager.stateStore();
-        artifactManager = new ArtifactManager(playerStateStore);
-        artifactItemStorage = new ArtifactItemStorage(this);
-        reputationManager = new ReputationManager(playerStateStore);
+        persistenceManager = persistence.persistenceManager();
+        playerStateStore = persistence.playerStateStore();
+        artifactManager = persistence.artifactManager();
+        artifactItemStorage = persistence.artifactItemStorage();
+        reputationManager = persistence.reputationManager();
 
-        combatContextManager = new CombatContextManager();
-        evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
-        artifactUsageTracker = new ArtifactUsageTracker();
-        artifactUsageTracker.setTelemetryEmitter(ecosystemTelemetryEmitter);
-        ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
-        ecosystemEngine.configure(ProductionSafetyConfig.from(getConfig()), getLogger());
-        experienceEvolutionEngine = new ExperienceEvolutionEngine(artifactUsageTracker, new ArtifactFitnessEvaluator(), ecosystemEngine.pressureEngine(), new obtuseloot.evolution.AdaptiveSupportAllocator(), evolutionParameterRegistry);
-        experienceEvolutionEngine.setTelemetryEmitter(ecosystemTelemetryEmitter);
-        driftEngine = new DriftEngine();
-        awakeningEngine = new AwakeningEngine();
-        convergenceEngine = new ConvergenceEngine();
-        artifactMemoryEngine = new ArtifactMemoryEngine();
-        ecosystemMapRenderer = new EcosystemMapRenderer(this);
-        lineageRegistry = new LineageRegistry();
-        lineageRegistry.setTelemetryEmitter(ecosystemTelemetryEmitter);
-        lineageRegistry.setDriftWindowDurationTicks(tuningProfile.driftWindowDurationTicks());
-        lineageRegistry.restoreSpeciesSnapshot(playerStateStore.loadSpeciesSnapshot());
-        lineageInfluenceResolver = new LineageInfluenceResolver();
-        itemAbilityManager = new ItemAbilityManager(new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine, lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
-        itemAbilityManager.setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
-        loreEngine = new LoreEngine();
-        engineScheduler = new EngineScheduler(this, artifactManager, reputationManager, combatContextManager);
+        EngineBootstrap.Result engineComponents = EngineBootstrap.initialize(this, playerStateStore, getConfig(),
+                tuningProfile, ecosystemTelemetryEmitter, evolutionParameterRegistry, paths);
+        combatContextManager = engineComponents.combatContextManager();
+        evolutionEngine = engineComponents.evolutionEngine();
+        artifactUsageTracker = engineComponents.artifactUsageTracker();
+        ecosystemEngine = engineComponents.ecosystemEngine();
+        experienceEvolutionEngine = engineComponents.experienceEvolutionEngine();
+        driftEngine = engineComponents.driftEngine();
+        awakeningEngine = engineComponents.awakeningEngine();
+        convergenceEngine = engineComponents.convergenceEngine();
+        artifactMemoryEngine = engineComponents.artifactMemoryEngine();
+        ecosystemMapRenderer = engineComponents.ecosystemMapRenderer();
+        lineageRegistry = engineComponents.lineageRegistry();
+        lineageInfluenceResolver = engineComponents.lineageInfluenceResolver();
+        itemAbilityManager = engineComponents.itemAbilityManager();
+        loreEngine = engineComponents.loreEngine();
+        engineScheduler = engineComponents.engineScheduler();
 
-        dashboardService = new DashboardService(java.nio.file.Path.of("analytics"));
-        int dashboardPort = getConfig().getInt("dashboard.port", 8085);
-        boolean dashboardWebEnabled = getConfig().getBoolean("dashboard.webServerEnabled", false);
-        dashboardWebServer = new DashboardWebServer(dashboardService.dashboardRoot(), dashboardPort);
-        try {
-            dashboardService.regenerateDashboard();
-            if (dashboardWebEnabled) {
-                dashboardWebServer.start();
-                getLogger().info("[Dashboard] Serving ecosystem dashboard at http://localhost:" + dashboardPort + "/ecosystem-dashboard.html");
-            } else {
-                getLogger().info("[Dashboard] Web server disabled; dashboard generated to local analytics/dashboard.");
-            }
-        } catch (Exception exception) {
-            getLogger().warning("[Dashboard] Failed to initialize dashboard: " + exception.getMessage());
-        }
+        DashboardBootstrap.Result dashboard = DashboardBootstrap.initialize(this, paths);
+        dashboardService = dashboard.dashboardService();
+        dashboardWebServer = dashboard.dashboardWebServer();
 
-        if (getCommand("obtuseloot") != null) {
-            ObtuseLootCommand command = new ObtuseLootCommand(this);
-            DashboardCommandExecutor dashboardCommandExecutor = new DashboardCommandExecutor(this, command, dashboardService, dashboardWebServer);
-            getCommand("obtuseloot").setExecutor(dashboardCommandExecutor);
-            getCommand("obtuseloot").setTabCompleter(dashboardCommandExecutor);
-        }
+        CommandBootstrap.register(this, dashboardService, dashboardWebServer, paths);
+        writeInitialReports();
 
-        try {
-            environmentalPressureReporter.writeReport(java.nio.file.Path.of("analytics/environment-pressure-report.md"),
-                    experienceEvolutionEngine.pressureEngine());
-        } catch (Exception exception) {
-            getLogger().warning("[Ecosystem] Failed to write environment pressure report: " + exception.getMessage());
-        }
-        try {
-            triggerSubscriptionIndexReporter.writeReport(java.nio.file.Path.of("analytics/performance/trigger-subscription-index-report.md"), itemAbilityManager);
-        } catch (Exception exception) {
-            getLogger().warning("[Runtime] Failed to write trigger subscription report: " + exception.getMessage());
-        }
-
-
-        environmentalPressureTask = getServer().getScheduler().runTaskTimer(this, () -> {
-            try {
-                experienceEvolutionEngine.pressureEngine().advanceSeason();
-                environmentalPressureReporter.writeReport(java.nio.file.Path.of("analytics/environment-pressure-report.md"),
-                        experienceEvolutionEngine.pressureEngine());
-            } catch (Exception exception) {
-                getLogger().warning("[Ecosystem] Failed periodic environment pressure update: " + exception.getMessage());
-            }
-        }, 24_000L, 24_000L);
-
-        telemetryRollupTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
-                new TelemetryFlushScheduler(ecosystemTelemetryEmitter),
-                tuningProfile.telemetryFlushIntervalTicks(),
+        environmentalPressureTask = EngineBootstrap.scheduleEnvironmentalPressureTask(this, experienceEvolutionEngine,
+                environmentalPressureReporter, paths.environmentPressureReport());
+        telemetryRollupTask = TelemetryBootstrap.scheduleFlushTask(this, ecosystemTelemetryEmitter,
                 tuningProfile.telemetryFlushIntervalTicks());
 
         engine = new ObtuseEngine(this);
@@ -232,12 +172,26 @@ public class ObtuseLoot extends JavaPlugin {
             dashboardWebServer.stop();
         }
         try {
-            triggerSubscriptionIndexReporter.writeReport(java.nio.file.Path.of("analytics/performance/trigger-subscription-index-report.md"), itemAbilityManager);
+            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReport(), itemAbilityManager);
         } catch (Exception exception) {
             getLogger().warning("[Runtime] Failed to write trigger subscription report on disable: " + exception.getMessage());
         }
         if (ecosystemTelemetryEmitter != null) {
             ecosystemTelemetryEmitter.flushAll();
+        }
+    }
+
+    private void writeInitialReports() {
+        try {
+            environmentalPressureReporter.writeReport(paths.environmentPressureReport(),
+                    experienceEvolutionEngine.pressureEngine());
+        } catch (Exception exception) {
+            getLogger().warning("[Ecosystem] Failed to write environment pressure report: " + exception.getMessage());
+        }
+        try {
+            triggerSubscriptionIndexReporter.writeReport(paths.triggerSubscriptionReport(), itemAbilityManager);
+        } catch (Exception exception) {
+            getLogger().warning("[Runtime] Failed to write trigger subscription report: " + exception.getMessage());
         }
     }
 
@@ -255,7 +209,7 @@ public class ObtuseLoot extends JavaPlugin {
     public ConvergenceEngine getConvergenceEngine() { return convergenceEngine; }
     public LoreEngine getLoreEngine() { return loreEngine; }
     public EngineScheduler getEngineScheduler() { return engineScheduler; }
-    public ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
+    public obtuseloot.abilities.ItemAbilityManager getItemAbilityManager() { return itemAbilityManager; }
     public ArtifactMemoryEngine getArtifactMemoryEngine() { return artifactMemoryEngine; }
     public ArtifactEcosystemSelfBalancingEngine getEcosystemEngine() { return ecosystemEngine; }
     public LineageRegistry getLineageRegistry() { return lineageRegistry; }
@@ -266,4 +220,5 @@ public class ObtuseLoot extends JavaPlugin {
     public EcosystemTelemetryEmitter getEcosystemTelemetryEmitter() { return ecosystemTelemetryEmitter; }
     public TelemetryAggregationAnalytics getTelemetryAggregationAnalytics() { return telemetryAggregationAnalytics; }
     public EvolutionParameterRegistry getEvolutionParameterRegistry() { return evolutionParameterRegistry; }
+    public PluginPathLayout getPaths() { return paths; }
 }
