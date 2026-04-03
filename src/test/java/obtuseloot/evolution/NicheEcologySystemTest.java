@@ -9,8 +9,10 @@ import obtuseloot.telemetry.EcosystemTelemetryEmitter;
 import obtuseloot.telemetry.EcosystemTelemetryEvent;
 import obtuseloot.telemetry.EcosystemTelemetryEventType;
 import obtuseloot.telemetry.ScheduledEcosystemRollups;
+import obtuseloot.telemetry.RollupStateHydrator;
 import obtuseloot.telemetry.TelemetryAggregationBuffer;
 import obtuseloot.telemetry.TelemetryAggregationService;
+import obtuseloot.telemetry.TelemetryRollupSnapshotStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -306,7 +308,7 @@ class NicheEcologySystemTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 4);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 4, tempDir.resolve("bifurcation-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
@@ -372,7 +374,7 @@ class NicheEcologySystemTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollupScheduler = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollupScheduler, 4);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollupScheduler, 4, tempDir.resolve("bifurcation-pop-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
@@ -687,5 +689,15 @@ class NicheEcologySystemTest {
                 "After lock decay, effective niche should follow the classifier again");
         assertNotEquals(lockedChild, unlockedNiche,
                 "After lock decay, artifact should no longer be pinned to its child lock niche");
+    }
+
+    private TelemetryAggregationService telemetryService(TelemetryAggregationBuffer buffer,
+                                                         EcosystemHistoryArchive archive,
+                                                         ScheduledEcosystemRollups rollups,
+                                                         int archiveBatchSize,
+                                                         Path snapshotPath) {
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(snapshotPath);
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, archive, 8);
+        return new TelemetryAggregationService(buffer, archive, rollups, archiveBatchSize, snapshotStore, hydrator);
     }
 }

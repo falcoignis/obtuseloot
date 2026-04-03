@@ -124,12 +124,16 @@ public class WorldSimulationHarness {
         int archiveBatchSize = Integer.getInteger("world.telemetryArchiveBatchSize", config.validationProfile() ? 64 : 256);
         this.telemetrySamplingRate = clampSamplingRate(Double.parseDouble(System.getProperty("world.telemetrySamplingRate", "1.0")));
         this.telemetryBuffer = new TelemetryAggregationBuffer(maxTelemetryBufferEvents);
-        Path telemetryDir = Path.of(config.outputDirectory(), "telemetry");
-        this.telemetryArchive = new EcosystemHistoryArchive(telemetryDir.resolve("ecosystem-events.log"));
+        Path telemetryRoot = Path.of(config.outputDirectory(), "telemetry");
+        Path telemetryArchivePath = telemetryRoot.resolve("ecosystem-events.log");
+        Path telemetrySnapshotPath = telemetryRoot.resolve("rollup-snapshot.properties");
+        this.telemetryArchive = new EcosystemHistoryArchive(telemetryArchivePath);
         this.scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, 1L);
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(telemetrySnapshotPath);
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, telemetryArchive, 1024);
         this.telemetryAggregationService = new TelemetryAggregationService(telemetryBuffer, telemetryArchive, scheduledRollups, archiveBatchSize,
-                new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")),
-                new RollupStateHydrator(new TelemetryRollupSnapshotStore(telemetryDir.resolve("rollup-snapshot.properties")), telemetryArchive, 1024));
+                snapshotStore,
+                hydrator);
         this.telemetryAggregationService.initializeFromHistory();
         this.telemetryEmitter = new EcosystemTelemetryEmitter(telemetryAggregationService, telemetryEventFactory, telemetrySamplingRate);
         this.telemetryAnalytics = new TelemetryAggregationAnalytics(scheduledRollups);

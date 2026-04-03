@@ -123,7 +123,7 @@ class BranchCollapsePressureLifecycleTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("branch-lifecycle-events.log"));
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 256);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 256, tempDir.resolve("branch-lifecycle-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         LineageRegistry registry = new LineageRegistry();
@@ -214,5 +214,15 @@ class BranchCollapsePressureLifecycleTest {
         artifact.setEvolutionPath("SCOUT");
         artifact.setLastUtilityHistory("v1|ud=0.450000");
         return artifact;
+    }
+
+    private TelemetryAggregationService telemetryService(TelemetryAggregationBuffer buffer,
+                                                         EcosystemHistoryArchive archive,
+                                                         ScheduledEcosystemRollups rollups,
+                                                         int archiveBatchSize,
+                                                         Path snapshotPath) {
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(snapshotPath);
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, archive, 8);
+        return new TelemetryAggregationService(buffer, archive, rollups, archiveBatchSize, snapshotStore, hydrator);
     }
 }
