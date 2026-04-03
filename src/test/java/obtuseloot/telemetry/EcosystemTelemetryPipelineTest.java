@@ -24,7 +24,7 @@ class EcosystemTelemetryPipelineTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 4);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 4, tempDir.resolve("runtime-schema-snapshot.properties"), 8);
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         ArtifactUsageTracker usageTracker = new ArtifactUsageTracker();
@@ -119,9 +119,7 @@ class EcosystemTelemetryPipelineTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 4,
-                new TelemetryRollupSnapshotStore(tempDir.resolve("rollup-generated-snapshot.properties")),
-                new RollupStateHydrator(new TelemetryRollupSnapshotStore(tempDir.resolve("rollup-generated-snapshot.properties")), archive, 8));
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 4, tempDir.resolve("rollup-generated-snapshot.properties"), 8);
 
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 22L, "lin-22", "RITUAL",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION, Map.of("niche", "RITUAL", "lineage_id", "lin-22", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
@@ -163,7 +161,7 @@ class EcosystemTelemetryPipelineTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 1000);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 1000, tempDir.resolve("periodic-snapshot.properties"), 8);
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         emitter.emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, 7L, "lin-a", "SCOUT", Map.of("event", "ancestor-added", "branch_divergence", "0.0", "specialization_trajectory", "0.0"));
@@ -179,8 +177,8 @@ class EcosystemTelemetryPipelineTest {
     void rollupsRemainTelemetryBackedAndExposeExpandedMetrics() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
-                new EcosystemHistoryArchive(tempDir.resolve("rollup.log")), rollups, 32);
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("rollup.log"));
+        TelemetryAggregationService service = telemetryService(serviceBuffer(buffer), archive, rollups, 32, tempDir.resolve("rollup-metrics-snapshot.properties"), 8);
 
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 1L, "lin-1", "SCOUT",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION, Map.of("niche", "SCOUT", "lineage_id", "lin-1", "utility_density", "0.75", "meaningful", "true", "ecology_pressure", "0.4", "ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"))));
@@ -204,8 +202,8 @@ class EcosystemTelemetryPipelineTest {
     void branchAndMeaningfulAttributionUseNicheContextAcrossEvents() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
-                new EcosystemHistoryArchive(tempDir.resolve("niche-attribution.log")), rollups, 32);
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("niche-attribution.log"));
+        TelemetryAggregationService service = telemetryService(serviceBuffer(buffer), archive, rollups, 32, tempDir.resolve("niche-attribution-snapshot.properties"), 8);
 
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 3L, "lin-ctx", "SCOUT",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
@@ -225,8 +223,8 @@ class EcosystemTelemetryPipelineTest {
     void populationRollupTracksLatestArtifactNicheInsteadOfEventVolume() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
-                new EcosystemHistoryArchive(tempDir.resolve("population-latest-niche.log")), rollups, 32);
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("population-latest-niche.log"));
+        TelemetryAggregationService service = telemetryService(serviceBuffer(buffer), archive, rollups, 32, tempDir.resolve("population-latest-snapshot.properties"), 8);
 
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.ABILITY_EXECUTION, 42L, "lin-move", "NAVIGATION",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION,
@@ -250,8 +248,8 @@ class EcosystemTelemetryPipelineTest {
     void aggregationPrefersEventNicheOverLegacyAttributeNicheForDynamicChildren() {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(serviceBuffer(buffer),
-                new EcosystemHistoryArchive(tempDir.resolve("dynamic-child-niche.log")), rollups, 32);
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("dynamic-child-niche.log"));
+        TelemetryAggregationService service = telemetryService(serviceBuffer(buffer), archive, rollups, 32, tempDir.resolve("dynamic-child-snapshot.properties"), 8);
 
         service.record(new EcosystemTelemetryEvent(System.currentTimeMillis(), EcosystemTelemetryEventType.NICHE_BIFURCATION, 0L, "", "RITUAL_STRANGE_UTILITY",
                 TelemetryFieldContract.normalize(EcosystemTelemetryEventType.NICHE_BIFURCATION,
@@ -285,5 +283,16 @@ class EcosystemTelemetryPipelineTest {
 
     private TelemetryAggregationBuffer serviceBuffer(TelemetryAggregationBuffer buffer) {
         return buffer;
+    }
+
+    private TelemetryAggregationService telemetryService(TelemetryAggregationBuffer buffer,
+                                                         EcosystemHistoryArchive archive,
+                                                         ScheduledEcosystemRollups rollups,
+                                                         int archiveBatchSize,
+                                                         Path snapshotPath,
+                                                         int replayWindowEvents) {
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(snapshotPath);
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, archive, replayWindowEvents);
+        return new TelemetryAggregationService(buffer, archive, rollups, archiveBatchSize, snapshotStore, hydrator);
     }
 }

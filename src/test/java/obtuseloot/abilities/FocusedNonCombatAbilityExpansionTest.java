@@ -73,7 +73,7 @@ class FocusedNonCombatAbilityExpansionTest {
         TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
         ScheduledEcosystemRollups rollups = new ScheduledEcosystemRollups(buffer, 1L);
-        TelemetryAggregationService service = new TelemetryAggregationService(buffer, archive, rollups, 4);
+        TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 4, tempDir.resolve("focused-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
         ArtifactUsageTracker tracker = new ArtifactUsageTracker();
@@ -160,5 +160,15 @@ class FocusedNonCombatAbilityExpansionTest {
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         return artifact;
+    }
+
+    private TelemetryAggregationService telemetryService(TelemetryAggregationBuffer buffer,
+                                                         EcosystemHistoryArchive archive,
+                                                         ScheduledEcosystemRollups rollups,
+                                                         int archiveBatchSize,
+                                                         Path snapshotPath) {
+        TelemetryRollupSnapshotStore snapshotStore = new TelemetryRollupSnapshotStore(snapshotPath);
+        RollupStateHydrator hydrator = new RollupStateHydrator(snapshotStore, archive, 8);
+        return new TelemetryAggregationService(buffer, archive, rollups, archiveBatchSize, snapshotStore, hydrator);
     }
 }

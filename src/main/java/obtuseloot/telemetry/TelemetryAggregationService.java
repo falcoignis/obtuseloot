@@ -3,6 +3,7 @@ package obtuseloot.telemetry;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class TelemetryAggregationService {
     private final TelemetryAggregationBuffer buffer;
@@ -17,24 +18,15 @@ public class TelemetryAggregationService {
     public TelemetryAggregationService(TelemetryAggregationBuffer buffer,
                                        EcosystemHistoryArchive archive,
                                        ScheduledEcosystemRollups rollups,
-                                       int archiveBatchSize) {
-        this(buffer, archive, rollups, archiveBatchSize,
-                new TelemetryRollupSnapshotStore(java.nio.file.Path.of("analytics/telemetry/rollup-snapshot.properties")),
-                new RollupStateHydrator(new TelemetryRollupSnapshotStore(java.nio.file.Path.of("analytics/telemetry/rollup-snapshot.properties")), archive, 512));
-    }
-
-    public TelemetryAggregationService(TelemetryAggregationBuffer buffer,
-                                       EcosystemHistoryArchive archive,
-                                       ScheduledEcosystemRollups rollups,
                                        int archiveBatchSize,
                                        TelemetryRollupSnapshotStore snapshotStore,
                                        RollupStateHydrator hydrator) {
-        this.buffer = buffer;
-        this.archive = archive;
-        this.rollups = rollups;
+        this.buffer = Objects.requireNonNull(buffer, "buffer");
+        this.archive = Objects.requireNonNull(archive, "archive");
+        this.rollups = Objects.requireNonNull(rollups, "rollups");
         this.archiveBatchSize = archiveBatchSize;
-        this.snapshotStore = snapshotStore;
-        this.hydrator = hydrator;
+        this.snapshotStore = Objects.requireNonNull(snapshotStore, "snapshotStore");
+        this.hydrator = Objects.requireNonNull(hydrator, "hydrator");
     }
 
     public void initializeFromHistory() {
