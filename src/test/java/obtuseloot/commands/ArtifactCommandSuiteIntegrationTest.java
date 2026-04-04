@@ -117,6 +117,11 @@ class ArtifactCommandSuiteIntegrationTest {
         artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
         artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
         artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.FIRST_BOSS_KILL);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.PRECISION_STREAK);
+        artifact.getMemory().record(obtuseloot.memory.ArtifactMemoryEvent.LONG_BATTLE);
 
         ArtifactReputation rep = new ArtifactReputation();
         rep.setPrecision(60);
