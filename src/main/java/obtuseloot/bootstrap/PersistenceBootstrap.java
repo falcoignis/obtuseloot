@@ -13,13 +13,15 @@ public final class PersistenceBootstrap {
     private PersistenceBootstrap() {
     }
 
-    public static Result initialize(ObtuseLoot plugin, FileConfiguration config) {
+    public static boolean initialize(BootstrapContext context) {
+        ObtuseLoot plugin = context.require(ObtuseLoot.class);
+        FileConfiguration config = context.require(FileConfiguration.class);
         PersistenceManager persistenceManager = new PersistenceManager(plugin, PersistenceConfig.from(config, plugin.getDataFolder()));
         try {
             persistenceManager.initialize();
         } catch (RuntimeException ex) {
             plugin.getLogger().severe("[Persistence] Startup aborted: " + ex.getMessage());
-            return null;
+            return false;
         }
 
         PlayerStateStore playerStateStore = persistenceManager.stateStore();
@@ -27,13 +29,11 @@ public final class PersistenceBootstrap {
         ArtifactItemStorage artifactItemStorage = new ArtifactItemStorage(plugin);
         ReputationManager reputationManager = new ReputationManager(playerStateStore);
 
-        return new Result(persistenceManager, playerStateStore, artifactManager, artifactItemStorage, reputationManager);
-    }
-
-    public record Result(PersistenceManager persistenceManager,
-                         PlayerStateStore playerStateStore,
-                         ArtifactManager artifactManager,
-                         ArtifactItemStorage artifactItemStorage,
-                         ReputationManager reputationManager) {
+        context.register(PersistenceManager.class, persistenceManager);
+        context.register(PlayerStateStore.class, playerStateStore);
+        context.register(ArtifactManager.class, artifactManager);
+        context.register(ArtifactItemStorage.class, artifactItemStorage);
+        context.register(ReputationManager.class, reputationManager);
+        return true;
     }
 }

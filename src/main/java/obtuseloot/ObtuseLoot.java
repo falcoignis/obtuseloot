@@ -3,6 +3,7 @@ package obtuseloot;
 import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.artifacts.ArtifactItemStorage;
 import obtuseloot.awakening.AwakeningEngine;
+import obtuseloot.bootstrap.BootstrapContext;
 import obtuseloot.bootstrap.CommandBootstrap;
 import obtuseloot.bootstrap.DashboardBootstrap;
 import obtuseloot.bootstrap.EngineBootstrap;
@@ -19,12 +20,9 @@ import obtuseloot.convergence.ConvergenceEngine;
 import obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine;
 import obtuseloot.ecosystem.EcosystemMapRenderer;
 import obtuseloot.drift.DriftEngine;
-import obtuseloot.evolution.ArchetypeResolver;
-import obtuseloot.evolution.ArtifactFitnessEvaluator;
 import obtuseloot.evolution.ArtifactUsageTracker;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
 import obtuseloot.evolution.EvolutionEngine;
-import obtuseloot.evolution.HybridEvolutionResolver;
 import obtuseloot.evolution.params.EvolutionParameterRegistry;
 import obtuseloot.lineage.LineageInfluenceResolver;
 import obtuseloot.lineage.LineageRegistry;
@@ -87,44 +85,24 @@ public class ObtuseLoot extends JavaPlugin {
         evolutionParameterRegistry.load(getConfig());
         var tuningProfile = evolutionParameterRegistry.profile();
 
-        TelemetryBootstrap.Result telemetry = TelemetryBootstrap.initialize(getLogger(), tuningProfile, paths);
-        ecosystemTelemetryEmitter = telemetry.emitter();
-        telemetryAggregationAnalytics = telemetry.analytics();
+        BootstrapContext context = new BootstrapContext();
+        context.register(ObtuseLoot.class, this);
+        context.register(org.bukkit.configuration.file.FileConfiguration.class, getConfig());
+        context.register(java.util.logging.Logger.class, getLogger());
+        context.register(PluginPathLayout.class, paths);
+        context.register(obtuseloot.evolution.params.EcosystemTuningProfile.class, tuningProfile);
+        context.register(EvolutionParameterRegistry.class, evolutionParameterRegistry);
 
-        PersistenceBootstrap.Result persistence = PersistenceBootstrap.initialize(this, getConfig());
-        if (persistence == null) {
+        TelemetryBootstrap.initialize(context);
+        if (!PersistenceBootstrap.initialize(context)) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        persistenceManager = persistence.persistenceManager();
-        playerStateStore = persistence.playerStateStore();
-        artifactManager = persistence.artifactManager();
-        artifactItemStorage = persistence.artifactItemStorage();
-        reputationManager = persistence.reputationManager();
 
-        EngineBootstrap.Result engineComponents = EngineBootstrap.initialize(this, playerStateStore, getConfig(),
-                tuningProfile, ecosystemTelemetryEmitter, evolutionParameterRegistry, paths);
-        combatContextManager = engineComponents.combatContextManager();
-        evolutionEngine = engineComponents.evolutionEngine();
-        artifactUsageTracker = engineComponents.artifactUsageTracker();
-        ecosystemEngine = engineComponents.ecosystemEngine();
-        experienceEvolutionEngine = engineComponents.experienceEvolutionEngine();
-        driftEngine = engineComponents.driftEngine();
-        awakeningEngine = engineComponents.awakeningEngine();
-        convergenceEngine = engineComponents.convergenceEngine();
-        artifactMemoryEngine = engineComponents.artifactMemoryEngine();
-        ecosystemMapRenderer = engineComponents.ecosystemMapRenderer();
-        lineageRegistry = engineComponents.lineageRegistry();
-        lineageInfluenceResolver = engineComponents.lineageInfluenceResolver();
-        itemAbilityManager = engineComponents.itemAbilityManager();
-        loreEngine = engineComponents.loreEngine();
-        engineScheduler = engineComponents.engineScheduler();
-
-        DashboardBootstrap.Result dashboard = DashboardBootstrap.initialize(this, paths);
-        dashboardService = dashboard.dashboardService();
-        dashboardWebServer = dashboard.dashboardWebServer();
-
-        CommandBootstrap.register(this, dashboardService, dashboardWebServer, paths);
+        EngineBootstrap.initialize(context);
+        DashboardBootstrap.initialize(context);
+        CommandBootstrap.register(context);
+        assignBootstrappedComponents(context);
         writeInitialReports();
 
         environmentalPressureTask = EngineBootstrap.scheduleEnvironmentalPressureTask(this, experienceEvolutionEngine,
@@ -135,6 +113,35 @@ public class ObtuseLoot extends JavaPlugin {
         engine = new ObtuseEngine(this);
         engine.initialize();
         engineScheduler.startAll();
+    }
+
+    private void assignBootstrappedComponents(BootstrapContext context) {
+        persistenceManager = context.require(PersistenceManager.class);
+        playerStateStore = context.require(PlayerStateStore.class);
+        artifactManager = context.require(ArtifactManager.class);
+        artifactItemStorage = context.require(ArtifactItemStorage.class);
+        reputationManager = context.require(ReputationManager.class);
+
+        combatContextManager = context.require(CombatContextManager.class);
+        evolutionEngine = context.require(EvolutionEngine.class);
+        artifactUsageTracker = context.require(ArtifactUsageTracker.class);
+        ecosystemEngine = context.require(ArtifactEcosystemSelfBalancingEngine.class);
+        experienceEvolutionEngine = context.require(ExperienceEvolutionEngine.class);
+        driftEngine = context.require(DriftEngine.class);
+        awakeningEngine = context.require(AwakeningEngine.class);
+        convergenceEngine = context.require(ConvergenceEngine.class);
+        artifactMemoryEngine = context.require(ArtifactMemoryEngine.class);
+        ecosystemMapRenderer = context.require(EcosystemMapRenderer.class);
+        lineageRegistry = context.require(LineageRegistry.class);
+        lineageInfluenceResolver = context.require(LineageInfluenceResolver.class);
+        itemAbilityManager = context.require(obtuseloot.abilities.ItemAbilityManager.class);
+        loreEngine = context.require(LoreEngine.class);
+        engineScheduler = context.require(EngineScheduler.class);
+
+        dashboardService = context.require(DashboardService.class);
+        dashboardWebServer = context.require(DashboardWebServer.class);
+        ecosystemTelemetryEmitter = context.require(EcosystemTelemetryEmitter.class);
+        telemetryAggregationAnalytics = context.require(TelemetryAggregationAnalytics.class);
     }
 
     @Override
