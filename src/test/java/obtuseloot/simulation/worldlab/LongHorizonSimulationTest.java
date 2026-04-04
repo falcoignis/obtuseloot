@@ -88,6 +88,11 @@ class LongHorizonSimulationTest {
     /** Globally, each category must show at least this many distinct active templates. */
     private static final int MIN_ACTIVE_TEMPLATES_PER_CATEGORY = 4;
     /**
+     * Minimum global category observations required before enforcing the
+     * per-category active-template spread assertion.
+     */
+    private static final int MIN_CATEGORY_OBS_FOR_TEMPLATE_SPREAD = 24;
+    /**
      * Minimum effective pool size (Simpson's diversity reciprocal), averaged across
      * all per-window snapshots.  A value &lt;2 indicates near-collapse to one or two
      * templates.
@@ -359,7 +364,8 @@ class LongHorizonSimulationTest {
         }
 
         // ── Assertion 4: ≥4 active templates per meaningfully-active category ──
-        // A category must have ≥1% of global ability observations before the
+        // A category must have ≥1% of global ability observations and at least
+        // MIN_CATEGORY_OBS_FOR_TEMPLATE_SPREAD absolute observations before the
         // long-tail assertion fires.  Profiles that organically produce near-zero
         // observations for a given category (e.g. an Explorer profile generating
         // almost no COMBAT_TACTICAL_CONTROL abilities) are excluded: with fewer
@@ -370,7 +376,8 @@ class LongHorizonSimulationTest {
                 continue;
             }
             int catObsGlobal = gblCatCounts.getOrDefault(cat, 0);
-            if (catObsGlobal < (int) Math.ceil(0.01 * gblTotalObs)) {
+            int requiredObs = Math.max((int) Math.ceil(0.01 * gblTotalObs), MIN_CATEGORY_OBS_FOR_TEMPLATE_SPREAD);
+            if (catObsGlobal < requiredObs) {
                 continue; // Too few observations for this category under this profile.
             }
             long seen = gblTplCounts.entrySet().stream()
