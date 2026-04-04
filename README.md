@@ -21,6 +21,25 @@ The result is progression that is **stateful and observable**, rather than a sta
 
 ---
 
+## Runtime Flow Overview
+
+```mermaid
+flowchart TD
+    A[Player ↔ Artifact Interaction]
+    B[Usage / Reputation / Memory Tracking]
+    C[Telemetry Emission & Aggregation]
+    D[Evolution Decisions<br/>Drift / Awakening / Convergence]
+    E[Lore / Identity Update]
+    F[Persistence + Analytics + Dashboard Outputs]
+
+    A --> B --> C --> D --> E --> F
+    F -.feeds next sessions.-> A
+```
+
+ObtuseLoot runs as a behavior-driven loop: how players actually use artifacts updates memory and reputation, telemetry captures those signals, and the system applies drift, awakening, and convergence decisions before updating artifact lore/identity. Those results are then persisted and surfaced through analytics and dashboards, feeding the next round of gameplay instead of relying on a static loot table.
+
+---
+
 ## What makes ObtuseLoot distinct
 
 - **Artifact identity and memory**: items are treated as long-lived entities, not one-off rolls.
