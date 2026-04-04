@@ -5,6 +5,7 @@ import obtuseloot.abilities.AbilityRegistry;
 import obtuseloot.abilities.ItemAbilityManager;
 import obtuseloot.abilities.SeededAbilityResolver;
 import obtuseloot.analytics.EnvironmentalPressureReporter;
+import obtuseloot.artifacts.ArtifactManager;
 import obtuseloot.awakening.AwakeningEngine;
 import obtuseloot.combat.CombatContextManager;
 import obtuseloot.config.RuntimeSettings;
@@ -27,6 +28,7 @@ import obtuseloot.lore.LoreEngine;
 import obtuseloot.memory.ArtifactMemoryEngine;
 import obtuseloot.obtuseengine.EngineScheduler;
 import obtuseloot.persistence.PlayerStateStore;
+import obtuseloot.reputation.ReputationManager;
 import obtuseloot.telemetry.EcosystemTelemetryEmitter;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.scheduler.BukkitTask;
@@ -37,13 +39,16 @@ public final class EngineBootstrap {
     private EngineBootstrap() {
     }
 
-    public static Result initialize(ObtuseLoot plugin,
-                                    PlayerStateStore playerStateStore,
-                                    FileConfiguration config,
-                                    obtuseloot.evolution.params.EcosystemTuningProfile tuningProfile,
-                                    EcosystemTelemetryEmitter ecosystemTelemetryEmitter,
-                                    EvolutionParameterRegistry evolutionParameterRegistry,
-                                    PluginPathLayout paths) {
+    public static void initialize(BootstrapContext context) {
+        ObtuseLoot plugin = context.require(ObtuseLoot.class);
+        PlayerStateStore playerStateStore = context.require(PlayerStateStore.class);
+        FileConfiguration config = context.require(FileConfiguration.class);
+        obtuseloot.evolution.params.EcosystemTuningProfile tuningProfile =
+                context.require(obtuseloot.evolution.params.EcosystemTuningProfile.class);
+        EcosystemTelemetryEmitter ecosystemTelemetryEmitter = context.require(EcosystemTelemetryEmitter.class);
+        EvolutionParameterRegistry evolutionParameterRegistry = context.require(EvolutionParameterRegistry.class);
+        PluginPathLayout paths = context.require(PluginPathLayout.class);
+
         CombatContextManager combatContextManager = new CombatContextManager();
         EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         ArtifactUsageTracker artifactUsageTracker = new ArtifactUsageTracker();
@@ -80,14 +85,25 @@ public final class EngineBootstrap {
 
         LoreEngine loreEngine = new LoreEngine();
         EngineScheduler engineScheduler = new EngineScheduler(plugin,
-                plugin.getArtifactManager(),
-                plugin.getReputationManager(),
+                context.require(ArtifactManager.class),
+                context.require(ReputationManager.class),
                 combatContextManager);
 
-        return new Result(combatContextManager, evolutionEngine, artifactUsageTracker, ecosystemEngine,
-                experienceEvolutionEngine, driftEngine, awakeningEngine, convergenceEngine,
-                artifactMemoryEngine, ecosystemMapRenderer, lineageRegistry, lineageInfluenceResolver,
-                itemAbilityManager, loreEngine, engineScheduler);
+        context.register(CombatContextManager.class, combatContextManager);
+        context.register(EvolutionEngine.class, evolutionEngine);
+        context.register(ArtifactUsageTracker.class, artifactUsageTracker);
+        context.register(ArtifactEcosystemSelfBalancingEngine.class, ecosystemEngine);
+        context.register(ExperienceEvolutionEngine.class, experienceEvolutionEngine);
+        context.register(DriftEngine.class, driftEngine);
+        context.register(AwakeningEngine.class, awakeningEngine);
+        context.register(ConvergenceEngine.class, convergenceEngine);
+        context.register(ArtifactMemoryEngine.class, artifactMemoryEngine);
+        context.register(EcosystemMapRenderer.class, ecosystemMapRenderer);
+        context.register(LineageRegistry.class, lineageRegistry);
+        context.register(LineageInfluenceResolver.class, lineageInfluenceResolver);
+        context.register(ItemAbilityManager.class, itemAbilityManager);
+        context.register(LoreEngine.class, loreEngine);
+        context.register(EngineScheduler.class, engineScheduler);
     }
 
     public static BukkitTask scheduleEnvironmentalPressureTask(ObtuseLoot plugin,
@@ -104,20 +120,4 @@ public final class EngineBootstrap {
         }, 24_000L, 24_000L);
     }
 
-    public record Result(CombatContextManager combatContextManager,
-                         EvolutionEngine evolutionEngine,
-                         ArtifactUsageTracker artifactUsageTracker,
-                         ArtifactEcosystemSelfBalancingEngine ecosystemEngine,
-                         ExperienceEvolutionEngine experienceEvolutionEngine,
-                         DriftEngine driftEngine,
-                         AwakeningEngine awakeningEngine,
-                         ConvergenceEngine convergenceEngine,
-                         ArtifactMemoryEngine artifactMemoryEngine,
-                         EcosystemMapRenderer ecosystemMapRenderer,
-                         LineageRegistry lineageRegistry,
-                         LineageInfluenceResolver lineageInfluenceResolver,
-                         ItemAbilityManager itemAbilityManager,
-                         LoreEngine loreEngine,
-                         EngineScheduler engineScheduler) {
-    }
 }

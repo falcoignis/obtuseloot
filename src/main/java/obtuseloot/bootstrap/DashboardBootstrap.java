@@ -8,7 +8,9 @@ public final class DashboardBootstrap {
     private DashboardBootstrap() {
     }
 
-    public static Result initialize(ObtuseLoot plugin, PluginPathLayout paths) {
+    public static void initialize(BootstrapContext context) {
+        ObtuseLoot plugin = context.require(ObtuseLoot.class);
+        PluginPathLayout paths = context.require(PluginPathLayout.class);
         DashboardService dashboardService = new DashboardService(paths);
         int dashboardPort = plugin.getConfig().getInt("dashboard.port", 8085);
         boolean dashboardWebEnabled = plugin.getConfig().getBoolean("dashboard.webServerEnabled", false);
@@ -25,9 +27,7 @@ public final class DashboardBootstrap {
         } catch (Exception exception) {
             plugin.getLogger().warning("[Dashboard] Failed to initialize dashboard: " + exception.getMessage());
         }
-        return new Result(dashboardService, dashboardWebServer);
-    }
-
-    public record Result(DashboardService dashboardService, DashboardWebServer dashboardWebServer) {
+        context.register(DashboardService.class, dashboardService);
+        context.register(DashboardWebServer.class, dashboardWebServer);
     }
 }

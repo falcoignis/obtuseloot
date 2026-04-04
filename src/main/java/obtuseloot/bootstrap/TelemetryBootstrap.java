@@ -18,9 +18,11 @@ public final class TelemetryBootstrap {
     private TelemetryBootstrap() {
     }
 
-    public static Result initialize(Logger logger,
-                                    obtuseloot.evolution.params.EcosystemTuningProfile tuningProfile,
-                                    PluginPathLayout paths) {
+    public static void initialize(BootstrapContext context) {
+        Logger logger = context.require(Logger.class);
+        obtuseloot.evolution.params.EcosystemTuningProfile tuningProfile =
+                context.require(obtuseloot.evolution.params.EcosystemTuningProfile.class);
+        PluginPathLayout paths = context.require(PluginPathLayout.class);
         TelemetryAggregationBuffer telemetryBuffer = new TelemetryAggregationBuffer();
         EcosystemHistoryArchive telemetryArchive = new EcosystemHistoryArchive(paths.telemetryArchivePath());
         ScheduledEcosystemRollups scheduledRollups = new ScheduledEcosystemRollups(telemetryBuffer, tuningProfile.telemetryRollupIntervalMs());
@@ -41,7 +43,8 @@ public final class TelemetryBootstrap {
 
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(aggregationService);
         TelemetryAggregationAnalytics analytics = new TelemetryAggregationAnalytics(scheduledRollups);
-        return new Result(emitter, analytics);
+        context.register(EcosystemTelemetryEmitter.class, emitter);
+        context.register(TelemetryAggregationAnalytics.class, analytics);
     }
 
     public static BukkitTask scheduleFlushTask(JavaPlugin plugin,
@@ -54,6 +57,4 @@ public final class TelemetryBootstrap {
                 flushIntervalTicks);
     }
 
-    public record Result(EcosystemTelemetryEmitter emitter, TelemetryAggregationAnalytics analytics) {
-    }
 }

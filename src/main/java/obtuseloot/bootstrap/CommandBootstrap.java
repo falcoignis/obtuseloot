@@ -10,10 +10,11 @@ public final class CommandBootstrap {
     private CommandBootstrap() {
     }
 
-    public static void register(ObtuseLoot plugin,
-                                DashboardService dashboardService,
-                                DashboardWebServer dashboardWebServer,
-                                PluginPathLayout paths) {
+    public static void register(BootstrapContext context) {
+        ObtuseLoot plugin = context.require(ObtuseLoot.class);
+        DashboardService dashboardService = context.require(DashboardService.class);
+        DashboardWebServer dashboardWebServer = context.require(DashboardWebServer.class);
+        PluginPathLayout paths = context.require(PluginPathLayout.class);
         if (plugin.getCommand("obtuseloot") == null) {
             return;
         }
