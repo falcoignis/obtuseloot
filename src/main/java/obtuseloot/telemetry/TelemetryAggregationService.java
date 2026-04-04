@@ -24,6 +24,9 @@ public class TelemetryAggregationService {
         this.buffer = Objects.requireNonNull(buffer, "buffer");
         this.archive = Objects.requireNonNull(archive, "archive");
         this.rollups = Objects.requireNonNull(rollups, "rollups");
+        if (archiveBatchSize <= 0) {
+            throw new IllegalArgumentException("archiveBatchSize must be > 0 but was " + archiveBatchSize);
+        }
         this.archiveBatchSize = archiveBatchSize;
         this.snapshotStore = Objects.requireNonNull(snapshotStore, "snapshotStore");
         this.hydrator = Objects.requireNonNull(hydrator, "hydrator");
@@ -34,6 +37,7 @@ public class TelemetryAggregationService {
     }
 
     public void record(EcosystemTelemetryEvent event) {
+        TelemetryFieldContract.validateEvent(event);
         buffer.enqueue(event);
         if (buffer.pendingCount() >= archiveBatchSize) {
             flush();

@@ -15,6 +15,10 @@ public final class TelemetryFieldContract {
     private TelemetryFieldContract() {
     }
 
+    /**
+     * Normalizes telemetry attributes into the canonical ingestion schema for the event type.
+     * Required fields are enforced here so malformed telemetry is rejected before aggregation/archive.
+     */
     public static Map<String, String> normalize(EcosystemTelemetryEventType type, Map<String, String> provided) {
         SchemaContract contract = CONTRACTS.get(type);
         if (contract == null) {
@@ -82,6 +86,17 @@ public final class TelemetryFieldContract {
 
         validateRequired(type, contract, out);
         return Map.copyOf(out);
+    }
+
+    public static void validateEvent(EcosystemTelemetryEvent event) {
+        if (event == null) {
+            throw new IllegalArgumentException("Telemetry event must not be null");
+        }
+        Map<String, String> attrs = normalize(event.type(), event.attributes());
+        String schemaVersion = attrs.get("schema_version");
+        if (schemaVersion == null || schemaVersion.isBlank() || NOT_APPLICABLE.equalsIgnoreCase(schemaVersion)) {
+            throw new IllegalArgumentException("Telemetry field 'schema_version' must be present for " + event.type());
+        }
     }
 
     public static SchemaContract contractFor(EcosystemTelemetryEventType type) {

@@ -75,13 +75,13 @@ public class TelemetryRollupSnapshotStore {
             throw new IllegalStateException("Unable to read telemetry rollup snapshot", ex);
         }
 
-        int version = Integer.parseInt(p.getProperty("version", "0"));
+        int version = parseIntProperty(p, "version", 0);
         if (version <= 0 || version > TelemetryRollupSnapshot.CURRENT_VERSION) {
             return Optional.empty();
         }
-        long createdAt = Long.parseLong(p.getProperty("createdAtMs", "0"));
+        long createdAt = parseLongProperty(p, "createdAtMs", 0L);
         String mode = p.getProperty("initializationMode", "rehydrated_snapshot");
-        long generatedAtMs = Long.parseLong(p.getProperty("snapshot.generatedAtMs", "0"));
+        long generatedAtMs = parseLongProperty(p, "snapshot.generatedAtMs", 0L);
 
         NichePopulationRollup niche = new NichePopulationRollup(
                 generatedAtMs,
@@ -108,15 +108,15 @@ public class TelemetryRollupSnapshotStore {
                 parseEventCounts(readLongMap(p, "eventCounts.")),
                 niche,
                 lineage,
-                Long.parseLong(p.getProperty("snapshot.activeArtifactCount", "0")),
-                Double.parseDouble(p.getProperty("snapshot.carryingCapacityUtilization", "0.0")),
-                Double.parseDouble(p.getProperty("snapshot.diversityIndex", "0.0")),
-                Double.parseDouble(p.getProperty("snapshot.turnoverRate", "0.0")),
-                Long.parseLong(p.getProperty("snapshot.branchBirthCount", "0")),
-                Long.parseLong(p.getProperty("snapshot.branchCollapseCount", "0")),
+                parseLongProperty(p, "snapshot.activeArtifactCount", 0L),
+                parseDoubleProperty(p, "snapshot.carryingCapacityUtilization", 0.0D),
+                parseDoubleProperty(p, "snapshot.diversityIndex", 0.0D),
+                parseDoubleProperty(p, "snapshot.turnoverRate", 0.0D),
+                parseLongProperty(p, "snapshot.branchBirthCount", 0L),
+                parseLongProperty(p, "snapshot.branchCollapseCount", 0L),
                 readLongMap(p, "competitionPressure."),
                 readList(p, "dynamicNiches."),
-                Long.parseLong(p.getProperty("snapshot.bifurcationCount", "0")),
+                parseLongProperty(p, "snapshot.bifurcationCount", 0L),
                 readLongMap(p, "dynamicNichePopulation."));
 
         return Optional.of(new TelemetryRollupSnapshot(version, createdAt, mode, eco));
@@ -154,7 +154,7 @@ public class TelemetryRollupSnapshotStore {
         Map<String, Long> out = new LinkedHashMap<>();
         p.stringPropertyNames().stream()
                 .filter(k -> k.startsWith(prefix))
-                .forEach(k -> out.put(unescape(k.substring(prefix.length())), Long.parseLong(p.getProperty(k))));
+                .forEach(k -> out.put(unescape(k.substring(prefix.length())), parseLongProperty(p, k, 0L)));
         return Map.copyOf(out);
     }
 
@@ -162,7 +162,7 @@ public class TelemetryRollupSnapshotStore {
         Map<String, Double> out = new LinkedHashMap<>();
         p.stringPropertyNames().stream()
                 .filter(k -> k.startsWith(prefix))
-                .forEach(k -> out.put(unescape(k.substring(prefix.length())), Double.parseDouble(p.getProperty(k))));
+                .forEach(k -> out.put(unescape(k.substring(prefix.length())), parseDoubleProperty(p, k, 0.0D)));
         return Map.copyOf(out);
     }
 
@@ -178,7 +178,7 @@ public class TelemetryRollupSnapshotStore {
                     }
                     String outer = unescape(parts[0]);
                     String inner = unescape(parts[1]);
-                    out.computeIfAbsent(outer, ignored -> new LinkedHashMap<>()).put(inner, Long.parseLong(p.getProperty(k)));
+                    out.computeIfAbsent(outer, ignored -> new LinkedHashMap<>()).put(inner, parseLongProperty(p, k, 0L));
                 });
         Map<String, Map<String, Long>> copy = new LinkedHashMap<>();
         out.forEach((k, v) -> copy.put(k, Map.copyOf(v)));
@@ -193,8 +193,41 @@ public class TelemetryRollupSnapshotStore {
 
     private Map<EcosystemTelemetryEventType, Long> parseEventCounts(Map<String, Long> raw) {
         Map<EcosystemTelemetryEventType, Long> out = new LinkedHashMap<>();
-        raw.forEach((k, v) -> out.put(EcosystemTelemetryEventType.valueOf(k), v));
+        raw.forEach((k, v) -> {
+            try {
+                out.put(EcosystemTelemetryEventType.valueOf(k), v);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Bad persisted rollup state: unknown telemetry event type '" + k + "'", ex);
+            }
+        });
         return Map.copyOf(out);
+    }
+
+    private int parseIntProperty(Properties p, String key, int defaultValue) {
+        String raw = p.getProperty(key, String.valueOf(defaultValue));
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Bad persisted rollup state: property '" + key + "' is not an integer: " + raw, ex);
+        }
+    }
+
+    private long parseLongProperty(Properties p, String key, long defaultValue) {
+        String raw = p.getProperty(key, String.valueOf(defaultValue));
+        try {
+            return Long.parseLong(raw);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Bad persisted rollup state: property '" + key + "' is not a long: " + raw, ex);
+        }
+    }
+
+    private double parseDoubleProperty(Properties p, String key, double defaultValue) {
+        String raw = p.getProperty(key, String.valueOf(defaultValue));
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Bad persisted rollup state: property '" + key + "' is not a double: " + raw, ex);
+        }
     }
 
     private String escape(String value) {

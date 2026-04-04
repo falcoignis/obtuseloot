@@ -2,6 +2,7 @@ package obtuseloot.telemetry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class TelemetryEventFactory {
     public EcosystemTelemetryEvent create(EcosystemTelemetryEventType type,
@@ -9,6 +10,10 @@ public class TelemetryEventFactory {
                                           String lineageId,
                                           String niche,
                                           Map<String, String> attributes) {
+        Objects.requireNonNull(type, "type");
+        if (artifactSeed < 0L) {
+            throw new IllegalArgumentException("Telemetry artifactSeed must be >= 0 but was " + artifactSeed);
+        }
         long now = System.currentTimeMillis();
         Map<String, String> normalized = new LinkedHashMap<>(attributes == null ? Map.of() : attributes);
         normalized.put("timestamp", String.valueOf(now));

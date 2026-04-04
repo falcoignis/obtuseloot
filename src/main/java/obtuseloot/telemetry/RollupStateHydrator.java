@@ -25,7 +25,12 @@ public class RollupStateHydrator {
             return new RehydrationResult("rehydrated_snapshot", 0, started, System.currentTimeMillis(), snapshot.ecosystemSnapshot().generatedAtMs());
         }
 
-        List<EcosystemTelemetryEvent> replay = archive.readRecent(replayWindowEvents);
+        List<EcosystemTelemetryEvent> replay;
+        try {
+            replay = archive.readRecent(replayWindowEvents);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException("Bad persisted telemetry event encountered during replay rehydration", ex);
+        }
         for (EcosystemTelemetryEvent event : replay) {
             buffer.enqueue(event);
             buffer.drain(1);
