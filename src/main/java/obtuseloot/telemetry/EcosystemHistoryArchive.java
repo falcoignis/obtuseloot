@@ -1,6 +1,7 @@
 package obtuseloot.telemetry;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,7 +28,13 @@ public class EcosystemHistoryArchive {
             Files.createDirectories(archivePath.getParent());
             try (Writer writer = Files.newBufferedWriter(archivePath, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
-            for (EcosystemTelemetryEvent event : events) {
+                for (int i = 0; i < events.size(); i++) {
+                    EcosystemTelemetryEvent event = events.get(i);
+                    try {
+                        TelemetryFieldContract.validateEvent(event);
+                    } catch (RuntimeException ex) {
+                        throw new IllegalArgumentException("Bad telemetry event input at batch index " + i + ": " + ex.getMessage(), ex);
+                    }
                     writer.write(encode(event));
                     writer.write('\n');
                 }
@@ -43,16 +50,21 @@ public class EcosystemHistoryArchive {
         }
         try {
             List<EcosystemTelemetryEvent> events = new ArrayList<>();
-            try (var lines = Files.lines(archivePath, StandardCharsets.UTF_8)) {
-                lines.forEach(line -> {
-                if (!line.isBlank()) {
-                    events.add(decode(line));
+            try (var reader = Files.newBufferedReader(archivePath, StandardCharsets.UTF_8)) {
+                int lineNumber = 0;
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+                    if (!line.isBlank()) {
+                        events.add(decode(line, lineNumber));
+                    }
                 }
-                });
             }
             return List.copyOf(events);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to read ecosystem telemetry", ex);
+        } catch (UncheckedIOException ex) {
+            throw new IllegalStateException("Unable to read ecosystem telemetry", ex.getCause());
         }
     }
 
@@ -65,20 +77,25 @@ public class EcosystemHistoryArchive {
         }
         try {
             ArrayDeque<EcosystemTelemetryEvent> ring = new ArrayDeque<>(maxEvents);
-            try (var lines = Files.lines(archivePath, StandardCharsets.UTF_8)) {
-                lines.forEach(line -> {
+            try (var reader = Files.newBufferedReader(archivePath, StandardCharsets.UTF_8)) {
+                int lineNumber = 0;
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
                     if (line.isBlank()) {
-                        return;
+                        continue;
                     }
                     if (ring.size() == maxEvents) {
                         ring.removeFirst();
                     }
-                    ring.addLast(decode(line));
-                });
+                    ring.addLast(decode(line, lineNumber));
+                }
             }
             return List.copyOf(ring);
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to read recent ecosystem telemetry", ex);
+        } catch (UncheckedIOException ex) {
+            throw new IllegalStateException("Unable to read recent ecosystem telemetry", ex.getCause());
         }
     }
 
@@ -118,10 +135,11 @@ public class EcosystemHistoryArchive {
                 + escape(event.niche() == null ? "" : event.niche()) + "|" + payload;
     }
 
-    private EcosystemTelemetryEvent decode(String line) {
+    private EcosystemTelemetryEvent decode(String line, int lineNumber) {
         String[] parts = line.split("\\|", 6);
         if (parts.length < 6) {
-            throw new IllegalArgumentException("Malformed telemetry event line: " + line);
+            throw new IllegalArgumentException("Bad persisted telemetry event at line " + lineNumber
+                    + ": expected 6 pipe-delimited fields");
         }
         Map<String, String> attributes = new LinkedHashMap<>();
         if (!parts[5].isBlank()) {
@@ -135,14 +153,22 @@ public class EcosystemHistoryArchive {
                 attributes.put(key, value);
             }
         }
-        return new EcosystemTelemetryEvent(
-                Long.parseLong(parts[0]),
-                EcosystemTelemetryEventType.valueOf(parts[1]),
-                Long.parseLong(parts[2]),
-                unescape(parts[3]),
-                unescape(parts[4]),
-                Map.copyOf(attributes)
-        );
+        try {
+            EcosystemTelemetryEventType type = EcosystemTelemetryEventType.valueOf(parts[1]);
+            Map<String, String> normalized = TelemetryFieldContract.normalize(type, attributes);
+            EcosystemTelemetryEvent event = new EcosystemTelemetryEvent(
+                    Long.parseLong(parts[0]),
+                    type,
+                    Long.parseLong(parts[2]),
+                    unescape(parts[3]),
+                    unescape(parts[4]),
+                    normalized
+            );
+            TelemetryFieldContract.validateEvent(event);
+            return event;
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Bad persisted telemetry event at line " + lineNumber + ": " + ex.getMessage(), ex);
+        }
     }
 
     private String escape(String value) {

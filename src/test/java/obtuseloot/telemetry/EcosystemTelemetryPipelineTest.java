@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -279,6 +280,54 @@ class EcosystemTelemetryPipelineTest {
         long elapsedMicros = (System.nanoTime() - before) / 1000L;
         assertEquals(events, drained.size());
         assertTrue(elapsedMicros < 200_000L, "drain should remain bounded and fast for active artifact counts");
+    }
+
+    @Test
+    void recordRejectsMalformedEventInputEarly() {
+        TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
+        TelemetryAggregationService service = telemetryService(
+                buffer,
+                new EcosystemHistoryArchive(tempDir.resolve("invalid-input.log")),
+                new ScheduledEcosystemRollups(buffer, 1L),
+                8,
+                tempDir.resolve("invalid-input-snapshot.properties"),
+                8);
+        EcosystemTelemetryEvent invalid = new EcosystemTelemetryEvent(
+                System.currentTimeMillis(),
+                EcosystemTelemetryEventType.ABILITY_EXECUTION,
+                1L,
+                "lin-a",
+                "SCOUT",
+                Map.of("niche", "SCOUT"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.record(invalid));
+        assertTrue(ex.getMessage().contains("required"));
+    }
+
+    @Test
+    void archiveReadReportsPersistedLineContextForMalformedEvents() throws Exception {
+        Path archivePath = tempDir.resolve("malformed-archive.log");
+        Files.writeString(archivePath, "broken-line\n");
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, archive::readAll);
+        assertTrue(ex.getMessage().contains("line 1"));
+    }
+
+    @Test
+    void snapshotReadReportsInvalidPersistedRollupState() throws Exception {
+        Path snapshotPath = tempDir.resolve("bad-rollup.properties");
+        Files.writeString(snapshotPath, """
+                version=1
+                createdAtMs=1
+                initializationMode=rehydrated_snapshot
+                snapshot.generatedAtMs=7
+                eventCounts.not-a-real-event=3
+                """);
+        TelemetryRollupSnapshotStore store = new TelemetryRollupSnapshotStore(snapshotPath);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, store::readLatest);
+        assertTrue(ex.getMessage().contains("Bad persisted rollup state"));
     }
 
     private TelemetryAggregationBuffer serviceBuffer(TelemetryAggregationBuffer buffer) {
