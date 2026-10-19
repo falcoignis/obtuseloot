@@ -54,7 +54,7 @@ public final class ArtifactItemStorage {
             }
         }
         if (fallbackOwner != null) {
-            return plugin.getArtifactManager().getOrCreate(fallbackOwner);
+            return plugin.getArtifactManager().tryGet(fallbackOwner);
         }
         return null;
     }
@@ -72,7 +72,10 @@ public final class ArtifactItemStorage {
             return false;
         }
 
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        if (artifact == null) {
+            return false;
+        }
         stampMinimalIdentity(item, artifact);
         plugin.getArtifactManager().save(player.getUniqueId());
         plugin.getLogger().info("[ArtifactStorage] Migrated legacy artifact item for " + player.getUniqueId()

@@ -50,6 +50,16 @@ public class DashboardCommandExecutor implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        try {
+            return dispatch(sender, command, label, args);
+        } catch (obtuseloot.persistence.PlayerStateLoadException ex) {
+            // The guard already logged the cause; abort without creating or replacing anything for that player.
+            sender.sendMessage("§cArtifact data for that player can't be read right now, so nothing was changed. Try again shortly.");
+            return true;
+        }
+    }
+
+    private boolean dispatch(CommandSender sender, Command command, String label, String[] args) {
         if (isDebugDashboardCommand(args)) {
             return handleDebugDashboard(sender);
         }

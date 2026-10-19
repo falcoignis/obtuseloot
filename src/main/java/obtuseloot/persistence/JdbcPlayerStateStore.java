@@ -67,12 +67,12 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
             }
             connection.commit();
         } catch (SQLException ex) {
-            plugin.getLogger().warning("[Persistence] SQL saveArtifact failed for " + playerId + ": " + ex.getMessage());
+            throw new PlayerStateSaveException(playerId, "SQL saveArtifact failed for " + playerId + ": " + ex.getMessage(), ex);
         }
     }
 
     @Override
-    public Artifact loadArtifact(UUID playerId) { /* unchanged logic */
+    public Artifact loadArtifact(UUID playerId) {
         try (Connection connection = database.openConnection();
              PreparedStatement ps = connection.prepareStatement("SELECT * FROM artifacts WHERE player_uuid=?")) {
             ps.setString(1, playerId.toString());
@@ -148,11 +148,9 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 artifact.refreshNamingProjection();
                 return artifact;
             }
-        } catch (IllegalStateException ex) {
-            throw ex;
         } catch (Exception ex) {
-            plugin.getLogger().warning("[Persistence] SQL loadArtifact failed for " + playerId + ": " + ex.getMessage());
-            return null;
+            // Never report a failed read as "no record": the caller would regenerate and later overwrite the real row.
+            throw new PlayerStateLoadException(playerId, "SQL loadArtifact failed for " + playerId + ": " + ex.getMessage(), ex);
         }
     }
 
@@ -169,7 +167,7 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 ps.executeUpdate();
             }
         } catch (SQLException ex) {
-            plugin.getLogger().warning("[Persistence] SQL saveReputation failed for " + playerId + ": " + ex.getMessage());
+            throw new PlayerStateSaveException(playerId, "SQL saveReputation failed for " + playerId + ": " + ex.getMessage(), ex);
         }
     }
 
@@ -186,9 +184,8 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
                 rep.setLastKillTimestamp(rs.getLong("last_kill_timestamp")); rep.setLastCombatTimestamp(rs.getLong("last_combat_timestamp")); rep.setSurvivalStreak(rs.getInt("survival_streak"));
                 return rep;
             }
-        } catch (SQLException ex) {
-            plugin.getLogger().warning("[Persistence] SQL loadReputation failed for " + playerId + ": " + ex.getMessage());
-            return null;
+        } catch (Exception ex) {
+            throw new PlayerStateLoadException(playerId, "SQL loadReputation failed for " + playerId + ": " + ex.getMessage(), ex);
         }
     }
 

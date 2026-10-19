@@ -121,7 +121,16 @@ public final class ArtifactCacheManager {
 
     private boolean saveEntry(ArtifactCacheEntry entry) {
         if (entry == null || !entry.dirty()) return false;
-        store.saveArtifact(entry.ownerId(), entry.artifact());
+        try {
+            store.saveArtifact(entry.ownerId(), entry.artifact());
+        } catch (RuntimeException ex) {
+            // Stay dirty (and therefore not evictable) so the next save cycle retries.
+            java.util.logging.Logger logger = obtuseloot.ObtuseLoot.get() != null
+                    ? obtuseloot.ObtuseLoot.get().getLogger() : java.util.logging.Logger.getLogger("ObtuseLoot");
+            logger.log(java.util.logging.Level.SEVERE,
+                    "[ArtifactCache] Failed to save artifact for " + entry.ownerId() + "; keeping it dirty for retry.", ex);
+            return false;
+        }
         entry.markSaved(System.currentTimeMillis());
         saveCount.increment();
         return true;

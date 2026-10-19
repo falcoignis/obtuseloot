@@ -30,7 +30,7 @@ public final class LootInsertionListener implements Listener {
             return;
         }
 
-        Artifact artifact = ObtuseLoot.get().getArtifactManager().getOrCreate(player.getUniqueId());
+        Artifact artifact = ObtuseLoot.get().getArtifactManager().tryGet(player.getUniqueId());
         for (ItemStack item : generatedLoot) {
             stampIfEligible(item, artifact);
         }
@@ -44,7 +44,7 @@ public final class LootInsertionListener implements Listener {
         }
 
         Player player = event.getEnchanter();
-        Artifact artifact = ObtuseLoot.get().getArtifactManager().getOrCreate(player.getUniqueId());
+        Artifact artifact = ObtuseLoot.get().getArtifactManager().tryGet(player.getUniqueId());
         stampIfEligible(item, artifact);
     }
 

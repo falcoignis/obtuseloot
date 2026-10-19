@@ -83,7 +83,7 @@ Persistence is configured in `config.yml`:
 - `storage.backend: sqlite` — embedded DB file
 - `storage.backend: mysql` — external DB for larger/shared environments
 
-Fallback behavior is controlled by `storage.fallbackToYamlOnFailure`.
+If the configured backend fails to initialize, the plugin disables itself rather than falling back to another store.
 
 ---
 

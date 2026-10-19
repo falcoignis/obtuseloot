@@ -1,40 +1,89 @@
 package obtuseloot.reputation;
 
+import obtuseloot.ObtuseLoot;
+import obtuseloot.persistence.PlayerLoadGuard;
+import obtuseloot.persistence.PlayerStateLoadException;
 import obtuseloot.persistence.PlayerStateStore;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ReputationManager {
     private final PlayerStateStore stateStore;
     private final Map<UUID, ArtifactReputation> loadedReputations = new ConcurrentHashMap<>();
+    private final PlayerLoadGuard loadGuard;
+    private volatile Consumer<UUID> recoveryListener = id -> { };
 
     public ReputationManager(PlayerStateStore stateStore) {
-        this.stateStore = stateStore;
+        this(stateStore, System::currentTimeMillis, PlayerLoadGuard.DEFAULT_BACKOFF_MS);
     }
 
+    ReputationManager(PlayerStateStore stateStore, LongSupplier clock, long loadRetryBackoffMs) {
+        this.stateStore = stateStore;
+        this.loadGuard = new PlayerLoadGuard("reputation", clock, loadRetryBackoffMs, ReputationManager::logger);
+    }
+
+    /**
+     * Returns the player's reputation, starting a fresh one only when storage has no record.
+     *
+     * @throws PlayerStateLoadException if stored reputation exists but cannot be read; nothing is cached for the player.
+     */
     public ArtifactReputation get(UUID playerId) {
-        return loadedReputations.computeIfAbsent(playerId, id -> {
-            ArtifactReputation loaded = stateStore.loadReputation(id);
+        ArtifactReputation reputation = loadedReputations.computeIfAbsent(playerId, id -> {
+            ArtifactReputation loaded = loadGuard.load(id, stateStore::loadReputation);
             return loaded != null ? loaded : new ArtifactReputation();
         });
+        if (loadGuard.consumeRecovered(playerId)) {
+            recoveryListener.accept(playerId);
+        }
+        return reputation;
     }
 
-    public void save(UUID playerId) {
+    /** Like {@link #get(UUID)}, but returns null instead of throwing while the player's stored reputation is unreadable. */
+    public ArtifactReputation tryGet(UUID playerId) {
+        try {
+            return get(playerId);
+        } catch (PlayerStateLoadException ex) {
+            return null;
+        }
+    }
+
+    /** Called with the player id when a previously failing load succeeds, so deferred join work can run. */
+    public void setRecoveryListener(Consumer<UUID> listener) {
+        this.recoveryListener = listener == null ? id -> { } : listener;
+    }
+
+    /** Returns true if the reputation was written (or there was nothing loaded to write). */
+    public boolean save(UUID playerId) {
         ArtifactReputation rep = loadedReputations.get(playerId);
-        if (rep != null) {
+        if (rep == null) {
+            return true;
+        }
+        try {
             stateStore.saveReputation(playerId, rep);
+            return true;
+        } catch (RuntimeException ex) {
+            logger().log(Level.SEVERE, "[Persistence] Failed to save reputation for " + playerId + "; will retry on next save.", ex);
+            return false;
         }
     }
 
     public void saveAll() {
-        loadedReputations.forEach(stateStore::saveReputation);
+        loadedReputations.keySet().forEach(this::save);
+        stateStore.retryFailedWrites();
     }
 
     public void unload(UUID playerId) {
-        save(playerId);
-        loadedReputations.remove(playerId);
+        loadGuard.forget(playerId);
+        // Keep unsaved reputation in memory so the next save cycle retries it instead of dropping it.
+        if (save(playerId)) {
+            loadedReputations.remove(playerId);
+        }
     }
 
     public Map<UUID, ArtifactReputation> getLoadedReputations() {
@@ -42,9 +91,13 @@ public class ReputationManager {
     }
 
     public ArtifactReputation reset(UUID playerId) {
-        unload(playerId);
+        loadGuard.forget(playerId);
         ArtifactReputation fresh = new ArtifactReputation();
         loadedReputations.put(playerId, fresh);
         return fresh;
+    }
+
+    private static Logger logger() {
+        return ObtuseLoot.get() != null ? ObtuseLoot.get().getLogger() : Logger.getLogger("ObtuseLoot");
     }
 }

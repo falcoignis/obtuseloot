@@ -1,5 +1,6 @@
 package obtuseloot.obtuseengine;
 
+import obtuseloot.ObtuseLoot;
 import obtuseloot.combat.CombatCore;
 import obtuseloot.events.EventCore;
 import obtuseloot.events.ArtifactItemStorageListener;
@@ -28,6 +29,15 @@ public class ObtuseEngine {
         Bukkit.getPluginManager().registerEvents(new ArtifactItemStorageListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new NonCombatAbilityListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new LootInsertionListener(), plugin);
+        // A join whose storage load failed skipped subscription wiring; finish it once a retried load succeeds.
+        java.util.function.Consumer<java.util.UUID> resumeLoad = playerId -> {
+            org.bukkit.entity.Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                PlayerJoinLoadListener.completeLoad(player);
+            }
+        };
+        ObtuseLoot.get().getArtifactManager().setRecoveryListener(resumeLoad);
+        ObtuseLoot.get().getReputationManager().setRecoveryListener(resumeLoad);
         plugin.getLogger().info("ObtuseEngine online.");
     }
 

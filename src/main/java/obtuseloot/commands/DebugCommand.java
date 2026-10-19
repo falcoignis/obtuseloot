@@ -863,7 +863,6 @@ public class DebugCommand {
         if ("status".equals(action) || "backend".equals(action)) {
             sender.sendMessage("§dPersistence backend: §f" + plugin.getPersistenceManager().backendName());
             sender.sendMessage("§7status=§f" + plugin.getPersistenceManager().statusMessage());
-            sender.sendMessage("§7fallbackUsed=§f" + plugin.getPersistenceManager().fallbackUsed());
             return true;
         }
         if ("test".equals(action)) {

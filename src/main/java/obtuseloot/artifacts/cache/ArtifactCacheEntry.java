@@ -50,7 +50,7 @@ public final class ArtifactCacheEntry {
     }
 
     public boolean evictable(long nowMs, long idleExpiryMs) {
-        if (onlinePinned || subscriptionPinned) return false;
+        if (onlinePinned || subscriptionPinned || dirty) return false;
         return idleExpiryMs <= 0 || (nowMs - lastAccessMs) >= idleExpiryMs;
     }
 }

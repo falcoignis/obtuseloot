@@ -16,6 +16,10 @@ public interface PlayerStateStore extends ArtifactStore, ReputationStore {
     default void flushPendingWrites() {
     }
 
+    /** Re-attempts writes that failed asynchronously. Synchronous stores report failures by throwing instead. */
+    default void retryFailedWrites() {
+    }
+
     default void saveSpeciesSnapshot(SpeciesRegistrySnapshot snapshot) {
     }
 
