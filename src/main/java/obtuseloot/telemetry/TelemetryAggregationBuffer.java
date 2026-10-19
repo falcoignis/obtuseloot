@@ -75,7 +75,7 @@ public class TelemetryAggregationBuffer {
         pending.add(event);
         typeCounts.computeIfAbsent(event.type(), ignored -> new LongAdder()).increment();
         long artifactSeed = event.artifactSeed();
-        if (artifactSeed > 0L) {
+        if (artifactSeed != 0L) {
             activeArtifactSeeds.add(artifactSeed);
         }
         // Prefer the emitted event niche over any legacy attribute-level niche.
@@ -83,7 +83,7 @@ public class TelemetryAggregationBuffer {
         // while the event niche contains the effective dynamic niche (e.g., "RITUAL_A1").
         String niche = normalized(event.niche(), event.attributes().get("niche"));
         String lineage = normalized(event.attributes().get("lineage_id"), event.lineageId());
-        if (artifactSeed > 0L) {
+        if (artifactSeed != 0L) {
             updateArtifactNamespace(artifactSeed, niche, nicheByArtifactSeed, nicheArtifactCounts);
             updateArtifactNamespace(artifactSeed, lineage, lineageByArtifactSeed, lineageArtifactCounts);
         }

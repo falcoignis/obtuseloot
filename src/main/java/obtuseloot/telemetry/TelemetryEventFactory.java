@@ -11,14 +11,11 @@ public class TelemetryEventFactory {
                                           String niche,
                                           Map<String, String> attributes) {
         Objects.requireNonNull(type, "type");
-        if (artifactSeed < 0L) {
-            throw new IllegalArgumentException("Telemetry artifactSeed must be >= 0 but was " + artifactSeed);
-        }
         long now = System.currentTimeMillis();
         Map<String, String> normalized = new LinkedHashMap<>(attributes == null ? Map.of() : attributes);
         normalized.put("timestamp", String.valueOf(now));
-        normalized.put("artifact_seed", artifactSeed > 0L ? String.valueOf(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
-        normalized.put("artifact_id", artifactSeed > 0L ? "artifact-" + Long.toUnsignedString(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
+        normalized.put("artifact_seed", artifactSeed != 0L ? String.valueOf(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
+        normalized.put("artifact_id", artifactSeed != 0L ? "artifact-" + Long.toUnsignedString(artifactSeed) : TelemetryFieldContract.NOT_APPLICABLE);
         normalized.put("lineage_id", lineageId == null || lineageId.isBlank() ? TelemetryFieldContract.NOT_APPLICABLE : lineageId);
         normalized.put("niche", niche == null || niche.isBlank() ? TelemetryFieldContract.NOT_APPLICABLE : niche);
         return new EcosystemTelemetryEvent(

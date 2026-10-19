@@ -69,6 +69,36 @@ class EcosystemTelemetryPipelineTest {
 
 
     @Test
+    void signedArtifactSeedsRoundTripThroughArchiveAndAggregation() {
+        // Artifact seeds come from Random#nextLong(), so roughly half are negative.
+        EcosystemHistoryArchive archive = new EcosystemHistoryArchive(tempDir.resolve("signed-seed-events.log"));
+        TelemetryEventFactory factory = new TelemetryEventFactory();
+        List<Long> seeds = List.of(Long.MIN_VALUE, -1L, Long.MAX_VALUE);
+        archive.append(seeds.stream()
+                .map(seed -> factory.create(EcosystemTelemetryEventType.ABILITY_EXECUTION, seed, "lin-signed", "niche-" + seed,
+                        Map.of("ability_id", "a", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS")))
+                .toList());
+
+        List<EcosystemTelemetryEvent> events = archive.readAll();
+        assertEquals(seeds, events.stream().map(EcosystemTelemetryEvent::artifactSeed).toList());
+        for (EcosystemTelemetryEvent event : events) {
+            assertEquals(String.valueOf(event.artifactSeed()), event.attributes().get("artifact_seed"));
+            assertEquals("artifact-" + Long.toUnsignedString(event.artifactSeed()), event.attributes().get("artifact_id"));
+        }
+
+        TelemetryAggregationBuffer buffer = new TelemetryAggregationBuffer();
+        events.forEach(buffer::enqueue);
+        Map<String, Long> nichePopulation = buffer.nichePopulationSnapshot();
+        for (long seed : seeds) {
+            assertEquals(1L, nichePopulation.get("niche-" + seed), "Negative seeds must count toward niche population");
+        }
+
+        EcosystemTelemetryEvent nonArtifact = factory.create(EcosystemTelemetryEventType.ROLLUP_GENERATED, 0L, null, null,
+                Map.of("trigger", "scheduled", "context_tags", "rollup"));
+        assertEquals(TelemetryFieldContract.NOT_APPLICABLE, nonArtifact.attributes().get("artifact_seed"));
+    }
+
+    @Test
     void copyToSamePathPreservesExistingArchiveContent() {
         Path archivePath = tempDir.resolve("same-path-events.log");
         EcosystemHistoryArchive archive = new EcosystemHistoryArchive(archivePath);

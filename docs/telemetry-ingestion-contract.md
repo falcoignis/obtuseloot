@@ -14,7 +14,9 @@ This project treats telemetry as a typed ingestion pipeline, not best-effort log
 - `EcosystemTelemetryEvent` requires:
   - `timestampMs > 0`
   - non-null `type`
-  - `artifactSeed >= 0` (`0` is reserved for non-artifact events)
+  - `artifactSeed` is any signed `long`; `0` is reserved for non-artifact events.
+    Artifact seeds come from `Random#nextLong()` and are negative about half the time,
+    so they must round-trip unchanged (no `abs` or masking, which would merge distinct identities).
   - non-null `attributes`
 - `TelemetryFieldContract.normalize(...)` defines the canonical per-event-type schema and required fields.
 - `TelemetryFieldContract.validateEvent(...)` enforces that:
