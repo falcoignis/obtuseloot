@@ -61,7 +61,10 @@ public class ReputationFeedListener implements Listener {
         }
 
         CombatContext context = ObtuseLoot.get().getCombatContextManager().get(killer.getUniqueId());
-        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(killer.getUniqueId());
+        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().tryGet(killer.getUniqueId());
+        if (rep == null) {
+            return;
+        }
 
         long now = System.currentTimeMillis();
         context.addKillTimestamp(now);
@@ -88,7 +91,10 @@ public class ReputationFeedListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().get(player.getUniqueId());
+        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().tryGet(player.getUniqueId());
+        if (rep == null) {
+            return;
+        }
         CombatContext context = ObtuseLoot.get().getCombatContextManager().get(player.getUniqueId());
 
         rep.resetOnDeath();

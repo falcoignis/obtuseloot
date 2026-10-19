@@ -17,12 +17,12 @@
 #   sqlite — Single-file embedded database. Better for larger player counts.
 #   mysql  — External MySQL/MariaDB. Required for multi-server / proxy setups.
 #
-# fallbackToYamlOnFailure: if the selected backend fails to initialize, fall
-#   back to YAML rather than aborting. Set false in production to fail loudly.
+# If the selected backend fails to initialize, the plugin disables itself.
+# There is no fallback store: an empty substitute would regenerate every
+# player's artifact and later overwrite the real data.
 # ─────────────────────────────────────────────────────────────────────────────
 storage:
   backend: yaml
-  fallbackToYamlOnFailure: false
 
 # SQLite configuration (used when storage.backend = sqlite)
 sqlite:

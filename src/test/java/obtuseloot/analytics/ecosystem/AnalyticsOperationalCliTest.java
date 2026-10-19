@@ -23,7 +23,7 @@ class AnalyticsOperationalCliTest {
         Files.createDirectories(telemetry);
 
         new EcosystemHistoryArchive(telemetry.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_000L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 11L, "lin-a", "SCOUT", Map.of("generation", "1"))
+                abilityEvent(1_000L, 11L, "lin-a", "SCOUT", Map.of("generation", "1"))
         ));
         new TelemetryRollupSnapshotStore(telemetry.resolve("rollup-snapshot.properties")).write(snapshot(1_000L, 0.72D, 0.12D));
         new TelemetryRollupSnapshotStore(telemetry.resolve("rollup-002.properties")).write(snapshot(2_000L, 0.63D, 0.18D));
@@ -52,7 +52,7 @@ class AnalyticsOperationalCliTest {
         Path telemetry = dataset.resolve("telemetry");
         Files.createDirectories(telemetry);
         new EcosystemHistoryArchive(telemetry.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_000L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 11L, "lin-a", "SCOUT", Map.of())
+                abilityEvent(1_000L, 11L, "lin-a", "SCOUT", Map.of())
         ));
         new TelemetryRollupSnapshotStore(telemetry.resolve("rollup-snapshot.properties")).write(snapshot(1_000L, 0.70D, 0.15D));
         new TelemetryRollupSnapshotStore(telemetry.resolve("rollup-002.properties")).write(snapshot(2_000L, 0.69D, 0.16D));
@@ -86,7 +86,7 @@ class AnalyticsOperationalCliTest {
         Path runtimeTelemetry = runtime.resolve("telemetry");
         assertDoesNotThrow(() -> Files.createDirectories(runtimeTelemetry));
         new EcosystemHistoryArchive(runtimeTelemetry.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_000L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 1L, "lin", "SCOUT", Map.of())
+                abilityEvent(1_000L, 1L, "lin", "SCOUT", Map.of())
         ));
         new TelemetryRollupSnapshotStore(runtimeTelemetry.resolve("rollup-snapshot.properties")).write(snapshot(1_000L, 0.5D, 0.1D));
         AnalyticsInputDataset runtimeDataset = contract.resolve(runtime);
@@ -96,7 +96,7 @@ class AnalyticsOperationalCliTest {
         Path harnessTelemetry = harness.resolve("telemetry");
         assertDoesNotThrow(() -> Files.createDirectories(harnessTelemetry));
         new EcosystemHistoryArchive(harnessTelemetry.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_100L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 2L, "lin", "SCOUT", Map.of())
+                abilityEvent(1_100L, 2L, "lin", "SCOUT", Map.of())
         ));
         new TelemetryRollupSnapshotStore(harnessTelemetry.resolve("rollup-snapshot.properties")).write(snapshot(1_100L, 0.5D, 0.1D));
         assertDoesNotThrow(() -> Files.writeString(harness.resolve("scenario-metadata.properties"), "scenario=test\n"));
@@ -108,7 +108,7 @@ class AnalyticsOperationalCliTest {
         assertDoesNotThrow(() -> Files.createDirectories(harnessHistoryTelemetry));
         assertDoesNotThrow(() -> Files.createDirectories(rollupHistory));
         new EcosystemHistoryArchive(harnessHistoryTelemetry.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_200L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 3L, "lin", "SCOUT", Map.of())
+                abilityEvent(1_200L, 3L, "lin", "SCOUT", Map.of())
         ));
         new TelemetryRollupSnapshotStore(rollupHistory.resolve("rollup-001.properties")).write(snapshot(1_200L, 0.55D, 0.11D));
         new TelemetryRollupSnapshotStore(rollupHistory.resolve("rollup-002.properties")).write(snapshot(1_300L, 0.57D, 0.13D));
@@ -123,5 +123,14 @@ class AnalyticsOperationalCliTest {
         LineagePopulationRollup lineage = new LineagePopulationRollup(ts, Map.of("lin-a", 10L), Map.of("lin-a", 2L), Map.of(), Map.of(), Map.of("lin-a", 0.02D), Map.of(), Map.of(), Map.of());
         EcosystemSnapshot ecosystem = new EcosystemSnapshot(ts, Map.of(EcosystemTelemetryEventType.ABILITY_EXECUTION, 10L), niche, lineage, 10L, 0.5D, diversity, turnover, 2L, 0L, Map.of("SCOUT", 1L), List.of(), 0L, Map.of());
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
+    }
+
+    private static EcosystemTelemetryEvent abilityEvent(long timestampMs, long seed, String lineageId, String niche, Map<String, String> extra) {
+        Map<String, String> attributes = new java.util.LinkedHashMap<>(Map.of(
+                "niche", niche, "lineage_id", lineageId,
+                "ability_id", "ability", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"));
+        attributes.putAll(extra);
+        return new EcosystemTelemetryEvent(timestampMs, EcosystemTelemetryEventType.ABILITY_EXECUTION, seed, lineageId, niche,
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION, attributes));
     }
 }

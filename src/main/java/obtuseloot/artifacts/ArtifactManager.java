@@ -5,12 +5,18 @@ import obtuseloot.artifacts.cache.ArtifactCacheEntry;
 import obtuseloot.artifacts.cache.ArtifactCacheManager;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.names.ArtifactNameResolver;
+import obtuseloot.persistence.PlayerLoadGuard;
+import obtuseloot.persistence.PlayerStateLoadException;
 import obtuseloot.persistence.PlayerStateStore;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ArtifactManager {
     private final PlayerStateStore stateStore;
@@ -18,8 +24,14 @@ public class ArtifactManager {
     private final Map<UUID, Artifact> loadedArtifacts = new ConcurrentHashMap<>();
     private final Map<String, UUID> storageToOwner = new ConcurrentHashMap<>();
     private final ArtifactCacheManager cache;
+    private final PlayerLoadGuard loadGuard;
+    private volatile Consumer<UUID> recoveryListener = id -> { };
 
     public ArtifactManager(PlayerStateStore stateStore) {
+        this(stateStore, System::currentTimeMillis, PlayerLoadGuard.DEFAULT_BACKOFF_MS);
+    }
+
+    ArtifactManager(PlayerStateStore stateStore, LongSupplier clock, long loadRetryBackoffMs) {
         this.stateStore = stateStore;
         this.seedFactory = new ArtifactSeedFactory();
         this.cache = new ArtifactCacheManager(
@@ -28,11 +40,18 @@ public class ArtifactManager {
                 RuntimeSettings.get().activeArtifactCacheMaxEntries(),
                 RuntimeSettings.get().activeArtifactCacheIdleExpireMs()
         );
+        this.loadGuard = new PlayerLoadGuard("artifact", clock, loadRetryBackoffMs, ArtifactManager::logger);
     }
 
+    /**
+     * Returns the player's artifact, generating one only when storage has no record.
+     *
+     * @throws PlayerStateLoadException if stored state exists but cannot be read. Nothing is created,
+     *                                  cached or saved for the player; a later call retries after a backoff.
+     */
     public Artifact getOrCreate(UUID playerId) {
         Artifact artifact = cache.resolve(playerId, () -> {
-            Artifact loaded = stateStore.loadArtifact(playerId);
+            Artifact loaded = loadGuard.load(playerId, stateStore::loadArtifact);
             Artifact resolved = loaded != null ? loaded : ArtifactGenerator.generateFor(playerId);
             if (loaded != null && ObtuseLoot.get() != null) {
                 ObtuseLoot.get().getArtifactUsageTracker().hydrateFromArtifact(resolved);
@@ -50,7 +69,24 @@ public class ArtifactManager {
         }).artifact();
         loadedArtifacts.put(playerId, artifact);
         storageToOwner.put(artifact.getArtifactStorageKey(), playerId);
+        if (loadGuard.consumeRecovered(playerId)) {
+            recoveryListener.accept(playerId);
+        }
         return artifact;
+    }
+
+    /** Like {@link #getOrCreate(UUID)}, but returns null instead of throwing while the player's stored artifact is unreadable. */
+    public Artifact tryGet(UUID playerId) {
+        try {
+            return getOrCreate(playerId);
+        } catch (PlayerStateLoadException ex) {
+            return null;
+        }
+    }
+
+    /** Called with the player id when a previously failing load succeeds, so deferred join work can run. */
+    public void setRecoveryListener(Consumer<UUID> listener) {
+        this.recoveryListener = listener == null ? id -> { } : listener;
     }
 
     public void save(UUID playerId) {
@@ -59,7 +95,7 @@ public class ArtifactManager {
             if (ObtuseLoot.get() != null) {
                 artifact.setLastUtilityHistory(ObtuseLoot.get().getArtifactUsageTracker().utilityHistoryFor(artifact).encode());
             }
-            stateStore.saveArtifact(playerId, artifact);
+            saveOrKeepDirty(playerId, artifact);
         }
         cache.saveOwner(playerId);
     }
@@ -69,11 +105,22 @@ public class ArtifactManager {
             loadedArtifacts.values().forEach(artifact ->
                     artifact.setLastUtilityHistory(ObtuseLoot.get().getArtifactUsageTracker().utilityHistoryFor(artifact).encode()));
         }
-        loadedArtifacts.forEach(stateStore::saveArtifact);
+        loadedArtifacts.forEach(this::saveOrKeepDirty);
         cache.saveAllDirty();
+        stateStore.retryFailedWrites();
+    }
+
+    private void saveOrKeepDirty(UUID playerId, Artifact artifact) {
+        try {
+            stateStore.saveArtifact(playerId, artifact);
+        } catch (RuntimeException ex) {
+            cache.markDirty(artifact);
+            logger().log(Level.SEVERE, "[Persistence] Failed to save artifact for " + playerId + "; will retry on next save.", ex);
+        }
     }
 
     public void unload(UUID playerId) {
+        loadGuard.forget(playerId);
         cache.releaseOwner(playerId);
         Artifact removed = loadedArtifacts.remove(playerId);
         if (removed != null) {
@@ -88,7 +135,7 @@ public class ArtifactManager {
 
     public Artifact recreateWithArchetype(UUID playerId, EquipmentArchetype archetype, String reason) {
         EquipmentArchetype validated = java.util.Objects.requireNonNull(archetype, "archetype");
-        Artifact existing = loadedArtifacts.get(playerId);
+        Artifact existing = loadedOrStored(playerId);
         if (existing != null && ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
         }
@@ -103,7 +150,7 @@ public class ArtifactManager {
     }
 
     public Artifact recreate(UUID playerId) {
-        Artifact existing = loadedArtifacts.get(playerId);
+        Artifact existing = loadedOrStored(playerId);
         if (existing != null && ObtuseLoot.get() != null) {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
         }
@@ -199,6 +246,20 @@ public class ArtifactManager {
         if (ObtuseLoot.get() != null) {
             ObtuseLoot.get().getLogger().info("[ArtifactCache] Invalidated all entries: " + reason);
         }
+    }
+
+    /**
+     * The artifact being replaced. Reads storage when the player isn't loaded, so a replacement keeps the stored
+     * identity's storage key and is recorded as discarding it. Throws while storage is unreadable, which aborts
+     * the replacement instead of overwriting the stored artifact.
+     */
+    private Artifact loadedOrStored(UUID playerId) {
+        Artifact loaded = loadedArtifacts.get(playerId);
+        return loaded != null ? loaded : loadGuard.load(playerId, stateStore::loadArtifact);
+    }
+
+    private static Logger logger() {
+        return ObtuseLoot.get() != null ? ObtuseLoot.get().getLogger() : Logger.getLogger("ObtuseLoot");
     }
 
     public long rollSeed() {

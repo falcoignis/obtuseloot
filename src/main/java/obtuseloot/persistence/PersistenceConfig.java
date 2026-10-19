@@ -7,13 +7,11 @@ import java.util.Locale;
 
 public record PersistenceConfig(
         String backend,
-        boolean fallbackToYamlOnFailure,
         File sqliteFile,
         MySqlConfig mySql
 ) {
     public static PersistenceConfig from(FileConfiguration config, File dataFolder) {
         String backend = config.getString("storage.backend", "yaml").toLowerCase(Locale.ROOT);
-        boolean fallback = config.getBoolean("storage.fallbackToYamlOnFailure", false);
         String sqlitePath = config.getString("sqlite.file", new File(dataFolder, "data/obtuseloot.db").getPath());
         File sqliteFile = resolvePath(dataFolder, sqlitePath);
         MySqlConfig mysql = new MySqlConfig(
@@ -26,7 +24,7 @@ public record PersistenceConfig(
                 config.getBoolean("mysql.connectionPool.enabled", false),
                 config.getInt("mysql.connectionPool.maxPoolSize", 10)
         );
-        return new PersistenceConfig(backend, fallback, sqliteFile, mysql);
+        return new PersistenceConfig(backend, sqliteFile, mysql);
     }
 
     private static File resolvePath(File dataFolder, String configuredPath) {

@@ -863,7 +863,6 @@ public class DebugCommand {
         if ("status".equals(action) || "backend".equals(action)) {
             sender.sendMessage("§dPersistence backend: §f" + plugin.getPersistenceManager().backendName());
             sender.sendMessage("§7status=§f" + plugin.getPersistenceManager().statusMessage());
-            sender.sendMessage("§7fallbackUsed=§f" + plugin.getPersistenceManager().fallbackUsed());
             return true;
         }
         if ("test".equals(action)) {
@@ -956,7 +955,8 @@ public class DebugCommand {
     }
 
     private boolean hasDebugPermission(CommandSender sender) {
-        if (sender instanceof Player player && !player.isOp() && !sender.hasPermission(PERMISSION_DEBUG)) {
+        // Console may bypass. OPs need the node like anyone else, so a permissions plugin can withhold debug from them.
+        if (sender instanceof Player && !sender.hasPermission(PERMISSION_DEBUG)) {
             sender.sendMessage("§cYou do not have permission: " + PERMISSION_DEBUG);
             return false;
         }

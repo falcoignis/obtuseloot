@@ -26,8 +26,11 @@ public final class ArtifactProcessor {
 
     public static void processKill(Player player) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return; // stored state unreadable; never act on (or create) a substitute
+        }
         plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
@@ -82,8 +85,11 @@ public final class ArtifactProcessor {
 
     public static void processCombat(Player player, EntityDamageByEntityEvent event) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return; // stored state unreadable; never act on (or create) a substitute
+        }
         plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
@@ -118,8 +124,11 @@ public final class ArtifactProcessor {
                                                                         String source,
                                                                         AbilityRuntimeContext runtimeContext) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return new AbilityDispatchResult(null, List.of()); // stored state unreadable; dispatch nothing
+        }
         plugin.getArtifactUsageTracker().trackUse(artifact);
         AbilityDispatchResult activated = triggerAbility(plugin, artifact, rep, trigger, value, source, runtimeContext);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
@@ -129,8 +138,11 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedCombat(Player player, double damage) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return; // stored state unreadable; never act on (or create) a substitute
+        }
         plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 
@@ -157,8 +169,11 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedMultiKill(Player player, int count) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return; // stored state unreadable; never act on (or create) a substitute
+        }
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_MULTI_KILL, count, "multi-kill");
         recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.MULTIKILL_CHAIN, "multi-kill");
         for (int i = 0; i < count; i++) {
@@ -168,8 +183,11 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedBossKill(Player player) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
-        ArtifactReputation rep = plugin.getReputationManager().get(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        if (rep == null || artifact == null) {
+            return; // stored state unreadable; never act on (or create) a substitute
+        }
         rep.recordBossKill();
         if (rep.getBossKills() == 1) { recordMemoryEvent(plugin, artifact, rep, ArtifactMemoryEvent.FIRST_BOSS_KILL, "boss-kill"); }
         triggerAbility(plugin, artifact, rep, AbilityTrigger.ON_BOSS_KILL, rep.getBossKills(), "boss-kill");

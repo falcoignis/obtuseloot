@@ -24,8 +24,8 @@ class EcosystemAnalyticsRunnerTest {
         Path rollupDir = telemetryDir;
 
         new EcosystemHistoryArchive(telemetryDir.resolve("ecosystem-events.log")).append(List.of(
-                new EcosystemTelemetryEvent(1_000L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 1L, "lin-a", "SCOUT", Map.of()),
-                new EcosystemTelemetryEvent(2_000L, EcosystemTelemetryEventType.ABILITY_EXECUTION, 2L, "lin-b", "RITUAL", Map.of())
+                abilityEvent(1_000L, 1L, "lin-a", "SCOUT", Map.of()),
+                abilityEvent(2_000L, 2L, "lin-b", "RITUAL", Map.of())
         ));
 
         new TelemetryRollupSnapshotStore(rollupDir.resolve("001.properties")).write(snapshot(1_000L,
@@ -102,5 +102,14 @@ class EcosystemAnalyticsRunnerTest {
                 Map.of());
 
         return new TelemetryRollupSnapshot(TelemetryRollupSnapshot.CURRENT_VERSION, ts, "test", ecosystem);
+    }
+
+    private static EcosystemTelemetryEvent abilityEvent(long timestampMs, long seed, String lineageId, String niche, Map<String, String> extra) {
+        Map<String, String> attributes = new java.util.LinkedHashMap<>(Map.of(
+                "niche", niche, "lineage_id", lineageId,
+                "ability_id", "ability", "trigger", "ON_WORLD_SCAN", "mechanic", "SENSE_PING", "execution_status", "SUCCESS"));
+        attributes.putAll(extra);
+        return new EcosystemTelemetryEvent(timestampMs, EcosystemTelemetryEventType.ABILITY_EXECUTION, seed, lineageId, niche,
+                TelemetryFieldContract.normalize(EcosystemTelemetryEventType.ABILITY_EXECUTION, attributes));
     }
 }

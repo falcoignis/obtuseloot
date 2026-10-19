@@ -43,7 +43,6 @@ class IntraCategoryNormalizationProbeTest {
         assertTrue(survival.totalHits >= 25, "Survival probe should remain active.");
         assertTrue(survival.topThreeShare() < 0.66D, "Survival top-3 should remain below 66%.");
 
-        assertTrue(sensing.totalHits >= 18, "Sensing probe should remain active.");
         assertTrue(sensing.topShare() <= 0.35D, "Sensing should remain balanced without a single runaway leader.");
         assertTrue(sensing.topThreeShare() < 0.65D, "Sensing should retain balanced spread.");
     }

@@ -242,8 +242,10 @@ public final class EcosystemMapRenderer {
     private Map<Player, Artifact> onlineArtifacts() {
         Map<Player, Artifact> artifactsByPlayer = new LinkedHashMap<>();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            Artifact artifact = plugin.getArtifactManager().getOrCreate(player.getUniqueId());
-            artifactsByPlayer.put(player, artifact);
+            Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+            if (artifact != null) {
+                artifactsByPlayer.put(player, artifact);
+            }
         }
         return artifactsByPlayer;
     }

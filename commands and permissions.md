@@ -33,7 +33,7 @@ This document lists all currently implemented ObtuseLoot commands and permission
 | `/obtuseloot debug-profile` | Deep structured held artifact diagnostics | `obtuseloot.command.debugprofile` | Player |
 | `/obtuseloot give-specific <player> <archetype\|family>` | Generate constrained artifact and give | `obtuseloot.command.givespecific` | Both |
 | `/obtuseloot dump-held` | Log structured held artifact snapshot | `obtuseloot.command.dumpheld` | Player |
-| `/obtuseloot debug ...` | Full debug command suite | `obtuseloot.debug` (players), OP bypass supported | Both |
+| `/obtuseloot debug ...` | Full debug command suite | `obtuseloot.debug` (players; console exempt) | Both |
 | `/obtuseloot debug dashboard` | Regenerate dashboard + trait heatmap | `obtuseloot.debug` | Both |
 | `/ol ...` | Alias of `/obtuseloot` | Same as matching `/obtuseloot` form | Same as matching `/obtuseloot` form |
 
@@ -44,7 +44,7 @@ This document lists all currently implemented ObtuseLoot commands and permission
 - **Usage:** `/obtuseloot`, `/obtuseloot help`
 - **Permission:** `obtuseloot.help`
 - **Who can use it:** Both
-- **Notes:** `plugin.yml` defines command-level permission `obtuseloot.command`, so servers using Bukkit command permission gating may require that as well.
+- **Notes:** The root command has no command-level permission gate. Every subcommand checks its own node.
 
 ### `/obtuseloot info`
 - **What it does:** Shows a basic runtime-active message.
@@ -229,261 +229,261 @@ This document lists all currently implemented ObtuseLoot commands and permission
 ### `/obtuseloot debug help`
 - **What it does:** Shows debug command list.
 - **Usage:** `/obtuseloot debug help`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug inspect [player]`
 - **What it does:** Debug-inspects full artifact + reputation state.
 - **Usage:** `/obtuseloot debug inspect [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug rep set <stat> <value> [player]`
 - **What it does:** Sets one reputation stat.
 - **Usage:** `/obtuseloot debug rep set <precision|brutality|survival|mobility|chaos|consistency|kills|bosskills|recentkillchain|survivalstreak> <value> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug rep add <stat> <value> [player]`
 - **What it does:** Adds to one reputation stat.
 - **Usage:** `/obtuseloot debug rep add <stat> <value> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug rep reset [player]`
 - **What it does:** Resets reputation.
 - **Usage:** `/obtuseloot debug rep reset [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug evolve [player]`
 - **What it does:** Forces evolution evaluation.
 - **Usage:** `/obtuseloot debug evolve [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug drift [player]`
 - **What it does:** Forces a drift mutation.
 - **Usage:** `/obtuseloot debug drift [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug awaken [player]`
 - **What it does:** Forces awakening transition via engine.
 - **Usage:** `/obtuseloot debug awaken [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug fuse [player]`
 - **What it does:** Attempts convergence/fusion transition.
 - **Usage:** `/obtuseloot debug fuse [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug lore [player]`
 - **What it does:** Prints action bar + lore lines.
 - **Usage:** `/obtuseloot debug lore [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug reset [player]`
 - **What it does:** Resets artifact, reputation, combat context.
 - **Usage:** `/obtuseloot debug reset [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug save [player]`
 - **What it does:** Saves artifact + reputation.
 - **Usage:** `/obtuseloot debug save [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug reload`
 - **What it does:** Reloads runtime config/settings and invalidates relevant caches.
 - **Usage:** `/obtuseloot debug reload`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug instability clear [player]`
 - **What it does:** Clears artifact instability.
 - **Usage:** `/obtuseloot debug instability clear [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug archetype set <archetype> [player]`
 - **What it does:** Sets debug archetype path.
 - **Usage:** `/obtuseloot debug archetype set <unformed|vanguard|deadeye|ravager|strider|harbinger|warden|paragon> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug path set <evolutionPath> [player]`
 - **What it does:** Sets evolution path string directly.
 - **Usage:** `/obtuseloot debug path set <evolutionPath> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug seed show [player]`
 - **What it does:** Displays artifact seed.
 - **Usage:** `/obtuseloot debug seed show [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug seed reroll [player]`
 - **What it does:** Rerolls artifact seed and resets progression identity state.
 - **Usage:** `/obtuseloot debug seed reroll [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug seed set <seed> [player]`
 - **What it does:** Sets explicit seed and resets progression identity state.
 - **Usage:** `/obtuseloot debug seed set <seed> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug seed import <seed> [player]`
 - **What it does:** Imports explicit seed and resets progression identity state.
 - **Usage:** `/obtuseloot debug seed import <seed> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug seed export [player]`
 - **What it does:** Prints exportable seed + identity summary.
 - **Usage:** `/obtuseloot debug seed export [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug ability [show|refresh|explain|tree] [player]`
 - **What it does:** Displays/refreshes/explains ability profile.
 - **Usage:** `/obtuseloot debug ability [show|refresh|explain|tree] [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug memory [player]`
 - **What it does:** Shows artifact memory snapshot and influence.
 - **Usage:** `/obtuseloot debug memory [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug persistence backend`
 - **What it does:** Shows active persistence backend/status.
 - **Usage:** `/obtuseloot debug persistence backend`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug persistence test`
 - **What it does:** Prints persistence backend test/status line.
 - **Usage:** `/obtuseloot debug persistence test`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug persistence migrate yaml-to-sqlite|yaml-to-mysql|nbt-artifacts`
 - **What it does:** Runs configured migration path.
 - **Usage:** `/obtuseloot debug persistence migrate yaml-to-sqlite|yaml-to-mysql|nbt-artifacts`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 - **Notes:** `nbt-artifacts` migration scans online players.
 
 ### `/obtuseloot debug ecosystem [bias|balance]`
 - **What it does:** Shows ecosystem snapshot, bias, or balance weights.
 - **Usage:** `/obtuseloot debug ecosystem [bias|balance]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug lineage [player]`
 - **What it does:** Shows assigned lineage info.
 - **Usage:** `/obtuseloot debug lineage [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug genome interactions`
 - **What it does:** Generates trait interaction heatmap/matrix and prints top pairs.
 - **Usage:** `/obtuseloot debug genome interactions`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 - **Notes:** Requires loaded artifacts to produce output.
 
 ### `/obtuseloot debug projection [cache|stats]`
 - **What it does:** Shows trait projection cache/performance telemetry.
 - **Usage:** `/obtuseloot debug projection [cache|stats]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug subscriptions [stats|player]`
 - **What it does:** Shows trigger subscription index stats or per-player subscriptions.
 - **Usage:** `/obtuseloot debug subscriptions [stats|player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug artifact [storage|resolve|cache|stats] [player]`
 - **What it does:** Shows artifact storage/cache/resolve diagnostics.
 - **Usage:** `/obtuseloot debug artifact [storage|resolve|cache|stats] [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate help`
 - **What it does:** Shows simulate command help.
 - **Usage:** `/obtuseloot debug simulate help`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate hit <damage> [player]`
 - **What it does:** Simulates combat hit progression.
 - **Usage:** `/obtuseloot debug simulate hit <damage> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate move <distance> [player]`
 - **What it does:** Injects movement into combat context.
 - **Usage:** `/obtuseloot debug simulate move <distance> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate lowhp [player]`
 - **What it does:** Marks low-health state for survival testing.
 - **Usage:** `/obtuseloot debug simulate lowhp [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate kill [player]`
 - **What it does:** Simulates kill progression.
 - **Usage:** `/obtuseloot debug simulate kill [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate multikill <count> [player]`
 - **What it does:** Simulates rapid multi-kill progression.
 - **Usage:** `/obtuseloot debug simulate multikill <count> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate bosses <count> [player]`
 - **What it does:** Simulates repeated boss kills.
 - **Usage:** `/obtuseloot debug simulate bosses <count> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate chaos [player]`
 - **What it does:** Prepares chaotic combat context.
 - **Usage:** `/obtuseloot debug simulate chaos [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate cycle [player]`
 - **What it does:** Runs multi-step simulation cycle.
 - **Usage:** `/obtuseloot debug simulate cycle [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate resetcontext [player]`
 - **What it does:** Clears combat context.
 - **Usage:** `/obtuseloot debug simulate resetcontext [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug simulate path <precision|brutality|mobility|survival|chaos|boss|hybrid|awaken|drift> [player]`
 - **What it does:** Applies predefined simulation profile.
 - **Usage:** `/obtuseloot debug simulate path <precision|brutality|mobility|survival|chaos|boss|hybrid|awaken|drift> [player]`
-- **Permission:** `obtuseloot.debug` (players), OP bypass exists
+- **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
 ### `/obtuseloot debug dashboard`
@@ -503,7 +503,7 @@ This document lists all currently implemented ObtuseLoot commands and permission
 | `obtuseloot.edit` | `op` | Full name-pool editing (`addname`/`removename`) | Treated as parent permission in code for scoped edit nodes. |
 | `obtuseloot.edit.prefixes` | `op` | Edit only `prefixes` pool | Checked via scoped edit logic. |
 | `obtuseloot.edit.suffixes` | `op` | Edit only `suffixes` pool | Checked via scoped edit logic. |
-| `obtuseloot.debug` | `op` | Entire debug suite (`/obtuseloot debug ...`, including `debug dashboard`) | Player OPs bypass explicit permission check in debug command. |
+| `obtuseloot.debug` | `op` | Entire debug suite (`/obtuseloot debug ...`, including `debug dashboard`) | Players need the node, OPs included (OPs hold it by default unless a permissions plugin denies it). Console is exempt. |
 | `obtuseloot.command` | `op` | Root command permission on `/obtuseloot` registration | Set in `plugin.yml` command registration (Bukkit-level gate). |
 | `obtuseloot.command.give` | `op` | `/obtuseloot give <player>` | Explicitly checked in code. |
 | `obtuseloot.command.convert` | `op` | `/obtuseloot convert` | Explicitly checked in code. |

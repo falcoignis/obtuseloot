@@ -40,6 +40,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
     private final ConcurrentHashMap<UUID, Long> latestRequestedRevision = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Long> latestWrittenRevision = new ConcurrentHashMap<>();
     private final AtomicLong revisionCounter = new AtomicLong();
+    private final java.util.Set<UUID> failedWrites = ConcurrentHashMap.newKeySet();
 
     public YamlPlayerStateStore(Plugin plugin) {
         this.playerDataDir = new File(plugin.getDataFolder(), "playerdata");
@@ -214,6 +215,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
 
     @Override
     public void flushPendingWrites() {
+        retryFailedWrites();
         writeExecutor.shutdown();
         try {
             if (!writeExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -243,9 +245,31 @@ public class YamlPlayerStateStore implements PlayerStateStore {
                 latestWrittenRevision.put(playerId, revision);
                 logger.fine("[Persistence] Wrote " + reason + " snapshot for " + playerId + " rev=" + revision);
             } catch (IOException ex) {
-                logger.warning("[Persistence] Failed writing player data for " + playerId + ": " + ex.getMessage());
+                failedWrites.add(playerId);
+                logger.severe("[Persistence] Failed writing player data for " + playerId + " rev=" + revision
+                        + "; will retry on next save: " + ex.getMessage());
+                return;
             }
+            failedWrites.remove(playerId);
         });
+    }
+
+    @Override
+    public void retryFailedWrites() {
+        for (UUID playerId : List.copyOf(failedWrites)) {
+            CachedPlayerState state = cache.get(playerId);
+            if (state == null) {
+                continue;
+            }
+            String yamlText;
+            long revision;
+            synchronized (state) {
+                revision = revisionCounter.incrementAndGet();
+                state.lastRevision = revision;
+                yamlText = state.yaml.saveToString();
+            }
+            enqueueWrite(playerId, revision, yamlText, "retry");
+        }
     }
 
     private CachedPlayerState stateFor(UUID playerId) {
@@ -253,7 +277,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             YamlConfiguration yaml = loadYaml(id);
             PlayerDataMigrator.MigrationResult migration = PlayerDataMigrator.migrateToCurrent(yaml, logger, fileFor(id).getName());
             if (migration.failed()) {
-                throw new IllegalStateException("[Persistence] Refusing to load " + id + " due to migration failure.");
+                throw new PlayerStateLoadException(id, "[Persistence] Refusing to load " + id + " due to migration failure.", null);
             }
             if (migration.migrated()) {
                 long revision = revisionCounter.incrementAndGet();
@@ -442,7 +466,19 @@ public class YamlPlayerStateStore implements PlayerStateStore {
     }
 
     private YamlConfiguration loadYaml(UUID playerId) {
-        return YamlConfiguration.loadConfiguration(fileFor(playerId));
+        File file = fileFor(playerId);
+        YamlConfiguration yaml = new YamlConfiguration();
+        if (!file.exists()) {
+            return yaml;
+        }
+        // YamlConfiguration.loadConfiguration swallows parse/IO errors and returns an empty config,
+        // which would read as "no record" and later overwrite the unreadable file.
+        try {
+            yaml.load(file);
+        } catch (IOException | org.bukkit.configuration.InvalidConfigurationException ex) {
+            throw new PlayerStateLoadException(playerId, "Unreadable player data file " + file.getName() + ": " + ex.getMessage(), ex);
+        }
+        return yaml;
     }
 
     private File fileFor(UUID playerId) {

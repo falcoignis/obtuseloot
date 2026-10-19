@@ -6,7 +6,6 @@ public class PersistenceManager {
     private final Plugin plugin;
     private final PersistenceConfig config;
     private PersistenceProvider provider;
-    private boolean fallbackUsed;
 
     public PersistenceManager(Plugin plugin, PersistenceConfig config) {
         this.plugin = plugin;
@@ -14,18 +13,15 @@ public class PersistenceManager {
     }
 
     public void initialize() {
+        // No fallback to another backend: an empty substitute store would regenerate every identity
+        // and later overwrite the real data once the configured backend is reachable again.
         try {
             provider = createProvider(config.backend());
         } catch (RuntimeException ex) {
             plugin.getLogger().severe("[Persistence] Failed to initialize backend '" + config.backend() + "': " + ex.getMessage());
-            if (!config.fallbackToYamlOnFailure() || "yaml".equalsIgnoreCase(config.backend())) {
-                throw ex;
-            }
-            plugin.getLogger().warning("[Persistence] Falling back to YAML because storage.fallbackToYamlOnFailure=true");
-            provider = new YamlPersistenceProvider(plugin);
-            fallbackUsed = true;
+            throw ex;
         }
-        plugin.getLogger().info("[Persistence] Using backend: " + provider.backendName() + (fallbackUsed ? " (fallback)" : ""));
+        plugin.getLogger().info("[Persistence] Using backend: " + provider.backendName());
     }
 
     private PersistenceProvider createProvider(String backend) {
@@ -43,10 +39,6 @@ public class PersistenceManager {
 
     public String backendName() {
         return provider.backendName();
-    }
-
-    public boolean fallbackUsed() {
-        return fallbackUsed;
     }
 
     public String statusMessage() {

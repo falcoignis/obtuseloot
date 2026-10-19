@@ -47,7 +47,7 @@ public class LineageRegistry {
     }
 
     public void updateTelemetryNicheContext(long artifactSeed, String nicheId) {
-        if (artifactSeed <= 0L) {
+        if (artifactSeed == 0L) {
             return;
         }
         if (nicheId == null || nicheId.isBlank()) {
