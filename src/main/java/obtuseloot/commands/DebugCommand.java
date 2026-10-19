@@ -955,7 +955,8 @@ public class DebugCommand {
     }
 
     private boolean hasDebugPermission(CommandSender sender) {
-        if (sender instanceof Player player && !player.isOp() && !sender.hasPermission(PERMISSION_DEBUG)) {
+        // Console may bypass. OPs need the node like anyone else, so a permissions plugin can withhold debug from them.
+        if (sender instanceof Player && !sender.hasPermission(PERMISSION_DEBUG)) {
             sender.sendMessage("§cYou do not have permission: " + PERMISSION_DEBUG);
             return false;
         }

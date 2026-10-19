@@ -44,7 +44,6 @@ commands:
       /<command> give-specific <player> <archetype|family>
       /<command> dump-held
     aliases:      [ ol ]
-    permission:   obtuseloot.command
 
 permissions:
   obtuseloot.help:
