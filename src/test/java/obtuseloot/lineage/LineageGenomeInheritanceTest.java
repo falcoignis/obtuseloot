@@ -54,8 +54,13 @@ class LineageGenomeInheritanceTest {
     }
 
     private Artifact artifactFor(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
+        Artifact artifact = new Artifact(ownerFor(seed), "wooden_sword");
         artifact.setArtifactSeed(seed);
         return artifact;
+    }
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

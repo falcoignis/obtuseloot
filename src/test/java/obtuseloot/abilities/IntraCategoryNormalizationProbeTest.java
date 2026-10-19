@@ -239,7 +239,7 @@ class IntraCategoryNormalizationProbeTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
+        Artifact artifact = new Artifact(ownerFor(seed), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         artifact.setLatentLineage("normalization-probe");
@@ -298,5 +298,10 @@ class IntraCategoryNormalizationProbeTest {
                     .mapToDouble(Double::doubleValue)
                     .sum() / Math.max(0.0001D, totalWeight);
         }
+    }
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

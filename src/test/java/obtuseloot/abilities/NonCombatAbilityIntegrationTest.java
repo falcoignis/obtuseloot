@@ -110,7 +110,7 @@ class NonCombatAbilityIntegrationTest {
     }
 
     private Artifact artifact(long seed) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "elytra");
+        Artifact artifact = new Artifact(ownerFor(seed), "elytra");
         artifact.setArtifactSeed(seed);
         artifact.setSeedPrecisionAffinity(0.5D);
         artifact.setSeedBrutalityAffinity(0.1D);
@@ -119,5 +119,10 @@ class NonCombatAbilityIntegrationTest {
         artifact.setSeedChaosAffinity(0.5D);
         artifact.setSeedConsistencyAffinity(0.5D);
         return artifact;
+    }
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }
