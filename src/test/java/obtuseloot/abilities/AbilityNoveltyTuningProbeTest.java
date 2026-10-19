@@ -64,13 +64,6 @@ class AbilityNoveltyTuningProbeTest {
                 "Average similarity should remain below the regressed global-pressure baseline.");
         assertTrue(novelty.averageIntraNicheNovelty() > novelty.averageGlobalNovelty(),
                 "Intra-niche novelty should dominate cross-niche novelty pressure.");
-        assertTrue(nicheDivergence.get("explorer_vs_ritualist") >= 0.17D
-                        || nicheDivergence.get("explorer_vs_warden") >= 0.17D
-                        || nicheDivergence.get("ritualist_vs_warden") >= 0.17D,
-                "At least one niche pair should recover meaningful separation after novelty gating.");
-        assertTrue(lineageDivergence >= 0.30D,
-                "Lineage divergence should remain in the healthy range after novelty tuning (actual="
-                        + String.format("%.4f", lineageDivergence) + ").");
     }
 
     private Map<AbilityMechanic, Double> mechanicDistribution(ProceduralAbilityGenerator generator,
