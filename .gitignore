@@ -1,6 +1,6 @@
 # local artifact outputs
-dist/
-artifacts/
+/dist/
+/artifacts/
 
 # IDE
 .idea/
