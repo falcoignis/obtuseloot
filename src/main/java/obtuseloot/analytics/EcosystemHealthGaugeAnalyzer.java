@@ -44,35 +44,11 @@ public class EcosystemHealthGaugeAnalyzer {
     }
 
     public double effectiveNicheDiversity(Map<String, Integer> occupancy) {
-        if (occupancy == null || occupancy.isEmpty()) {
-            return 0.0D;
-        }
-        double total = occupancy.values().stream().mapToDouble(Integer::doubleValue).sum();
-        if (total <= 0.0D) {
-            return 0.0D;
-        }
-        double entropy = 0.0D;
-        for (int count : occupancy.values()) {
-            if (count <= 0) {
-                continue;
-            }
-            double p = count / total;
-            entropy -= p * Math.log(p);
-        }
-        return Math.exp(entropy);
+        return NicheDiversityMetrics.diversity(occupancy).effectiveNiches();
     }
 
     public double temporalNicheTurnover(Map<String, Integer> previous, Map<String, Integer> next) {
-        Map<String, Double> p = normalize(previous);
-        Map<String, Double> n = normalize(next);
-        Set<String> keys = new LinkedHashSet<>();
-        keys.addAll(p.keySet());
-        keys.addAll(n.keySet());
-        double sum = 0.0D;
-        for (String key : keys) {
-            sum += Math.abs(n.getOrDefault(key, 0.0D) - p.getOrDefault(key, 0.0D));
-        }
-        return Math.max(0.0D, Math.min(1.0D, 0.5D * sum));
+        return NicheDiversityMetrics.transition(previous, next).populationShift();
     }
 
     public EcosystemStatus classify(double end, double tnt) {
@@ -111,23 +87,6 @@ public class EcosystemHealthGaugeAnalyzer {
             case TURBULENT -> "TNT indicates unstable or highly rotating niches despite some diversity." + novelty;
             case FRAGMENTED -> "Very high turnover with high END suggests chaotic or fragmented ecology." + novelty;
         };
-    }
-
-    private Map<String, Double> normalize(Map<String, Integer> occupancy) {
-        Map<String, Double> out = new LinkedHashMap<>();
-        if (occupancy == null || occupancy.isEmpty()) {
-            return out;
-        }
-        double total = occupancy.values().stream().mapToDouble(Integer::doubleValue).sum();
-        if (total <= 0.0D) {
-            return out;
-        }
-        for (Map.Entry<String, Integer> entry : occupancy.entrySet()) {
-            if (entry.getValue() > 0) {
-                out.put(entry.getKey(), entry.getValue() / total);
-            }
-        }
-        return out;
     }
 
     private double round4(double value) {
