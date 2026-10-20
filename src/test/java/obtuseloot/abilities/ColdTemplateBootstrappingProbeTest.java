@@ -23,14 +23,14 @@ class ColdTemplateBootstrappingProbeTest {
     @Test
     void coldBootstrappingRestoresReachabilityWithoutBreakingDistributionOrNovelty() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator generator = ProbeFixtures.generator(registry);
         LineageRegistry lineageRegistry = new LineageRegistry();
-        ProceduralAbilityGenerator lineageGenerator = new ProceduralAbilityGenerator(registry, null, lineageRegistry, new LineageInfluenceResolver());
+        ProceduralAbilityGenerator lineageGenerator = ProbeFixtures.generator(registry, lineageRegistry, new LineageInfluenceResolver());
 
         CategoryProbe stealth = probeCategory(generator, registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION, stealthProfile(), 120, 1_000_000L, null, 0.0D, 0.0D, 0.0D);
         CategoryProbe defense = probeCategory(generator, registry, AbilityCategory.DEFENSE_WARDING, defenseProfile(), 120, 2_000_000L, null, 0.0D, 0.0D, 0.0D);
         CategoryProbe ritual = probeCategory(lineageGenerator, registry, AbilityCategory.RITUAL_STRANGE_UTILITY, ritualProfile(), 150, 3_000_000L, "cold-bootstrap-ritual", 0.04D, 0.30D, 0.24D);
-        NoveltySnapshot novelty = noveltyProbe(new ProceduralAbilityGenerator(registry), 180, 4_000_000L);
+        NoveltySnapshot novelty = noveltyProbe(ProbeFixtures.generator(registry), 180, 4_000_000L);
 
         System.out.println("COLD_BOOTSTRAP_STEALTH hits=" + stealth.totalHits + " reachable=" + stealth.distribution.size() + "/" + templateCount(registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION) + " dist=" + summarize(stealth.distribution));
         System.out.println("COLD_BOOTSTRAP_DEFENSE hits=" + defense.totalHits + " reachable=" + defense.distribution.size() + "/" + templateCount(registry, AbilityCategory.DEFENSE_WARDING) + " dist=" + summarize(defense.distribution));
@@ -59,7 +59,7 @@ class ColdTemplateBootstrappingProbeTest {
         LineageRegistry lineageRegistry = lineageId == null ? null : new LineageRegistry();
         ProceduralAbilityGenerator actualGenerator = lineageRegistry == null
                 ? generator
-                : new ProceduralAbilityGenerator(registry, null, lineageRegistry, new LineageInfluenceResolver());
+                : ProbeFixtures.generator(registry, lineageRegistry, new LineageInfluenceResolver());
         for (int i = 0; i < artifacts; i++) {
             Artifact artifact = artifact(seedBase + i, lineageId);
             if (lineageRegistry != null) {
@@ -87,7 +87,7 @@ class ColdTemplateBootstrappingProbeTest {
         java.util.List<Double> intraNoveltyScores = new java.util.ArrayList<>();
         java.util.List<Double> globalNoveltyScores = new java.util.ArrayList<>();
         java.util.List<AbilityDiversityIndex.AbilitySignature> observed = new java.util.ArrayList<>();
-        AbilityDiversityIndex diversityIndex = AbilityDiversityIndex.instance();
+        AbilityDiversityIndex diversityIndex = new AbilityDiversityIndex();
         for (int i = 0; i < artifacts; i++) {
             Artifact artifact = artifact(seedBase + i, null);
             ArtifactMemoryProfile profile = switch (i % 3) {

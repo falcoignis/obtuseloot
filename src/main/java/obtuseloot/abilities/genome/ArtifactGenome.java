@@ -36,8 +36,10 @@ public final class ArtifactGenome {
         return traits.getOrDefault(trait, 0.0D);
     }
 
+    // Read-only views in GenomeTrait declaration order. Callers draw seeded random numbers while iterating these,
+    // so the order must not vary between JVM runs (Map.copyOf/Set.copyOf iteration order is randomized per JVM).
     public Map<GenomeTrait, Double> traits() {
-        return Map.copyOf(traits);
+        return java.util.Collections.unmodifiableMap(new EnumMap<>(traits));
     }
 
     public double latentTrait(GenomeTrait trait) {
@@ -49,17 +51,17 @@ public final class ArtifactGenome {
     }
 
     public Map<GenomeTrait, Double> latentTraits() {
-        return Map.copyOf(latentTraits);
+        return java.util.Collections.unmodifiableMap(new EnumMap<>(latentTraits));
     }
 
     public java.util.Set<GenomeTrait> activatedLatentTraits() {
-        java.util.Set<GenomeTrait> out = new java.util.HashSet<>();
+        java.util.EnumSet<GenomeTrait> out = java.util.EnumSet.noneOf(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Boolean> entry : activatedLatentTraits.entrySet()) {
             if (entry.getValue()) {
                 out.add(entry.getKey());
             }
         }
-        return java.util.Set.copyOf(out);
+        return java.util.Collections.unmodifiableSet(out);
     }
 
     public ArtifactGenome activateLatentTrait(GenomeTrait trait, double promotionStrength) {
