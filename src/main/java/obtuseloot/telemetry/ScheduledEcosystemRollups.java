@@ -1,5 +1,7 @@
 package obtuseloot.telemetry;
 
+import obtuseloot.analytics.NicheDiversityMetrics;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -7,6 +9,7 @@ public class ScheduledEcosystemRollups {
     private final TelemetryAggregationBuffer buffer;
     private final long minIntervalMs;
     private volatile long lastGeneratedAtMs;
+    private boolean hasOccupancyBaseline;
     private final AtomicReference<NichePopulationRollup> nicheRollup = new AtomicReference<>(emptyNiche(0L));
     private final AtomicReference<LineagePopulationRollup> lineageRollup = new AtomicReference<>(emptyLineage(0L));
     private final AtomicReference<EcosystemSnapshot> snapshot = new AtomicReference<>(
@@ -24,7 +27,7 @@ public class ScheduledEcosystemRollups {
         return run(nowMs);
     }
 
-    public RollupGeneration run(long nowMs) {
+    public synchronized RollupGeneration run(long nowMs) {
         long before = System.nanoTime();
         NichePopulationRollup niche = new NichePopulationRollup(
                 nowMs,
@@ -52,10 +55,12 @@ public class ScheduledEcosystemRollups {
         long branchCollapseCount = buffer.branchCollapseCountSnapshot();
         double capacityUtilization = activeArtifactCount == 0 ? 0.0D
                 : Math.min(1.0D, activeArtifactCount / Math.max(1.0D, activeArtifactCount + niche.populationByNiche().size()));
-        double diversity = niche.populationByNiche().isEmpty() ? 0.0D
-                : ((double) niche.populationByNiche().size() / Math.max(1.0D, activeArtifactCount));
-        double turnover = activeArtifactCount == 0 ? 0.0D
-                : (branchBirthCount + branchCollapseCount) / (double) activeArtifactCount;
+        double diversity = NicheDiversityMetrics.diversity(niche.populationByNiche()).simpsonDiversity();
+        // The first rollup establishes a baseline. Later values compare adjacent occupancy snapshots,
+        // including the restored snapshot after a restart; cumulative branch counters stay separate.
+        double turnover = !hasOccupancyBaseline ? 0.0D
+                : NicheDiversityMetrics.transition(nicheRollup.get().populationByNiche(),
+                        niche.populationByNiche()).turnover();
 
         EcosystemSnapshot next = new EcosystemSnapshot(
                 nowMs,
@@ -75,6 +80,7 @@ public class ScheduledEcosystemRollups {
         nicheRollup.set(niche);
         lineageRollup.set(lineage);
         snapshot.set(next);
+        hasOccupancyBaseline = true;
         lastGeneratedAtMs = nowMs;
         long durationMs = Math.max(0L, (System.nanoTime() - before) / 1_000_000L);
         long recordCount = next.eventCounts().values().stream().mapToLong(Long::longValue).sum();
@@ -88,6 +94,7 @@ public class ScheduledEcosystemRollups {
         nicheRollup.set(restored.nichePopulationRollup());
         lineageRollup.set(restored.lineagePopulationRollup());
         snapshot.set(restored);
+        hasOccupancyBaseline = true;
         lastGeneratedAtMs = Math.max(lastGeneratedAtMs, restoredAtMs);
     }
 
