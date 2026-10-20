@@ -40,7 +40,7 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
 ## Roadmap (owner-decided order)
 
 1. **Green build and safety fixes:** signed seeds, analytics fixtures, storage-load failure (fatal at startup; at runtime refuse that player's artifact and retry), the permission root gate. Baseline safety fixes landed in PR #400; see `references/status.md` for the probe/health follow-up and current PR state.
-2. **Real ability effects** with outcome feedback into selection. Today `AbilityExecutor` applies no in-world effect.
+2. **Real ability effects** with outcome feedback into selection. Prioritize social, interaction and exploration; keep combat effects minimal (owner, 2026-10-20). Gentle Harvest and Material Insight are the approved first slice. At the baseline, `AbilityExecutor` applies no in-world effect.
 3. **Per-item identity.** Today it is one profile per player. No migration is needed; no player data exists anywhere.
 4. **Remove scaffolding,** each layer behind an ablation test.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
