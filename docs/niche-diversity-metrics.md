@@ -26,6 +26,10 @@ retirement and exact identity hydration are outside this change.
 Its older absolute status labels are retained as report interpretations; they
 are not used by the regression gate or fed back into selection.
 
+Seeded probe fixtures also use their own `AbilityDiversityIndex`. A seeded genome
+alone is insufficient for repeatable probe output if earlier tests can populate
+the process-wide novelty history. Production generators keep their shared index.
+
 `SeededEcosystemHealthTest` uses 32 artifacts over 12 windows, seed
 `0x4845414C54484C`. Each artifact has one observed dominant niche, classified
 from its generated abilities using the existing taxonomy; enum order resolves

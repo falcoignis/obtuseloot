@@ -24,7 +24,7 @@ class AbilityNoveltyTuningProbeTest {
     @Test
     void noveltyTuningProbeReportsHealthyNoveltyWithoutDivergenceRegression() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator baselineGenerator = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator baselineGenerator = ProbeFixtures.generator(registry);
 
         Map<String, Double> nicheDivergence = Map.of(
                 "explorer_vs_ritualist", jensenShannonFamilies(familyDistribution(baselineGenerator, explorerProfile(), 60, 100_000L),
@@ -36,12 +36,12 @@ class AbilityNoveltyTuningProbeTest {
         );
         LineageRegistry lineageRegistry = new LineageRegistry();
         LineageInfluenceResolver lineageResolver = new LineageInfluenceResolver();
-        ProceduralAbilityGenerator lineageGenerator = new ProceduralAbilityGenerator(registry, null, lineageRegistry, lineageResolver);
+        ProceduralAbilityGenerator lineageGenerator = ProbeFixtures.generator(registry, lineageRegistry, lineageResolver);
         Map<AbilityMechanic, Double> lineageA = mechanicDistribution(lineageGenerator, lineageRegistry, ritualProfile(), 60, 400_000L, "ritual-lineage-a", 0.32D, 0.10D, 0.05D);
         Map<AbilityMechanic, Double> lineageB = mechanicDistribution(lineageGenerator, lineageRegistry, ritualProfile(), 60, 500_000L, "ritual-lineage-b", -0.04D, 0.30D, 0.28D);
         double lineageDivergence = jensenShannonMechanics(lineageA, lineageB);
 
-        NoveltyProbeResult novelty = noveltyProbe(new ProceduralAbilityGenerator(registry), 180, 600_000L);
+        NoveltyProbeResult novelty = noveltyProbe(ProbeFixtures.generator(registry), 180, 600_000L);
 
         System.out.printf("NICHE_DIVERGENCE explorer_vs_ritualist=%.4f explorer_vs_warden=%.4f ritualist_vs_warden=%.4f%n",
                 nicheDivergence.get("explorer_vs_ritualist"),
@@ -124,7 +124,7 @@ class AbilityNoveltyTuningProbeTest {
     }
 
     private NoveltyProbeResult noveltyProbe(ProceduralAbilityGenerator generator, int artifacts, long seedBase) {
-        AbilityDiversityIndex diversityIndex = AbilityDiversityIndex.instance();
+        AbilityDiversityIndex diversityIndex = new AbilityDiversityIndex();
         List<Double> noveltyScores = new ArrayList<>();
         List<Double> similarityScores = new ArrayList<>();
         List<Double> intraNoveltyScores = new ArrayList<>();

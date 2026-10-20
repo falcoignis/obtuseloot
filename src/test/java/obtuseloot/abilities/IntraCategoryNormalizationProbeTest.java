@@ -24,11 +24,11 @@ class IntraCategoryNormalizationProbeTest {
     @Test
     void smallCategoryNormalizationKeepsStealthReachableWithoutRunawayLeader() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator generator = ProbeFixtures.generator(registry);
 
         DistributionProbe stealth = probeCategory(generator, registry, AbilityCategory.STEALTH_TRICKERY_DISRUPTION, stealthProfile(), 80, 910_000L);
-        DistributionProbe survival = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SURVIVAL_ADAPTATION, survivalProfile(), 80, 920_000L);
-        DistributionProbe sensing = probeCategory(new ProceduralAbilityGenerator(registry), registry, AbilityCategory.SENSING_INFORMATION, sensingProfile(), 100, 930_000L);
+        DistributionProbe survival = probeCategory(ProbeFixtures.generator(registry), registry, AbilityCategory.SURVIVAL_ADAPTATION, survivalProfile(), 80, 920_000L);
+        DistributionProbe sensing = probeCategory(ProbeFixtures.generator(registry), registry, AbilityCategory.SENSING_INFORMATION, sensingProfile(), 100, 930_000L);
 
         System.out.println("STEALTH_NORMALIZATION_PROBE hits=" + stealth.totalHits + " dist=" + summarize(stealth.distribution));
         System.out.println("SURVIVAL_NORMALIZATION_PROBE hits=" + survival.totalHits + " dist=" + summarize(survival.distribution));
@@ -40,7 +40,7 @@ class IntraCategoryNormalizationProbeTest {
     @Test
     void underSampledApplicabilityStaysBoundedAndTargetsComplexTriggerFamilies() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator generator = ProbeFixtures.generator(registry);
 
         try {
             Method underSampledApplicabilityBoost = ProceduralAbilityGenerator.class.getDeclaredMethod(
@@ -73,7 +73,7 @@ class IntraCategoryNormalizationProbeTest {
     @Test
     void conditionalCompressionOnlyTriggersForHighTopThreeCategories() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator generator = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator generator = ProbeFixtures.generator(registry);
 
         WeightedCategoryProbe crafting = probeNormalizedWeights(generator, registry,
                 AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION, artifact(940_001L), craftingProfile());

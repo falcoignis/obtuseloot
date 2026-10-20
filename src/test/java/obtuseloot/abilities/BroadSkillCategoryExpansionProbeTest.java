@@ -22,9 +22,9 @@ class BroadSkillCategoryExpansionProbeTest {
     @Test
     void expandedCategoriesAreSampledAcrossNichesAndLineages() {
         AbilityRegistry registry = new AbilityRegistry();
-        ProceduralAbilityGenerator baseline = new ProceduralAbilityGenerator(registry);
+        ProceduralAbilityGenerator baseline = ProbeFixtures.generator(registry);
         LineageRegistry lineageRegistry = new LineageRegistry();
-        ProceduralAbilityGenerator lineageGenerator = new ProceduralAbilityGenerator(registry, null, lineageRegistry, new LineageInfluenceResolver());
+        ProceduralAbilityGenerator lineageGenerator = ProbeFixtures.generator(registry, lineageRegistry, new LineageInfluenceResolver());
 
         Map<String, Map<AbilityCategory, Double>> nicheDistribution = new LinkedHashMap<>();
         nicheDistribution.put("explorer", distributionByCategory(baseline, null, explorerProfile(), 36, 100_000L, null, 0.0D, 0.0D, 0.0D));
