@@ -1,7 +1,6 @@
 package obtuseloot.events;
 
 import obtuseloot.ObtuseLoot;
-import obtuseloot.abilities.AbilityMechanic;
 import obtuseloot.abilities.AbilityRuntimeContext;
 import obtuseloot.abilities.AbilitySource;
 import obtuseloot.abilities.AbilityTrigger;
@@ -17,7 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -102,7 +101,14 @@ public class NonCombatAbilityListener implements Listener {
             if (block.getType() == Material.CAMPFIRE || block.getType() == Material.SOUL_CAMPFIRE) {
                 ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.SOCIAL_INTERACT.id(), AbilityRuntimeContext.intentional(AbilitySource.SOCIAL_INTERACT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
             }
-            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_INSPECT, 1.0D, AbilitySource.BLOCK_INSPECT.id(), AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
+            // Wait until all interaction listeners have made their protection decisions.
+            Bukkit.getScheduler().runTask(ObtuseLoot.get(), () -> {
+                if (player.isOnline() && event.useInteractedBlock() != org.bukkit.event.Event.Result.DENY) {
+                    ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_INSPECT,
+                            1.0D, AbilitySource.BLOCK_INSPECT.id(), AbilityRuntimeContext.intentional(
+                                    AbilitySource.BLOCK_INSPECT, player.getWorld().getName(), player.getWorld().getEnvironment().name()), event);
+                }
+            });
         }
         if (event.getAction() == Action.RIGHT_CLICK_AIR && player.isSneaking()) {
             ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_RITUAL_INTERACT, 1.0D, AbilitySource.RITUAL_GESTURE.id(), AbilityRuntimeContext.intentional(AbilitySource.RITUAL_GESTURE, player.getWorld().getName(), player.getWorld().getEnvironment().name()));
@@ -119,14 +125,17 @@ public class NonCombatAbilityListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onHarvest(BlockBreakEvent event) {
-        Block block = event.getBlock();
-        if (!CROPS.contains(block.getType())) return;
-        boolean hasGentleHarvest = ArtifactProcessor.processAbilityTriggerWithResult(event.getPlayer(), AbilityTrigger.ON_BLOCK_HARVEST, 1.0D, AbilitySource.CROP_HARVEST.id(), AbilityRuntimeContext.intentional(AbilitySource.CROP_HARVEST, event.getPlayer().getWorld().getName(), event.getPlayer().getWorld().getEnvironment().name()))
-                .hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY);
-        if (hasGentleHarvest) {
-            Bukkit.getScheduler().runTaskLater(ObtuseLoot.get(), () -> block.getWorld().getBlockAt(block.getLocation()).setType(block.getType()), 1L);
-        }
+    public void onHarvest(BlockDropItemEvent event) {
+        if (!CROPS.contains(event.getBlockState().getType())) return;
+        // The block is now broken; retain its pre-break snapshot and use only real resulting drops.
+        // Dispatch after the drop event finishes, so cancellation by a later listener is respected.
+        Bukkit.getScheduler().runTask(ObtuseLoot.get(), () -> {
+            Player player = event.getPlayer();
+            if (event.isCancelled() || !player.isOnline()) return;
+            ArtifactProcessor.processAbilityTriggerWithResult(player, AbilityTrigger.ON_BLOCK_HARVEST,
+                    1.0D, AbilitySource.CROP_HARVEST.id(), AbilityRuntimeContext.intentional(
+                            AbilitySource.CROP_HARVEST, player.getWorld().getName(), player.getWorld().getEnvironment().name()), event);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

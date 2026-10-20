@@ -117,7 +117,10 @@ public class ArtifactUsageTracker {
                 context.source(),
                 System.currentTimeMillis()
         ));
+        signalCache.invalidate(artifact.getArtifactSeed());
         Map<String, MechanicUtilitySignal> signals = signalCache.getOrCompute(artifact.getArtifactSeed(), profile::utilitySignalsByMechanic);
+        // Selection reads this snapshot, so refresh it at observation time, not only at autosave.
+        artifact.setLastUtilityHistory(UtilityHistoryRollup.fromProfile(profile).encode());
         nichePopulationTracker.recordTelemetry(artifact.getArtifactSeed(), artifact.getLatentLineage(), signals);
 
         EcosystemTelemetryEmitter emitter = telemetryEmitter;
@@ -151,6 +154,11 @@ public class ArtifactUsageTracker {
                     Map.entry("niche_tags", nicheTags)
             ));
             attributes.putAll(abilityTelemetrySignals(result, context));
+            attributes.put("measurement_basis", result.observedAmount() != null ? "observed"
+                    : context.liveExecution() ? "not_observed" : "classified");
+            if (result.observedAmount() != null) {
+                attributes.put("observed_amount", String.valueOf(result.observedAmount()));
+            }
             emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
                     artifact.getArtifactSeed(),
                     artifact.getLatentLineage(),

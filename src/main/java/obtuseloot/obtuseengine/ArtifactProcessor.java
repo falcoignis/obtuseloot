@@ -123,6 +123,15 @@ public final class ArtifactProcessor {
                                                                         double value,
                                                                         String source,
                                                                         AbilityRuntimeContext runtimeContext) {
+        return processAbilityTriggerWithResult(player, trigger, value, source, runtimeContext, null);
+    }
+
+    public static AbilityDispatchResult processAbilityTriggerWithResult(Player player,
+                                                                        AbilityTrigger trigger,
+                                                                        double value,
+                                                                        String source,
+                                                                        AbilityRuntimeContext runtimeContext,
+                                                                        org.bukkit.event.Event liveEvent) {
         ObtuseLoot plugin = ObtuseLoot.get();
         ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
         Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
@@ -130,7 +139,11 @@ public final class ArtifactProcessor {
             return new AbilityDispatchResult(null, List.of()); // stored state unreadable; dispatch nothing
         }
         plugin.getArtifactUsageTracker().trackUse(artifact);
-        AbilityDispatchResult activated = triggerAbility(plugin, artifact, rep, trigger, value, source, runtimeContext);
+        ArtifactArchetypeValidator.requireValid(artifact, "ability dispatch");
+        AbilityEventContext eventContext = new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext, liveEvent);
+        AbilityDispatchResult activated = plugin.getItemAbilityManager() == null
+                ? new AbilityDispatchResult(eventContext, List.of())
+                : plugin.getItemAbilityManager().resolveDispatch(eventContext);
         plugin.getLoreEngine().refreshLore(player, artifact, rep);
         plugin.getArtifactManager().markDirty(player.getUniqueId());
         return activated;
@@ -241,7 +254,7 @@ public final class ArtifactProcessor {
         if (plugin.getItemAbilityManager() == null) {
             return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext), List.of());
         }
-        return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext));
+        return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext, null, true));
     }
 
     private static void recordMemoryEvent(ObtuseLoot plugin,

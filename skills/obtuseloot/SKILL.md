@@ -40,7 +40,7 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
 ## Roadmap (owner-decided order)
 
 1. **Green build and safety fixes:** signed seeds, analytics fixtures, storage-load failure (fatal at startup; at runtime refuse that player's artifact and retry), the permission root gate. Baseline safety fixes landed in PR #400; see `references/status.md` for the probe/health follow-up and current PR state.
-2. **Real ability effects** with outcome feedback into selection. Prioritize social, interaction and exploration; keep combat effects minimal (owner, 2026-10-20). Gentle Harvest and Material Insight are the approved first slice. At the baseline, `AbilityExecutor` applies no in-world effect.
+2. **Real ability effects** with outcome feedback into selection. Prioritize social, interaction and exploration; keep combat effects minimal (owner, 2026-10-20). Gentle Harvest and Material Insight implement the first slice. **Next: noncombat evolution timing**, explicitly deferred from that slice. See `references/status.md` for validation and refresh publication/merge state before relying on it.
 3. **Per-item identity.** Today it is one profile per player. No migration is needed; no player data exists anywhere.
 4. **Remove scaffolding,** each layer behind an ablation test.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
@@ -113,7 +113,7 @@ docker run --rm --user 1000:1000 -v "$PWD":/src -w /src \
 These are the facts most likely to matter. The full verified map, with the scaffolding inventory and the unverified-inference table, is `references/engine-map.md`.
 
 - **Seeds.** Artifact seeds come from `nextLong()`, so about half are negative. Any non-zero `long` is valid, and `0` means "not an artifact". **Never mask, `abs` or remap a seed;** that merges distinct identities. Seeds are stored signed in SQL BIGINT and in the item PDC.
-- **Abilities have no in-world effect.** `AbilityExecutor` returns labels; nothing happens in the world. Ability success telemetry measures classification, not gameplay.
+- **First measured effects:** Gentle Harvest replants with an existing drop after protection checks; Material Insight reports the inspected block's material, light and growth. Unfinished live effects and remapped variants return no-op. Offline classification is marked separately in telemetry and is not evidence of gameplay success. Read `docs/measured-ability-effects.md` in the repository for limitations and required server validation.
 - **Ecology runs live, not only in simulation.** It is timed by the wall clock (5 s evaluation throttle, 60 s cooldown), and its state is probably not persisted (inference). The decision is to move it to game time and persist it.
 - **Storage failure safety.** PR #400 replaced failure-as-missing-record behavior: startup storage failure is fatal; runtime failure refuses that player's state and retries. Failed saves stay dirty. Never regenerate an identity on a failed load; verify current code against the decision ledger.
 - **Permissions.**

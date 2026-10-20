@@ -1,5 +1,13 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-20: first measured interaction effects
+- Branch `feat/measured-ability-effects` builds on the baseline and canonical-skill PRs (#403 and #404). Refresh GitHub publication/merge state before acting. The owner explicitly authorized merging this current batch after completion and tests; this is not standing permission for future work.
+- Gentle Harvest replants one mature crop with one existing matching drop, honoring drop cancellation, placement-plugin denial, soil and conservative spawn checks. Material Insight delivers material/light/growth information for the inspected block. Report delivery is measured; player benefit is not established.
+- Live unimplemented effects and remapped mechanic/trigger variants return no-op. Offline classification remains explicit in telemetry. Utility-history snapshots and niche observations refresh immediately after outcomes instead of waiting for autosave/cache expiry.
+- Full local `clean package`: **423 tests across 82 classes, 0 failures, 0 errors, 0 skips**, Maven exit 0, **21:32**. Focused checks: **35 passing**. Seeded health maximum relative diversity loss remains **2.12%**. No weights, distribution targets or progression gates changed.
+- **Owner focus:** minimal combat effects; prioritize social, interaction and exploration. **Next: noncombat evolution timing**, deferred from this slice at the owner's request. Wild mutation stays held.
+- No server started or deployed. Tests use stateful API doubles and real Bukkit event classes; actual server/protection-plugin validation is pending the owner's chosen destination. See repository `docs/measured-ability-effects.md`.
+
 ## 2026-10-20: canonical skill moves into this repository
 - Owner requested the skill be copied into the repository and made canonical, with Claude informed. The source is now `skills/obtuseloot/`; root `AGENTS.md` and `CLAUDE.md` route here. Installed copies and external mirrors are noncanonical.
 - Private workspace paths and host-access details were removed from the published copy; the original skill is preserved in a verified private backup. Historical evidence and owner decisions remain. This migration changes guidance only, not plugin behavior. Until the migration PR is merged, retrieve the canonical folder from branch `docs/canonical-obtuseloot-skill`; do not replace it from a `main` checkout that does not contain it yet.

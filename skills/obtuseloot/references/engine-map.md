@@ -1,4 +1,11 @@
-# ObtuseLoot engine map (verified at HEAD fab9f2b, 2026-10-19)
+# ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
+
+**2026-10-20 follow-up:** the first effects slice implements Gentle Harvest and Material Insight with
+observed outcomes, protection checks and immediate utility-history updates. It also replaces the old
+post-break replant callback. Unfinished live effects return no-op. The baseline descriptions below
+remain historical; see `status.md` and the repository's `docs/measured-ability-effects.md` for the new
+implementation and its validation limits. Movement sensing and noncombat evolution timing remain
+separate follow-ups.
 
 This file condenses what the 2026-10-19 doc-ingest agents verified against source. The full evidence, with file:line citations, is in `ingest-2026-10-19-fab9f2b/`. Items marked **inference:** were not directly verified. "What confirms it" says how to settle each one.
 

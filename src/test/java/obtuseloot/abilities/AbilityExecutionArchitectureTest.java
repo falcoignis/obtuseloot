@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AbilityExecutionArchitectureTest {
 
     @Test
-    void dispatcherProducesStructuredResultsAndAnalytics() {
+    void unobservedHarvestProducesNoOpAndAnalytics() {
         ItemAbilityManager manager = new ItemAbilityManager((artifact, rep) -> profileWith(harvestAbility("Gentle Harvest")));
         manager.setTriggerSubscriptionIndexingEnabled(false);
         Artifact artifact = artifact(51L);
@@ -31,17 +31,18 @@ class AbilityExecutionArchitectureTest {
         assertEquals(1, dispatchResult.executions().size());
         AbilityExecutionResult execution = dispatchResult.executions().getFirst();
         assertEquals("survival.gentle_harvest", execution.abilityId());
-        assertEquals(AbilityExecutionStatus.SUCCESS, execution.status());
+        assertEquals(AbilityExecutionStatus.NO_OP, execution.status());
         assertEquals(AbilityOutcomeType.CROP_REPLANT, execution.outcomeType());
-        assertTrue(execution.meaningfulOutcome());
+        assertFalse(execution.meaningfulOutcome());
+        assertEquals(0.0D, execution.observedAmount());
 
         assertEquals(1L, manager.executionStatusCounts().get(AbilityExecutionStatus.TRIGGER_SEEN));
-        assertEquals(1L, manager.executionStatusCounts().get(AbilityExecutionStatus.SUCCESS));
-        assertEquals(1L, manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
+        assertEquals(1L, manager.executionStatusCounts().get(AbilityExecutionStatus.NO_OP));
+        assertNull(manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
     }
 
     @Test
-    void gentleHarvestGatingUsesMechanicIdentityNotDisplayText() {
+    void renamedHarvestStillRequiresAnObservedEffect() {
         ItemAbilityManager manager = new ItemAbilityManager((artifact, rep) -> profileWith(harvestAbility("Localized Crop Rhythm")));
         manager.setTriggerSubscriptionIndexingEnabled(false);
         Artifact artifact = artifact(77L);
@@ -54,7 +55,8 @@ class AbilityExecutionArchitectureTest {
                 "crop-harvest"
         ));
 
-        assertTrue(dispatchResult.hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY));
+        assertFalse(dispatchResult.hasSuccessfulMechanic(AbilityMechanic.HARVEST_RELAY));
+        assertEquals("harvest-unavailable", dispatchResult.executions().getFirst().suppressionReason());
         assertTrue(dispatchResult.presentationEffects().stream().noneMatch(text -> text.contains("Gentle Harvest")));
     }
 
@@ -139,7 +141,7 @@ class AbilityExecutionArchitectureTest {
     }
 
     @Test
-    void noOpAndMeaningfulOutcomesAreSeparatedAnalytically() {
+    void unobservedAndFlavorOutcomesBothRemainNoOps() {
         ItemAbilityManager manager = new ItemAbilityManager((artifact, rep) -> new AbilityProfile("mix", List.of(harvestAbility("Harvest"), flavorAbility())));
         manager.setTriggerSubscriptionIndexingEnabled(false);
 
@@ -151,7 +153,8 @@ class AbilityExecutionArchitectureTest {
                 "harvest"
         ));
 
-        assertEquals(1L, manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
+        assertNull(manager.meaningfulOutcomeByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
+        assertEquals(1L, manager.noOpByMechanicTrigger().get("HARVEST_RELAY@ON_BLOCK_HARVEST"));
         assertEquals(1L, manager.noOpByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST"));
         assertEquals(1L, manager.executionStatusByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST#NO_OP"));
         assertNull(manager.meaningfulOutcomeByMechanicTrigger().get("PULSE@ON_BLOCK_HARVEST"));
