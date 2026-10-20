@@ -102,7 +102,7 @@ docker run --rm --user 1000:1000 -v "$PWD":/src -w /src \
 
 ### Changes, commits, PRs
 
-- **Grouped PRs.** Batch related fixes, for example one "restore green baseline" PR. The owner reviews and merges. Never merge.
+- **Grouped PRs.** Batch related fixes, for example one "restore green baseline" PR. The owner reviews and merges unless explicitly authorizing a particular merge. Never infer standing merge permission from a one-batch authorization; see `references/decisions.md`.
 - **Show the owner the diff and the test result before pushing or opening a PR.**
 - No branch naming convention has been decided. History uses `codex/<task>` and `claude/<task>-<id>`.
 - Every commit carries the session's attribution trailers (Co-Authored-By / Claude-Session).
