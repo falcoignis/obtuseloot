@@ -247,7 +247,7 @@ class LineageInheritanceBiasSystemTest {
     }
 
     private Artifact artifact(long seed, String lineage) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
+        Artifact artifact = new Artifact(ownerFor(seed), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setLatentLineage(lineage);
         return artifact;
@@ -267,5 +267,10 @@ class LineageInheritanceBiasSystemTest {
 
     private double traitDelta(ArtifactGenome base, ArtifactGenome mutated, GenomeTrait trait) {
         return Math.abs(mutated.trait(trait) - base.trait(trait));
+    }
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }

@@ -129,7 +129,7 @@ class BroadSkillCategoryExpansionProbeTest {
     }
 
     private Artifact artifact(long seed, String lineageId) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
+        Artifact artifact = new Artifact(ownerFor(seed), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         artifact.setLatentLineage(lineageId == null ? "unassigned" : lineageId);
@@ -147,4 +147,9 @@ class BroadSkillCategoryExpansionProbeTest {
     private ArtifactMemoryProfile fighterProfile() { return new ArtifactMemoryProfile(6, 1.1D, 0.8D, 1.7D, 1.2D, 1.1D, 0.6D, 0.4D); }
     private ArtifactMemoryProfile ritualProfile() { return new ArtifactMemoryProfile(8, 1.2D, 1.0D, 0.8D, 0.8D, 0.9D, 1.5D, 0.5D); }
     private ArtifactMemoryProfile survivalProfile() { return new ArtifactMemoryProfile(8, 1.3D, 0.9D, 0.9D, 1.7D, 0.7D, 0.5D, 0.5D); }
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
 }

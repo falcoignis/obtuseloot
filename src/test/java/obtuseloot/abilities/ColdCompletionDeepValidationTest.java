@@ -324,7 +324,7 @@ class ColdCompletionDeepValidationTest {
     }
 
     private Artifact artifact(long seed, String lineageId) {
-        Artifact artifact = new Artifact(UUID.randomUUID(), "wooden_sword");
+        Artifact artifact = new Artifact(ownerFor(seed), "wooden_sword");
         artifact.setArtifactSeed(seed);
         artifact.setArtifactStorageKey("artifact:" + seed);
         artifact.setLatentLineage(lineageId == null ? "deep-cold" : lineageId);
@@ -395,4 +395,9 @@ class ColdCompletionDeepValidationTest {
                                    long multiHitTemplates,
                                    boolean noUniformFlattening,
                                    Map<String, Integer> templateDistribution) {}
+
+    // Owner bits feed lineage randomness; derive them from the seed so the probe is repeatable.
+    private static UUID ownerFor(long seed) {
+        return UUID.nameUUIDFromBytes(Long.toString(seed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
 }
