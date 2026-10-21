@@ -4,7 +4,7 @@ main:        obtuseloot.ObtuseLoot
 description: Convergence-based artifact progression with awakening, adaptive evolution, and ecosystem telemetry.
 authors:     [ falcoignis ]
 website:     ""
-api-version: "1.21"
+api-version: "26.2"
 softdepend: [PlaceholderAPI, LuckPerms, AuraSkills]
 
 commands:

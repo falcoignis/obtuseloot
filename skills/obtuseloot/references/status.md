@@ -1,5 +1,11 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-21: Minecraft 26.2 target migration (tested, prepared for review)
+- Owner selected Minecraft 26.2. Fresh clone of equipment PR #408 head `f2c56f8af50f347b59d49388909cfd9aa20cbe07`; #408 was open with CI passing when checked. This is a stacked follow-up, with no merge authorization.
+- Pins stable Purpur API `26.2.build.2633-stable`, Java 25 compiler/toolchain, all seven Java CI jobs and plugin metadata. Updates current README and canonical guidance. Corrects the removed speed attribute name and adapts the test fixture for server-backed attribute registries.
+- Final focused pass: 47 tests in five classes, zero failures/errors/skips, Maven exit 0. Full `clean package`: **493 tests in 96 classes, zero failures/errors/skips, Maven exit 0, 19:36**. All 505 source/resource/build-file hashes matched the frozen manifest. The JAR contains Java 25 bytecode, API 26.2 metadata and only soft plugin dependencies; optional API classes are not bundled. Generated tracked reports were restored. Both the official API and reviewed source JAR matched published SHA-256 digests.
+- Double jump remains next; the exact 26.2 API includes native jump input. No PacketEvents dependency, skill XP hook, server deployment or runtime configuration change is included. See `docs/minecraft-26.2-target.md`.
+
 ## 2026-10-21: equipment/passive and optional integration follow-up (tested, prepared for review)
 - Fresh clone from merged #407 at `4ea24fc4c2e72d8b007f69406c7425c6cee423d9`; its main CI subsequently passed. Branch `feat/equipment-ability-activation`. This batch has no merge authorization; #407's authorization ended with that completed batch.
 - Implements six equipped slots (elytra shares chest), per-item subscriptions/evolution windows, captured deferred input identity, duplicate-hand callback handling, passive leases, shared reconciliation and eligible per-item credit. Existing combat/admin targeting remains main-hand based.

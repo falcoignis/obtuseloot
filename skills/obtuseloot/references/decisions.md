@@ -74,7 +74,7 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 | PRs | **Grouped PRs** (related fixes batched). The owner reviews and merges unless explicitly authorizing a particular merge. The 2026-10-20 authorization covered the effects batch and its prerequisites. **Scoped authorization, 2026-10-21:** during the local-inheritance continuation, the owner instructed "once you've finished make the merge". This authorizes merging the current completed, tested inheritance batch and its timing prerequisite #406; it is not standing authorization for future work. |
 | Releases | **`v`-prefixed tags** through `release.yml`. The next release bumps the version and gets corrected release notes. Leave `0.9.50-beta` alone. |
 | Nightly CI | **Leave disabled.** |
-| Minecraft / Java target | **Match HomesteadCraft.** Look up its current server version at task time. Don't hard-code it here. |
+| Minecraft / Java target | **Target Minecraft 26.2** (owner, 2026-10-21), using the stable Purpur 26.2 API and **Java 25**. Align Maven, all Java CI jobs, plugin metadata and build instructions. This supersedes the old 1.21.1/Java 21 target; it does not authorize server upgrades or deployment. |
 
 ## Roadmap order
 
