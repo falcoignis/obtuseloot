@@ -10,9 +10,24 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TriggerSubscriptionIndexIdentityRefreshTest {
+
+    @Test void multipleItemsForOneHolderDoNotInvalidateEachOthersSubscriptions() {
+        var index = new TriggerSubscriptionIndex(); var owner = UUID.randomUUID();
+        var manager = new ItemAbilityManager((a, r) -> new AbilityProfile("test", List.of(ability("seed-" + a.getArtifactSeed()))));
+        var first = artifact(owner, 1, obtuseloot.artifacts.ArtifactStorageKeys.create());
+        var second = artifact(owner, 2, obtuseloot.artifacts.ArtifactStorageKeys.create());
+        var a = index.getOrRebuild(owner, first, first.getItemReputation(), manager, "first");
+        index.getOrRebuild(owner, second, second.getItemReputation(), manager, "second");
+        assertSame(a, index.getOrRebuild(owner, first, first.getItemReputation(), manager, "again"));
+        assertEquals(2, index.rebuildCount());
+        index.remove(owner, second.getArtifactStorageKey());
+        assertSame(a, index.get(owner, first.getArtifactStorageKey()));
+        index.remove(owner, "missing-key");
+    }
 
     @Test
     void getOrRebuildRefreshesWhenArtifactIdentityChanges() {

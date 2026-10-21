@@ -927,12 +927,12 @@ public class DebugCommand {
         Player target = resolveTarget(sender, label, args, 1, "subscriptions");
         if (target == null) return true;
 
-        PlayerArtifactTriggerMap map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(target);
+        if (artifact == null) { sender.sendMessage("§cNo readable main-hand artifact."); return true; }
+        PlayerArtifactTriggerMap map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId(), artifact);
         if (map == null) {
-            Artifact artifact = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
-            ArtifactReputation rep = plugin.getReputationManager().get(target.getUniqueId());
-            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, rep, "debug-subscriptions-view");
-            map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId());
+            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, artifact.getItemReputation(), "debug-subscriptions-view");
+            map = plugin.getItemAbilityManager().triggerMap(target.getUniqueId(), artifact);
         }
 
         sender.sendMessage("§dSubscriptions for §f" + target.getName()

@@ -7,7 +7,12 @@ import org.bukkit.event.Event;
 public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                   double value, String source,
                                   AbilityRuntimeContext runtimeContext, Event liveEvent, boolean liveExecution,
-                                  obtuseloot.ecology.WorldPosition position) {
+                                  obtuseloot.ecology.WorldPosition position, AbilityActivation activation) {
+    public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
+                               double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent,
+                               boolean liveExecution, obtuseloot.ecology.WorldPosition position) {
+        this(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, null);
+    }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent, boolean liveExecution) {
         this(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, null);
@@ -16,7 +21,10 @@ public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, Art
         return position != null ? position : obtuseloot.ecology.WorldPosition.fromEvent(liveEvent);
     }
     public AbilityEventContext withPosition(obtuseloot.ecology.WorldPosition location) {
-        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location);
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location, activation);
+    }
+    public AbilityEventContext withActivation(AbilityActivation activation) {
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation);
     }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent) {

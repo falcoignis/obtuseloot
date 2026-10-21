@@ -161,6 +161,26 @@ class EngineSchedulerTimingTest {
         assertEquals(2, RuntimeSettings.get().noncombatUpdateIntervalTicks());
     }
 
+    @Test void twoNonMainHandItemsForTheSameHolderEvolveInTheirOwnWindows() {
+        var items = new ArrayList<Artifact>();
+        for (int i = 0; i < 2; i++) {
+            var item = new Artifact(owner, "elytra"); item.setArtifactSeed(100 + i);
+            item.setArtifactStorageKey(obtuseloot.artifacts.ArtifactStorageKeys.create());
+            artifacts.registerItem(item); items.add(item);
+        }
+        for (var item : items) {
+            for (int i = 0; i < 100 && item.getItemReputation().getTotalScore() < 10; i++) {
+                abilities.resolveDispatch(new AbilityEventContext(first.trigger(), item, item.getItemReputation(), 1,
+                        "distinct-" + i, AbilityRuntimeContext.intentional(AbilitySource.OTHER), null, true));
+            }
+            assertTrue(item.getItemReputation().getTotalScore() >= 10);
+        }
+        advance(100);
+        for (var item : items) assertTrue(item.getEvolutionPath().endsWith("-formed"));
+        assertSame(artifact, artifacts.getLoadedArtifacts().get(owner), "Equipment evolution does not replace the main-hand command target");
+        assertEquals(0, reputation.getTotalScore());
+    }
+
     private void advance(int ticks) { for (int i = 0; i < ticks; i++) tick.run(); }
 
     private void dispatch(String source) {
@@ -184,6 +204,9 @@ class EngineSchedulerTimingTest {
     }
 
     private static final class Store implements PlayerStateStore {
+        private final Map<String, Artifact> items = new HashMap<>();
+        public Artifact loadArtifactProfile(String key) { return items.get(key); }
+        public void saveArtifactProfile(Artifact item) { items.put(item.getArtifactStorageKey(), item); }
         private final Map<UUID, Artifact> artifacts = new HashMap<>();
         private final Map<UUID, ArtifactReputation> reputations = new HashMap<>();
         public Artifact loadArtifact(UUID id) { return artifacts.get(id); }

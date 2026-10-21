@@ -11,7 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class TriggerSubscriptionIndex {
-    private final Map<UUID, PlayerArtifactTriggerMap> byPlayer = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<String, PlayerArtifactTriggerMap>> byPlayer = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerArtifactTriggerMap> latest = new ConcurrentHashMap<>();
     private final LongAdder rebuildCount = new LongAdder();
     private final LongAdder rebuildNanos = new LongAdder();
 
@@ -40,14 +41,18 @@ public final class TriggerSubscriptionIndex {
                 reason,
                 System.nanoTime() - start
         );
-        byPlayer.put(playerId, map);
+        byPlayer.computeIfAbsent(playerId, ignored -> new ConcurrentHashMap<>()).put(artifact.getArtifactStorageKey(), map);
+        latest.put(playerId, map);
         rebuildCount.increment();
         rebuildNanos.add(map.rebuildNanos());
         return map;
     }
 
+    public PlayerArtifactTriggerMap get(UUID playerId, String key) {
+        return byPlayer.getOrDefault(playerId, Map.of()).get(key);
+    }
     public PlayerArtifactTriggerMap get(UUID playerId) {
-        return byPlayer.get(playerId);
+        return latest.get(playerId);
     }
 
     public PlayerArtifactTriggerMap getOrRebuild(UUID playerId,
@@ -55,7 +60,7 @@ public final class TriggerSubscriptionIndex {
                                                  ArtifactReputation reputation,
                                                  ItemAbilityManager manager,
                                                  String reason) {
-        PlayerArtifactTriggerMap existing = byPlayer.get(playerId);
+        PlayerArtifactTriggerMap existing = byPlayer.getOrDefault(playerId, Map.of()).get(artifact.getArtifactStorageKey());
         if (existing != null && existing.matchesArtifactIdentity(artifact.getArtifactSeed(), artifact.getArtifactStorageKey())) {
             return existing;
         }
@@ -64,10 +69,20 @@ public final class TriggerSubscriptionIndex {
 
     public void remove(UUID playerId) {
         byPlayer.remove(playerId);
+        latest.remove(playerId);
+    }
+
+    public void remove(UUID playerId, String itemKey) {
+        var maps = byPlayer.get(playerId);
+        if (maps == null) return;
+        var removed = maps.remove(itemKey);
+        if (removed != null) latest.remove(playerId, removed);
+        if (maps.isEmpty()) byPlayer.remove(playerId, maps);
     }
 
     public void clear() {
         byPlayer.clear();
+        latest.clear();
     }
 
     public int playerCount() {

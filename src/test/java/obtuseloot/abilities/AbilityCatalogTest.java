@@ -15,7 +15,7 @@ class AbilityCatalogTest {
     void livePoolContainsOnlyImplementedEntriesAndRejectsUnsupportedMutations() {
         var catalog = new AbilityRegistry().implementedOnly();
         assertFalse(catalog.templates().isEmpty());
-        assertTrue(catalog.registrations().stream().allMatch(entry -> entry.liveEffect() != null));
+        assertTrue(catalog.registrations().stream().allMatch(AbilityRegistration::implemented));
         var t = catalog.templates().getFirst();
         var original = definition(t);
         var variant = new AbilityDefinition(original.id(), original.name(), original.family(), AbilityTrigger.ON_MEMORY_EVENT,

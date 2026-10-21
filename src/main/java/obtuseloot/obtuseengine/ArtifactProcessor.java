@@ -133,6 +133,15 @@ public final class ArtifactProcessor {
                                                                         AbilityRuntimeContext runtimeContext,
                                                                         org.bukkit.event.Event liveEvent) {
         ObtuseLoot plugin = ObtuseLoot.get();
+        if (plugin.getEquipmentAbilities() != null) {
+            var input = liveEvent instanceof org.bukkit.event.player.PlayerInteractEvent interaction
+                    ? obtuseloot.abilities.AbilityInput.secondary(interaction.getHand(), interaction.getAction())
+                    : liveEvent instanceof org.bukkit.event.player.PlayerInteractAtEntityEvent interaction
+                    ? obtuseloot.abilities.AbilityInput.secondary(interaction.getHand(), null)
+                    : obtuseloot.abilities.AbilityInput.event();
+            var token = plugin.getEquipmentAbilities().capture(player, input);
+            return plugin.getEquipmentAbilities().dispatch(player, token, trigger, value, source, runtimeContext, liveEvent);
+        }
         Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
         ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
@@ -253,6 +262,12 @@ public final class ArtifactProcessor {
         ArtifactArchetypeValidator.requireValid(artifact, "ability dispatch");
         if (plugin.getItemAbilityManager() == null) {
             return new AbilityDispatchResult(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext), List.of());
+        }
+        if (plugin.getEquipmentAbilities() != null) {
+            var player = org.bukkit.Bukkit.getPlayer(artifact.getOwnerId());
+            if (player == null) return new AbilityDispatchResult(null, List.of());
+            var token = plugin.getEquipmentAbilities().capture(player, obtuseloot.abilities.AbilityInput.event());
+            return plugin.getEquipmentAbilities().dispatch(player, token, trigger, value, source, runtimeContext, null);
         }
         return plugin.getItemAbilityManager().resolveDispatch(new AbilityEventContext(trigger, artifact, rep, value, source, runtimeContext, null, true));
     }

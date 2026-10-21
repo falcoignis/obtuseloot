@@ -20,8 +20,9 @@ public final class MaterialInsightEffect implements LiveAbilityEffect {
     @Override
     public AbilityExecutionResult execute(AbilityDefinition definition, AbilityEventContext context, int stage) {
         if (!(context.liveEvent() instanceof PlayerInteractEvent event)
-                || event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND
-                || event.getClickedBlock() == null || event.useInteractedBlock() == Event.Result.DENY
+                || event.getAction() != Action.RIGHT_CLICK_BLOCK
+                || (context.activation() == null ? event.getHand() != EquipmentSlot.HAND : event.getHand() != context.activation().slot())
+                || event.getClickedBlock() == null || event.useInteractedBlock() == Event.Result.DENY || event.useItemInHand() == Event.Result.DENY
                 || !event.getPlayer().isOnline() || !Bukkit.isPrimaryThread()) {
             return AbilityExecutionResult.observed(definition, context, AbilityOutcomeType.INFORMATION, 0, "inspection-unavailable", null);
         }

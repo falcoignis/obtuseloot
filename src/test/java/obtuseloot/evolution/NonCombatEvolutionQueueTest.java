@@ -110,6 +110,22 @@ class NonCombatEvolutionQueueTest {
 
     private void unexpectedFailure(UUID owner, RuntimeException error) { fail(error); }
 
+    @Test
+    void sameHolderKeepsIndependentItemWindowsAndItemFlushIsNarrow() {
+        var queue = new NonCombatEvolutionQueue(); var first = artifact(); var second = artifact();
+        first.setArtifactStorageKey(obtuseloot.artifacts.ArtifactStorageKeys.create());
+        second.setArtifactStorageKey(obtuseloot.artifacts.ArtifactStorageKeys.create());
+        queue.observe(observation(first, first.getItemReputation(), .4, true, 1.0));
+        queue.observe(observation(second, second.getItemReputation(), .7, true, 1.0));
+        assertEquals(2, queue.pendingCount());
+        var flushed = new ArrayList<NonCombatEvolutionQueue.Pending>();
+        queue.flush(first, flushed::add, this::unexpectedFailure);
+        assertEquals(1, queue.pendingCount()); assertSame(first, flushed.getFirst().artifact());
+        queue.flush(first.getOwnerId(), flushed::add, this::unexpectedFailure);
+        assertEquals(2, flushed.size()); assertSame(second, flushed.getLast().artifact());
+        assertEquals(0, queue.pendingCount());
+    }
+
     private Artifact artifact() {
         var artifact = new Artifact(new UUID(0, 1), "wooden_sword");
         artifact.setArtifactSeed(-1);

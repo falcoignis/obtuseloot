@@ -1,108 +1,132 @@
-# Equipment and ability activation design
+# Equipment abilities and integrations
 
-Owner requirements, 2026-10-21: support passive abilities, main-hand and off-hand
-use, secondary click, armor and elytra. Speed increases and double jump are example
-abilities. Support PlaceholderAPI and LuckPerms. PacketEvents is optional and should
-be used only when a required feature cannot work adequately through the server API.
+The equipment follow-up implements independent activation for main hand, off hand,
+head, chest, legs and feet. Elytra uses the chest slot. Double jump is the next
+movement slice; it is not implemented here. This extends the per-item inheritance
+foundation without changing ecology weights, progression gates or wild mutation.
 
-This is the design for the next implementation slice, not a claim that these features
-are implemented. The local-inheritance batch still activates one main-hand artifact.
-Its per-item profiles, genomes, reputation and ancestry are reusable across all slots;
-the current single-active-item binding and player-indexed subscriptions must change
-before multiple equipped artifacts can execute safely.
+## Equipment identity and evolution
 
-## Equipment is a set of individuals
+`EquipmentAbilityService` reconciles actual equipped items, never the rest of the
+inventory. Event callbacks reconcile after inventory changes, with a shared five-game-tick
+safety pass. Join, slot changes, swaps, clicks/drags, breakage, drops, world changes,
+death, respawn and disconnect participate in the lifecycle. Only tracked item profiles
+are resolved; unreadable slots remain unavailable while healthy gear keeps working.
 
-Reconcile the player's equipped artifacts into bindings for main hand, off hand,
-head, chest, legs and feet. Elytra occupies the chest slot; it is not another
-simultaneous armor slot. Bindings carry the item storage key, seed and equipment slot.
-Two items held by one player never share reputation, history or outcome windows.
-One item identity cannot receive duplicate credit through two slot bindings.
+Bindings capture storage key and seed. Duplicate bindings for one identity are rejected,
+including simultaneous claims by different holders. Normal trades work after the old
+holder releases the item. A traded item retains its genome, reputation and ancestry.
+Equipped profiles are pinned in the existing cache; the memory bound does not delete gear.
 
-Inventory contents are not equipped artifacts. Missing or corrupt tracked profiles
-remain unavailable under the existing load guard; never replace them with a player
-profile. Resolving equipment must not create items, change ancestry or invent success.
-Equipping, removing or trading an item must not reset its identity or genome.
+Subscriptions and measured-outcome windows are now keyed by holder **and item**, so
+one item's outcome cannot overwrite another equipped item's window. Unequipping flushes
+that individual's earned state and preserves retryable saves. Main-hand targeting remains
+for the existing administrative commands and combat reputation paths. Armor does not
+receive copies of main-hand kill credit. Scheduled reputation decay and instability cleanup
+include equipped profiles without processing a shared instance twice.
 
-Reconcile on equipment and selected-slot changes and on join/respawn, with a bounded
-game-tick reconciliation as a safety net. Include drag, shift click, hand swap,
-breakage, drop, death, world changes and disconnect. Compare identities, not just
-material names. Subscription refresh and pending-outcome flush must target the
-affected individual, rather than replacing every equipped item's state.
+## Catalog and input
 
-## One catalog, explicit activation requirements
+A registration owns its metadata, activation policy, eligible slots and either a live
+event handler or a passive handler. Add/remove an ability in the shared catalog; no
+ability-specific branch is needed in equipment scheduling, outcome windows or reproduction.
+Catalog code changes require restart. Indexed and unindexed live dispatch reuse the same
+selected equipment profile; changing dispatch mode does not trigger another selection roll. Unsupported procedural variants retain their executable
+base definition as before.
 
-Extend the existing shared ability registration with activation metadata: eligible
-equipment slots, activation mode and event/input requirements. Modes distinguish
-passive state, passive event reactions and deliberate actions. Existing trigger
-metadata continues to describe the event; a right click is input, not a substitute
-for an ecological outcome. New abilities should need one registration and a handler,
-without special cases in the scheduler or reproduction pool.
+Modes are deliberate action, event reaction and passive state. A secondary-click input
+records the actual hand. Delayed interaction/harvest/sensing work captures equipment
+identity before scheduling and validates it again before execution, including world changes.
+A swap, replacement or reseed cannot transfer old action credit to the newly held item.
 
-Dispatch context must identify the contributing item, slot, hand when applicable,
-action and relevant world position. An interaction from the off hand must never be
-credited to whichever item is currently in the main hand. Normalize server events
-so two hand callbacks do not accidentally execute the same logical action twice.
-If deliberate abilities may run for both hands, that must be explicit registration
-behavior rather than an accidental consequence of duplicate callbacks.
+For a secondary action, duplicate callbacks for the same ability, game tick and target
+share an execution record across hands. Only a handler that actually executes claims it;
+a denied main-hand action does not consume the off-hand opportunity. Block targets include
+all three coordinates. This deduplicates callbacks rather than awarding every equipped
+copy full credit for one world change. Distinct registered abilities can still react.
 
-Delayed work captures the original item identity and verifies it is still eligible
-before executing. Switching an item between click and execution must not transfer
-the old action or credit to the new item. Final cancellation/protection decisions,
-item-use denial and vanilla interactions must be respected. Input handling must not
-consume ordinary chest, door or item actions merely because an artifact is equipped.
+Dispatch respects final event cancellation and interaction/item-use denial. It does not
+uncancel an event, consume ordinary input or replace vanilla break/harvest events.
+Gentle Harvest still fires its protection placement event and pays one existing planting
+item. Material Insight can now execute from an explicitly bound off-hand artifact.
 
-## Passive effect ownership and measured results
+## Owned passive effects
 
-Passive effects need an idempotent apply/update/remove lifecycle. Keep an owned
-effect ledger keyed by player, item identity and ability registration. Reconciliation
-does not repeatedly add the same speed modifier. Removing equipment, disabling an
-ability or losing permission releases only the modifiers and resources this system
-owns. Do not overwrite another plugin's movement state or remove its effects.
+A passive handler proposes a contribution with a stacking group, strength, revision and
+an apply callback returning a release lease. The controller applies a contribution once,
+updates it only when its identity or behavior revision changes, and removes only its own
+resources on removal, permission loss, death, world transition or shutdown. Failed removal
+retains ownership and retries before installing a replacement. Handlers must include all
+behavior-changing inputs in their revision and undo partial setup if applying throws.
 
-Use the existing game-time scheduler to reconcile registered passives; avoid one
-task per item/ability and avoid rebuilding all profiles every tick. Attribute measured
-benefits/costs to the responsible item. Merely being equipped, applying a modifier,
-checking a condition or ticking must not generate successful outcomes each tick.
-Shared outcomes need an explicit contribution rule before awarding multiple items
-the full credit. Keep reproduction generic and item-scoped.
+Fleetfoot is the first real passive: eligible equipped gear adds a walking movement-speed
+modifier. It uses a transient, namespaced additive-base attribute modifier and never writes
+base speed, flight flags, potion effects or another plugin's modifier. It is inactive while
+dead, flying, gliding, riding, or outside survival/adventure. No double-jump or flight grant
+is included.
 
-For speed and double jump, settle effect strength, stacking, cooldown/charges and
-movement-state rules before enabling them. Double jump must coexist with creative
-flight, spectator mode, elytra gliding and server movement/protection controls; do not
-grant unrestricted flight as an implementation shortcut. PacketEvents is a possible
-input adapter only after a server-API limitation is reproduced, not a requirement
-for the core equipment model.
+```yaml
+abilities:
+  passive-speed:
+    bonus: 0.05
+    stacking: strongest # strongest or additive
+```
 
-## Required integration support
+The owner approved the 5% default, strongest-copy default, and an additive option.
+`strongest` applies one contributor per group. `additive` applies the sum of the equipped
+contributions against base movement speed: two 5% artifact bonuses give +10%, never
+`1.05 * 1.05`. Other plugins retain control of their own speed changes; this option does
+not redefine their calculations. Zero disables the bonus. Invalid modes, negative amounts
+and nonfinite amounts are rejected without replacing the runtime settings snapshot.
 
-PlaceholderAPI and LuckPerms are supported integration targets, not discretionary
-feature ideas. Their implementation is pending; this batch adds no expansion or
-integration dependency. Whether either plugin must be installed for the core plugin
-to enable is not decided by the owner's requirement to support it.
+Merely wearing an item, checking its conditions, or installing a modifier generates no
+successful outcome, reputation or local reproductive evidence. Measurement of passive
+benefit remains future work; this slice does not invent fitness from idle ticks.
 
-- PlaceholderAPI: provide read-only, slot-qualified artifact and ability values.
-  Querying display values must not activate gear, load or mutate profiles, award
-  outcomes or select parents. Define unavailable/empty/offline results. Serve safe
-  snapshots so asynchronous placeholder consumers do not read mutable Bukkit state.
-- LuckPerms: honor effective permissions for commands and registered ability access,
-  including explicit denials and context changes. Use the server permission bridge
-  where sufficient; use the LuckPerms API only for features that require it. Permission
-  loss must reconcile active passive effects. Do not write groups or grants, grant
-  privileges through placeholder strings, or bypass checks for OPs automatically.
-- PacketEvents: keep any packet handling in an adapter feeding the same activation
-  context. Marshal execution to the server thread, validate input against current
-  equipment/world state and retain protection checks. Core evolution and persistence
-  must not depend on packet classes.
+## Standalone operation and supported integrations
 
-## Implementation acceptance checks
+The core has no required plugin dependency. PlaceholderAPI, LuckPerms and AuraSkills are
+soft dependencies, detected at normal boot. PacketEvents is not required or installed.
+Integration code remains outside core evolution and persistence. Other plugins' data,
+permissions and configuration are never rewritten by these hooks.
 
-Before claiming support, test simultaneous independent main/off-hand and worn-item
-state, elytra chest replacement, equipment change during deferred work, duplicate
-hand callbacks, denied interactions, persistent item identity across trades/restarts,
-and per-item measured credit. Test repeated reconciliation, removal, death, disconnect
-and permission loss without modifier leakage. Exercise speed stacking and double-jump
-movement-state rules once those effects are specified. Verify PlaceholderAPI lifecycle,
-slot results and read-only asynchronous queries, plus LuckPerms allow/deny/context
-changes. Run actual server compatibility checks before deployment; controlled API
-doubles alone do not establish movement or protection-plugin compatibility.
+- **PlaceholderAPI:** an internal expansion registers when present, persists through a PAPI
+  expansion reload, and unregisters on disable. Requests read immutable snapshots, including
+  from asynchronous consumers; they cannot load profiles, activate gear or award outcomes.
+  An incompatible/failed optional expansion is logged without disabling the core.
+- **LuckPerms:** effective server permission checks gate actions and passives. The global
+  node is `obtuseloot.abilities`; individual nodes are `obtuseloot.ability.<catalog-id>`,
+  for example `obtuseloot.ability.mobility.fleetfoot`. Nodes default to allowed, with
+  explicit denials honored even for OPs. Changed permission contexts reconcile through
+  the next equipment pass, at most five game ticks later. No users/groups/grants are written.
+- **AuraSkills:** boot detection and ordinary-event coexistence are included. This slice
+  never listens to/cancels XP gain events, adds skill XP, changes mana, writes stats or
+  removes placed-block tracking. Its skill-data API is not queried, so it cannot block
+  standalone startup or read AuraSkills before readiness. This is a coexistence baseline,
+  not a full skills/stat integration. See [the compatibility review](plugin-compatibility.md).
+
+Use `%obtuseloot_<slot>_<field>%`. Slots: `mainhand`, `offhand`, `head`, `chest`, `legs`,
+`feet`. Fields: `present`, `name`, `key`, `seed`, `lineage`, `generation`, `evolution`,
+`reputation`, `abilities`, `passives`. Ability names reflect eligible permitted definitions;
+`passives` lists active catalog IDs. `%obtuseloot_equipped_count%` gives the snapshot count.
+`%obtuseloot_integration_placeholderapi%`, `%obtuseloot_integration_luckperms%` and
+`%obtuseloot_integration_auraskills%` report **boot detection**, not compatibility certification.
+Missing/offline slots return empty text, numeric zero, or `false`; unknown fields return
+`null` so PlaceholderAPI can leave them unresolved. Snapshots may lag by five ticks.
+
+## Verification boundary
+
+Focused verification covers six independent slots, chest/elytra replacement, duplicate
+identities, deferred swaps/reseeds, off-hand input, duplicate callbacks, cancellation,
+permission denial/context changes, independent evolution, passive removal/retry, additive
+speed, asynchronous read-only placeholders and optional APIs deliberately absent from a
+class loader. Final full `clean package`: 493 tests across 96 classes, zero failures/errors/skips,
+Maven exit 0, 29:46. Focused verification: 72 tests across 11 classes passed. All 505
+source/resource/build-file hashes matched the verified manifest. Packaged plugin metadata
+contains only soft plugin dependencies, and optional API classes are not bundled.
+
+These tests use controlled API doubles and actual Bukkit event/attribute objects. No live
+server was started. Full plugin startup on a real server, live movement/anticheat behavior,
+AuraSkills equipment restoration/global requirement interactions and simultaneous crop
+replanting still need compatibility testing. Do not claim full cross-plugin certification
+from boot detection or these unit/integration tests.

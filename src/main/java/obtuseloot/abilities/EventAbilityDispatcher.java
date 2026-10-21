@@ -17,6 +17,7 @@ public final class EventAbilityDispatcher {
         List<AbilityExecutionResult> executions = new ArrayList<>(bindings.size());
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (ArtifactTriggerBinding binding : bindings) {
+            if (!executor.eligible(binding.definition(), context)) continue;
             manager.recordExecution(attempted(binding.definition(), context));
             AbilityExecutionResult result = executeWithBudget(binding.definition(), context, stage, manager);
             executions.add(result);
@@ -31,7 +32,7 @@ public final class EventAbilityDispatcher {
         List<AbilityExecutionResult> executions = new ArrayList<>();
         int stage = ArtifactEvolutionStage.resolveStage(context.artifact());
         for (AbilityDefinition def : profile.abilities()) {
-            if (def.trigger() == context.trigger()) {
+            if (def.trigger() == context.trigger() && executor.eligible(def, context)) {
                 manager.recordExecution(attempted(def, context));
                 AbilityExecutionResult result = executeWithBudget(def, context, stage, manager);
                 executions.add(result);

@@ -5,6 +5,7 @@ description: Convergence-based artifact progression with awakening, adaptive evo
 authors:     [ falcoignis ]
 website:     ""
 api-version: "1.21"
+softdepend: [PlaceholderAPI, LuckPerms, AuraSkills]
 
 commands:
   obtuseloot:
@@ -46,6 +47,9 @@ commands:
     aliases:      [ ol ]
 
 permissions:
+  obtuseloot.abilities:
+    description: Allow equipped artifact abilities; individual ability nodes may be denied separately.
+    default: true
   obtuseloot.help:
     description: View the /obtuseloot command reference.
     default: true

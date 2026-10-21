@@ -50,6 +50,9 @@ public class ObtuseLoot extends JavaPlugin {
     private ArtifactItemStorage artifactItemStorage;
     private obtuseloot.ecology.LocalEcosystem localEcosystem;
     public obtuseloot.ecology.LocalEcosystem getLocalEcosystem() { return localEcosystem; }
+    private obtuseloot.equipment.EquipmentAbilityService equipmentAbilities;
+    private Runnable integrationShutdown = () -> { };
+    public obtuseloot.equipment.EquipmentAbilityService getEquipmentAbilities() { return equipmentAbilities; }
     private ReputationManager reputationManager;
     private CombatContextManager combatContextManager;
     private EvolutionEngine evolutionEngine;
@@ -105,6 +108,8 @@ public class ObtuseLoot extends JavaPlugin {
         DashboardBootstrap.initialize(context);
         CommandBootstrap.register(context);
         assignBootstrappedComponents(context);
+        equipmentAbilities = new obtuseloot.equipment.EquipmentAbilityService(this);
+        integrationShutdown = obtuseloot.integrations.IntegrationSupport.enable(this);
         writeInitialReports();
 
         environmentalPressureTask = EngineBootstrap.scheduleEnvironmentalPressureTask(this, experienceEvolutionEngine,
@@ -149,6 +154,12 @@ public class ObtuseLoot extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        try { integrationShutdown.run(); }
+        catch (RuntimeException exception) { getLogger().log(java.util.logging.Level.SEVERE, "Integration shutdown failed", exception); }
+        if (equipmentAbilities != null) {
+            try { equipmentAbilities.shutdown(); }
+            catch (RuntimeException exception) { getLogger().log(java.util.logging.Level.SEVERE, "Equipment shutdown failed; continuing persistence cleanup", exception); }
+        }
         if (engineScheduler != null) {
             engineScheduler.stopAll();
         }
