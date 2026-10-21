@@ -353,3 +353,8 @@ abilities:
   passive-speed:
     bonus: 0.05
     stacking: strongest # strongest or additive
+  # Enable only after validating movement/protection compatibility on your server.
+  double-jump:
+    enabled: false
+    upward-velocity: 0.42
+    cooldown-ticks: 60

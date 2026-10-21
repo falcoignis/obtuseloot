@@ -51,6 +51,8 @@ public class ObtuseLoot extends JavaPlugin {
     private obtuseloot.ecology.LocalEcosystem localEcosystem;
     public obtuseloot.ecology.LocalEcosystem getLocalEcosystem() { return localEcosystem; }
     private obtuseloot.equipment.EquipmentAbilityService equipmentAbilities;
+    private obtuseloot.movement.AirJumpService airJumps;
+    public obtuseloot.movement.AirJumpService getAirJumps() { return airJumps; }
     private Runnable integrationShutdown = () -> { };
     public obtuseloot.equipment.EquipmentAbilityService getEquipmentAbilities() { return equipmentAbilities; }
     private ReputationManager reputationManager;
@@ -109,6 +111,7 @@ public class ObtuseLoot extends JavaPlugin {
         CommandBootstrap.register(context);
         assignBootstrappedComponents(context);
         equipmentAbilities = new obtuseloot.equipment.EquipmentAbilityService(this);
+        airJumps = new obtuseloot.movement.AirJumpService(this);
         integrationShutdown = obtuseloot.integrations.IntegrationSupport.enable(this);
         writeInitialReports();
 
@@ -154,6 +157,7 @@ public class ObtuseLoot extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (airJumps != null) airJumps.clear();
         try { integrationShutdown.run(); }
         catch (RuntimeException exception) { getLogger().log(java.util.logging.Level.SEVERE, "Integration shutdown failed", exception); }
         if (equipmentAbilities != null) {

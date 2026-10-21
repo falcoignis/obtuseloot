@@ -1,8 +1,8 @@
 # Equipment abilities and integrations
 
 The equipment follow-up implements independent activation for main hand, off hand,
-head, chest, legs and feet. Elytra uses the chest slot. Double jump is the next
-movement slice; it is not implemented here. This extends the per-item inheritance
+head, chest, legs and feet. Elytra uses the chest slot. The opt-in native
+[Double Jump follow-up](double-jump.md) adds an input-triggered movement effect. This extends the per-item inheritance
 foundation without changing ecology weights, progression gates or wild mutation.
 
 ## Equipment identity and evolution
@@ -62,8 +62,7 @@ behavior-changing inputs in their revision and undo partial setup if applying th
 Fleetfoot is the first real passive: eligible equipped gear adds a walking movement-speed
 modifier. It uses a transient, namespaced additive-base attribute modifier and never writes
 base speed, flight flags, potion effects or another plugin's modifier. It is inactive while
-dead, flying, gliding, riding, or outside survival/adventure. No double-jump or flight grant
-is included.
+dead, flying, gliding, riding, or outside survival/adventure. Fleetfoot grants no flight; Double Jump has its own opt-in movement policy.
 
 ```yaml
 abilities:

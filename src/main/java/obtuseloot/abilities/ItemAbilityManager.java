@@ -285,6 +285,14 @@ public class ItemAbilityManager {
                 : tracker.profileFor(artifact).utilitySignalsByMechanic();
     }
 
+    /** One completed physical effect; callers own once-only receipts and current equipment validation. */
+    public void observeDeferred(AbilityDefinition definition, AbilityEventContext context, AbilityExecutionResult result) {
+        if (!new AbilityOutcomeObservation(context, result, definition, 0).liveMeasured())
+            throw new IllegalArgumentException("Invalid deferred observation");
+        recordExecution(result);
+        recordUtilityOutcomes(context, new AbilityDispatchResult(context, List.of(result)), Map.of(definition.id(), definition));
+    }
+
     private void recordUtilityOutcomes(AbilityEventContext context,
                                        AbilityDispatchResult dispatchResult,
                                        Map<String, AbilityDefinition> definitionsById) {
@@ -295,6 +303,7 @@ public class ItemAbilityManager {
             return;
         }
         dispatchResult.executions().forEach(result -> {
+            if (result.status() == AbilityExecutionStatus.PENDING) return;
             AbilityDefinition definition = definitionsById.get(result.abilityId());
             if (definition != null) {
                 double delta = tracker.trackAbilityExecution(context.artifact(), context, result, definition);

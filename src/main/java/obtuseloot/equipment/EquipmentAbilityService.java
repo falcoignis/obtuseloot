@@ -182,6 +182,16 @@ public final class EquipmentAbilityService {
         }
         return new AbilityDispatchResult(first, List.copyOf(results));
     }
+    public boolean isCurrentActivation(Player player, Token token, AbilityDefinition definition, AbilityEventContext context) {
+        if (!player.isOnline() || player.isDead() || context.activation() == null
+                || !player.getUniqueId().equals(token.player()) || !player.getWorld().getUID().equals(token.world())) return false;
+        reconcile(player);
+        var binding = equipped(token.player()).get(context.activation().slot());
+        var registration = abilities.registry().registrationById(definition.id());
+        return binding != null && binding.artifact() == context.artifact() && binding.sameIdentity(token.bindings().get(binding.slot()))
+                && registration != null && registration.supports(definition) && permitted(player, registration)
+                && context.activation().allows(registration) && definitions(token.player(), binding.artifact()).contains(definition);
+    }
     private String target(Event event, Token token) {
         if (event instanceof org.bukkit.event.player.PlayerInteractAtEntityEvent interaction)
             return "entity:" + interaction.getRightClicked().getUniqueId();

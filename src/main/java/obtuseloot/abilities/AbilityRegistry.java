@@ -15,6 +15,12 @@ public class AbilityRegistry {
 
     public AbilityRegistry() {
         this.registrations = List.of(
+                template("mobility.double_jump", "Double Jump", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY,
+                        AbilityTrigger.ON_AIR_JUMP, AbilityMechanic.MOVEMENT_ECHO,
+                        "Equipped gear permits one additional airborne jump", "steady airborne footing", "varied airborne footing", "steady second step", "shared route memory", "remembers traveled paths",
+                        metadata(Set.of("traversal", "exploration"), Set.of("jump-input"), Set.of("exploration", "mobility"),
+                                0.5D, 0.8D, 0.3D, 0.1D, 0.1D, 0.3D))
+                        .withLiveEffect(new obtuseloot.abilities.effects.DoubleJumpEffect()),
                 template("mobility.fleetfoot", "Fleetfoot", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY,
                         AbilityTrigger.ON_MOVEMENT, AbilityMechanic.MOVEMENT_ECHO,
                         "Equipped gear improves walking speed", "steady footwork", "varied footwork", "steady stride", "shared route memory", "remembers traveled paths",
@@ -330,7 +336,8 @@ public class AbilityRegistry {
 
     public List<AbilityRegistration> registrations() { return registrations; }
     public AbilityRegistry implementedOnly() {
-        return new AbilityRegistry(registrations.stream().filter(AbilityRegistration::implemented).toList());
+        return new AbilityRegistry(registrations.stream().filter(AbilityRegistration::implemented)
+                .filter(entry -> entry.liveEffect() == null || entry.liveEffect().enabledForSelection()).toList());
     }
     public AbilityRegistration registrationById(String id) { return byId.get(id); }
     public AbilityTemplate templateById(String id) {

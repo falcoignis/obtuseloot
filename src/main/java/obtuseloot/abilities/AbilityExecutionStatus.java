@@ -6,5 +6,7 @@ public enum AbilityExecutionStatus {
     ATTEMPTED,
     NO_OP,
     SUCCESS,
-    FAILED
+    FAILED,
+    /** Physical effect submitted; not yet a completed outcome. */
+    PENDING
 }
