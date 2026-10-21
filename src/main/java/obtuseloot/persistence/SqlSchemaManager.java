@@ -7,6 +7,8 @@ import java.sql.Statement;
 public class SqlSchemaManager {
     public void ensureSchema(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS artifact_profiles (storage_key VARCHAR(64) PRIMARY KEY, payload MEDIUMTEXT NOT NULL)");
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS ecology_state (state_key VARCHAR(32) PRIMARY KEY, payload MEDIUMTEXT NOT NULL)");
             statement.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS players (
                     player_uuid VARCHAR(36) PRIMARY KEY,

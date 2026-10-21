@@ -1,6 +1,9 @@
 package obtuseloot.artifacts;
 
 import obtuseloot.memory.ArtifactMemory;
+import obtuseloot.abilities.genome.ArtifactGenome;
+import obtuseloot.abilities.genome.GenomeResolver;
+import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.names.ArtifactNameResolver;
 import obtuseloot.names.ArtifactNaming;
 
@@ -8,6 +11,33 @@ import java.util.*;
 
 public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
+
+    private ArtifactGenome inheritedGenome;
+    private String parentStorageKey;
+    private int inheritanceGeneration;
+    private ArtifactReputation itemReputation = new ArtifactReputation();
+
+    public ArtifactGenome getGenome() {
+        if (inheritedGenome == null || inheritedGenome.seed() != artifactSeed) {
+            inheritedGenome = new GenomeResolver().resolve(artifactSeed);
+        }
+        return inheritedGenome;
+    }
+    public void setGenome(ArtifactGenome genome) {
+        if (genome.seed() != artifactSeed) throw new IllegalArgumentException("Genome identity does not match artifact");
+        this.inheritedGenome = java.util.Objects.requireNonNull(genome);
+    }
+    public String getParentStorageKey() { return parentStorageKey; }
+    public void setParentStorageKey(String key) { parentStorageKey = key; }
+    public int getInheritanceGeneration() { return inheritanceGeneration; }
+    public void setInheritanceGeneration(int value) {
+        if (value < 0) throw new IllegalArgumentException("Negative inheritance generation");
+        inheritanceGeneration = value;
+    }
+    public ArtifactReputation getItemReputation() { return itemReputation; }
+    public void setItemReputation(ArtifactReputation reputation) {
+        itemReputation = java.util.Objects.requireNonNull(reputation);
+    }
 
     private long artifactSeed;
     private String artifactStorageKey;

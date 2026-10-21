@@ -56,7 +56,9 @@ public final class RuntimeSettings {
                 config.getBoolean("runtime.activeArtifactCache", true),
                 config.getInt("runtime.activeArtifactCacheMaxEntries", 2048),
                 config.getLong("runtime.activeArtifactCacheIdleExpireMs", 300000L),
-                config.getLong("evolution.noncombat-update-interval-ticks", 100L)
+                config.getLong("evolution.noncombat-update-interval-ticks", 100L),
+                config.getInt("ecology.inheritance-radius-chunks", 20),
+                config.getLong("ecology.inheritance-outcome-window-ticks", 6000L)
         );
     }
 
@@ -117,9 +119,12 @@ public final class RuntimeSettings {
             boolean activeArtifactCache,
             int activeArtifactCacheMaxEntries,
             long activeArtifactCacheIdleExpireMs,
-            long noncombatUpdateIntervalTicks
+            long noncombatUpdateIntervalTicks,
+            int inheritanceRadiusChunks,
+            long inheritanceOutcomeWindowTicks
     ) {
         public Snapshot {
+            if (inheritanceRadiusChunks <= 0 || inheritanceOutcomeWindowTicks <= 0) throw new IllegalArgumentException("Inheritance radius/window must be positive");
             if (noncombatUpdateIntervalTicks <= 0) throw new IllegalArgumentException("Noncombat evolution interval must be positive");
         }
         private static Snapshot defaults() {
@@ -127,7 +132,7 @@ public final class RuntimeSettings {
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
                     true, ArtifactLexemeRegistry.defaultPools(),
                     3, 8, 14, 6,
-                    4, 14, 16, 14, 16, 16, 10, 14, true, true, 2048, 300000L, 100L);
+                    4, 14, 16, 14, 16, 16, 10, 14, true, true, 2048, 300000L, 100L, 20, 6000L);
         }
     }
 }

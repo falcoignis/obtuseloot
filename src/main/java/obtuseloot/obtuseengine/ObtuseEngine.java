@@ -3,7 +3,6 @@ package obtuseloot.obtuseengine;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.combat.CombatCore;
 import obtuseloot.events.EventCore;
-import obtuseloot.events.ArtifactItemStorageListener;
 import obtuseloot.events.PlayerJoinLoadListener;
 import obtuseloot.events.PlayerStateCleanupListener;
 import obtuseloot.events.ReputationFeedListener;
@@ -26,7 +25,6 @@ public class ObtuseEngine {
         Bukkit.getPluginManager().registerEvents(new EventCore(), plugin);
         Bukkit.getPluginManager().registerEvents(new PlayerJoinLoadListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new PlayerStateCleanupListener(), plugin);
-        Bukkit.getPluginManager().registerEvents(new ArtifactItemStorageListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new NonCombatAbilityListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new LootInsertionListener(), plugin);
         // A join whose storage load failed skipped subscription wiring; finish it once a retried load succeeds.

@@ -19,6 +19,7 @@ public class EngineScheduler {
     private final ArtifactManager artifactManager;
     private final ReputationManager reputationManager;
     private final CombatContextManager combatContextManager;
+    private final obtuseloot.ecology.LocalEcosystem localEcosystem;
     private final EvolutionEngine evolutionEngine;
     private final ItemAbilityManager itemAbilityManager;
     private final NonCombatEvolutionQueue evolutionQueue = new NonCombatEvolutionQueue();
@@ -32,13 +33,23 @@ public class EngineScheduler {
     public EngineScheduler(Plugin plugin, ArtifactManager artifactManager, ReputationManager reputationManager,
                            CombatContextManager combatContextManager, EvolutionEngine evolutionEngine,
                            ItemAbilityManager itemAbilityManager) {
+        this(plugin, artifactManager, reputationManager, combatContextManager, evolutionEngine, itemAbilityManager, null);
+    }
+
+    public EngineScheduler(Plugin plugin, ArtifactManager artifactManager, ReputationManager reputationManager,
+                           CombatContextManager combatContextManager, EvolutionEngine evolutionEngine,
+                           ItemAbilityManager itemAbilityManager, obtuseloot.ecology.LocalEcosystem localEcosystem) {
+        this.localEcosystem = localEcosystem;
         this.plugin = plugin;
         this.artifactManager = artifactManager;
         this.reputationManager = reputationManager;
         this.combatContextManager = combatContextManager;
         this.evolutionEngine = evolutionEngine;
         this.itemAbilityManager = itemAbilityManager;
-        itemAbilityManager.setOutcomeObserver(evolutionQueue::observe);
+        itemAbilityManager.setOutcomeObserver(observation -> {
+            evolutionQueue.observe(observation);
+            if (localEcosystem != null) localEcosystem.observe(observation);
+        });
     }
 
     public void startAll() {
@@ -70,6 +81,12 @@ public class EngineScheduler {
         autosaveTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             artifactManager.saveAll();
             reputationManager.saveAll();
+            if (localEcosystem != null) {
+                try { localEcosystem.save(); }
+                catch (RuntimeException exception) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed saving local ecology; retaining state for the next autosave", exception);
+                }
+            }
         }, ticks, ticks);
     }
 
@@ -105,9 +122,11 @@ public class EngineScheduler {
 
     public void startEvolutionTask() {
         if (evolutionTask != null && !evolutionTask.isCancelled()) return;
-        evolutionTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> evolutionQueue.tick(
-                RuntimeSettings.get().noncombatUpdateIntervalTicks(),
-                update -> applyEvolution(update, true), this::logEvolutionFailure), 1L, 1L);
+        evolutionTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (localEcosystem != null) localEcosystem.advanceTick();
+            evolutionQueue.tick(RuntimeSettings.get().noncombatUpdateIntervalTicks(),
+                    update -> applyEvolution(update, true), this::logEvolutionFailure);
+        }, 1L, 1L);
     }
 
     /** Called before unload/save. No extra selection roll or UI update on quit. */

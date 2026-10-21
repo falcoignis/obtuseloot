@@ -19,15 +19,27 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class ReputationFeedListener implements Listener {
+    private final java.util.function.Function<Player, obtuseloot.artifacts.Artifact> activeArtifact;
+    private final obtuseloot.combat.CombatContextManager contexts;
+
+    public ReputationFeedListener() {
+        this(player -> ObtuseLoot.get().getArtifactItemStorage().activateHeld(player), ObtuseLoot.get().getCombatContextManager());
+    }
+    public ReputationFeedListener(java.util.function.Function<Player, obtuseloot.artifacts.Artifact> activeArtifact,
+                                  obtuseloot.combat.CombatContextManager contexts) {
+        this.activeArtifact = java.util.Objects.requireNonNull(activeArtifact);
+        this.contexts = java.util.Objects.requireNonNull(contexts);
+    }
+
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onDamageByEntity(EntityDamageByEntityEvent event) {
         Player attacker = resolveAttacker(event);
-        if (attacker == null) {
+        if (attacker == null || activeArtifact.apply(attacker) == null) {
             return;
         }
 
-        CombatContext context = ObtuseLoot.get().getCombatContextManager().get(attacker.getUniqueId());
+        CombatContext context = contexts.get(attacker.getUniqueId());
         context.markCombat();
         if (event.getEntity() instanceof LivingEntity target) {
             context.addTarget(target.getUniqueId());
@@ -41,7 +53,7 @@ public class ReputationFeedListener implements Listener {
             return;
         }
 
-        CombatContext context = ObtuseLoot.get().getCombatContextManager().get(event.getPlayer().getUniqueId());
+        CombatContext context = contexts.get(event.getPlayer().getUniqueId());
         long now = System.currentTimeMillis();
         if (!context.isInCombatWindow(now, RuntimeSettings.get().combatWindowMs())) {
             return;
@@ -60,16 +72,19 @@ public class ReputationFeedListener implements Listener {
             return;
         }
 
-        CombatContext context = ObtuseLoot.get().getCombatContextManager().get(killer.getUniqueId());
-        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().tryGet(killer.getUniqueId());
-        if (rep == null) {
-            return;
-        }
+        recordKillContext(killer, event.getEntity());
+    }
+
+    void recordKillContext(Player killer, Entity killed) {
+        var artifact = activeArtifact.apply(killer);
+        if (artifact == null) return;
+        ArtifactReputation rep = artifact.getItemReputation();
+        CombatContext context = contexts.get(killer.getUniqueId());
 
         long now = System.currentTimeMillis();
         context.addKillTimestamp(now);
 
-        if (isBoss(event.getEntity())) {
+        if (isBoss(killed)) {
             rep.recordBossKill();
         }
 
@@ -90,12 +105,14 @@ public class ReputationFeedListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        ArtifactReputation rep = ObtuseLoot.get().getReputationManager().tryGet(player.getUniqueId());
-        if (rep == null) {
-            return;
-        }
-        CombatContext context = ObtuseLoot.get().getCombatContextManager().get(player.getUniqueId());
+        recordHeldDeath(event.getEntity());
+    }
+
+    void recordHeldDeath(Player player) {
+        var artifact = activeArtifact.apply(player);
+        if (artifact == null) return;
+        ArtifactReputation rep = artifact.getItemReputation();
+        CombatContext context = contexts.get(player.getUniqueId());
 
         rep.resetOnDeath();
         context.resetTransient();
@@ -107,7 +124,7 @@ public class ReputationFeedListener implements Listener {
             return;
         }
 
-        CombatContext context = ObtuseLoot.get().getCombatContextManager().get(player.getUniqueId());
+        CombatContext context = contexts.get(player.getUniqueId());
         double postDamageHealth = Math.max(0.0D, player.getHealth() - event.getFinalDamage());
         context.setLastKnownHealth(postDamageHealth);
 

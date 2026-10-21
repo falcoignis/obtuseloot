@@ -22,8 +22,8 @@ public class PlayerJoinLoadListener implements Listener {
         ObtuseLoot plugin = ObtuseLoot.get();
         var playerId = player.getUniqueId();
 
-        Artifact artifact = plugin.getArtifactManager().tryGet(playerId);
-        ArtifactReputation reputation = plugin.getReputationManager().tryGet(playerId);
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation reputation = artifact == null ? null : artifact.getItemReputation();
         if (artifact == null || reputation == null) {
             return;
         }

@@ -1,11 +1,6 @@
 package obtuseloot.persistence;
 
 import obtuseloot.artifacts.Artifact;
-import obtuseloot.artifacts.ArtifactArchetypeValidator;
-import obtuseloot.artifacts.ArtifactSeedFactory;
-import obtuseloot.artifacts.EquipmentArchetype;
-import obtuseloot.names.ArtifactNameResolver;
-import obtuseloot.names.ArtifactNaming;
 import obtuseloot.reputation.ArtifactReputation;
 import obtuseloot.species.ArtifactSpecies;
 import obtuseloot.species.SpeciesRegistrySnapshot;
@@ -28,7 +23,6 @@ import java.util.logging.Logger;
 
 public class YamlPlayerStateStore implements PlayerStateStore {
     private final File playerDataDir;
-    private final ArtifactSeedFactory seedFactory = new ArtifactSeedFactory();
     private final Logger logger;
 
     private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor(r -> {
@@ -47,6 +41,47 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         this.logger = plugin.getLogger();
         if (!playerDataDir.exists()) {
             playerDataDir.mkdirs();
+        }
+    }
+
+    @Override
+    public void saveArtifactProfile(Artifact artifact) {
+        var id = obtuseloot.artifacts.ArtifactStorageKeys.itemId(artifact.getArtifactStorageKey());
+        writeAtomically(new File(playerDataDir.getParentFile(), "artifacts/" + id + ".yml").toPath(), ArtifactProfileCodec.encode(artifact));
+    }
+
+    @Override
+    public Artifact loadArtifactProfile(String storageKey) {
+        var id = obtuseloot.artifacts.ArtifactStorageKeys.itemId(storageKey);
+        String payload = readStrictly(new File(playerDataDir.getParentFile(), "artifacts/" + id + ".yml").toPath());
+        return payload == null ? null : ArtifactProfileCodec.decode(storageKey, payload);
+    }
+
+    @Override public void saveEcologyState(String state) {
+        writeAtomically(new File(playerDataDir.getParentFile(), "ecology-state.yml").toPath(), state);
+    }
+    @Override public String loadEcologyState() {
+        return readStrictly(new File(playerDataDir.getParentFile(), "ecology-state.yml").toPath());
+    }
+
+    private String readStrictly(java.nio.file.Path path) {
+        if (!Files.exists(path)) return null;
+        try { return Files.readString(path, StandardCharsets.UTF_8); }
+        catch (IOException exception) { throw new IllegalStateException("Unreadable state file " + path.getFileName(), exception); }
+    }
+
+    private void writeAtomically(java.nio.file.Path path, String payload) {
+        java.nio.file.Path temporary = null;
+        try {
+            Files.createDirectories(path.getParent());
+            temporary = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".pending");
+            Files.writeString(temporary, payload, StandardCharsets.UTF_8);
+            Files.move(temporary, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed writing state file " + path.getFileName(), exception);
+        } finally {
+            if (temporary != null) try { Files.deleteIfExists(temporary); }
+            catch (IOException exception) { logger.warning("Unable to remove pending state file " + temporary.getFileName()); }
         }
     }
 
@@ -79,88 +114,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             }
         }
 
-        EquipmentArchetype archetype = requirePersistedItemCategory(yaml, playerId);
-        Artifact artifact = new Artifact(playerId, archetype);
-        artifact.setOwnerId(UUID.fromString(yaml.getString("artifact.owner-id", playerId.toString())));
-        artifact.setArtifactStorageKey(yaml.getString("artifact.storage-key", Artifact.buildDefaultStorageKey(artifact.getOwnerId())));
-        artifact.setPersistenceOriginTimestamp(yaml.getLong("artifact.persistence-origin-timestamp", artifact.getPersistenceOriginTimestamp()));
-        artifact.setIdentityBirthTimestamp(yaml.getLong("artifact.identity-birth-timestamp", artifact.getIdentityBirthTimestamp()));
-        artifact.setArchetypePath(yaml.getString("artifact.archetype-path", "unformed"));
-        artifact.setEvolutionPath(yaml.getString("artifact.evolution-path", "base"));
-        artifact.setAwakeningPath(yaml.getString("artifact.awakening-path", "dormant"));
-        artifact.setConvergencePath(yaml.getString("artifact.convergence-path", "none"));
-        artifact.setDriftLevel(yaml.getInt("artifact.drift-level", 0));
-        artifact.setTotalDrifts(yaml.getInt("artifact.total-drifts", 0));
-        artifact.setLastDriftTimestamp(yaml.getLong("artifact.last-drift-timestamp", 0L));
-        artifact.setInstabilityState(yaml.getString("artifact.current-instability-state", "none"), yaml.getLong("artifact.instability-expiry", 0L));
-
-        long artifactSeed = yaml.getLong("artifact.artifact-seed", 0L);
-        artifact.setArtifactSeed(artifactSeed);
-        seedFactory.applySeedProfile(artifact, artifactSeed);
-        java.util.Map<String, Double> persistedSeedAffinities = new java.util.LinkedHashMap<>();
-        readStatMap(yaml, "artifact.seed-affinities", persistedSeedAffinities);
-        artifact.setSeedPrecisionAffinity(persistedSeedAffinities.getOrDefault("precision", artifact.getSeedPrecisionAffinity()));
-        artifact.setSeedBrutalityAffinity(persistedSeedAffinities.getOrDefault("brutality", artifact.getSeedBrutalityAffinity()));
-        artifact.setSeedSurvivalAffinity(persistedSeedAffinities.getOrDefault("survival", artifact.getSeedSurvivalAffinity()));
-        artifact.setSeedMobilityAffinity(persistedSeedAffinities.getOrDefault("mobility", artifact.getSeedMobilityAffinity()));
-        artifact.setSeedChaosAffinity(persistedSeedAffinities.getOrDefault("chaos", artifact.getSeedChaosAffinity()));
-        artifact.setSeedConsistencyAffinity(persistedSeedAffinities.getOrDefault("consistency", artifact.getSeedConsistencyAffinity()));
-        ArtifactNaming naming = ArtifactNameResolver.initialize(artifact);
-        naming.setNamingSeed(yaml.getLong("artifact.naming.naming-seed", naming.getNamingSeed()));
-        naming.setTrueName(yaml.getString("artifact.naming.true-name", null));
-        naming.setEpithetSeed(yaml.getInt("artifact.naming.epithet-seed", naming.getEpithetSeed()));
-        naming.setTitleSeed(yaml.getInt("artifact.naming.title-seed", naming.getTitleSeed()));
-        ArtifactNameResolver.refresh(artifact, naming);
-        artifact.setNaming(naming);
-        artifact.setLatentLineage(yaml.getString("artifact.latent-lineage", artifact.getLatentLineage()));
-        artifact.setSpeciesId(yaml.getString("artifact.species-id", artifact.getSpeciesId()));
-        artifact.setParentSpeciesId(yaml.getString("artifact.parent-species-id", artifact.getParentSpeciesId()));
-        artifact.setLastSpeciesCompatibilityDistance(yaml.getDouble("artifact.species-compatibility-distance", 0.0D));
-        artifact.setDriftAlignment(yaml.getString("artifact.drift-alignment", artifact.getDriftAlignment()));
-
-        readStatMap(yaml, "artifact.drift-bias", artifact.getDriftBiasAdjustments());
-        readStatMap(yaml, "artifact.awakening-bias", artifact.getAwakeningBiasAdjustments());
-        readStatMap(yaml, "artifact.awakening-gain-multipliers", artifact.getAwakeningGainMultipliers());
-
-        artifact.getDriftHistory().addAll(yaml.getStringList("artifact.drift-history"));
-        artifact.getLoreHistory().addAll(yaml.getStringList("artifact.lore-history"));
-        artifact.getNotableEvents().addAll(yaml.getStringList("artifact.notable-events"));
-        artifact.getAwakeningTraits().addAll(yaml.getStringList("artifact.awakening-traits"));
-        artifact.setLastAbilityBranchPath(yaml.getString("artifact.last-ability-branch-path", "[]"));
-        artifact.setLastMutationHistory(yaml.getString("artifact.last-mutation-history", "[]"));
-        artifact.setLastRegulatoryProfile(yaml.getString("artifact.last-regulatory-profile", "[]"));
-        artifact.setLastOpenRegulatoryGates(yaml.getString("artifact.last-open-regulatory-gates", ""));
-        artifact.setLastGateCandidatePool(yaml.getString("artifact.last-gate-candidate-pool", "0->0"));
-        artifact.setLastTriggerProfile(yaml.getString("artifact.last-trigger-profile", ""));
-        artifact.setLastMechanicProfile(yaml.getString("artifact.last-mechanic-profile", ""));
-        artifact.setLastUtilityHistory(yaml.getString("artifact.last-utility-history", ""));
-        artifact.setLastMemoryInfluence(yaml.getString("artifact.last-memory-influence", "none"));
-        artifact.setConvergenceVariantId(yaml.getString("artifact.convergence-variant-id", "none"));
-        artifact.setConvergenceIdentityShape(yaml.getString("artifact.convergence-identity-shape", "none"));
-        artifact.setConvergenceLineageTrace(yaml.getString("artifact.convergence-lineage-trace", "none"));
-        artifact.setConvergenceLoreTrace(yaml.getString("artifact.convergence-lore-trace", "none"));
-        artifact.setConvergenceContinuityTrace(yaml.getString("artifact.convergence-continuity-trace", "none"));
-        artifact.setConvergenceExpressionTrace(yaml.getString("artifact.convergence-expression-trace", "none"));
-        artifact.setConvergenceMemorySignature(yaml.getString("artifact.convergence-memory-signature", "none"));
-        artifact.setAwakeningVariantId(yaml.getString("artifact.awakening-variant-id", "none"));
-        artifact.setAwakeningIdentityShape(yaml.getString("artifact.awakening-identity-shape", "none"));
-        artifact.setAwakeningLineageTrace(yaml.getString("artifact.awakening-lineage-trace", "none"));
-        artifact.setAwakeningLoreTrace(yaml.getString("artifact.awakening-lore-trace", "none"));
-        artifact.setAwakeningContinuityTrace(yaml.getString("artifact.awakening-continuity-trace", "none"));
-        artifact.setAwakeningExpressionTrace(yaml.getString("artifact.awakening-expression-trace", "none"));
-        artifact.setAwakeningMemorySignature(yaml.getString("artifact.awakening-memory-signature", "none"));
-        for (String key : yaml.getConfigurationSection("artifact.memory-events") != null ? yaml.getConfigurationSection("artifact.memory-events").getKeys(false) : java.util.Set.<String>of()) {
-            try {
-                obtuseloot.memory.ArtifactMemoryEvent event = obtuseloot.memory.ArtifactMemoryEvent.valueOf(key.toUpperCase());
-                int count = yaml.getInt("artifact.memory-events." + key, 0);
-                for (int i = 0; i < count; i++) {
-                    artifact.getMemory().record(event);
-                }
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        artifact.refreshNamingProjection();
-        return artifact;
+        return ArtifactProfileCodec.readArtifact(playerId, yaml);
     }
 
     @Override
@@ -191,21 +145,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
             }
         }
 
-        ArtifactReputation rep = new ArtifactReputation();
-        rep.setPrecision(yaml.getInt("reputation.precision", 0));
-        rep.setBrutality(yaml.getInt("reputation.brutality", 0));
-        rep.setSurvival(yaml.getInt("reputation.survival", 0));
-        rep.setMobility(yaml.getInt("reputation.mobility", 0));
-        rep.setChaos(yaml.getInt("reputation.chaos", 0));
-        rep.setConsistency(yaml.getInt("reputation.consistency", 0));
-        rep.setKills(yaml.getInt("reputation.kills", 0));
-        rep.setBossKills(yaml.getInt("reputation.boss-kills", 0));
-        rep.setRecentKillChain(yaml.getInt("reputation.recent-kill-chain", 0));
-        rep.setLastKillTimestamp(yaml.getLong("reputation.last-kill-timestamp", 0));
-        rep.setLastCombatTimestamp(yaml.getLong("reputation.last-combat-timestamp", 0));
-        rep.setSurvivalStreak(yaml.getInt("reputation.survival-streak", 0));
-        rep.restoreUtilityExperience(yaml.getString("reputation.utility-experience", ""));
-        return rep;
+        return ArtifactProfileCodec.readReputation(yaml);
     }
 
     @Override
@@ -347,115 +287,12 @@ public class YamlPlayerStateStore implements PlayerStateStore {
     }
 
 
-    private EquipmentArchetype requirePersistedItemCategory(YamlConfiguration yaml, UUID playerId) {
-        String rawCategory = yaml.getString("artifact.item-category");
-        if (rawCategory == null || rawCategory.isBlank()) {
-            throw new IllegalStateException("[Persistence] Missing artifact.item-category for " + playerId);
-        }
-        return ArtifactArchetypeValidator.requireValidArchetype(rawCategory, "[Persistence] artifact.item-category for " + playerId);
-    }
-
     private void writeArtifactSection(YamlConfiguration yaml, Artifact artifact) {
-        String base = "artifact.";
-        yaml.set(base + "owner-id", artifact.getOwnerId().toString());
-        yaml.set(base + "storage-key", artifact.getArtifactStorageKey());
-        yaml.set(base + "persistence-origin-timestamp", artifact.getPersistenceOriginTimestamp());
-        yaml.set(base + "identity-birth-timestamp", artifact.getIdentityBirthTimestamp());
-        yaml.set(base + "artifact-seed", artifact.getArtifactSeed());
-        yaml.set(base + "naming.display-name", artifact.getDisplayName());
-        yaml.set(base + "naming.true-name", artifact.getTrueName());
-        yaml.set(base + "naming.naming-seed", artifact.getNaming().getNamingSeed());
-        yaml.set(base + "naming.root-form", artifact.getNaming().getRootForm());
-        yaml.set(base + "naming.archetype", artifact.getNaming().getNamingArchetype().name());
-        yaml.set(base + "naming.tone", artifact.getNaming().getToneProfile().name());
-        yaml.set(base + "naming.discovery", artifact.getNaming().getDiscoveryState().name());
-        yaml.set(base + "naming.identity-tags", artifact.getNaming().getIdentityTags());
-        yaml.set(base + "naming.affinity-lexemes", artifact.getNaming().getAffinityLexemes());
-        yaml.set(base + "naming.epithet-seed", artifact.getNaming().getEpithetSeed());
-        yaml.set(base + "naming.title-seed", artifact.getNaming().getTitleSeed());
-        yaml.set(base + "item-category", artifact.getItemCategory());
-        yaml.set(base + "archetype-path", artifact.getArchetypePath());
-        yaml.set(base + "evolution-path", artifact.getEvolutionPath());
-        yaml.set(base + "awakening-path", artifact.getAwakeningPath());
-        yaml.set(base + "convergence-path", artifact.getConvergencePath());
-        yaml.set(base + "drift-level", artifact.getDriftLevel());
-        yaml.set(base + "total-drifts", artifact.getTotalDrifts());
-        yaml.set(base + "drift-alignment", artifact.getDriftAlignment());
-        yaml.set(base + "last-drift-timestamp", artifact.getLastDriftTimestamp());
-        yaml.set(base + "latent-lineage", artifact.getLatentLineage());
-        yaml.set(base + "species-id", artifact.getSpeciesId());
-        yaml.set(base + "parent-species-id", artifact.getParentSpeciesId());
-        yaml.set(base + "species-compatibility-distance", artifact.getLastSpeciesCompatibilityDistance());
-        yaml.set(base + "current-instability-state", artifact.getCurrentInstabilityState());
-        yaml.set(base + "instability-expiry", artifact.getInstabilityExpiryTimestamp());
-
-        writeStatMap(yaml, base + "seed-affinities", Map.of(
-                "precision", artifact.getSeedPrecisionAffinity(), "brutality", artifact.getSeedBrutalityAffinity(),
-                "survival", artifact.getSeedSurvivalAffinity(), "mobility", artifact.getSeedMobilityAffinity(),
-                "chaos", artifact.getSeedChaosAffinity(), "consistency", artifact.getSeedConsistencyAffinity()));
-        writeStatMap(yaml, base + "drift-bias", artifact.getDriftBiasAdjustments());
-        writeStatMap(yaml, base + "awakening-bias", artifact.getAwakeningBiasAdjustments());
-        writeStatMap(yaml, base + "awakening-gain-multipliers", artifact.getAwakeningGainMultipliers());
-
-        yaml.set(base + "drift-history", artifact.getDriftHistory());
-        yaml.set(base + "lore-history", artifact.getLoreHistory());
-        yaml.set(base + "notable-events", artifact.getNotableEvents());
-        yaml.set(base + "awakening-traits", List.copyOf(artifact.getAwakeningTraits()));
-        yaml.set(base + "last-ability-branch-path", artifact.getLastAbilityBranchPath());
-        yaml.set(base + "last-mutation-history", artifact.getLastMutationHistory());
-        yaml.set(base + "last-regulatory-profile", artifact.getLastRegulatoryProfile());
-        yaml.set(base + "last-open-regulatory-gates", artifact.getLastOpenRegulatoryGates());
-        yaml.set(base + "last-gate-candidate-pool", artifact.getLastGateCandidatePool());
-        yaml.set(base + "last-trigger-profile", artifact.getLastTriggerProfile());
-        yaml.set(base + "last-mechanic-profile", artifact.getLastMechanicProfile());
-        yaml.set(base + "last-utility-history", artifact.getLastUtilityHistory());
-        yaml.set(base + "last-memory-influence", artifact.getLastMemoryInfluence());
-        yaml.set(base + "convergence-variant-id", artifact.getConvergenceVariantId());
-        yaml.set(base + "convergence-identity-shape", artifact.getConvergenceIdentityShape());
-        yaml.set(base + "convergence-lineage-trace", artifact.getConvergenceLineageTrace());
-        yaml.set(base + "convergence-lore-trace", artifact.getConvergenceLoreTrace());
-        yaml.set(base + "convergence-continuity-trace", artifact.getConvergenceContinuityTrace());
-        yaml.set(base + "convergence-expression-trace", artifact.getConvergenceExpressionTrace());
-        yaml.set(base + "convergence-memory-signature", artifact.getConvergenceMemorySignature());
-        yaml.set(base + "awakening-variant-id", artifact.getAwakeningVariantId());
-        yaml.set(base + "awakening-identity-shape", artifact.getAwakeningIdentityShape());
-        yaml.set(base + "awakening-lineage-trace", artifact.getAwakeningLineageTrace());
-        yaml.set(base + "awakening-lore-trace", artifact.getAwakeningLoreTrace());
-        yaml.set(base + "awakening-continuity-trace", artifact.getAwakeningContinuityTrace());
-        yaml.set(base + "awakening-expression-trace", artifact.getAwakeningExpressionTrace());
-        yaml.set(base + "awakening-memory-signature", artifact.getAwakeningMemorySignature());
-        artifact.getMemory().snapshot().forEach((event, count) -> yaml.set(base + "memory-events." + event.name().toLowerCase(), count));
+        ArtifactProfileCodec.writeArtifact(yaml, artifact);
     }
-
     private void writeReputationSection(YamlConfiguration yaml, ArtifactReputation reputation) {
-        String base = "reputation.";
-        yaml.set(base + "precision", reputation.getPrecision());
-        yaml.set(base + "brutality", reputation.getBrutality());
-        yaml.set(base + "survival", reputation.getSurvival());
-        yaml.set(base + "mobility", reputation.getMobility());
-        yaml.set(base + "chaos", reputation.getChaos());
-        yaml.set(base + "consistency", reputation.getConsistency());
-        yaml.set(base + "kills", reputation.getKills());
-        yaml.set(base + "boss-kills", reputation.getBossKills());
-        yaml.set(base + "recent-kill-chain", reputation.getRecentKillChain());
-        yaml.set(base + "last-kill-timestamp", reputation.getLastKillTimestamp());
-        yaml.set(base + "last-combat-timestamp", reputation.getLastCombatTimestamp());
-        yaml.set(base + "survival-streak", reputation.getSurvivalStreak());
-        yaml.set(base + "utility-experience", reputation.encodeUtilityExperience());
+        ArtifactProfileCodec.writeReputation(yaml, reputation);
     }
-
-    private void writeStatMap(YamlConfiguration yaml, String path, Map<String, Double> values) {
-        for (String stat : List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency")) {
-            yaml.set(path + "." + stat, values.getOrDefault(stat, 0.0D));
-        }
-    }
-
-    private void readStatMap(YamlConfiguration yaml, String path, Map<String, Double> target) {
-        for (String stat : List.of("precision", "brutality", "survival", "mobility", "chaos", "consistency")) {
-            target.put(stat, yaml.getDouble(path + "." + stat, 0.0D));
-        }
-    }
-
 
     private Map<String, Double> mapFromObject(Map<String, Object> raw) {
         Map<String, Double> out = new java.util.LinkedHashMap<>();

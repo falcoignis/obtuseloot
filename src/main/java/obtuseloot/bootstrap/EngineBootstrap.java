@@ -84,11 +84,14 @@ public final class EngineBootstrap {
                         lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine), abilityRegistry, artifactUsageTracker);
         itemAbilityManager.setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
 
+        var localEcosystem = new obtuseloot.ecology.LocalEcosystem(playerStateStore, context.require(ArtifactManager.class),
+                context.require(obtuseloot.ecology.LocalInheritancePool.class));
+        context.register(obtuseloot.ecology.LocalEcosystem.class, localEcosystem);
         LoreEngine loreEngine = new LoreEngine();
         EngineScheduler engineScheduler = new EngineScheduler(plugin,
                 context.require(ArtifactManager.class),
                 context.require(ReputationManager.class),
-                combatContextManager, evolutionEngine, itemAbilityManager);
+                combatContextManager, evolutionEngine, itemAbilityManager, localEcosystem);
 
         context.register(CombatContextManager.class, combatContextManager);
         context.register(EvolutionEngine.class, evolutionEngine);

@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 public class ReputationManager {
     private final PlayerStateStore stateStore;
+    private final Map<UUID, obtuseloot.artifacts.Artifact> itemBindings = new ConcurrentHashMap<>();
     private final Map<UUID, ArtifactReputation> loadedReputations = new ConcurrentHashMap<>();
     private final PlayerLoadGuard loadGuard;
     private volatile Consumer<UUID> recoveryListener = id -> { };
@@ -58,6 +59,15 @@ public class ReputationManager {
         this.recoveryListener = listener == null ? id -> { } : listener;
     }
 
+    public void bindItem(UUID holder, obtuseloot.artifacts.Artifact artifact) {
+        itemBindings.put(holder, artifact);
+        loadedReputations.put(holder, artifact.getItemReputation());
+    }
+
+    public void unbindItem(UUID holder) {
+        if (itemBindings.remove(holder) != null) loadedReputations.remove(holder);
+    }
+
     /** Returns true if the reputation was written (or there was nothing loaded to write). */
     public boolean save(UUID playerId) {
         ArtifactReputation rep = loadedReputations.get(playerId);
@@ -65,7 +75,9 @@ public class ReputationManager {
             return true;
         }
         try {
-            stateStore.saveReputation(playerId, rep);
+            var item = itemBindings.get(playerId);
+            if (item != null) stateStore.saveArtifactProfile(item);
+            else stateStore.saveReputation(playerId, rep);
             return true;
         } catch (RuntimeException ex) {
             logger().log(Level.SEVERE, "[Persistence] Failed to save reputation for " + playerId + "; will retry on next save.", ex);
@@ -83,6 +95,7 @@ public class ReputationManager {
         // Keep unsaved reputation in memory so the next save cycle retries it instead of dropping it.
         if (save(playerId)) {
             loadedReputations.remove(playerId);
+            itemBindings.remove(playerId);
         }
     }
 
@@ -94,6 +107,8 @@ public class ReputationManager {
         loadGuard.forget(playerId);
         ArtifactReputation fresh = new ArtifactReputation();
         loadedReputations.put(playerId, fresh);
+        var item = itemBindings.get(playerId);
+        if (item != null) item.setItemReputation(fresh);
         return fresh;
     }
 

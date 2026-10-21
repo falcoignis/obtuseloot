@@ -48,6 +48,8 @@ public class ObtuseLoot extends JavaPlugin {
     private PlayerStateStore playerStateStore;
     private ArtifactManager artifactManager;
     private ArtifactItemStorage artifactItemStorage;
+    private obtuseloot.ecology.LocalEcosystem localEcosystem;
+    public obtuseloot.ecology.LocalEcosystem getLocalEcosystem() { return localEcosystem; }
     private ReputationManager reputationManager;
     private CombatContextManager combatContextManager;
     private EvolutionEngine evolutionEngine;
@@ -137,6 +139,7 @@ public class ObtuseLoot extends JavaPlugin {
         itemAbilityManager = context.require(obtuseloot.abilities.ItemAbilityManager.class);
         loreEngine = context.require(LoreEngine.class);
         engineScheduler = context.require(EngineScheduler.class);
+        localEcosystem = context.require(obtuseloot.ecology.LocalEcosystem.class);
 
         dashboardService = context.require(DashboardService.class);
         dashboardWebServer = context.require(DashboardWebServer.class);
@@ -162,6 +165,12 @@ public class ObtuseLoot extends JavaPlugin {
         }
         if (reputationManager != null) {
             reputationManager.saveAll();
+        }
+        if (localEcosystem != null) {
+            try { localEcosystem.save(); }
+            catch (RuntimeException exception) {
+                getLogger().log(java.util.logging.Level.SEVERE, "Failed saving local ecology during shutdown", exception);
+            }
         }
         if (playerStateStore != null && lineageRegistry != null) {
             playerStateStore.saveSpeciesSnapshot(lineageRegistry.speciesSnapshot());

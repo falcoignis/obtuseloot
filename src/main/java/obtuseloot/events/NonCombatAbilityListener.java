@@ -149,7 +149,7 @@ public class NonCombatAbilityListener implements Listener {
     private boolean allowProbe(Player player, AbilityTrigger trigger, String source, double cost, boolean intentional) {
         var plugin = ObtuseLoot.get();
         if (plugin == null || plugin.getItemAbilityManager() == null) return true;
-        var artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        var artifact = plugin.getArtifactItemStorage().activateHeld(player);
         if (artifact == null) return false;
         return plugin.getItemAbilityManager().triggerBudgetManager()
                 .allowProbe(player.getUniqueId(), artifact.getArtifactStorageKey(), trigger, source, cost, intentional);

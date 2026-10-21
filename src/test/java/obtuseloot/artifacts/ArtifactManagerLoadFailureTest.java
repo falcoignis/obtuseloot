@@ -124,6 +124,36 @@ class ArtifactManagerLoadFailureTest {
         assertEquals(loadsBefore, store.loadCalls.get());
     }
 
+    @Test
+    void perItemLoadFailureUsesBackoffWithoutCreatingAPlayerSubstitute() {
+        UUID owner = new UUID(0, 90);
+        var artifact = new Artifact(owner, "wooden_sword");
+        artifact.setArtifactStorageKey("artifact:" + new UUID(0, 1));
+        artifact.setArtifactSeed(-777);
+        var clock = new AtomicLong();
+        var calls = new AtomicInteger();
+        var fail = new java.util.concurrent.atomic.AtomicBoolean(true);
+        PlayerStateStore store = new PlayerStateStore() {
+            public Artifact loadArtifactProfile(String key) {
+                calls.incrementAndGet();
+                if (fail.get()) throw new IllegalStateException("test read failure");
+                return artifact;
+            }
+            public void saveArtifact(UUID id, Artifact item) { throw new AssertionError("No substitute may be saved"); }
+            public Artifact loadArtifact(UUID id) { throw new AssertionError("No player fallback may be loaded"); }
+            public void saveReputation(UUID id, ArtifactReputation rep) { throw new AssertionError(); }
+            public ArtifactReputation loadReputation(UUID id) { throw new AssertionError(); }
+        };
+        var manager = new ArtifactManager(store, clock::get, BACKOFF_MS);
+        assertThrows(PlayerStateLoadException.class, () -> manager.resolveByStorageKey(artifact.getArtifactStorageKey()));
+        assertThrows(PlayerStateLoadException.class, () -> manager.resolveByStorageKey(artifact.getArtifactStorageKey()));
+        assertEquals(1, calls.get());
+        assertTrue(manager.getLoadedArtifacts().isEmpty());
+        clock.addAndGet(BACKOFF_MS); fail.set(false);
+        assertSame(artifact, manager.resolveByStorageKey(artifact.getArtifactStorageKey()));
+        assertEquals(2, calls.get());
+    }
+
     private static final class FlakyStore implements PlayerStateStore {
         private final Map<UUID, Artifact> artifacts = new HashMap<>();
         private final Map<UUID, ArtifactReputation> reputations = new HashMap<>();
