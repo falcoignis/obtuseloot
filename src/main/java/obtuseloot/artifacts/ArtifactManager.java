@@ -22,9 +22,15 @@ public class ArtifactManager {
     private final PlayerStateStore stateStore;
     private final ArtifactSeedFactory seedFactory;
     private final Map<UUID, Artifact> loadedArtifacts = new ConcurrentHashMap<>();
+    private final Map<String, Artifact> itemProfiles = new ConcurrentHashMap<>();
+    private final Map<String, Long> itemProfileAccess = new ConcurrentHashMap<>();
+    private long itemAccessSequence;
+    private final java.util.Set<String> activatedItemProfiles = ConcurrentHashMap.newKeySet();
+    private final java.util.Set<String> dirtyItemProfiles = ConcurrentHashMap.newKeySet();
     private final Map<String, UUID> storageToOwner = new ConcurrentHashMap<>();
     private final ArtifactCacheManager cache;
     private final PlayerLoadGuard loadGuard;
+    private final PlayerLoadGuard itemLoadGuard;
     private volatile Consumer<UUID> recoveryListener = id -> { };
 
     public ArtifactManager(PlayerStateStore stateStore) {
@@ -41,6 +47,7 @@ public class ArtifactManager {
                 RuntimeSettings.get().activeArtifactCacheIdleExpireMs()
         );
         this.loadGuard = new PlayerLoadGuard("artifact", clock, loadRetryBackoffMs, ArtifactManager::logger);
+        this.itemLoadGuard = new PlayerLoadGuard("artifact item", clock, loadRetryBackoffMs, ArtifactManager::logger);
     }
 
     /**
@@ -52,7 +59,7 @@ public class ArtifactManager {
     public Artifact getOrCreate(UUID playerId) {
         // The loaded profile is also the retry buffer when the optional LRU cache is disabled.
         Artifact retained = loadedArtifacts.get(playerId);
-        if (!cache.isEnabled() && retained != null) return retained;
+        if (retained != null && (!cache.isEnabled() || ArtifactStorageKeys.isItem(retained.getArtifactStorageKey()))) return retained;
         Artifact artifact = cache.resolve(playerId, () -> {
             Artifact loaded = loadGuard.load(playerId, stateStore::loadArtifact);
             Artifact resolved = loaded != null ? loaded : ArtifactGenerator.generateFor(playerId);
@@ -109,16 +116,28 @@ public class ArtifactManager {
                     artifact.setLastUtilityHistory(ObtuseLoot.get().getArtifactUsageTracker().utilityHistoryFor(artifact).encode()));
         }
         loadedArtifacts.forEach(this::saveOrKeepDirty);
+        for (String key : java.util.Set.copyOf(dirtyItemProfiles)) {
+            Artifact profile = itemProfiles.get(key);
+            if (profile != null) saveOrKeepDirty(profile.getOwnerId(), profile);
+        }
         cache.saveAllDirty();
         stateStore.retryFailedWrites();
     }
 
     private boolean saveOrKeepDirty(UUID playerId, Artifact artifact) {
         try {
-            stateStore.saveArtifact(playerId, artifact);
+            if (ArtifactStorageKeys.isItem(artifact.getArtifactStorageKey())) {
+                stateStore.saveArtifactProfile(artifact);
+                synchronized (itemProfiles) {
+                    dirtyItemProfiles.remove(artifact.getArtifactStorageKey());
+                    trimItemCache();
+                }
+            } else {
+                stateStore.saveArtifact(playerId, artifact);
+            }
             return true;
         } catch (RuntimeException ex) {
-            cache.markDirty(artifact);
+            markDirty(artifact);
             logger().log(Level.SEVERE, "[Persistence] Failed to save artifact for " + playerId + "; will retry on next save.", ex);
             return false;
         }
@@ -127,6 +146,12 @@ public class ArtifactManager {
     public void unload(UUID playerId) {
         loadGuard.forget(playerId);
         Artifact loaded = loadedArtifacts.get(playerId);
+        if (loaded != null && ArtifactStorageKeys.isItem(loaded.getArtifactStorageKey())) {
+            saveOrKeepDirty(playerId, loaded);
+            loadedArtifacts.remove(playerId, loaded); // the per-item retry buffer retains failed saves
+            synchronized (itemProfiles) { trimItemCache(); }
+            return;
+        }
         if (!cache.isEnabled() && loaded != null && !saveOrKeepDirty(playerId, loaded)) return;
         cache.releaseOwner(playerId);
         Artifact removed = loadedArtifacts.remove(playerId);
@@ -173,6 +198,23 @@ public class ArtifactManager {
         if (storageKey == null || storageKey.isBlank()) {
             return null;
         }
+        if (ArtifactStorageKeys.isItem(storageKey)) {
+            ArtifactStorageKeys.itemId(storageKey);
+            Artifact retained = itemProfiles.get(storageKey);
+            if (retained != null) { rememberItem(retained); return retained; }
+            UUID itemId = ArtifactStorageKeys.itemId(storageKey);
+            Artifact loaded = itemLoadGuard.load(itemId, ignored -> {
+                Artifact stored = stateStore.loadArtifactProfile(storageKey);
+                if (stored == null) throw new PlayerStateLoadException(itemId, "Missing profile for tracked item " + storageKey, null);
+                return stored;
+            });
+            itemLoadGuard.consumeRecovered(itemId);
+            if (!storageKey.equals(loaded.getArtifactStorageKey()) || loaded.getArtifactSeed() == 0) {
+                throw new IllegalStateException("Invalid persisted per-item identity " + storageKey);
+            }
+            rememberItem(loaded);
+            return loaded;
+        }
         UUID owner = storageToOwner.get(storageKey);
         if (owner != null) {
             return getOrCreate(owner);
@@ -204,6 +246,64 @@ public class ArtifactManager {
         return null;
     }
 
+    /** Persist identity before an item can be stamped. Caller owns no world/item mutation here. */
+    public void registerItem(Artifact artifact) {
+        String key = artifact.getArtifactStorageKey();
+        ArtifactStorageKeys.itemId(key);
+        if (itemProfiles.containsKey(key) || stateStore.loadArtifactProfile(key) != null) {
+            throw new IllegalStateException("Artifact identity already exists: " + key);
+        }
+        stateStore.saveArtifactProfile(artifact);
+        rememberItem(artifact);
+    }
+
+    public void saveItem(Artifact artifact) {
+        markDirty(artifact);
+        if (!saveOrKeepDirty(artifact.getOwnerId(), artifact)) throw new IllegalStateException("Per-item save failed");
+    }
+
+    public void activateItem(UUID holder, Artifact artifact) {
+        ArtifactStorageKeys.itemId(artifact.getArtifactStorageKey());
+        Artifact previous = loadedArtifacts.get(holder);
+        if (previous != null && previous != artifact && !saveOrKeepDirty(holder, previous)) {
+            throw new IllegalStateException("Cannot switch away from an unsaved artifact");
+        }
+        loadedArtifacts.entrySet().removeIf(entry -> !entry.getKey().equals(holder) && entry.getValue() == artifact);
+        artifact.setOwnerId(holder);
+        if (activatedItemProfiles.add(artifact.getArtifactStorageKey()) && ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().hydrateFromArtifact(artifact);
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+        }
+        loadedArtifacts.put(holder, artifact);
+        markDirty(artifact);
+    }
+
+    public int cachedItemProfiles() { return itemProfiles.size(); }
+
+    private void rememberItem(Artifact artifact) {
+        synchronized (itemProfiles) {
+            String key = artifact.getArtifactStorageKey();
+            itemProfiles.put(key, artifact);
+            itemProfileAccess.put(key, ++itemAccessSequence);
+            trimItemCache();
+        }
+    }
+
+    /** A memory bound only; persisted artifacts and ecological eligibility are never removed here. */
+    private void trimItemCache() {
+        int limit = cache.isEnabled() ? Math.max(16, RuntimeSettings.get().activeArtifactCacheMaxEntries()) : 0;
+        if (itemProfiles.size() <= limit) return;
+        var pinned = loadedArtifacts.values().stream().map(Artifact::getArtifactStorageKey).collect(java.util.stream.Collectors.toSet());
+        var evictable = itemProfiles.keySet().stream().filter(key -> !pinned.contains(key) && !dirtyItemProfiles.contains(key))
+                .sorted(java.util.Comparator.comparingLong(key -> itemProfileAccess.getOrDefault(key, 0L))).toList();
+        for (String key : evictable) {
+            if (itemProfiles.size() <= limit) break;
+            itemProfiles.remove(key);
+            itemProfileAccess.remove(key);
+            activatedItemProfiles.remove(key);
+        }
+    }
+
     public Artifact reseed(UUID playerId, long newSeed) {
         Artifact artifact = getOrCreate(playerId);
         if (ObtuseLoot.get() != null) {
@@ -223,10 +323,18 @@ public class ArtifactManager {
     }
 
     public void markDirty(UUID playerId) {
+        Artifact current = loadedArtifacts.get(playerId);
+        if (current != null) markDirty(current);
         cache.markDirtyByOwner(playerId);
     }
 
     public void markDirty(Artifact artifact) {
+        if (artifact != null && ArtifactStorageKeys.isItem(artifact.getArtifactStorageKey())) {
+            synchronized (itemProfiles) {
+                dirtyItemProfiles.add(artifact.getArtifactStorageKey());
+                rememberItem(artifact);
+            }
+        }
         cache.markDirty(artifact);
     }
 
@@ -328,6 +436,20 @@ public class ArtifactManager {
             storageToOwner.remove(previous.getArtifactStorageKey(), playerId);
         }
         storageToOwner.put(artifact.getArtifactStorageKey(), playerId);
-        cache.put(playerId, artifact, dirty, true);
+        if (ArtifactStorageKeys.isItem(artifact.getArtifactStorageKey())) {
+            if (transition.discarded() != null) {
+                artifact.setItemReputation(transition.discarded().getItemReputation());
+                artifact.setParentStorageKey(transition.discarded().getParentStorageKey());
+                artifact.setInheritanceGeneration(transition.discarded().getInheritanceGeneration());
+                var inherited = transition.discarded().getGenome();
+                artifact.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(artifact.getArtifactSeed(), inherited.traits(),
+                        inherited.latentTraits(), inherited.activatedLatentTraits()));
+            }
+            rememberItem(artifact);
+            if (ObtuseLoot.get() != null) ObtuseLoot.get().getReputationManager().bindItem(playerId, artifact);
+            if (dirty) markDirty(artifact);
+        } else {
+            cache.put(playerId, artifact, dirty, true);
+        }
     }
 }

@@ -7,6 +7,8 @@ remain historical; see `status.md` and the repository's `docs/measured-ability-e
 implementation and its validation limits. Movement sensing and noncombat evolution timing remain
 separate follow-ups.
 
+**Local-inheritance follow-up:** the timing branch now has game-tick measured-outcome progression. The subsequent local-inheritance work adds per-item profiles, persistent genomes and parent selection from recent outcomes in a configurable 20-chunk range. Read `docs/local-artifact-inheritance.md` and `status.md` for its review state and limits; it does not establish all emergence criteria. The one-player-profile and seed-only genome descriptions below are historical baseline behavior.
+
 This file condenses what the 2026-10-19 doc-ingest agents verified against source. The full evidence, with file:line citations, is in `ingest-2026-10-19-fab9f2b/`. Items marked **inference:** were not directly verified. "What confirms it" says how to settle each one.
 
 Line numbers drift. Re-grep before citing any of them in a PR.

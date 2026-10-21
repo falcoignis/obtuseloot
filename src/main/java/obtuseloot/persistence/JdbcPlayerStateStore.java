@@ -38,6 +38,43 @@ public class JdbcPlayerStateStore implements PlayerStateStore {
     }
 
     @Override
+    public void saveArtifactProfile(Artifact artifact) {
+        obtuseloot.artifacts.ArtifactStorageKeys.itemId(artifact.getArtifactStorageKey());
+        savePayload("artifact_profiles", "storage_key", artifact.getArtifactStorageKey(), ArtifactProfileCodec.encode(artifact));
+    }
+
+    @Override
+    public Artifact loadArtifactProfile(String storageKey) {
+        obtuseloot.artifacts.ArtifactStorageKeys.itemId(storageKey);
+        String payload = loadPayload("artifact_profiles", "storage_key", storageKey);
+        return payload == null ? null : ArtifactProfileCodec.decode(storageKey, payload);
+    }
+
+    @Override public void saveEcologyState(String state) { savePayload("ecology_state", "state_key", "local-inheritance", state); }
+    @Override public String loadEcologyState() { return loadPayload("ecology_state", "state_key", "local-inheritance"); }
+
+    private void savePayload(String table, String keyColumn, String key, String payload) {
+        String sql = "INSERT INTO " + table + "(" + keyColumn + ",payload) VALUES (?,?)" + (dialect == Dialect.MYSQL
+                ? " ON DUPLICATE KEY UPDATE payload=VALUES(payload)"
+                : " ON CONFLICT(" + keyColumn + ") DO UPDATE SET payload=excluded.payload");
+        try (Connection connection = database.openConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, key); ps.setString(2, payload); ps.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed saving " + table + " record " + key, exception);
+        }
+    }
+
+    private String loadPayload(String table, String keyColumn, String key) {
+        try (Connection connection = database.openConnection(); PreparedStatement ps = connection.prepareStatement(
+                "SELECT payload FROM " + table + " WHERE " + keyColumn + "=?")) {
+            ps.setString(1, key);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getString(1) : null; }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed loading " + table + " record " + key, exception);
+        }
+    }
+
+    @Override
     public void saveArtifact(UUID playerId, Artifact artifact) {
         artifact.refreshNamingProjection();
         try (Connection connection = database.openConnection()) {

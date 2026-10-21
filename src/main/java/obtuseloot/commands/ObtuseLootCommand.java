@@ -106,7 +106,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            sender.sendMessage("§dObtuseLoot is active. Progression hooks are wired for combat/kill events.");
+            sender.sendMessage("§dObtuseLoot is active. Held artifacts evolve from measured ability outcomes.");
             return true;
         }
 
@@ -131,8 +131,15 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            plugin.getArtifactManager().unload(target.getUniqueId());
-            Artifact refreshed = plugin.getArtifactManager().getOrCreate(target.getUniqueId());
+            Artifact refreshed = plugin.getArtifactItemStorage().activateHeld(target);
+            if (refreshed == null) {
+                sender.sendMessage("§cThe target must hold a readable artifact item.");
+                return true;
+            }
+            plugin.getEvolutionEngine().evaluate(refreshed, refreshed.getItemReputation());
+            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), refreshed, refreshed.getItemReputation(), "command-refresh");
+            plugin.getArtifactManager().saveItem(refreshed);
+            plugin.getLoreEngine().refreshLore(target, refreshed, refreshed.getItemReputation());
 
             sender.sendMessage("§aRefreshed artifact profile for §f" + target.getName() + "§a: §d" + refreshed.getName());
             if (!sender.equals(target)) {
@@ -413,22 +420,10 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         try {
-            Artifact artifact = plugin.getArtifactManager().recreate(target.getUniqueId());
-            ArtifactReputation reputation = plugin.getReputationManager().get(target.getUniqueId());
-            plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, reputation, "command-give");
-            plugin.getLoreEngine().refreshLore(target, artifact, reputation);
-            plugin.getLineageRegistry().assignLineage(artifact);
-            plugin.getArtifactManager().markDirty(target.getUniqueId());
-            plugin.getArtifactManager().save(target.getUniqueId());
-            ItemStack item = renderArtifactItem(artifact, reputation);
-            var leftovers = target.getInventory().addItem(item);
-            if (!leftovers.isEmpty()) {
-                leftovers.values().forEach(drop -> target.getWorld().dropItemNaturally(target.getLocation(), drop));
-                sender.sendMessage("§eInventory full. Artifact dropped at " + target.getName() + "'s feet.");
-                target.sendMessage("§eYour inventory was full; artifact dropped at your feet.");
-            } else {
-                sender.sendMessage("§aGave artifact to " + target.getName() + ": §f" + artifact.getDisplayName());
-            }
+            var archetype = EquipmentArchetype.fromId(obtuseloot.artifacts.ArtifactGenerator.resolveCategory(plugin.getArtifactManager().rollSeed()));
+            Artifact artifact = plugin.getLocalEcosystem().createEquipment(target.getUniqueId(), archetype,
+                    obtuseloot.ecology.WorldPosition.from(target.getLocation()));
+            deliverGeneratedArtifact(sender, target, artifact);
             return true;
         } catch (RuntimeException ex) {
             plugin.getLogger().severe("[Command] /obtuseloot give failed for " + args[1] + ": " + ex.getMessage());
@@ -457,8 +452,8 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cHeld item is not valid equipment (weapon/tool/armor).");
             return true;
         }
-        Artifact replacement = plugin.getArtifactManager().recreateWithArchetype(
-                player.getUniqueId(), archetype, "command-convert:" + archetype.id());
+        Artifact replacement = plugin.getLocalEcosystem().createEquipment(player.getUniqueId(), archetype,
+                obtuseloot.ecology.WorldPosition.from(player.getLocation()));
         finalizeIdentityReplacement(player, null, replacement, "command-convert");
         sender.sendMessage("§aConverted held item into artifact identity: §f" + replacement.getDisplayName());
         return true;
@@ -576,7 +571,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         plugin.getItemAbilityManager().profileFor(artifact, reputation);
         plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), artifact, reputation, "command-repair-state");
         plugin.getLoreEngine().refreshLore(player, artifact, reputation);
-        player.getInventory().setItemInMainHand(renderArtifactItem(artifact, reputation));
+        player.getInventory().setItemInMainHand(renderArtifactItem(artifact, reputation, player.getInventory().getItemInMainHand()));
         plugin.getArtifactManager().markDirty(player.getUniqueId());
         plugin.getArtifactManager().save(player.getUniqueId());
         plugin.getReputationManager().save(player.getUniqueId());
@@ -637,10 +632,8 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                     + java.util.Arrays.stream(AbilityFamily.values()).map(v -> v.name().toLowerCase(java.util.Locale.ROOT)).toList());
             return true;
         }
-        Artifact artifact = plugin.getArtifactManager().recreateWithArchetype(
-                target.getUniqueId(),
-                constrainedArchetype,
-                "command-give-specific:" + selector + ":" + constrainedArchetype.id());
+        Artifact artifact = plugin.getLocalEcosystem().createEquipment(target.getUniqueId(), constrainedArchetype,
+                obtuseloot.ecology.WorldPosition.from(target.getLocation()));
         deliverGeneratedArtifact(sender, target, artifact);
         return true;
     }
@@ -673,6 +666,11 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     }
 
     private void finalizeIdentityReplacement(Player player, Artifact previous, Artifact replacement, String reason) {
+        if (obtuseloot.artifacts.ArtifactStorageKeys.isItem(replacement.getArtifactStorageKey())) {
+            plugin.getEngineScheduler().flushEvolution(player.getUniqueId());
+            plugin.getArtifactManager().activateItem(player.getUniqueId(), replacement);
+            plugin.getReputationManager().bindItem(player.getUniqueId(), replacement);
+        }
         ArtifactReputation reputation = plugin.getReputationManager().get(player.getUniqueId());
         if (previous != null) {
             plugin.getArtifactUsageTracker().transitionIdentity(previous, replacement);
@@ -682,7 +680,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
         }
         plugin.getItemAbilityManager().rebuildSubscriptions(player.getUniqueId(), replacement, reputation, reason);
         plugin.getLoreEngine().refreshLore(player, replacement, reputation);
-        player.getInventory().setItemInMainHand(renderArtifactItem(replacement, reputation));
+        player.getInventory().setItemInMainHand(renderArtifactItem(replacement, reputation, player.getInventory().getItemInMainHand()));
         plugin.getArtifactManager().markDirty(player.getUniqueId());
         plugin.getArtifactManager().save(player.getUniqueId());
         plugin.getReputationManager().save(player.getUniqueId());
@@ -697,7 +695,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             if (notify) player.sendMessage("§cHeld item is not an artifact.");
             return null;
         }
-        Artifact artifact = plugin.getArtifactItemStorage().resolve(held, player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
         if (artifact == null) {
             throw new IllegalStateException("Artifact storage key could not be resolved for held item.");
         }
@@ -712,11 +710,16 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     }
 
     private ItemStack renderArtifactItem(Artifact artifact, ArtifactReputation reputation) {
+        return renderArtifactItem(artifact, reputation, null);
+    }
+
+    private ItemStack renderArtifactItem(Artifact artifact, ArtifactReputation reputation, ItemStack original) {
         Material material = Material.matchMaterial(artifact.getItemCategory().toUpperCase(java.util.Locale.ROOT));
         if (material == null || material == Material.AIR) {
             throw new IllegalStateException("Unable to render artifact item for category " + artifact.getItemCategory());
         }
-        ItemStack item = new ItemStack(material);
+        ItemStack item = original == null ? new ItemStack(material) : original.clone();
+        item.setType(material);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) {
             throw new IllegalStateException("Unable to render item meta for " + material);
@@ -729,12 +732,9 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
     }
 
     private void deliverGeneratedArtifact(CommandSender sender, Player target, Artifact artifact) {
-        ArtifactReputation reputation = plugin.getReputationManager().get(target.getUniqueId());
-        plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), artifact, reputation, "command-give-specific");
-        plugin.getLoreEngine().refreshLore(target, artifact, reputation);
-        plugin.getLineageRegistry().assignLineage(artifact);
-        plugin.getArtifactManager().markDirty(target.getUniqueId());
-        plugin.getArtifactManager().save(target.getUniqueId());
+        ArtifactReputation reputation = artifact.getItemReputation();
+        plugin.getItemAbilityManager().profileFor(artifact, reputation);
+        plugin.getArtifactManager().saveItem(artifact);
         ItemStack item = renderArtifactItem(artifact, reputation);
         var leftovers = target.getInventory().addItem(item);
         if (!leftovers.isEmpty()) {
@@ -743,7 +743,7 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
             target.sendMessage("§eYour inventory was full; artifact dropped at your feet.");
             return;
         }
-        sender.sendMessage("§aGave constrained artifact to " + target.getName() + ": §f" + artifact.getDisplayName()
+        sender.sendMessage("§aGave artifact to " + target.getName() + ": §f" + artifact.getDisplayName()
                 + " §7(" + artifact.getItemCategory() + ")");
     }
 

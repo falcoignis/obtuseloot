@@ -2,7 +2,6 @@ package obtuseloot.abilities;
 
 import obtuseloot.abilities.genome.ArtifactGenome;
 import obtuseloot.abilities.genome.GenomeMutationEngine;
-import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.lineage.LineageGenomeInheritance;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.evolution.AdaptiveSupportAllocation;
@@ -87,7 +86,6 @@ public class ProceduralAbilityGenerator {
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private final LineageRegistry lineageRegistry;
     private final LineageInfluenceResolver lineageResolver;
-    private final GenomeResolver genomeResolver;
     private final GenomeMutationEngine mutationEngine;
     private final LineageGenomeInheritance lineageGenomeInheritance;
     private final TraitInterferenceResolver traitInterferenceResolver;
@@ -180,7 +178,6 @@ public class ProceduralAbilityGenerator {
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
         this.lineageResolver = lineageResolver;
-        this.genomeResolver = new GenomeResolver();
         this.mutationEngine = new GenomeMutationEngine();
         this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
@@ -223,7 +220,7 @@ public class ProceduralAbilityGenerator {
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage, utilityHistory)));
 
         ArtifactGenome baseGenome = mutationEngine.mutate(
-                genomeResolver.resolve(artifact.getArtifactSeed()),
+                artifact.getGenome(),
                 evolutionStage,
                 lineageMutationInfluence,
                 mutationEcologyPressure,

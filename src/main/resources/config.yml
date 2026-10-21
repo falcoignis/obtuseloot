@@ -342,3 +342,8 @@ safety:
     minCombinedSuppression: 0.75
   dump:
     cooldownMs: 3000
+
+# New equipment inherits only from recent measured activity within this same-world radius.
+ecology:
+  inheritance-radius-chunks: 20
+  inheritance-outcome-window-ticks: 6000

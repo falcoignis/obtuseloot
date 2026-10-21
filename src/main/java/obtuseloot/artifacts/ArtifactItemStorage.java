@@ -48,10 +48,9 @@ public final class ArtifactItemStorage {
     public Artifact resolve(ItemStack item, UUID fallbackOwner) {
         String storageKey = readStorageKey(item);
         if (storageKey != null) {
+            if (!ArtifactStorageKeys.isItem(storageKey)) return null;
             Artifact resolved = plugin.getArtifactManager().resolveByStorageKey(storageKey);
-            if (resolved != null) {
-                return resolved;
-            }
+            return resolved; // a missing tracked identity must never fall back to another artifact
         }
         if (fallbackOwner != null) {
             return plugin.getArtifactManager().tryGet(fallbackOwner);
@@ -59,48 +58,56 @@ public final class ArtifactItemStorage {
         return null;
     }
 
-    public boolean migrateLegacyIfPresent(Player player, ItemStack item) {
-        if (item == null || !item.hasItemMeta()) {
-            return false;
+    /** Bind the held physical item before gameplay. Switching never transfers its history to another item. */
+    public Artifact activateHeld(Player player) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (!isArtifactItem(held)) {
+            Artifact previous = plugin.getArtifactManager().getLoadedArtifacts().get(player.getUniqueId());
+            if (previous != null && ArtifactStorageKeys.isItem(previous.getArtifactStorageKey())) {
+                plugin.getEngineScheduler().flushEvolution(player.getUniqueId());
+                plugin.getArtifactManager().unload(player.getUniqueId());
+                plugin.getReputationManager().unbindItem(player.getUniqueId());
+                plugin.getItemAbilityManager().clearSubscriptions(player.getUniqueId());
+                plugin.getCombatContextManager().remove(player.getUniqueId());
+            }
+            return null;
         }
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) {
-            return false;
+        try {
+            Artifact artifact = resolve(held, null);
+            if (artifact == null) return null;
+            if (!ArtifactStorageKeys.isItem(artifact.getArtifactStorageKey())) return artifact;
+            UUID holder = player.getUniqueId();
+            Artifact current = plugin.getArtifactManager().getLoadedArtifacts().get(holder);
+            if (current != artifact || !holder.equals(artifact.getOwnerId())
+                    || plugin.getReputationManager().getLoadedReputations().get(holder) != artifact.getItemReputation()) {
+                UUID previousHolder = artifact.getOwnerId();
+                plugin.getEngineScheduler().flushEvolution(holder);
+                if (!previousHolder.equals(holder)
+                        && plugin.getArtifactManager().getLoadedArtifacts().get(previousHolder) == artifact) {
+                    plugin.getEngineScheduler().flushEvolution(previousHolder);
+                    plugin.getReputationManager().unbindItem(previousHolder);
+                    plugin.getItemAbilityManager().clearSubscriptions(previousHolder);
+                    plugin.getCombatContextManager().remove(previousHolder);
+                }
+                plugin.getArtifactManager().activateItem(holder, artifact);
+                plugin.getReputationManager().bindItem(holder, artifact);
+                if (current != artifact) plugin.getCombatContextManager().remove(holder);
+                plugin.getItemAbilityManager().clearSubscriptions(holder);
+                plugin.getItemAbilityManager().rebuildSubscriptions(holder, artifact, artifact.getItemReputation(), "physical-item-activation");
+                stampMinimalIdentity(held, artifact);
+            }
+            return artifact;
+        } catch (obtuseloot.persistence.PlayerStateLoadException exception) {
+            return null; // the shared load guard reports failures and applies retry backoff
+        } catch (RuntimeException exception) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Refusing held artifact for " + player.getUniqueId(), exception);
+            return null;
         }
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        if (!pdc.has(keys.legacyBlobKey(), PersistentDataType.STRING) && !pdc.has(keys.artifactStorageKey(), PersistentDataType.STRING)) {
-            return false;
-        }
-
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
-        if (artifact == null) {
-            return false;
-        }
-        stampMinimalIdentity(item, artifact);
-        plugin.getArtifactManager().save(player.getUniqueId());
-        plugin.getLogger().info("[ArtifactStorage] Migrated legacy artifact item for " + player.getUniqueId()
-                + " to minimal identity key=" + artifact.getArtifactStorageKey());
-        return true;
     }
 
-    public int migrateInventory(Player player) {
-        int migrated = 0;
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && migrateLegacyIfPresent(player, item)) {
-                migrated++;
-            }
-        }
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null && migrateLegacyIfPresent(player, item)) {
-                migrated++;
-            }
-        }
-        ItemStack offHand = player.getInventory().getItemInOffHand();
-        if (offHand != null && migrateLegacyIfPresent(player, offHand)) {
-            migrated++;
-        }
-        return migrated;
-    }
+    /** No player data exists to migrate; old player-scoped tags are never restamped onto physical items. */
+    public boolean migrateLegacyIfPresent(Player player, ItemStack item) { return false; }
+    public int migrateInventory(Player player) { return 0; }
 
     public String describeItemStorage(ItemStack item) {
         if (item == null) {

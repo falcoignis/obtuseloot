@@ -26,8 +26,8 @@ public final class ArtifactProcessor {
 
     public static void processKill(Player player) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
@@ -85,8 +85,8 @@ public final class ArtifactProcessor {
 
     public static void processCombat(Player player, EntityDamageByEntityEvent event) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
@@ -133,8 +133,8 @@ public final class ArtifactProcessor {
                                                                         AbilityRuntimeContext runtimeContext,
                                                                         org.bukkit.event.Event liveEvent) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return new AbilityDispatchResult(null, List.of()); // stored state unreadable; dispatch nothing
         }
@@ -151,8 +151,8 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedCombat(Player player, double damage) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
@@ -182,8 +182,8 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedMultiKill(Player player, int count) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
@@ -196,8 +196,8 @@ public final class ArtifactProcessor {
 
     public static void processSimulatedBossKill(Player player) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        Artifact artifact = plugin.getArtifactManager().tryGet(player.getUniqueId());
-        ArtifactReputation rep = plugin.getReputationManager().tryGet(player.getUniqueId());
+        Artifact artifact = plugin.getArtifactItemStorage().activateHeld(player);
+        ArtifactReputation rep = artifact == null ? null : artifact.getItemReputation();
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
