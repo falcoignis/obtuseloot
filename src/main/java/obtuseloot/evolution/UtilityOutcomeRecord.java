@@ -16,7 +16,15 @@ public record UtilityOutcomeRecord(
         double contextualRelevance,
         double budgetCost,
         String source,
-        long occurredAt
+        long occurredAt,
+        String observationKey
 ) {
+    public UtilityOutcomeRecord(String abilityId, AbilityMechanic mechanic, AbilityTrigger trigger,
+                                 AbilityExecutionStatus status, AbilityOutcomeType outcomeType,
+                                 boolean meaningfulOutcome, boolean intentional, double contextualRelevance,
+                                 double budgetCost, String source, long occurredAt) {
+        this(abilityId, mechanic, trigger, status, outcomeType, meaningfulOutcome, intentional,
+                contextualRelevance, budgetCost, source, occurredAt, null);
+    }
 }
 

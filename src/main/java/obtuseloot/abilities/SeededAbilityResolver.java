@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 public class SeededAbilityResolver implements AbilityResolver {
     private final ProceduralAbilityGenerator generator;
+    private final AbilityRegistry registry;
     private final AbilityMutationEngine mutationEngine = new AbilityMutationEngine();
     private final AbilityBranchResolver branchResolver = new AbilityBranchResolver();
     private final ArtifactMemoryEngine memoryEngine;
@@ -39,6 +40,7 @@ public class SeededAbilityResolver implements AbilityResolver {
                                  LineageRegistry lineageRegistry,
                                  LineageInfluenceResolver lineageResolver,
                                  ExperienceEvolutionEngine experienceEvolutionEngine) {
+        this.registry = registry;
         this.generator = new ProceduralAbilityGenerator(registry, ecosystemEngine, lineageRegistry, lineageResolver, experienceEvolutionEngine);
         this.memoryEngine = memoryEngine;
         this.lineageRegistry = lineageRegistry;
@@ -63,21 +65,29 @@ public class SeededAbilityResolver implements AbilityResolver {
         ArtifactNicheProfile nicheProfile = roleClassifier.classify(UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()).signalByMechanicTrigger());
         NicheVariantProfile variantProfile = ObtuseLoot.get() == null ? null : ObtuseLoot.get().getArtifactUsageTracker().nichePopulationTracker().variantFor(artifact.getArtifactSeed());
         AbilityMutationResult mutationResult = mutationEngine.mutate(artifact, enhanced, memoryProfile, artifact.getTotalDrifts() > 0, UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()), lineageRegistry.assignLineage(artifact), variantProfile);
+        var originals = enhanced.stream().collect(Collectors.toMap(AbilityDefinition::id, definition -> definition));
+        List<String> unsupportedVariants = new ArrayList<>();
+        List<AbilityDefinition> executableAbilities = mutationResult.abilities().stream().map(variant -> {
+            AbilityDefinition supported = registry.executableVariant(variant, originals.get(variant.id()));
+            if (supported != variant) unsupportedVariants.add(variant.id());
+            return supported;
+        }).toList();
         boolean mutated = !mutationResult.mutations().isEmpty();
         ArtifactLineage lineage = lineageRegistry.assignLineage(artifact);
-        AbilityDiversityIndex.instance().recordDefinitions(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, mutationResult.abilities());
+        AbilityDiversityIndex.instance().recordDefinitions(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), nicheProfile.dominantNiche(), variantProfile, executableAbilities);
 
         artifact.setLastAbilityBranchPath(branchPath.toString());
-        artifact.setLastTriggerProfile(mutationResult.abilities().stream().map(a -> a.trigger().name()).collect(Collectors.joining(",")));
-        artifact.setLastMechanicProfile(mutationResult.abilities().stream().map(a -> a.mechanic().name()).collect(Collectors.joining(",")));
-        artifact.setLastMutationHistory(mutationResult.mutations().toString());
+        artifact.setLastTriggerProfile(executableAbilities.stream().map(a -> a.trigger().name()).collect(Collectors.joining(",")));
+        artifact.setLastMechanicProfile(executableAbilities.stream().map(a -> a.mechanic().name()).collect(Collectors.joining(",")));
+        artifact.setLastMutationHistory(mutationResult.mutations() + (unsupportedVariants.isEmpty() ? ""
+                : " | unimplemented variants retained base effect: " + unsupportedVariants));
         artifact.setLastMemoryInfluence("pressure=" + memoryProfile.pressure() + ", chaos=" + memoryProfile.chaosWeight() + ", discipline=" + memoryProfile.disciplineWeight()
                 + ", aggression=" + memoryProfile.aggressionWeight() + ", survival=" + memoryProfile.survivalWeight() + ", mobility=" + memoryProfile.mobilityWeight()
                 + ", boss=" + memoryProfile.bossWeight() + ", trauma=" + memoryProfile.traumaWeight() + ", activeMutation=" + mutated
                 + ", lineageTraits=" + lineageResolver.traitSnapshot(lineage)
                 + ", templates=" + generated.abilities().stream().map(AbilityDefinition::id).toList());
         lineageRegistry.evaluateSpeciation(artifact);
-        return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), mutationResult.abilities());
+        return new AbilityProfile(generated.profileId() + (mutated ? "-mutated" : ""), executableAbilities);
     }
 
     public TraitProjectionStats traitProjectionStats() {

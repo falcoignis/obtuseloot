@@ -3,12 +3,18 @@ package obtuseloot.abilities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import obtuseloot.abilities.effects.GentleHarvestEffect;
+import obtuseloot.abilities.effects.MaterialInsightEffect;
 
 public class AbilityRegistry {
     private final List<AbilityTemplate> templates;
+    private final List<AbilityRegistration> registrations;
+    private final Map<String, AbilityRegistration> byId;
 
     public AbilityRegistry() {
-        this.templates = List.of(
+        this.registrations = List.of(
                 template("precision.echo_locator", "Echo Locator", AbilityCategory.SENSING_INFORMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.SENSE_PING,
                         "Resonant pulses reveal nearby hollows when crossing new terrain", "deeper echo strata", "drift introduces phantom echoes", "awakening stabilizes pulse geometry", "convergence shares cave cues", "memory records hollow corridors",
                         metadata(Set.of("environmental-sensing", "information"), Set.of("movement-throttled"), Set.of("watchful", "exploration", "memory"), 0.72D, 0.81D, 0.78D, 0.22D, 0.20D, 0.41D)),
@@ -17,7 +23,7 @@ public class AbilityRegistry {
                         metadata(Set.of("informational-interpretation", "environmental-sensing"), Set.of("chunk-change"), Set.of("watchful", "exploration"), 0.68D, 0.76D, 0.84D, 0.15D, 0.18D, 0.46D)),
                 template("precision.material_insight", "Material Insight", AbilityCategory.SENSING_INFORMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_BLOCK_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
                         "Inspected blocks whisper practical context and odd utility lore", "broader material lexicon", "drift adds cryptic readings", "awakening clarifies odd traits", "convergence links shared interpretations", "memory curates known materials",
-                        metadata(Set.of("information", "world-interpretation"), Set.of("intentional-interact"), Set.of("watchful", "curious"), 0.61D, 0.44D, 0.90D, 0.25D, 0.24D, 0.51D)),
+                        metadata(Set.of("information", "world-interpretation"), Set.of("intentional-interact"), Set.of("watchful", "curious"), 0.61D, 0.44D, 0.90D, 0.25D, 0.24D, 0.51D)).withLiveEffect(new MaterialInsightEffect()),
 
                 template("mobility.footprint_memory", "Footprint Memory", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.NAVIGATION_ANCHOR,
                         "Sneak-use marks a location and later points back to it", "longer recall range", "drift can misalign memory", "awakening anchors dimension-safe recall", "convergence broadcasts anchor to allies", "memory persists trusted waypoints",
@@ -31,7 +37,7 @@ public class AbilityRegistry {
 
                 template("survival.gentle_harvest", "Gentle Harvest", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_BLOCK_HARVEST, AbilityMechanic.HARVEST_RELAY,
                         "Mature crops are replanted with respectful timing", "more crop families supported", "drift occasionally skips replant", "awakening stabilizes replant certainty", "convergence helps nearby harvested rows", "memory tracks fertile habits",
-                        metadata(Set.of("farming-building", "world-interaction"), Set.of("block-break-filtered"), Set.of("worldkeeper", "support"), 0.57D, 0.38D, 0.34D, 0.20D, 0.59D, 0.91D)),
+                        metadata(Set.of("farming-building", "world-interaction"), Set.of("block-break-filtered"), Set.of("worldkeeper", "support"), 0.57D, 0.38D, 0.34D, 0.20D, 0.59D, 0.91D)).withLiveEffect(new GentleHarvestEffect()),
                 template("survival.ember_keeper", "Ember Keeper", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.RITUAL_CHANNEL,
                         "Campfires retain gentle utility states when tended by hand", "longer ember memory", "drift causes flicker moods", "awakening steadies flame intent", "convergence shares ember calm", "memory ties warmth to safe sites",
                         metadata(Set.of("ritual-utility", "world-interaction"), Set.of("campfire-interact"), Set.of("reverent", "support", "ritual"), 0.46D, 0.41D, 0.31D, 0.88D, 0.52D, 0.74D)),
@@ -294,14 +300,50 @@ public class AbilityRegistry {
                         "Reading a surface before passing through it can fold your freshest trace into older disturbance, making pursuit forensics lose the correct timestamp", "deepens trace-fold confidence", "drift can bury the route in unrelated clutter", "awakening separates usable cover from noisy history", "convergence lets crews stagger their traces into one older story", "memory records which materials hid passage best",
                         metadata(Set.of("stealth", "forensic-evasion", "trace-folding"), Set.of("intentional-interact", "surface-read", "timestamp-blur"), Set.of("stealth", "builder", "trader"), 0.82D, 0.67D, 0.94D, 0.14D, 0.32D, 0.59D))
         );
+        this.templates = registrations.stream().map(AbilityRegistration::template).toList();
+        this.byId = index(registrations);
     }
 
-    private AbilityTemplate template(String id, String name, AbilityCategory category, AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,
+    /** Catalog replacement is immutable: removing an entry also removes its live implementation. */
+    public AbilityRegistry(List<AbilityRegistration> registrations) {
+        this.registrations = List.copyOf(registrations);
+        this.templates = registrations.stream().map(AbilityRegistration::template).toList();
+        this.byId = index(this.registrations);
+    }
+
+    private static Map<String, AbilityRegistration> index(List<AbilityRegistration> registrations) {
+        Map<String, AbilityRegistration> byId = new LinkedHashMap<>();
+        for (AbilityRegistration registration : registrations) {
+            String id = registration.template().id();
+            if (id == null || id.isBlank() || byId.putIfAbsent(id, registration) != null) {
+                throw new IllegalArgumentException("Ability catalog IDs must be nonblank and unique: " + id);
+            }
+        }
+        return Map.copyOf(byId);
+    }
+
+    public List<AbilityRegistration> registrations() { return registrations; }
+    public AbilityRegistry implementedOnly() {
+        return new AbilityRegistry(registrations.stream().filter(entry -> entry.liveEffect() != null).toList());
+    }
+    public AbilityRegistration registrationById(String id) { return byId.get(id); }
+    public AbilityTemplate templateById(String id) {
+        AbilityRegistration registration = byId.get(id);
+        return registration == null ? null : registration.template();
+    }
+
+    /** An unsupported mutation must not strand an otherwise executable ability. */
+    public AbilityDefinition executableVariant(AbilityDefinition variant, AbilityDefinition original) {
+        AbilityRegistration entry = byId.get(variant.id());
+        return entry != null && entry.liveEffect() != null && !entry.supports(variant) ? original : variant;
+    }
+
+    private AbilityRegistration template(String id, String name, AbilityCategory category, AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,
                                      String effectPattern, String evolutionVariant, String driftVariant, String awakeningVariant, String convergenceVariant,
                                      String memoryVariant, AbilityMetadata metadata) {
         AbilityMetadata enriched = metadata.triggerBudgetProfile() == null ? withBudgetDefaults(trigger, metadata) : metadata;
-        return new AbilityTemplate(id, name, category, family, trigger, mechanic, effectPattern, evolutionVariant, driftVariant, awakeningVariant, convergenceVariant,
-                memoryVariant, List.of(new AbilityModifier("support.signature", "non-combat tuning hook", 0.04, false)), enriched);
+        return new AbilityRegistration(new AbilityTemplate(id, name, category, family, trigger, mechanic, effectPattern, evolutionVariant, driftVariant, awakeningVariant, convergenceVariant,
+                memoryVariant, List.of(new AbilityModifier("support.signature", "non-combat tuning hook", 0.04, false)), enriched), null);
     }
 
     private AbilityMetadata metadata(Set<String> domains, Set<String> triggers, Set<String> affinities,

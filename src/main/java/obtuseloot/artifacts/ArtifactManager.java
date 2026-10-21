@@ -50,6 +50,9 @@ public class ArtifactManager {
      *                                  cached or saved for the player; a later call retries after a backoff.
      */
     public Artifact getOrCreate(UUID playerId) {
+        // The loaded profile is also the retry buffer when the optional LRU cache is disabled.
+        Artifact retained = loadedArtifacts.get(playerId);
+        if (!cache.isEnabled() && retained != null) return retained;
         Artifact artifact = cache.resolve(playerId, () -> {
             Artifact loaded = loadGuard.load(playerId, stateStore::loadArtifact);
             Artifact resolved = loaded != null ? loaded : ArtifactGenerator.generateFor(playerId);
@@ -110,17 +113,21 @@ public class ArtifactManager {
         stateStore.retryFailedWrites();
     }
 
-    private void saveOrKeepDirty(UUID playerId, Artifact artifact) {
+    private boolean saveOrKeepDirty(UUID playerId, Artifact artifact) {
         try {
             stateStore.saveArtifact(playerId, artifact);
+            return true;
         } catch (RuntimeException ex) {
             cache.markDirty(artifact);
             logger().log(Level.SEVERE, "[Persistence] Failed to save artifact for " + playerId + "; will retry on next save.", ex);
+            return false;
         }
     }
 
     public void unload(UUID playerId) {
         loadGuard.forget(playerId);
+        Artifact loaded = loadedArtifacts.get(playerId);
+        if (!cache.isEnabled() && loaded != null && !saveOrKeepDirty(playerId, loaded)) return;
         cache.releaseOwner(playerId);
         Artifact removed = loadedArtifacts.remove(playerId);
         if (removed != null) {

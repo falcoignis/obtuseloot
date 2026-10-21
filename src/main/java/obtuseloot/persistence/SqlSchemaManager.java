@@ -126,6 +126,7 @@ public class SqlSchemaManager {
                     last_kill_timestamp BIGINT,
                     last_combat_timestamp BIGINT,
                     survival_streak INT,
+                    utility_experience TEXT,
                     FOREIGN KEY (player_uuid) REFERENCES players(player_uuid)
                 )
                 """);

@@ -1,6 +1,51 @@
 package obtuseloot.reputation;
 
+import obtuseloot.abilities.AbilityFamily;
+import java.util.EnumMap;
+import java.util.stream.Collectors;
+
 public class ArtifactReputation {
+    private final EnumMap<AbilityFamily, Double> utilityExperience =
+            new EnumMap<>(AbilityFamily.class);
+
+    /** Carry fractional utility and penalties across windows/restarts; one net utility unit earns one point. */
+    public void recordUtilityExperience(AbilityFamily family, double delta) {
+        if (!Double.isFinite(delta)) throw new IllegalArgumentException("Non-finite utility experience");
+        double credit = utilityExperience.getOrDefault(family, 0.0D) + delta;
+        if (!Double.isFinite(credit)) throw new IllegalArgumentException("Utility experience overflow");
+        int points = credit > 0 ? Math.toIntExact((long) Math.floor(credit)) : 0;
+        switch (family) {
+            case PRECISION -> precision = Math.addExact(precision, points);
+            case BRUTALITY -> brutality = Math.addExact(brutality, points);
+            case SURVIVAL -> survival = Math.addExact(survival, points);
+            case MOBILITY -> mobility = Math.addExact(mobility, points);
+            case CHAOS -> chaos = Math.addExact(chaos, points);
+            case CONSISTENCY -> consistency = Math.addExact(consistency, points);
+        }
+        utilityExperience.put(family, credit - points);
+    }
+
+    public String encodeUtilityExperience() {
+        return utilityExperience.entrySet().stream().map(entry -> entry.getKey().name() + "=" + entry.getValue())
+                .collect(Collectors.joining(";"));
+    }
+
+    public void restoreUtilityExperience(String encoded) {
+        var restored = new EnumMap<AbilityFamily, Double>(AbilityFamily.class);
+        if (encoded != null && !encoded.isBlank()) {
+            for (String segment : encoded.split(";")) {
+                String[] fields = segment.split("=", -1);
+                if (fields.length != 2) throw new IllegalArgumentException("Malformed utility experience");
+                var family = AbilityFamily.valueOf(fields[0]);
+                double value = Double.parseDouble(fields[1]);
+                if (!Double.isFinite(value) || value >= 1 || restored.putIfAbsent(family, value) != null) {
+                    throw new IllegalArgumentException("Invalid utility experience balance");
+                }
+            }
+        }
+        utilityExperience.clear();
+        utilityExperience.putAll(restored);
+    }
     private int precision;
     private int brutality;
     private int survival;

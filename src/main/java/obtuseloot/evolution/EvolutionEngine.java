@@ -17,6 +17,10 @@ public class EvolutionEngine {
     }
 
     public void evaluate(Player player, Artifact artifact, ArtifactReputation reputation) {
+        evaluate(artifact, reputation);
+    }
+
+    public void evaluate(Artifact artifact, ArtifactReputation reputation) {
         RuntimeSettings.Snapshot s = RuntimeSettings.get();
         ArtifactArchetypeValidator.requireValid(artifact, "evolution evaluation");
         if (reputation.getTotalScore() < s.archetypeThreshold()) {

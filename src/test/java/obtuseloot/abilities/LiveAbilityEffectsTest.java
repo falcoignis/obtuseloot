@@ -66,6 +66,8 @@ class LiveAbilityEffectsTest {
         current = data(Material.AIR, 0);
         world = api(World.class, (method, args) -> switch (method) {
             case "getEnvironment" -> World.Environment.NORMAL;
+            case "getUID" -> new UUID(0, 10);
+            case "getGameTime" -> 200L;
             case "getSpawnLocation" -> new Location(world, 0, 64, 0);
             default -> unexpected(method);
         });
@@ -90,6 +92,7 @@ class LiveAbilityEffectsTest {
             case "getState" -> snapshot(current);
             case "getWorld" -> world;
             case "getX" -> x;
+            case "getY" -> 64;
             case "getZ" -> 100;
             case "getLightLevel" -> (byte) 12;
             default -> unexpected(method);
@@ -131,6 +134,7 @@ class LiveAbilityEffectsTest {
         assertEquals(AbilityExecutionStatus.SUCCESS, result.status());
         assertEquals(1.0, result.observedAmount());
         assertTrue(result.meaningfulOutcome());
+        assertEquals(world.getUID() + ":100:64:100:200", result.observationKey());
         assertEquals(type, current.getMaterial());
         assertEquals(0, ((Ageable) current).getAge());
         assertEquals(2, dropStack.getAmount());
@@ -215,6 +219,8 @@ class LiveAbilityEffectsTest {
         // Both horizontal coordinates must be inside the spawn radius.
         world = api(World.class, (method, args) -> switch (method) {
             case "getEnvironment" -> World.Environment.NORMAL;
+            case "getUID" -> new UUID(0, 10);
+            case "getGameTime" -> 200L;
             case "getSpawnLocation" -> new Location(world, 0, 64, 100);
             default -> unexpected(method);
         });
@@ -241,6 +247,37 @@ class LiveAbilityEffectsTest {
         assertEquals(4, ((Ageable) current).getAge());
     }
 
+    @Test
+    void actualInspectionsDistinguishTargetsButPenalizeAnUnchangedRepeatedReport() {
+        var definition = definition("precision.material_insight");
+        var varied = artifact();
+        var repeated = artifact();
+        var variedTracker = new ArtifactUsageTracker();
+        var repeatedTracker = new ArtifactUsageTracker();
+        var variedReputation = new ArtifactReputation();
+        var repeatedReputation = new ArtifactReputation();
+        current = data(Material.WHEAT, 4);
+        String originalKey = execute(definition.id(), inspection(EquipmentSlot.HAND)).observationKey();
+        assertNotNull(originalKey);
+        assertEquals(originalKey, execute(definition.id(), inspection(EquipmentSlot.HAND)).observationKey());
+        for (int i = 0; i < 30; i++) {
+            x = 100 + i;
+            var context = context(varied, definition, inspection(EquipmentSlot.HAND));
+            var result = executor.execute(definition, context, 1);
+            variedReputation.recordUtilityExperience(definition.family(),
+                    variedTracker.trackAbilityExecution(varied, context, result, definition));
+            x = 100;
+            context = context(repeated, definition, inspection(EquipmentSlot.HAND));
+            result = executor.execute(definition, context, 1);
+            repeatedReputation.recordUtilityExperience(definition.family(),
+                    repeatedTracker.trackAbilityExecution(repeated, context, result, definition));
+        }
+        assertTrue(variedReputation.getTotalScore() >= 10, "Different actual targets can reach the first existing stage");
+        assertTrue(repeatedReputation.getTotalScore() < 10, "Repeating one unchanged report must retain its redundancy penalty");
+        current = data(Material.WHEAT, 5);
+        assertNotEquals(originalKey, execute(definition.id(), inspection(EquipmentSlot.HAND)).observationKey());
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void indexedAndFullScanDispatchApplyEffectOnceAndBudgetBlocksRepeat(boolean indexed) {
@@ -263,7 +300,7 @@ class LiveAbilityEffectsTest {
         var definition = definition("mobility.compass_stories");
         var result = executor.execute(definition, context(artifact(), definition, null), 1);
         assertEquals(AbilityExecutionStatus.NO_OP, result.status());
-        assertEquals(0.0, result.observedAmount());
+        assertNull(result.observedAmount());
         assertFalse(result.meaningfulOutcome());
     }
 
@@ -277,7 +314,7 @@ class LiveAbilityEffectsTest {
             var result = executor.execute(variant, context(artifact(), variant, event), 1);
             assertEquals(AbilityExecutionStatus.NO_OP, result.status());
             assertEquals("effect-variant-not-implemented", result.suppressionReason());
-            assertEquals(0.0, result.observedAmount());
+            assertNull(result.observedAmount());
             assertEquals(Material.AIR, current.getMaterial());
             assertTrue(messages.isEmpty());
             assertTrue(placements.isEmpty());

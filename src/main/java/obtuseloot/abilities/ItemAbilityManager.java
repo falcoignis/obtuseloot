@@ -5,6 +5,7 @@ import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.eligibility.ArtifactEligibility;
 import obtuseloot.evolution.MechanicUtilitySignal;
+import obtuseloot.evolution.ArtifactUsageTracker;
 import obtuseloot.reputation.ArtifactReputation;
 
 import java.util.EnumMap;
@@ -17,11 +18,13 @@ import java.util.stream.Collectors;
 
 public class ItemAbilityManager {
     private final AbilityResolver resolver;
+    private final ArtifactUsageTracker usageTracker;
+    private java.util.function.Consumer<AbilityOutcomeObservation> outcomeObserver = observation -> { };
     private final Map<String, Integer> triggerCounts = new HashMap<>();
     private final Map<String, Integer> triggerSourceCounts = new HashMap<>();
     private final Map<String, LongAdder> coalescedExecutionByTrigger = new HashMap<>();
     private final TriggerSubscriptionIndex subscriptionIndex = new TriggerSubscriptionIndex();
-    private final EventAbilityDispatcher dispatcher = new EventAbilityDispatcher();
+    private final EventAbilityDispatcher dispatcher;
     private final TriggerBudgetManager triggerBudgetManager = new TriggerBudgetManager();
 
     private final LongAdder dispatchCalls = new LongAdder();
@@ -40,7 +43,17 @@ public class ItemAbilityManager {
     private volatile boolean triggerSubscriptionIndexingEnabled = true;
 
     public ItemAbilityManager(AbilityResolver resolver) {
+        this(resolver, new AbilityRegistry());
+    }
+
+    public ItemAbilityManager(AbilityResolver resolver, AbilityRegistry registry) {
+        this(resolver, registry, null);
+    }
+
+    public ItemAbilityManager(AbilityResolver resolver, AbilityRegistry registry, ArtifactUsageTracker usageTracker) {
         this.resolver = resolver;
+        this.usageTracker = usageTracker;
+        this.dispatcher = new EventAbilityDispatcher(registry);
         for (AbilityTrigger trigger : AbilityTrigger.values()) {
             dispatchByTrigger.put(trigger, new LongAdder());
             subscriberByTrigger.put(trigger, new LongAdder());
@@ -48,6 +61,10 @@ public class ItemAbilityManager {
         for (AbilityExecutionStatus status : AbilityExecutionStatus.values()) {
             executionStatusCounts.put(status, new LongAdder());
         }
+    }
+
+    public void setOutcomeObserver(java.util.function.Consumer<AbilityOutcomeObservation> observer) {
+        this.outcomeObserver = java.util.Objects.requireNonNull(observer);
     }
 
     public void setTriggerSubscriptionIndexingEnabled(boolean enabled) {
@@ -248,23 +265,26 @@ public class ItemAbilityManager {
 
     public Map<String, MechanicUtilitySignal> utilitySignalsForArtifact(Artifact artifact) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        if (plugin == null || artifact == null) {
-            return Map.of();
-        }
-        return plugin.getArtifactUsageTracker().profileFor(artifact).utilitySignalsByMechanic();
+        ArtifactUsageTracker tracker = usageTracker != null ? usageTracker
+                : plugin == null ? null : plugin.getArtifactUsageTracker();
+        return tracker == null || artifact == null ? Map.of()
+                : tracker.profileFor(artifact).utilitySignalsByMechanic();
     }
 
     private void recordUtilityOutcomes(AbilityEventContext context,
                                        AbilityDispatchResult dispatchResult,
                                        Map<String, AbilityDefinition> definitionsById) {
         ObtuseLoot plugin = ObtuseLoot.get();
-        if (plugin == null) {
+        ArtifactUsageTracker tracker = usageTracker != null ? usageTracker
+                : plugin == null ? null : plugin.getArtifactUsageTracker();
+        if (tracker == null) {
             return;
         }
         dispatchResult.executions().forEach(result -> {
             AbilityDefinition definition = definitionsById.get(result.abilityId());
             if (definition != null) {
-                plugin.getArtifactUsageTracker().trackAbilityExecution(context.artifact(), context, result, definition);
+                double delta = tracker.trackAbilityExecution(context.artifact(), context, result, definition);
+                outcomeObserver.accept(new AbilityOutcomeObservation(context, result, definition, delta));
             }
         });
     }
