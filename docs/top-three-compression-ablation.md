@@ -5,10 +5,12 @@ policy blended every weight toward the category mean whenever the largest three
 exceeded 55% of the total, trying to reach a 50% share. That policy implemented a
 preset distribution rather than preserving the computed selection signal.
 
-Only this layer is removed. Category choice, score construction, nonlinear
-normalization, the soft top cap, cold balancing, small-category flattening and
-unseen-template overrides still run. There is no live switch to restore the old
-compressor. Later removals need their own ablations.
+The initial top-three ablation removed only this layer. Category choice, score
+construction, nonlinear normalization, the soft top cap, cold balancing,
+small-category flattening and unseen-template overrides still ran at that snapshot.
+The [normalization follow-up](score-normalization-ablation.md) removes gamma/mean
+blending separately. There is no live switch to restore the old compressor; each
+later removal needs its own ablation.
 
 ## Controlled comparison
 
@@ -39,11 +41,13 @@ the old binary search therefore makes those categories uniform.
 
 ## Recorded paired result
 
-The paired focused and full-suite outputs matched exactly: maximum relative diversity loss was **9.82%** with
+At PR #411 (`6e886ec`), the paired focused and full-suite outputs matched exactly: maximum relative diversity loss was **9.82%** with
 legacy compression and **8.02%** without it. The legacy control changed weights at
 141 sampling points and changed nine immediate choices; treatment replay matched
 exactly. These are one-seed observations, not a claim of general improvement.
-The dated canonical status records the complete suite validation.
+The dated canonical status records the complete suite validation. Later ablations
+change the surrounding pipeline; these figures describe that prerequisite snapshot,
+not every future run of the same test.
 
 ## Scope and compatibility
 

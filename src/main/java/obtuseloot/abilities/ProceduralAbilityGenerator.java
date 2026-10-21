@@ -53,8 +53,6 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 2.50D;
-    private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.35D;
     private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.28D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
@@ -742,7 +740,7 @@ public class ProceduralAbilityGenerator {
         for (int i = 0; i < templates.size(); i++) {
             scores[i] = Math.max(0.0001D, compositeScores.getOrDefault(templates.get(i), 0.0001D));
         }
-        double[] samplingScores = normalizeCategoryTemplateScores(templates, scores);
+        double[] samplingScores = categoryTemplateSamplingScores(templates, scores);
         applyCategoryLocalColdBalancing(templates, samplingScores);
         double[] weights = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
@@ -829,7 +827,7 @@ public class ProceduralAbilityGenerator {
                 + (relative * (SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING - SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR));
     }
 
-    private double[] normalizeCategoryTemplateScores(List<AbilityTemplate> templates, double[] scores) {
+    double[] categoryTemplateSamplingScores(List<AbilityTemplate> templates, double[] scores) {
         if (templates.isEmpty() || templates.size() <= 1) {
             return scores;
         }
@@ -845,18 +843,10 @@ public class ProceduralAbilityGenerator {
             return scores;
         }
         double meanScore = sum / scores.length;
-        double span = Math.max(maxScore - minScore, 1.0E-9D);
-        double[] normalizedScores = new double[scores.length];
-        for (int i = 0; i < scores.length; i++) {
-            double normalized = clamp((scores[i] - minScore) / span, 0.0D, 1.0D);
-            double curved = Math.pow(normalized, 1.0D / GLOBAL_CATEGORY_COMPRESSION_GAMMA);
-            double reExpanded = minScore + (curved * span);
-            normalizedScores[i] = lerp(reExpanded, meanScore, GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND);
-        }
-        return applyMeanRelativeSoftTopCap(normalizedScores, meanScore);
+        return applyMeanRelativeSoftTopCap(scores, meanScore);
     }
 
-    private double[] applyMeanRelativeSoftTopCap(double[] scores, double meanScore) {
+    double[] applyMeanRelativeSoftTopCap(double[] scores, double meanScore) {
         if (scores.length <= 1 || meanScore <= 0.0D || !Double.isFinite(meanScore)) {
             return scores;
         }
