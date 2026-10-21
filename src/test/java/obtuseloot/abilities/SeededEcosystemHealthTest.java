@@ -18,8 +18,8 @@ class SeededEcosystemHealthTest {
     private static final long SEED = 0x4845414C54484CL;
     private static final int ARTIFACTS = 32;
     private static final int WINDOWS = 12;
-    private static final int BASELINE_WINDOWS = 3;
-    private static final double MAXIMUM_RELATIVE_DROP = 0.25D;
+    static final int BASELINE_WINDOWS = 3;
+    static final double MAXIMUM_RELATIVE_DROP = 0.25D;
 
     @Test
     void diversityDoesNotCollapseRelativeToEarlyRun() {
@@ -37,12 +37,17 @@ class SeededEcosystemHealthTest {
     }
 
     private List<Map<String, Integer>> simulate() {
+        return simulate((registry, feedback) -> new ProceduralAbilityGenerator(registry, null, null, null,
+                feedback, true, ScoringMode.PROJECTION_WITH_CACHE, new AbilityDiversityIndex()));
+    }
+
+    static List<Map<String, Integer>> simulate(java.util.function.BiFunction<AbilityRegistry,
+            ExperienceEvolutionEngine, ProceduralAbilityGenerator> generatorFactory) {
         Random random = new Random(SEED);
         var usage = new ArtifactUsageTracker();
         var feedback = new ExperienceEvolutionEngine(usage, new ArtifactFitnessEvaluator());
         // Per-scenario state: unrelated test order and the singleton's history cannot affect this run.
-        var generator = new ProceduralAbilityGenerator(new AbilityRegistry(), null, null, null,
-                feedback, true, ScoringMode.PROJECTION_WITH_CACHE, new AbilityDiversityIndex());
+        var generator = generatorFactory.apply(new AbilityRegistry(), feedback);
         var taxonomy = new NicheTaxonomy();
         List<Artifact> artifacts = new ArrayList<>();
         List<ArtifactMemoryProfile> memories = new ArrayList<>();

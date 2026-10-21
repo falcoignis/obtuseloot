@@ -56,8 +56,6 @@ public class ProceduralAbilityGenerator {
     private static final double GLOBAL_CATEGORY_COMPRESSION_GAMMA = 2.50D;
     private static final double GLOBAL_CATEGORY_MEAN_ANCHOR_BLEND = 0.35D;
     private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.28D;
-    private static final double CATEGORY_TOP_THREE_SHARE_THRESHOLD = 0.55D;
-    private static final double CATEGORY_TOP_THREE_SHARE_TARGET = 0.50D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
@@ -746,7 +744,6 @@ public class ProceduralAbilityGenerator {
         }
         double[] samplingScores = normalizeCategoryTemplateScores(templates, scores);
         applyCategoryLocalColdBalancing(templates, samplingScores);
-        double total = 0.0D;
         double[] weights = new double[templates.size()];
         for (int i = 0; i < templates.size(); i++) {
             double score = samplingScores[i];
@@ -757,19 +754,25 @@ public class ProceduralAbilityGenerator {
                 weight = lerp(weight, 1.0D, SMALL_CATEGORY_UNIFORM_BLEND);
             }
             weights[i] = weight;
+        }
+        AbilityTemplate selectedTemplate = templates.get(sampleTemplateIndex(weights, random));
+        return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
+    }
+
+    // Sample the supplied weights as-is. Distribution targets must not flatten outcome signals.
+    int sampleTemplateIndex(double[] weights, Random random) {
+        double total = 0.0D;
+        for (double weight : weights) {
             total += weight;
         }
-        total = applyConditionalTopThreeCompression(weights, total);
         double roll = random.nextDouble() * Math.max(total, 0.0001D);
-        for (int i = 0; i < templates.size(); i++) {
+        for (int i = 0; i < weights.length; i++) {
             roll -= weights[i];
             if (roll <= 0.0D) {
-                AbilityTemplate selectedTemplate = templates.get(i);
-                return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
+                return i;
             }
         }
-        AbilityTemplate selectedTemplate = templates.get(templates.size() - 1);
-        return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
+        return weights.length - 1;
     }
 
     private AbilityTemplate applyUnseenTemplateOverride(AbilityTemplate selectedTemplate,
@@ -871,53 +874,6 @@ public class ProceduralAbilityGenerator {
         }
         return capped;
     }
-
-    private double applyConditionalTopThreeCompression(double[] weights, double totalWeight) {
-        if (weights.length <= 3 || totalWeight <= 0.0D) {
-            return totalWeight;
-        }
-        if (estimateTopThreeShare(weights, totalWeight) <= CATEGORY_TOP_THREE_SHARE_THRESHOLD) {
-            return totalWeight;
-        }
-        double meanWeight = totalWeight / weights.length;
-        double low = 0.0D;
-        double high = 1.0D;
-        for (int i = 0; i < 24; i++) {
-            double mid = (low + high) / 2.0D;
-            double[] candidate = new double[weights.length];
-            double candidateTotal = 0.0D;
-            for (int j = 0; j < weights.length; j++) {
-                candidate[j] = lerp(weights[j], meanWeight, mid);
-                candidateTotal += candidate[j];
-            }
-            if (estimateTopThreeShare(candidate, candidateTotal) > CATEGORY_TOP_THREE_SHARE_TARGET) {
-                low = mid;
-            } else {
-                high = mid;
-            }
-        }
-        double adjustedTotal = 0.0D;
-        for (int i = 0; i < weights.length; i++) {
-            weights[i] = lerp(weights[i], meanWeight, high);
-            adjustedTotal += weights[i];
-        }
-        return adjustedTotal;
-    }
-
-    private double estimateTopThreeShare(double[] weights, double totalWeight) {
-        if (weights.length == 0 || totalWeight <= 0.0D) {
-            return 0.0D;
-        }
-        // Manual top-3 extraction — avoids boxing, allocation, and a full array sort.
-        double first = 0.0D, second = 0.0D, third = 0.0D;
-        for (double w : weights) {
-            if (w > first) { third = second; second = first; first = w; }
-            else if (w > second) { third = second; second = w; }
-            else if (w > third) { third = w; }
-        }
-        return (first + second + third) / totalWeight;
-    }
-
 
     private double lerp(double start, double end, double alpha) {
         double t = clamp(alpha, 0.0D, 1.0D);
