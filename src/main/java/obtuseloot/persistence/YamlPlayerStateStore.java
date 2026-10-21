@@ -204,6 +204,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         rep.setLastKillTimestamp(yaml.getLong("reputation.last-kill-timestamp", 0));
         rep.setLastCombatTimestamp(yaml.getLong("reputation.last-combat-timestamp", 0));
         rep.setSurvivalStreak(yaml.getInt("reputation.survival-streak", 0));
+        rep.restoreUtilityExperience(yaml.getString("reputation.utility-experience", ""));
         return rep;
     }
 
@@ -440,6 +441,7 @@ public class YamlPlayerStateStore implements PlayerStateStore {
         yaml.set(base + "last-kill-timestamp", reputation.getLastKillTimestamp());
         yaml.set(base + "last-combat-timestamp", reputation.getLastCombatTimestamp());
         yaml.set(base + "survival-streak", reputation.getSurvivalStreak());
+        yaml.set(base + "utility-experience", reputation.encodeUtilityExperience());
     }
 
     private void writeStatMap(YamlConfiguration yaml, String path, Map<String, Double> values) {

@@ -27,6 +27,8 @@ public class PlayerJoinLoadListener implements Listener {
         if (artifact == null || reputation == null) {
             return;
         }
+        plugin.getEvolutionEngine().evaluate(artifact, reputation);
+        plugin.getArtifactManager().markDirty(artifact);
         plugin.getItemAbilityManager().rebuildSubscriptions(playerId, artifact, reputation, "player-join-load");
         plugin.getLoreEngine().refreshLore(player, artifact, reputation);
     }

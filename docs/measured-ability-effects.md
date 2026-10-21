@@ -9,20 +9,23 @@ or wild mutation.
 | Gentle Harvest (`survival.gentle_harvest`) | Replants one mature wheat, carrot, potato, beetroot or nether-wart crop at age zero, consuming one matching planting item from that harvest's actual drops. | One committed replant, or zero if unavailable/denied. |
 | Material Insight (`precision.material_insight`) | Sends the holder the inspected block's material and light level, plus growth stage for ageable blocks. Main hand only. | One delivered report, or zero if unavailable/denied. Delivery does not prove the player found the report useful. |
 
-Effects are selected by template ID, so a localized display name does not change behavior.
-Mutations that change either template's mechanic or trigger are unfinished variants and
-return no-op instead of executing the original effect under the mutated identity.
+Effects are registered by template ID, so a localized display name does not change behavior.
+Unsupported mechanic/trigger/family variants cannot execute under the mutated identity.
+Live selection retains their executable original and records the fallback; directly dispatched
+unsupported definitions return an unmeasured no-op. See
+[noncombat timing and the ability catalog](noncombat-evolution-timing.md).
 Their measurements enter the existing utility profile, niche telemetry and selection-history
 snapshot immediately. The utility cache is invalidated after each observation; autosave is
 no longer required before selection can read the new history. Existing fitness and selection
 rules remain unchanged.
 
-The current subscription refresh points remain join, kills and explicit command refreshes.
-This change makes observations available to the next selection; it does not create a
-noncombat evolution schedule or change progression gates.
+The follow-up [noncombat evolution schedule](noncombat-evolution-timing.md) evaluates normal
+stages and refreshes subscriptions after measured effects, on a configurable game-tick
+window. Join, kills and explicit command refreshes remain available. Progression gates
+remain unchanged.
 
 `AbilityExecutionResult.observedAmount` is nullable. A live observation has an amount
-(including zero); a legacy offline classification has no amount. Ability telemetry includes
+(including zero); a legacy offline classification or unimplemented effect has no amount. Ability telemetry includes
 `measurement_basis` (`observed`, `classified`, or `not_observed`) and `observed_amount`
 when present. Live dispatches of unfinished effects return `NO_OP`; offline classification
 remains available to the existing simulation tests. Historical classification-based reports

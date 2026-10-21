@@ -87,12 +87,12 @@ public class ArtifactUsageTracker {
                 UtilityHistoryRollup.parse(replacement.getLastUtilityHistory()).signalByMechanicTrigger());
     }
 
-    public void trackAbilityExecution(Artifact artifact,
+    public double trackAbilityExecution(Artifact artifact,
                                       AbilityEventContext context,
                                       AbilityExecutionResult result,
                                       AbilityDefinition definition) {
         if (artifact == null || context == null || result == null || definition == null) {
-            return;
+            return 0.0D;
         }
         TriggerBudgetProfile budgetProfile = budgetResolver.resolve(definition, context);
         boolean intentional = (context.runtimeContext() != null && context.runtimeContext().intentional())
@@ -104,7 +104,9 @@ public class ArtifactUsageTracker {
         double budgetCost = budgetProfile.triggerCost() + budgetProfile.evaluationCost();
 
         ArtifactUsageProfile profile = profileFor(artifact);
-        profile.recordUtilityOutcome(new UtilityOutcomeRecord(
+        String mechanicKey = result.mechanic().name() + "@" + result.trigger().name();
+        MechanicUtilitySignal previous = profile.utilitySignalsByMechanic().get(mechanicKey);
+        MechanicUtilitySignal updated = profile.recordUtilityOutcome(new UtilityOutcomeRecord(
                 result.abilityId(),
                 result.mechanic(),
                 result.trigger(),
@@ -115,8 +117,10 @@ public class ArtifactUsageTracker {
                 relevance,
                 budgetCost,
                 context.source(),
-                System.currentTimeMillis()
+                System.currentTimeMillis(),
+                result.observationKey()
         ));
+        double utilityDelta = updated.validatedUtility() - (previous == null ? 0 : previous.validatedUtility());
         signalCache.invalidate(artifact.getArtifactSeed());
         Map<String, MechanicUtilitySignal> signals = signalCache.getOrCompute(artifact.getArtifactSeed(), profile::utilitySignalsByMechanic);
         // Selection reads this snapshot, so refresh it at observation time, not only at autosave.
@@ -154,6 +158,8 @@ public class ArtifactUsageTracker {
                     Map.entry("niche_tags", nicheTags)
             ));
             attributes.putAll(abilityTelemetrySignals(result, context));
+            attributes.put("utility_delta", String.valueOf(utilityDelta));
+            if (result.observationKey() != null) attributes.put("observation_key", result.observationKey());
             attributes.put("measurement_basis", result.observedAmount() != null ? "observed"
                     : context.liveExecution() ? "not_observed" : "classified");
             if (result.observedAmount() != null) {
@@ -165,6 +171,7 @@ public class ArtifactUsageTracker {
                     effectiveNiche,
                     attributes);
         }
+        return utilityDelta;
     }
 
     private Map<String, String> abilityTelemetrySignals(AbilityExecutionResult result,

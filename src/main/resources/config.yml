@@ -88,6 +88,8 @@ reputation:
 # when an artifact hovers near a boundary.
 # ─────────────────────────────────────────────────────────────────────────────
 evolution:
+  # Game ticks between measured-outcome updates. Idle windows never reroll abilities.
+  noncombat-update-interval-ticks: 100
   archetype-threshold: 10
   tempered-threshold: 25
   advanced-threshold: 45

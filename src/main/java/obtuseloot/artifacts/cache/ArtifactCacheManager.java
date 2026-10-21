@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 public final class ArtifactCacheManager {
     private final PlayerStateStore store;
     private final boolean enabled;
+    public boolean isEnabled() { return enabled; }
     private final int maxEntries;
     private final long idleExpiryMs;
     private final Map<ArtifactCacheKey, ArtifactCacheEntry> byKey = new ConcurrentHashMap<>();

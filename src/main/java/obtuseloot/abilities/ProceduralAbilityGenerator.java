@@ -208,6 +208,7 @@ public class ProceduralAbilityGenerator {
     }
 
     public AbilityProfile generate(Artifact artifact, int evolutionStage, ArtifactMemoryProfile memoryProfile) {
+        if (registry.templates().isEmpty()) return new AbilityProfile("empty-catalog", List.of());
         UtilityHistoryRollup utilityHistory = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory());
         ArtifactLineage lineage = lineageRegistry == null ? null : lineageRegistry.assignLineage(artifact);
         double lineageMutationInfluence = lineageResolver == null ? 1.0D : lineageResolver.resolveMutationInfluence(lineage);

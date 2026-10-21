@@ -17,6 +17,32 @@ class ArtifactManagerLoadFailureTest {
     private static final long BACKOFF_MS = 1_000L;
 
     @Test
+    void uncachedUnloadPersistsEvolutionHistoryAndRetainsItAfterFailedSave() throws Exception {
+        var previous = obtuseloot.config.RuntimeSettings.get();
+        try {
+            var config = new org.bukkit.configuration.file.YamlConfiguration();
+            config.set("runtime.activeArtifactCache", false);
+            obtuseloot.config.RuntimeSettings.load(config);
+            var owner = new UUID(0, 99);
+            var store = new FlakyStore();
+            var manager = new ArtifactManager(store, () -> 0L, BACKOFF_MS);
+            var artifact = manager.getOrCreate(owner);
+            artifact.setLastUtilityHistory("test-observed-history");
+            store.failSaves = true;
+            manager.unload(owner);
+            assertSame(artifact, manager.getOrCreate(owner), "Failed unload must not replace unsaved measured history");
+            store.failSaves = false;
+            manager.unload(owner);
+            assertFalse(manager.getLoadedArtifacts().containsKey(owner));
+            assertEquals("test-observed-history", store.artifacts.get(owner).getLastUtilityHistory());
+        } finally {
+            var field = obtuseloot.config.RuntimeSettings.class.getDeclaredField("current");
+            field.setAccessible(true);
+            field.set(null, previous);
+        }
+    }
+
+    @Test
     void unreadableStoredArtifactIsNeverReplacedOrSavedOverAndLoadsAfterBackoff() {
         UUID ownerId = UUID.randomUUID();
         FlakyStore store = new FlakyStore();

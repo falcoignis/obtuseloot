@@ -78,16 +78,17 @@ public final class EngineBootstrap {
         lineageRegistry.restoreSpeciesSnapshot(playerStateStore.loadSpeciesSnapshot());
 
         LineageInfluenceResolver lineageInfluenceResolver = new LineageInfluenceResolver();
+        AbilityRegistry abilityRegistry = new AbilityRegistry().implementedOnly();
         ItemAbilityManager itemAbilityManager = new ItemAbilityManager(
-                new SeededAbilityResolver(new AbilityRegistry(), artifactMemoryEngine, ecosystemEngine,
-                        lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine));
+                new SeededAbilityResolver(abilityRegistry, artifactMemoryEngine, ecosystemEngine,
+                        lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine), abilityRegistry, artifactUsageTracker);
         itemAbilityManager.setTriggerSubscriptionIndexingEnabled(RuntimeSettings.get().triggerSubscriptionIndexing());
 
         LoreEngine loreEngine = new LoreEngine();
         EngineScheduler engineScheduler = new EngineScheduler(plugin,
                 context.require(ArtifactManager.class),
                 context.require(ReputationManager.class),
-                combatContextManager);
+                combatContextManager, evolutionEngine, itemAbilityManager);
 
         context.register(CombatContextManager.class, combatContextManager);
         context.register(EvolutionEngine.class, evolutionEngine);

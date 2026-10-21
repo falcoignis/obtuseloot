@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class EventAbilityDispatcher {
-    private final AbilityExecutor executor = new AbilityExecutor();
+    private final AbilityExecutor executor;
     private final TriggerBudgetResolver budgetResolver = new TriggerBudgetResolver();
+
+    public EventAbilityDispatcher() { this(new AbilityRegistry()); }
+
+    public EventAbilityDispatcher(AbilityRegistry registry) { executor = new AbilityExecutor(registry); }
 
     public AbilityDispatchResult dispatchIndexed(AbilityEventContext context,
                                                  List<ArtifactTriggerBinding> bindings,

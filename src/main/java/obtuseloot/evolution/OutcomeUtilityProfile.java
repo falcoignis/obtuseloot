@@ -40,7 +40,8 @@ public final class OutcomeUtilityProfile {
 
     public MechanicUtilitySignal ingest(UtilityOutcomeRecord record, ValidatedOutcomeClassifier classifier) {
         attempts++;
-        String signature = record.outcomeType().name() + "#" + record.status().name() + "#" + record.source();
+        String identity = record.observationKey() == null ? record.source() : record.observationKey();
+        String signature = record.outcomeType().name() + "#" + record.status().name() + "#" + identity;
         repeatedOutcomeStreak = signature.equals(lastOutcomeSignature) ? repeatedOutcomeStreak + 1 : 0;
         lastOutcomeSignature = signature;
 
