@@ -35,11 +35,25 @@ class EquipmentAbilityServiceTest {
     private AbilityTemplate passive;
     private boolean online = true;
     private boolean dead;
+    private boolean grounded = true;
+    private double altitude = 64;
+    private org.bukkit.util.Vector velocity = new org.bukkit.util.Vector(.1, -.1, .2);
+    private final Set<String> movementFlags = new HashSet<>();
+    private obtuseloot.config.RuntimeSettings.Snapshot previousSettings;
+    private final List<Runnable> movementTasks = new ArrayList<>();
+    private final List<org.bukkit.event.Event> movementEvents = new ArrayList<>();
+    private final List<AbilityOutcomeObservation> movementOutcomes = new ArrayList<>();
+    private obtuseloot.movement.AirJumpService jumps;
+    private java.util.function.Consumer<org.bukkit.event.Event> veto = e -> { };
+
 
     @BeforeEach void setup() {
+        previousSettings = obtuseloot.config.RuntimeSettings.get();
+        var settings = new org.bukkit.configuration.file.YamlConfiguration(); settings.set("abilities.double-jump.enabled", true);
+        obtuseloot.config.RuntimeSettings.load(settings);
         var catalog = new AbilityRegistry();
         inspect = catalog.templateById("precision.material_insight"); passive = catalog.templateById("mobility.fleetfoot");
-        var registry = new AbilityRegistry(List.of(new AbilityRegistration(inspect, (d, c, stage) -> {
+        var registry = new AbilityRegistry(List.of(catalog.registrationById("mobility.double_jump"), new AbilityRegistration(inspect, (d, c, stage) -> {
             executions.add(c);
             return AbilityExecutionResult.observed(d, c, AbilityOutcomeType.INFORMATION, 1, null, "observed")
                     .withObservationKey("action-" + executions.size());
@@ -49,12 +63,17 @@ class EquipmentAbilityServiceTest {
                 }))));
         var store = new Store(); artifacts = new ArtifactManager(store);
         abilities = new ItemAbilityManager((a, r) -> { builds.incrementAndGet(); return new AbilityProfile("test", profiles.getOrDefault(a.getArtifactStorageKey(), List.of())); }, registry, new ArtifactUsageTracker());
-        abilities.setOutcomeObserver(queue::observe);
+        abilities.setOutcomeObserver(o -> { movementOutcomes.add(o); queue.observe(o); });
         world = api(World.class, (name, args) -> switch (name) { case "getUID" -> new UUID(0, 5); default -> unexpected(name); });
-        PlayerInventory inv = api(PlayerInventory.class, (name, args) -> switch (name) { case "getItem" -> inventory.get(args[0]); default -> unexpected(name); });
+        PlayerInventory inv = api(PlayerInventory.class, (name, args) -> switch (name) { case "getItem" -> inventory.get(args[0]); case "getChestplate" -> inventory.get(EquipmentSlot.CHEST); default -> unexpected(name); });
         player = api(Player.class, (name, args) -> switch (name) {
             case "getUniqueId" -> owner; case "getInventory" -> inv; case "getWorld" -> world;
-            case "getLocation" -> new Location(world, 1, 64, 1); case "isOnline" -> online; case "isDead" -> dead;
+            case "getLocation" -> new Location(world, 1, altitude, 1); case "isOnline" -> online; case "isDead" -> dead;
+            case "isOnGround" -> grounded; case "getGameMode" -> org.bukkit.GameMode.SURVIVAL;
+            case "getAllowFlight", "isFlying", "isGliding", "isInsideVehicle", "isSwimming", "isInWater", "isInLava", "isClimbing", "isRiptiding", "isSleeping" -> movementFlags.contains(name);
+            case "getActivePotionEffects" -> List.of();
+            case "hasGravity" -> !movementFlags.contains("noGravity");
+            case "getVelocity" -> velocity.clone(); case "setVelocity" -> { velocity = ((org.bukkit.util.Vector) args[0]).clone(); yield null; }
             case "hasPermission" -> !denied.contains(args[0]); case "isOp" -> true;
             default -> unexpected(name);
         });
@@ -62,7 +81,56 @@ class EquipmentAbilityServiceTest {
                 new ArtifactUsageTracker(), item -> item == null ? null : ((Stack) item).key,
                 a -> queue.flush(a, update -> { }, (id, e) -> fail(e)), Logger.getLogger("EquipmentAbilityServiceTest"), () -> List.of(player));
     }
-    @AfterEach void close() { service.shutdown(); }
+    @AfterEach void close() throws Exception {
+        service.shutdown();
+        var field = obtuseloot.config.RuntimeSettings.class.getDeclaredField("current"); field.setAccessible(true); field.set(null, previousSettings);
+    }
+    private void movement() {
+        jumps = new obtuseloot.movement.AirJumpService(service, abilities, movementTasks::add,
+                e -> { movementEvents.add(e); veto.accept(e); }, () -> List.of(player));
+        jumps.tick();
+    }
+    private void press() { jumps.input(player, false); jumps.input(player, true); }
+    private void runMovementTasks() { var tasks = List.copyOf(movementTasks); movementTasks.clear(); tasks.forEach(Runnable::run); }
+    @Test void doubleJumpMeasuresNativeMotionOnceAndDoesNotStackAcrossGear() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        var first = equip(EquipmentSlot.FEET, "diamond_boots", template);
+        equip(EquipmentSlot.HEAD, "diamond_helmet", template); movement();
+        jumps.input(player, true); runMovementTasks(); assertTrue(movementEvents.isEmpty(), "Ordinary ground jump stays vanilla");
+        grounded = false; press(); runMovementTasks();
+        assertEquals(1, movementEvents.size()); assertEquals(.42, velocity.getY(), 1e-9);
+        assertEquals(.1, velocity.getX(), 1e-9); assertEquals(.2, velocity.getZ(), 1e-9);
+        assertEquals(0, queue.pendingCount(), "An impulse write alone earns no outcome");
+        assertTrue(movementOutcomes.isEmpty(), "Pending motion must not enter outcome history");
+        jumps.velocity(player, velocity, false); altitude += .2; jumps.tick(); jumps.tick();
+        assertEquals(1, queue.pendingCount());
+        press(); runMovementTasks(); assertEquals(1, movementEvents.size());
+        inventory.remove(EquipmentSlot.HEAD); inventory.remove(EquipmentSlot.FEET);
+        equip(EquipmentSlot.LEGS, "diamond_leggings", template); press(); runMovementTasks();
+        assertEquals(1, movementEvents.size(), "A new item cannot reset the player's charge");
+    }
+    @Test void doubleJumpHonorsVetoPermissionAndDeferredSwapWithoutSpendingACharge() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        equip(EquipmentSlot.FEET, "diamond_boots", template); movement(); grounded = false;
+        press(); inventory.remove(EquipmentSlot.FEET); runMovementTasks(); assertTrue(movementEvents.isEmpty());
+        equip(EquipmentSlot.FEET, "diamond_boots", template); denied.add("obtuseloot.ability.mobility.double_jump");
+        press(); runMovementTasks(); assertTrue(movementEvents.isEmpty());
+        denied.clear(); veto = e -> ((obtuseloot.events.ArtifactAirJumpEvent)e).setCancelled(true);
+        press(); runMovementTasks(); assertEquals(-.1, velocity.getY(), 1e-9); assertEquals(0, queue.pendingCount());
+        veto = e -> { }; press(); runMovementTasks(); assertEquals(.42, velocity.getY(), 1e-9);
+    }
+    @Test void doubleJumpRejectsForeignFlightAndVelocityCancellationEarnsNoSuccess() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        equip(EquipmentSlot.FEET, "diamond_boots", template); movement();
+        movementFlags.add("getAllowFlight"); jumps.tick(); grounded = false; press(); runMovementTasks(); assertTrue(movementEvents.isEmpty());
+        movementFlags.clear(); jumps.tick(); press(); runMovementTasks(); assertTrue(movementEvents.isEmpty(), "Losing flight midair needs a new landing");
+        grounded = true; jumps.tick(); grounded = false; press(); runMovementTasks();
+        jumps.velocity(player, velocity, true); altitude += .2; jumps.tick(); jumps.tick();
+        assertEquals(1, queue.pendingCount(), "A measured failure may feed the existing outcome path");
+        assertFalse(firstOutcomePositive());
+    }
+    private boolean firstOutcomePositive() { return movementOutcomes.stream().anyMatch(o -> o.liveMeasured() && o.result().observedAmount() > 0); }
+
 
     @Test void allSlotsHaveIndependentPassivesAndIdleReconciliationDoesNotReroll() {
         for (var slot : EquipmentBindings.SLOTS) equip(slot, slot == EquipmentSlot.CHEST ? "elytra" : "diamond_sword", passive);
@@ -151,6 +219,23 @@ class EquipmentAbilityServiceTest {
         inventory.put(EquipmentSlot.HAND, new Stack(ArtifactStorageKeys.create()));
         service.reconcile(player); assertEquals(1, applied.size()); assertEquals(1, service.equipped(owner).size());
         assertNull(artifacts.getLoadedArtifacts().get(owner));
+    }
+    @Test void doubleJumpRejectsSwimmingClimbingVehiclesAndOtherMovementOwners() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        equip(EquipmentSlot.FEET, "diamond_boots", template); movement();
+        for (String flag : List.of("isFlying", "isGliding", "isInsideVehicle", "isSwimming", "isInWater", "isInLava", "isClimbing", "isRiptiding", "isSleeping", "noGravity")) {
+            grounded = true; movementFlags.clear(); jumps.tick();
+            movementFlags.add(flag); jumps.tick(); grounded = false; press(); runMovementTasks();
+            assertTrue(movementEvents.isEmpty(), flag); assertEquals(-.1, velocity.getY(), 1e-9, flag);
+        }
+    }
+    @Test void doubleJumpVetoCallbackCannotTransferCreditOrOverwriteForeignLaunch() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        var artifact = equip(EquipmentSlot.FEET, "diamond_boots", template); movement(); grounded = false;
+        press(); artifact.setArtifactSeed(artifact.getArtifactSeed() - 1); runMovementTasks(); assertTrue(movementEvents.isEmpty());
+        veto = e -> velocity = new org.bukkit.util.Vector(0, 1, 0);
+        press(); runMovementTasks(); assertEquals(1, velocity.getY(), 1e-9); assertEquals(0, queue.pendingCount());
+        jumps.invalidate(player); press(); runMovementTasks(); assertEquals(1, movementEvents.size());
     }
     private void dispatch(EquipmentAbilityService.Token token) {
         service.dispatch(player, token, inspect.trigger(), 1, "test", AbilityRuntimeContext.intentional(AbilitySource.OTHER), null);

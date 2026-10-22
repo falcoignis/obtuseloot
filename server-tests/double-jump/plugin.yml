@@ -1,0 +1,5 @@
+name: ObtuseLootMovementProbe
+version: 1
+main: obtuseloot.servertest.Probe
+api-version: '26.2'
+depend: [ObtuseLoot]

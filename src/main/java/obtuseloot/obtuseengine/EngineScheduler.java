@@ -129,6 +129,7 @@ public class EngineScheduler {
             if (localEcosystem != null) localEcosystem.advanceTick();
             if (plugin instanceof obtuseloot.ObtuseLoot main && main.getEquipmentAbilities() != null)
                 main.getEquipmentAbilities().tick();
+            if (plugin instanceof obtuseloot.ObtuseLoot main && main.getAirJumps() != null) main.getAirJumps().tick();
             evolutionQueue.tick(RuntimeSettings.get().noncombatUpdateIntervalTicks(),
                     update -> applyEvolution(update, true), this::logEvolutionFailure);
         }, 1L, 1L);

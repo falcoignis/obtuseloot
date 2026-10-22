@@ -60,7 +60,10 @@ public final class RuntimeSettings {
                 config.getInt("ecology.inheritance-radius-chunks", 20),
                 config.getLong("ecology.inheritance-outcome-window-ticks", 6000L),
                 config.getDouble("abilities.passive-speed.bonus", 0.05D),
-                obtuseloot.abilities.PassiveAbilityEffect.Stacking.valueOf(config.getString("abilities.passive-speed.stacking", "strongest").toUpperCase(java.util.Locale.ROOT))
+                obtuseloot.abilities.PassiveAbilityEffect.Stacking.valueOf(config.getString("abilities.passive-speed.stacking", "strongest").toUpperCase(java.util.Locale.ROOT)),
+                config.getBoolean("abilities.double-jump.enabled", false),
+                config.getDouble("abilities.double-jump.upward-velocity", 0.42D),
+                config.getLong("abilities.double-jump.cooldown-ticks", 60L)
         );
     }
 
@@ -125,9 +128,11 @@ public final class RuntimeSettings {
             int inheritanceRadiusChunks,
             long inheritanceOutcomeWindowTicks,
             double passiveSpeedBonus,
-            obtuseloot.abilities.PassiveAbilityEffect.Stacking passiveSpeedStacking
+            obtuseloot.abilities.PassiveAbilityEffect.Stacking passiveSpeedStacking,
+            boolean doubleJumpEnabled, double doubleJumpVelocity, long doubleJumpCooldownTicks
     ) {
         public Snapshot {
+            if (!Double.isFinite(doubleJumpVelocity) || doubleJumpVelocity <= 0 || doubleJumpCooldownTicks < 0) throw new IllegalArgumentException("Invalid double jump settings");
             if (!Double.isFinite(passiveSpeedBonus) || passiveSpeedBonus < 0 || passiveSpeedStacking == null) throw new IllegalArgumentException("Invalid passive speed settings");
             if (inheritanceRadiusChunks <= 0 || inheritanceOutcomeWindowTicks <= 0) throw new IllegalArgumentException("Inheritance radius/window must be positive");
             if (noncombatUpdateIntervalTicks <= 0) throw new IllegalArgumentException("Noncombat evolution interval must be positive");
@@ -137,7 +142,7 @@ public final class RuntimeSettings {
                     300, 0.96D, 120, 10.0D, 10, 25, 45, 70, 4.0D, 2.0D, 0.05D, 0.40D, 0.01D, 0.005D, 600, 300,
                     true, ArtifactLexemeRegistry.defaultPools(),
                     3, 8, 14, 6,
-                    4, 14, 16, 14, 16, 16, 10, 14, true, true, 2048, 300000L, 100L, 20, 6000L, 0.05D, obtuseloot.abilities.PassiveAbilityEffect.Stacking.STRONGEST);
+                    4, 14, 16, 14, 16, 16, 10, 14, true, true, 2048, 300000L, 100L, 20, 6000L, 0.05D, obtuseloot.abilities.PassiveAbilityEffect.Stacking.STRONGEST, false, 0.42D, 60L);
         }
     }
 }

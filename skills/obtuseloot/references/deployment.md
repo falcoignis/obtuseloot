@@ -2,7 +2,7 @@
 
 ## Status and authorization
 
-ObtuseLoot is planned for HomesteadCraft; the test/deploy path is undecided. Ask the owner to choose a testing backend or disposable local server. This skill grants no live write or deployment authority.
+ObtuseLoot is planned for HomesteadCraft. For the native movement slice, the owner selected a **disposable local Purpur 26.2 server** (2026-10-21), run with Java 25 and a Docker protocol client on loopback. See `docs/double-jump.md` and its test fixtures. Live deployment remains undecided; this skill grants no live write, runtime-change or deployment authority.
 
 For HomesteadCraft work, load the operator's separate `homesteadcraft` skill first if available. If it is unavailable, obtain the environment-specific rules and access method from the owner. Keep hostnames, credentials, filesystem layouts and access details outside this public repository. A live file write requires explicit, specific consent for that destination at the time of the write.
 
@@ -10,7 +10,7 @@ Respect the target community's restrictions. HomesteadCraft rewards must not cre
 
 ## Server target
 
-The owner selected Minecraft **26.2** on 2026-10-21. Build against the pinned stable Purpur 26.2 API with **Java 25**. Confirm the chosen testing/deployment destination separately; this target choice does not authorize a server upgrade or deployment. Retarget these together: the API dependency and Java release in `pom.xml`, `api-version` in `plugin.yml`, and the official Maven build-image Java tag. Rebuild and run the full suite afterward.
+The owner selected Minecraft **26.2** on 2026-10-21. Build against the pinned stable Purpur 26.2 API with **Java 25**. Use the owner-selected disposable local server for this movement test. Confirm any live deployment destination separately; this target choice does not authorize a server upgrade or deployment. Retarget these together: the API dependency and Java release in `pom.xml`, `api-version` in `plugin.yml`, and the official Maven build-image Java tag. Rebuild and run the full suite afterward.
 
 ## Installation once the path is authorized
 

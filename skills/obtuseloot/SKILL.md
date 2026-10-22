@@ -54,7 +54,9 @@ its validation/PR state before relying on it. Core must work standalone. Detect 
 when present and preserve normal skill XP; extra XP coupling remains undecided. PacketEvents
 is conditional on demonstrated need. Read `docs/equipment-ability-activation.md` and
 `docs/plugin-compatibility.md`. Compatibility is a standing requirement for future features,
-not a claim that boot detection proves cross-plugin certification.
+not a claim that boot detection proves cross-plugin certification. The next native Double Jump
+follow-up is opt-in; read `docs/double-jump.md` and refresh its current test/PR state.
+The owner selected a disposable local Purpur 26.2 server for movement validation.
 
 ## Working procedure
 

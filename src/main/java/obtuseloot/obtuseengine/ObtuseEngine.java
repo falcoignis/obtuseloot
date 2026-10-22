@@ -28,6 +28,9 @@ public class ObtuseEngine {
         Bukkit.getPluginManager().registerEvents(new NonCombatAbilityListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new LootInsertionListener(), plugin);
         Bukkit.getPluginManager().registerEvents(new obtuseloot.events.EquipmentAbilityListener(), plugin);
+        var main = ObtuseLoot.get();
+        Bukkit.getPluginManager().registerEvents(new obtuseloot.events.AirJumpListener(main.getAirJumps(),
+                task -> main.getServer().getScheduler().runTask(main, task)), plugin);
         // A join whose storage load failed skipped subscription wiring; finish it once a retried load succeeds.
         java.util.function.Consumer<java.util.UUID> resumeLoad = playerId -> {
             org.bukkit.entity.Player player = Bukkit.getPlayer(playerId);

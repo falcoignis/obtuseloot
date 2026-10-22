@@ -68,3 +68,12 @@ version before introducing a compiled AuraSkills adapter.
 The current coexistence baseline leaves native XP listeners, mana, stats, item requirements
 and placed-block tracking owned by AuraSkills. It neither injects nor intercepts XP events.
 Actual server compatibility remains unverified; no live server configuration was changed.
+
+## Native movement follow-up
+
+[Double Jump](double-jump.md) uses native input with per-player charges, effective
+permissions and per-item credit. Its custom pre-impulse veto and ordinary move/velocity
+denials remain active. It reserves elytra input and foreign flight ownership, and writes
+no XP, mana, potion, fall-distance or permission state. The default is disabled pending
+testing of the intended claim/anticheat/skill combination. A disposable Purpur 26.2 protocol
+test is narrower evidence than certification with those production plugins.
