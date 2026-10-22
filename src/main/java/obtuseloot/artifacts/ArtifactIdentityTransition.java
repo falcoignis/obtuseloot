@@ -20,6 +20,9 @@ public record ArtifactIdentityTransition(
             replacement.restoreGenomeEvolution(discarded.getGenomeRevision(), discarded.getGenomeEvolutionState());
             replacement.setItemReputation(discarded.getItemReputation());
             replacement.setParentStorageKey(discarded.getParentStorageKey());
+            replacement.setParentGenomeRevision(discarded.getParentGenomeRevision());
+            replacement.setParentGenomeSeed(discarded.getParentGenomeSeed());
+            replacement.setGenomeFitnessHistory(discarded.getGenomeFitnessHistory());
             replacement.setInheritanceGeneration(discarded.getInheritanceGeneration());
         }
     }

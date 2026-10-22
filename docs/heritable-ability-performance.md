@@ -76,12 +76,13 @@ This measures a short physical response, not obstacle completion or player usefu
 It does not strictly isolate displacement caused by every other physics source, and a later
 correction outside the window is not observed. Fitness comparisons under controlled response
 fixtures are mechanism tests, not proof of natural niche emergence or long-term balance.
-Local fitness still summarizes recent per-item attempts, which can span successive genomes
-after an item evolves; this is not an isolated success trial for every genetic revision.
+The revision-fitness follow-up separates recent evidence by producing seed/revision and
+admits only current genes to reproduction; see `revision-specific-fitness.md`. Lifetime
+item history remains separate. This does not make the physical response a usefulness trial.
 
 ## Validation
 
-Final full Docker `clean package` passed **522 tests across 100 classes**, zero failures,
+The original heritable-performance slice's full Docker `clean package` passed **522 tests across 100 classes**, zero failures,
 errors or skips, Maven exit 0, in **33:09**. All 518 executable input hashes matched the
 frozen source; all 559 production class/resource entries matched the corrected server-tested
 build. Generated tracked reports were restored. See canonical dated status for publication. Corrected

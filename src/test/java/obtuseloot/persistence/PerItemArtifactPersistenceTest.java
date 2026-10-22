@@ -32,7 +32,7 @@ class PerItemArtifactPersistenceTest {
         var artifact = item(1, -12);
         String encoded = ArtifactProfileCodec.encode(artifact);
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
-                encoded.replace("profile-version: 2", "profile-version: 90")));
+                encoded.replace("profile-version: 3", "profile-version: 90")));
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
                 encoded.replace("SURVIVAL_INSTINCT: 0.23", "SURVIVAL_INSTINCT: .NaN")));
         assertThrows(IllegalArgumentException.class, () -> ArtifactStorageKeys.itemId("artifact:../../unsafe"));
@@ -97,6 +97,8 @@ class PerItemArtifactPersistenceTest {
         first.getItemReputation().recordUtilityExperience(AbilityFamily.SURVIVAL, 1.75);
         first.addLoreHistory("A paid harvest");
         first.setParentStorageKey("artifact:" + new UUID(0, 8));
+        first.setParentGenomeRevision(2);
+        first.setParentGenomeSeed(-123L);
         first.setInheritanceGeneration(4);
         first.setEvolutionPath("strider-formed");
         new obtuseloot.evolution.GenomeEvolutionEngine().advance(first);

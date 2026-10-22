@@ -122,6 +122,55 @@ class LocalEcosystemIntegrationTest {
         }
     }
 
+    @Test void evolvingRequiresNewEvidenceAndKeepsOldFitnessAcrossTradeAndRestart() throws Exception {
+        var store = store();
+        var manager = new ArtifactManager(store);
+        var ecosystem = new LocalEcosystem(store, manager);
+        var parent = ecosystem.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(1));
+        var old = LocalInheritancePoolTest.observation(parent, origin, true, 1, 1, "old-target");
+        var tracker = new obtuseloot.evolution.ArtifactUsageTracker();
+        tracker.trackAbilityExecution(parent, old.context(), old.result(), old.definition());
+        ecosystem.observe(old);
+        parent.setEvolutionPath("strider-formed");
+        new obtuseloot.evolution.GenomeEvolutionEngine().advance(parent);
+        manager.saveItem(parent);
+        assertNull(ecosystem.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(2)).getParentStorageKey(),
+                "Old success cannot qualify new, untested genes");
+        var current = LocalInheritancePoolTest.observation(parent, origin, true, 1, 1, "new-target");
+        tracker.trackAbilityExecution(parent, current.context(), current.result(), current.definition());
+        ecosystem.observe(current);
+        manager.activateItem(new UUID(0, 91), parent);
+        manager.saveItem(parent); ecosystem.save();
+        var reopened = new LocalEcosystem(store, new ArtifactManager(store));
+        var child = reopened.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(3));
+        assertEquals(parent.getArtifactStorageKey(), child.getParentStorageKey());
+        assertEquals(parent.getGenomeRevision(), child.getParentGenomeRevision());
+        assertTrue(child.getGenomeFitnessHistory().revisions().isEmpty(), "Children must earn their own fitness");
+        var restored = store.loadArtifactProfile(parent.getArtifactStorageKey());
+        assertEquals(new UUID(0, 91), restored.getOwnerId());
+        assertEquals(parent.getGenomeFitnessHistory().revisions(), restored.getGenomeFitnessHistory().revisions());
+        for (var revision : parent.getGenomeFitnessHistory().revisions())
+            assertEquals(parent.getGenomeFitnessHistory().signals(revision), restored.getGenomeFitnessHistory().signals(revision));
+    }
+
+    @Test void reseededItemsCannotReusePreviousSeedsReproductiveEvidence() throws Exception {
+        var store = store();
+        var manager = new ArtifactManager(store);
+        var ecosystem = new LocalEcosystem(store, manager);
+        var parent = ecosystem.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(1));
+        manager.activateItem(owner, parent);
+        ecosystem.observe(LocalInheritancePoolTest.observation(parent, origin, true, 1, 1, "old-seed"));
+        var replacement = manager.reseed(owner, -711L);
+        assertNull(ecosystem.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(2)).getParentStorageKey());
+        ecosystem.observe(LocalInheritancePoolTest.observation(replacement, origin, true, 1, 1, "new-seed"));
+        var child = ecosystem.createEquipment(owner, EquipmentArchetype.ELYTRA, origin, new Random(3));
+        assertEquals(replacement.getArtifactStorageKey(), child.getParentStorageKey());
+        assertEquals(replacement.getGenomeRevision(), child.getParentGenomeRevision());
+        assertEquals(-711L, child.getParentGenomeSeed());
+        assertEquals(child.getParentGenomeSeed(), store.loadArtifactProfile(child.getArtifactStorageKey()).getParentGenomeSeed());
+        assertEquals(2, ecosystem.pool().candidates(origin, 20, 6000).size(), "Old evidence remains separately attributable");
+    }
+
     private DatabaseManager database() { return new DatabaseManager("jdbc:sqlite:" + temp.resolve("ecosystem.db"), null, null); }
     private PlayerStateStore store() throws Exception {
         var database = database();

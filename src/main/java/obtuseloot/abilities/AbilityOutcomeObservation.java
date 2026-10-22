@@ -5,6 +5,7 @@ public record AbilityOutcomeObservation(AbilityEventContext context, AbilityExec
                                        AbilityDefinition definition, double utilityDelta) {
     public boolean liveMeasured() {
         return context.liveExecution()
+                && context.genomeRevision() != null
                 && result.observedAmount() != null && Double.isFinite(result.observedAmount())
                 && result.observedAmount() >= 0 && Double.isFinite(utilityDelta)
                 && definition.id().equals(result.abilityId()) && definition.mechanic() == result.mechanic()

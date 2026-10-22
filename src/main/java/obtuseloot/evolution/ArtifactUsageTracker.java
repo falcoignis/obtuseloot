@@ -106,7 +106,7 @@ public class ArtifactUsageTracker {
         ArtifactUsageProfile profile = profileFor(artifact);
         String mechanicKey = result.mechanic().name() + "@" + result.trigger().name();
         MechanicUtilitySignal previous = profile.utilitySignalsByMechanic().get(mechanicKey);
-        MechanicUtilitySignal updated = profile.recordUtilityOutcome(new UtilityOutcomeRecord(
+        var outcome = new UtilityOutcomeRecord(
                 result.abilityId(),
                 result.mechanic(),
                 result.trigger(),
@@ -118,8 +118,12 @@ public class ArtifactUsageTracker {
                 budgetCost,
                 context.source(),
                 System.currentTimeMillis(),
-                result.observationKey(), result.performance()
-        ));
+                result.observationKey(), result.performance(), context.genomeRevision()
+        );
+        MechanicUtilitySignal updated = profile.recordUtilityOutcome(outcome);
+        if (new obtuseloot.abilities.AbilityOutcomeObservation(context, result, definition, 0).liveMeasured()) {
+            artifact.getGenomeFitnessHistory().record(outcome);
+        }
         double utilityDelta = updated.validatedUtility() - (previous == null ? 0 : previous.validatedUtility());
         signalCache.invalidate(artifact.getArtifactSeed());
         Map<String, MechanicUtilitySignal> signals = signalCache.getOrCompute(artifact.getArtifactSeed(), profile::utilitySignalsByMechanic);
@@ -159,6 +163,10 @@ public class ArtifactUsageTracker {
             ));
             attributes.putAll(abilityTelemetrySignals(result, context));
             attributes.put("utility_delta", String.valueOf(utilityDelta));
+            if (context.genomeRevision() != null) {
+                attributes.put("genome_seed", String.valueOf(context.genomeRevision().seed()));
+                attributes.put("genome_revision", String.valueOf(context.genomeRevision().revision()));
+            }
             if (result.observationKey() != null) attributes.put("observation_key", result.observationKey());
             attributes.put("measurement_basis", result.observedAmount() != null ? "observed"
                     : context.liveExecution() ? "not_observed" : "classified");

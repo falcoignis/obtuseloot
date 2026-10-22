@@ -51,15 +51,16 @@ outcome weights; those weights and delivered reports remain proxies for usefulne
 Positive-fitness parents are sampled proportionally to their fitness. No population
 quota, diversity floor, forced parent or global fallback is added. Without a qualifying
 parent the item becomes a new founder lineage. A missing recorded parent profile refuses
-the birth rather than inventing replacement ancestry. An explicitly replaced parent seed
-loses its old evidence. Changing measured success while keeping location and selection
+the birth rather than inventing replacement ancestry. Replaced seeds and evolved revisions
+retain separately attributable history but cannot reuse it as current reproductive fitness.
+Changing measured success while keeping location and selection
 randomness fixed changes which lineage the offspring inherits.
 
 ## Persistent individuals and variation
 
 Each new item has a distinct `artifact:<uuid>` key and a nonzero signed seed. Offspring
 inherit the parent's expressed/latent genome, activated latent traits, family affinities
-and lineage, with a parent key and generation number recorded. Ordinary small variation
+and lineage, with the parent's item key, signed seed, revision and generation recorded. Ordinary small variation
 uses the existing genome mutation operation at its minimum active strength; no additional
 wild-mutation roll is introduced. Offspring reputation and personal history start fresh.
 Ability generation reads the stored genome rather than rebuilding it solely from the seed.
@@ -96,9 +97,9 @@ profiles and ecology snapshots. Both use the same extracted artifact/reputation 
 Incomplete profiles, invalid traits and malformed evidence are refused. Ecology corruption
 at startup follows the fatal storage-initialization path; runtime item failures use the
 existing load guard and retry backoff. Failed saves remain retryable and are logged.
-The durable-genome follow-up uses per-item profile version 2 to save genetic revisions and
-transition markers alongside expressed/latent genes and activation flags; see
-`durable-genome-evolution.md`. No existing-player-data migration is supplied.
+Per-item and ecology formats are version 3, with genetic revisions, transition markers,
+expressed/latent genes, activation flags and revision-specific measured fitness; see
+`durable-genome-evolution.md` and `revision-specific-fitness.md`. No existing-player-data migration is supplied.
 
 The inheritance clock advances with the scheduler's game ticks and persists with the
 outcome evidence at autosave/shutdown. Downtime does not advance it. An abrupt crash can

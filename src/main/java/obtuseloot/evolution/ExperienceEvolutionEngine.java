@@ -76,8 +76,14 @@ public class ExperienceEvolutionEngine {
                                                   double lineageMutationInfluence,
                                                   String lineageId,
                                                   LineageRegistry lineageRegistry) {
+        return applyExperienceFeedback(genome, artifactSeed, nichePopulation, lineageMutationInfluence,
+                lineageId, lineageRegistry, usageTracker.profileForSeed(artifactSeed));
+    }
+
+    public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed, int nichePopulation,
+                                                   double lineageMutationInfluence, String lineageId,
+                                                   LineageRegistry lineageRegistry, ArtifactUsageProfile usage) {
         EcosystemTuningProfile profile = parameterRegistry.profile();
-        ArtifactUsageProfile usage = usageTracker.profileForSeed(artifactSeed);
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
         double nicheAdoptionMultiplier = usageTracker.nichePopulationTracker().nicheAdoptionFitnessMultiplier(artifactSeed);
         double nicheCompetitionFactor = usageTracker.nichePopulationTracker().nicheCompetitionFactor(artifactSeed);

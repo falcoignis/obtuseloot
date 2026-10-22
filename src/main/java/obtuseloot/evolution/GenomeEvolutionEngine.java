@@ -63,7 +63,8 @@ public final class GenomeEvolutionEngine {
             // Parent inheritance happens at birth. Never replace an item's genes with lineage averages here.
             if (experience != null) {
                 genome = experience.applyExperienceFeedback(genome, experienceSeed, 1,
-                        influence, lineageId, lineages);
+                        influence, lineageId, lineages, artifact.getGenomeFitnessHistory().profile(
+                                new obtuseloot.abilities.genome.GenomeRevision(experienceSeed, artifact.getGenomeRevision())));
             }
             var memory = memoryEngine.profile(artifact);
             var snapshot = interference.summarizeInterference(registry.templates(), genome, interference.scoringMode());

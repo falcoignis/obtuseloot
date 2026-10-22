@@ -34,6 +34,20 @@ public class Artifact {
         return key.toString();
     }
     private String parentStorageKey;
+    private long parentGenomeRevision = -1;
+    private long parentGenomeSeed;
+    public long getParentGenomeSeed() { return parentGenomeSeed; }
+    public void setParentGenomeSeed(long value) { parentGenomeSeed = value; }
+    private obtuseloot.evolution.GenomeFitnessHistory genomeFitnessHistory = new obtuseloot.evolution.GenomeFitnessHistory();
+    public long getParentGenomeRevision() { return parentGenomeRevision; }
+    public void setParentGenomeRevision(long value) {
+        if (value < -1) throw new IllegalArgumentException("Invalid parent genome revision");
+        parentGenomeRevision = value;
+    }
+    public obtuseloot.evolution.GenomeFitnessHistory getGenomeFitnessHistory() { return genomeFitnessHistory; }
+    public void setGenomeFitnessHistory(obtuseloot.evolution.GenomeFitnessHistory history) {
+        genomeFitnessHistory = Objects.requireNonNull(history);
+    }
     private int inheritanceGeneration;
     private ArtifactReputation itemReputation = new ArtifactReputation();
 
