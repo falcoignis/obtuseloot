@@ -71,7 +71,7 @@ class IntraCategoryNormalizationProbeTest {
     }
 
     @Test
-    void conditionalCompressionOnlyTriggersForHighTopThreeCategories() {
+    void reportsCurrentCategorySamplingWeights() {
         AbilityRegistry registry = new AbilityRegistry();
         ProceduralAbilityGenerator generator = ProbeFixtures.generator(registry);
 
@@ -82,9 +82,9 @@ class IntraCategoryNormalizationProbeTest {
         WeightedCategoryProbe ritual = probeNormalizedWeights(generator, registry,
                 AbilityCategory.RITUAL_STRANGE_UTILITY, artifact(960_001L), ritualProfile());
 
-        System.out.println("CRAFTING_WEIGHT_COMPRESSION_PROBE top3=" + String.format("%.3f", crafting.topThreeShare()) + " weights=" + summarizeWeights(crafting.weights()));
-        System.out.println("TRAVERSAL_WEIGHT_COMPRESSION_PROBE top3=" + String.format("%.3f", traversal.topThreeShare()) + " weights=" + summarizeWeights(traversal.weights()));
-        System.out.println("RITUAL_WEIGHT_COMPRESSION_PROBE top3=" + String.format("%.3f", ritual.topThreeShare()) + " weights=" + summarizeWeights(ritual.weights()));
+        System.out.println("CRAFTING_SAMPLING_WEIGHT_PROBE top3=" + String.format("%.3f", crafting.topThreeShare()) + " weights=" + summarizeWeights(crafting.weights()));
+        System.out.println("TRAVERSAL_SAMPLING_WEIGHT_PROBE top3=" + String.format("%.3f", traversal.topThreeShare()) + " weights=" + summarizeWeights(traversal.weights()));
+        System.out.println("RITUAL_SAMPLING_WEIGHT_PROBE top3=" + String.format("%.3f", ritual.topThreeShare()) + " weights=" + summarizeWeights(ritual.weights()));
 
     }
 
@@ -162,13 +162,10 @@ class IntraCategoryNormalizationProbeTest {
                     "normalizeCategoryTemplateScores", List.class, double[].class);
             Method applyCategoryLocalColdBalancing = ProceduralAbilityGenerator.class.getDeclaredMethod(
                     "applyCategoryLocalColdBalancing", List.class, double[].class);
-            Method applyConditionalTopThreeCompression = ProceduralAbilityGenerator.class.getDeclaredMethod(
-                    "applyConditionalTopThreeCompression", double[].class, double.class);
 
             compositeTemplateScore.setAccessible(true);
             normalizeCategoryTemplateScores.setAccessible(true);
             applyCategoryLocalColdBalancing.setAccessible(true);
-            applyConditionalTopThreeCompression.setAccessible(true);
 
             List<AbilityTemplate> templates = registry.templates().stream()
                     .filter(template -> template.category() == category)
@@ -212,7 +209,6 @@ class IntraCategoryNormalizationProbeTest {
                 weights[i] = weight;
                 total += weight;
             }
-            total = (double) applyConditionalTopThreeCompression.invoke(generator, weights, total);
 
             Map<String, Double> byTemplate = new LinkedHashMap<>();
             for (int i = 0; i < templates.size(); i++) {
