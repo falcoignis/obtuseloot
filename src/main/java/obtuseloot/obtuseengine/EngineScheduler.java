@@ -93,10 +93,11 @@ public class EngineScheduler {
     public void startDecayTask() {
         if (decayTask != null && !decayTask.isCancelled()) return;
         long ticks = RuntimeSettings.get().volatileDecayIntervalSeconds() * 20L;
-        decayTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> reputationManager.getLoadedReputations().values().forEach(rep -> {
-            rep.decayVolatileStats(RuntimeSettings.get().volatileDecayFactor());
-            rep.applySoftFloor();
-        }), ticks, ticks);
+        decayTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            var active = new java.util.HashSet<>(reputationManager.getLoadedReputations().values());
+            artifactManager.equippedProfiles().forEach(a -> active.add(a.getItemReputation()));
+            active.forEach(rep -> { rep.decayVolatileStats(RuntimeSettings.get().volatileDecayFactor()); rep.applySoftFloor(); });
+        }, ticks, ticks);
     }
 
     public void startCombatCleanupTask() {
@@ -110,7 +111,9 @@ public class EngineScheduler {
         if (instabilityCleanupTask != null && !instabilityCleanupTask.isCancelled()) return;
         instabilityCleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
-            for (Artifact artifact : artifactManager.getLoadedArtifacts().values()) {
+            var active = new java.util.HashSet<>(artifactManager.getLoadedArtifacts().values());
+            active.addAll(artifactManager.equippedProfiles());
+            for (Artifact artifact : active) {
                 if (artifact != null && artifact.isInstabilityExpired(now)) {
                     artifact.clearInstability();
                     artifact.addLoreHistory("Instability faded.");
@@ -124,6 +127,8 @@ public class EngineScheduler {
         if (evolutionTask != null && !evolutionTask.isCancelled()) return;
         evolutionTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (localEcosystem != null) localEcosystem.advanceTick();
+            if (plugin instanceof obtuseloot.ObtuseLoot main && main.getEquipmentAbilities() != null)
+                main.getEquipmentAbilities().tick();
             evolutionQueue.tick(RuntimeSettings.get().noncombatUpdateIntervalTicks(),
                     update -> applyEvolution(update, true), this::logEvolutionFailure);
         }, 1L, 1L);
@@ -134,10 +139,17 @@ public class EngineScheduler {
         evolutionQueue.flush(owner, update -> applyEvolution(update, false), this::logEvolutionFailure);
         evolutionQueue.forget(owner);
     }
+    public void flushEvolution(Artifact artifact) {
+        evolutionQueue.flush(artifact, update -> applyEvolution(update, false), this::logEvolutionFailure);
+    }
 
     private void applyEvolution(NonCombatEvolutionQueue.Pending update, boolean refreshAbilities) {
         Artifact current = artifactManager.getLoadedArtifacts().get(update.owner());
         var reputation = reputationManager.getLoadedReputations().get(update.owner());
+        if (obtuseloot.artifacts.ArtifactStorageKeys.isItem(update.artifact().getArtifactStorageKey())) {
+            current = artifactManager.resolveByStorageKey(update.artifact().getArtifactStorageKey());
+            reputation = current == null ? null : current.getItemReputation();
+        }
         if (!update.matches(current, reputation)) return; // stale, reset, rerolled or refused state
         artifactManager.markDirty(current);
         String oldArchetype = current.getArchetypePath();

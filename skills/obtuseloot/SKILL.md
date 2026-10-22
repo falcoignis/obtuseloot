@@ -47,10 +47,14 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
 
 Unless the owner says otherwise, work from the top. When a request touches a later item, say where it sits in this order.
 
-**Owner addition, 2026-10-21:** plan the next activation slice for passive abilities,
-off-hand/secondary click, armor and elytra, with PlaceholderAPI and LuckPerms support.
-PacketEvents is conditional on demonstrated need. Read `docs/equipment-ability-activation.md`;
-the main-hand-only implementation does not yet satisfy these equipment/integration requirements.
+**Equipment/integration follow-up, 2026-10-21:** the owner selected passive speed first,
+with strongest or additive stacking, followed by double jump. The follow-up implements
+six-slot activation and PlaceholderAPI/effective LuckPerms permission support; refresh
+its validation/PR state before relying on it. Core must work standalone. Detect AuraSkills
+when present and preserve normal skill XP; extra XP coupling remains undecided. PacketEvents
+is conditional on demonstrated need. Read `docs/equipment-ability-activation.md` and
+`docs/plugin-compatibility.md`. Compatibility is a standing requirement for future features,
+not a claim that boot detection proves cross-plugin certification.
 
 ## Working procedure
 

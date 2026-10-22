@@ -27,6 +27,24 @@ public class ArtifactManager {
     private long itemAccessSequence;
     private final java.util.Set<String> activatedItemProfiles = ConcurrentHashMap.newKeySet();
     private final java.util.Set<String> dirtyItemProfiles = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, java.util.Set<String>> equipmentPins = new ConcurrentHashMap<>();
+    public void pinEquipment(UUID player, java.util.Set<String> keys) {
+        if (keys.isEmpty()) equipmentPins.remove(player); else equipmentPins.put(player, java.util.Set.copyOf(keys));
+    }
+    public java.util.Collection<Artifact> equippedProfiles() {
+        var keys = equipmentPins.values().stream().flatMap(java.util.Set::stream).collect(java.util.stream.Collectors.toSet());
+        return keys.stream().map(itemProfiles::get).filter(java.util.Objects::nonNull).toList();
+    }
+    public void attachEquippedItem(UUID holder, Artifact artifact) {
+        boolean changed = !holder.equals(artifact.getOwnerId());
+        artifact.setOwnerId(holder);
+        if (activatedItemProfiles.add(artifact.getArtifactStorageKey()) && ObtuseLoot.get() != null) {
+            ObtuseLoot.get().getArtifactUsageTracker().hydrateFromArtifact(artifact);
+            ObtuseLoot.get().getArtifactUsageTracker().trackCreated(artifact);
+            changed = true;
+        }
+        if (changed) markDirty(artifact);
+    }
     private final Map<String, UUID> storageToOwner = new ConcurrentHashMap<>();
     private final ArtifactCacheManager cache;
     private final PlayerLoadGuard loadGuard;
@@ -294,6 +312,7 @@ public class ArtifactManager {
         int limit = cache.isEnabled() ? Math.max(16, RuntimeSettings.get().activeArtifactCacheMaxEntries()) : 0;
         if (itemProfiles.size() <= limit) return;
         var pinned = loadedArtifacts.values().stream().map(Artifact::getArtifactStorageKey).collect(java.util.stream.Collectors.toSet());
+        equipmentPins.values().forEach(pinned::addAll);
         var evictable = itemProfiles.keySet().stream().filter(key -> !pinned.contains(key) && !dirtyItemProfiles.contains(key))
                 .sorted(java.util.Comparator.comparingLong(key -> itemProfileAccess.getOrDefault(key, 0L))).toList();
         for (String key : evictable) {

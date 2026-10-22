@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 public class ItemAbilityManager {
     private final AbilityResolver resolver;
+    private final AbilityRegistry registry;
+    public AbilityRegistry registry() { return registry; }
     private final ArtifactUsageTracker usageTracker;
     private java.util.function.Consumer<AbilityOutcomeObservation> outcomeObserver = observation -> { };
     private final Map<String, Integer> triggerCounts = new HashMap<>();
@@ -52,6 +54,7 @@ public class ItemAbilityManager {
 
     public ItemAbilityManager(AbilityResolver resolver, AbilityRegistry registry, ArtifactUsageTracker usageTracker) {
         this.resolver = resolver;
+        this.registry = registry;
         this.usageTracker = usageTracker;
         this.dispatcher = new EventAbilityDispatcher(registry);
         for (AbilityTrigger trigger : AbilityTrigger.values()) {
@@ -112,7 +115,9 @@ public class ItemAbilityManager {
         }
 
         fullScanDispatchCalls.increment();
-        AbilityProfile profile = profileFor(context.artifact(), context.reputation());
+        AbilityProfile profile = context.liveExecution() && context.activation() != null && ownerId != null
+                ? new AbilityProfile("equipped", equippedDefinitions(ownerId, context.artifact()))
+                : profileFor(context.artifact(), context.reputation());
         Map<String, AbilityDefinition> definitionsById = profile.abilities().stream()
                 .collect(Collectors.toMap(AbilityDefinition::id, d -> d, (a, b) -> a));
         AbilityDispatchResult dispatchResult = dispatcher.dispatchFullScan(context, profile, this);
@@ -168,6 +173,8 @@ public class ItemAbilityManager {
         }
     }
 
+    public void clearSubscriptions(UUID playerId, String itemKey) { subscriptionIndex.remove(playerId, itemKey); }
+
     public void clearAllSubscriptions() {
         subscriptionIndex.clear();
         ObtuseLoot plugin = ObtuseLoot.get();
@@ -178,8 +185,15 @@ public class ItemAbilityManager {
         }
     }
 
+    public PlayerArtifactTriggerMap triggerMap(UUID playerId, Artifact artifact) {
+        return subscriptionIndex.get(playerId, artifact.getArtifactStorageKey());
+    }
     public PlayerArtifactTriggerMap triggerMap(UUID playerId) {
         return subscriptionIndex.get(playerId);
+    }
+    public List<AbilityDefinition> equippedDefinitions(UUID player, Artifact artifact) {
+        return subscriptionIndex.getOrRebuild(player, artifact, artifact.getItemReputation(), this, "equipped-item")
+                .asMap().values().stream().flatMap(List::stream).map(ArtifactTriggerBinding::definition).toList();
     }
 
     public TriggerSubscriptionIndexStats indexStats() {

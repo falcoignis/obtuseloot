@@ -6,6 +6,11 @@ public final class AbilityExecutor {
     public AbilityExecutor() { this(new AbilityRegistry()); }
 
     public AbilityExecutor(AbilityRegistry registry) { this.registry = registry; }
+    public boolean eligible(AbilityDefinition definition, AbilityEventContext context) {
+        var registration = registry.registrationById(definition.id());
+        return !context.liveExecution() || context.activation() == null
+                || registration != null && context.activation().allows(registration);
+    }
 
     public AbilityExecutionResult execute(AbilityDefinition definition, AbilityEventContext context, int stage) {
         if (definition.trigger() != context.trigger()) {
@@ -39,6 +44,12 @@ public final class AbilityExecutor {
         }
 
         AbilityRegistration registration = registry.registrationById(definition.id());
+        if (context.liveExecution() && context.activation() != null
+                && (registration == null || !context.activation().allows(registration))) {
+            return new AbilityExecutionResult(definition.id(), definition.mechanic(), context.trigger(),
+                    context.artifact().getArtifactStorageKey(), context.artifact().getOwnerId(),
+                    AbilityExecutionStatus.SUPPRESSED, AbilityOutcomeType.FLAVOR_ONLY, false, "activation-ineligible", null);
+        }
         if (registration != null && registration.liveEffect() != null) {
             if (!registration.supports(definition)) {
                 return unimplemented(definition, context, "effect-variant-not-implemented");

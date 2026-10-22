@@ -60,6 +60,7 @@ public final class ArtifactItemStorage {
 
     /** Bind the held physical item before gameplay. Switching never transfers its history to another item. */
     public Artifact activateHeld(Player player) {
+        if (plugin.getEquipmentAbilities() != null) return plugin.getEquipmentAbilities().mainHand(player);
         ItemStack held = player.getInventory().getItemInMainHand();
         if (!isArtifactItem(held)) {
             Artifact previous = plugin.getArtifactManager().getLoadedArtifacts().get(player.getUniqueId());

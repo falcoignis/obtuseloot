@@ -15,6 +15,12 @@ public class AbilityRegistry {
 
     public AbilityRegistry() {
         this.registrations = List.of(
+                template("mobility.fleetfoot", "Fleetfoot", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY,
+                        AbilityTrigger.ON_MOVEMENT, AbilityMechanic.MOVEMENT_ECHO,
+                        "Equipped gear improves walking speed", "steady footwork", "varied footwork", "steady stride", "shared route memory", "remembers traveled paths",
+                        metadata(Set.of("traversal", "exploration"), Set.of("equipped-passive"), Set.of("exploration", "mobility"),
+                                0.5D, 0.8D, 0.3D, 0.1D, 0.1D, 0.3D))
+                        .withPassiveEffect(AbilityActivationPolicy.EQUIPMENT, new obtuseloot.abilities.effects.WalkingSpeedEffect()),
                 template("precision.echo_locator", "Echo Locator", AbilityCategory.SENSING_INFORMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.SENSE_PING,
                         "Resonant pulses reveal nearby hollows when crossing new terrain", "deeper echo strata", "drift introduces phantom echoes", "awakening stabilizes pulse geometry", "convergence shares cave cues", "memory records hollow corridors",
                         metadata(Set.of("environmental-sensing", "information"), Set.of("movement-throttled"), Set.of("watchful", "exploration", "memory"), 0.72D, 0.81D, 0.78D, 0.22D, 0.20D, 0.41D)),
@@ -324,7 +330,7 @@ public class AbilityRegistry {
 
     public List<AbilityRegistration> registrations() { return registrations; }
     public AbilityRegistry implementedOnly() {
-        return new AbilityRegistry(registrations.stream().filter(entry -> entry.liveEffect() != null).toList());
+        return new AbilityRegistry(registrations.stream().filter(AbilityRegistration::implemented).toList());
     }
     public AbilityRegistration registrationById(String id) { return byId.get(id); }
     public AbilityTemplate templateById(String id) {
@@ -335,7 +341,7 @@ public class AbilityRegistry {
     /** An unsupported mutation must not strand an otherwise executable ability. */
     public AbilityDefinition executableVariant(AbilityDefinition variant, AbilityDefinition original) {
         AbilityRegistration entry = byId.get(variant.id());
-        return entry != null && entry.liveEffect() != null && !entry.supports(variant) ? original : variant;
+        return entry != null && entry.implemented() && !entry.supports(variant) ? original : variant;
     }
 
     private AbilityRegistration template(String id, String name, AbilityCategory category, AbilityFamily family, AbilityTrigger trigger, AbilityMechanic mechanic,

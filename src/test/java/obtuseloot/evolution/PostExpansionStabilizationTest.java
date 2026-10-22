@@ -25,7 +25,7 @@ class PostExpansionStabilizationTest {
                 .flatMap(t -> taxonomy.nichesFor(t.mechanic(), t.trigger()).stream())
                 .collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
 
-        assertEquals(88, registry.templates().size());
+        assertEquals(89, registry.templates().size());
         assertTrue(counts.getOrDefault(MechanicNicheTag.ENVIRONMENTAL_SENSING, 0L) >= 10L);
         assertTrue(counts.getOrDefault(MechanicNicheTag.ENVIRONMENTAL_SENSING, 0L) <= 28L,
                 "Environmental sensing is expected to be broad but should not expand uncontrollably.");

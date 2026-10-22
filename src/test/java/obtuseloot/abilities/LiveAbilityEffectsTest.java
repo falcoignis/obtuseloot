@@ -248,6 +248,31 @@ class LiveAbilityEffectsTest {
     }
 
     @Test
+    void explicitlyBoundOffhandInspectionWorksAndHonorsFinalItemDenial() {
+        current = data(Material.WHEAT, 4);
+        var definition = definition("precision.material_insight");
+        var event = inspection(EquipmentSlot.OFF_HAND);
+        var context = context(artifact(), definition, event).withActivation(new AbilityActivation(EquipmentSlot.OFF_HAND,
+                AbilityInput.secondary(EquipmentSlot.OFF_HAND, Action.RIGHT_CLICK_BLOCK), java.util.Set.of(definition.id())));
+        assertEquals(AbilityExecutionStatus.SUCCESS, executor.execute(definition, context, 1).status());
+        assertEquals(1, messages.size());
+        event.setUseItemInHand(Event.Result.DENY);
+        assertEquals(AbilityExecutionStatus.NO_OP, executor.execute(definition, context, 1).status());
+        assertEquals(1, messages.size());
+        assertEquals(Event.Result.DENY, event.useItemInHand());
+    }
+
+    @Test
+    void replantDoesNotCancelOrReplaceTheOriginalHarvestEvent() {
+        var event = harvestEvent(3);
+        assertFalse(event.isCancelled());
+        assertEquals(AbilityExecutionStatus.SUCCESS, execute("survival.gentle_harvest", event).status());
+        assertFalse(event.isCancelled(), "Native harvest/XP listeners keep the original event");
+        assertSame(player, event.getPlayer());
+        assertEquals(1, placements.size(), "Protection checks still see the paid replant");
+    }
+
+    @Test
     void actualInspectionsDistinguishTargetsButPenalizeAnUnchangedRepeatedReport() {
         var definition = definition("precision.material_insight");
         var varied = artifact();
