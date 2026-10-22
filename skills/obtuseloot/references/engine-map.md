@@ -1,5 +1,13 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-22 genetic reinforcement ablation:** aggregate fitness no longer directly
+multiplies every expressed/latent trait at genetic transitions. Per-revision measured
+history, ordinary variation and local measured parent selection remain. Other existing
+context/ecological and fixed environmental biases still alter genes. The paired
+mid-run condition-swap experiment and its limits are documented in
+[`docs/blanket-gene-reinforcement-ablation.md`](../../../docs/blanket-gene-reinforcement-ablation.md).
+This removes one term, not every historical aid described below.
+
 **2026-10-20 follow-up:** the first effects slice implements Gentle Harvest and Material Insight with
 observed outcomes, protection checks and immediate utility-history updates. It also replaces the old
 post-break replant callback. Unfinished live effects return no-op. The baseline descriptions below

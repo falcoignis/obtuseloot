@@ -13,10 +13,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class ExperienceEvolutionEngine {
-    private static final double ADJUSTMENT_CAP = 0.10D;
-
     private final ArtifactUsageTracker usageTracker;
-    private final ArtifactFitnessEvaluator fitnessEvaluator;
     private final EnvironmentPressureEngine pressureEngine;
     private final AdaptiveSupportAllocator supportAllocator;
     private final EvolutionParameterRegistry parameterRegistry;
@@ -44,7 +41,6 @@ public class ExperienceEvolutionEngine {
                                      AdaptiveSupportAllocator supportAllocator,
                                      EvolutionParameterRegistry parameterRegistry) {
         this.usageTracker = usageTracker;
-        this.fitnessEvaluator = fitnessEvaluator;
         this.pressureEngine = pressureEngine;
         this.supportAllocator = supportAllocator;
         this.parameterRegistry = parameterRegistry;
@@ -83,22 +79,16 @@ public class ExperienceEvolutionEngine {
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed, int nichePopulation,
                                                    double lineageMutationInfluence, String lineageId,
                                                    LineageRegistry lineageRegistry, ArtifactUsageProfile usage) {
-        EcosystemTuningProfile profile = parameterRegistry.profile();
         RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
-        double nicheAdoptionMultiplier = usageTracker.nichePopulationTracker().nicheAdoptionFitnessMultiplier(artifactSeed);
-        double nicheCompetitionFactor = usageTracker.nichePopulationTracker().nicheCompetitionFactor(artifactSeed);
         AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
-        double fitness = fitnessEvaluator.evaluate(usage);
-        double effectiveFitness = fitnessEvaluator.effectiveFitness(fitness / Math.max(1.0D, nicheCompetitionFactor), pressure);
-        effectiveFitness *= support.reinforcementMultiplier() * profile.lineageMomentumInfluence();
-        effectiveFitness *= nicheAdoptionMultiplier;
-        double normalized = normalizeFitness(effectiveFitness);
         double lineageInfluence = clamp(lineageMutationInfluence, 0.75D, 1.25D) * support.mutationOpportunity();
 
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
         EnumMap<GenomeTrait, Double> latentAdjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
-            double multiplier = traitMultiplier(entry.getKey(), normalized) * ecoTraitBias(pressure, lineageInfluence, support);
+            // Aggregate success selects reproductive parents; it cannot identify which genes should rise or fall.
+            // Retain the existing ecological/context adjustment for its own separate ablation.
+            double multiplier = ecoTraitBias(pressure, lineageInfluence, support);
             double environmental = pressureEngine.multiplierFor(entry.getKey());
             adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier * environmental));
             latentAdjusted.put(entry.getKey(), clamp01(genome.latentTrait(entry.getKey()) * (1.0D + ((multiplier - 1.0D) * 0.35D))));
@@ -197,19 +187,6 @@ public class ExperienceEvolutionEngine {
         return clamp((0.95D + ((pressure.retentionBias() - 1.0D) * 0.35D) + (pressure.specializationPressure() * 0.08D) - (pressure.ecologicalRepulsion() * 0.10D))
                 * (1.0D + ((lineageInfluence - 1.0D) * 0.25D))
                 * supportBlend, 0.90D, 1.12D);
-    }
-
-    private double traitMultiplier(GenomeTrait trait, double normalizedFitness) {
-        double direction = switch (trait) {
-            case PRECISION_AFFINITY, MOBILITY_AFFINITY, SURVIVAL_INSTINCT, RESONANCE, STABILITY -> 1.0D;
-            case CHAOS_AFFINITY, VOLATILITY, KINETIC_BIAS, MUTATION_SENSITIVITY -> 0.5D;
-        };
-        double delta = ADJUSTMENT_CAP * normalizedFitness * direction;
-        return 1.0D + clamp(delta, -ADJUSTMENT_CAP, ADJUSTMENT_CAP);
-    }
-
-    private double normalizeFitness(double fitness) {
-        return clamp(fitness / 8.0D, -1.0D, 1.0D);
     }
 
     private static double clamp(double v, double min, double max) {

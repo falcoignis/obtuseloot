@@ -14,10 +14,12 @@ therefore preserves the next penalty as well as accumulated fitness. Trading pre
 the history; identity replacement carries it forward under its original keys. Lifetime
 item reputation and ability preferences remain separate and are not erased on evolution.
 
-At an explicit genetic transition, the direct experience-fitness input is built from the
-producing revision's measured summaries. It excludes lifetime activity and ancestor fitness.
-Existing macro ecology, lineage support, pressure, memory and ordinary mutation mechanisms
-remain; this is not an ablation of all historical selection scaffolding.
+At an explicit genetic transition, the feedback API receives a snapshot built from the
+producing revision's measured summaries, excluding lifetime activity and ancestor fitness.
+The blanket-reinforcement ablation removes direct aggregate-fitness scaling of genes;
+see `blanket-gene-reinforcement-ablation.md`. Measured outcomes still drive reputation,
+progression and local reproduction. Existing macro ecology, lineage support, pressure,
+memory and ordinary mutation remain; other historical selection scaffolding remains.
 
 Local reproductive evidence is partitioned by item key, seed and revision. The existing
 same-world, configurable chunk radius and game-tick window apply before scoring. The draw
@@ -65,7 +67,7 @@ niche formation or proof that all four emergence criteria have been met.
 
 The focused regression slice and `server-tests/revision-fitness/README.md` cover delayed
 attribution, fresh-evidence eligibility, ancestry, repeat penalties, malformed storage,
-reseed/replacement continuity, trade and restart. Final official Java 25 Docker validation
+reseed/replacement continuity, trade and restart. The original revision-fitness slice's official Java 25 Docker validation
 passed **113 focused tests** and **540 full-suite tests across 104 classes**, with zero
 failures/errors/skips and Maven exit 0. The full clean build took **30:33**. All **528**
 frozen source/resource/build/fixture inputs and **563** production entries matched the
