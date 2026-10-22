@@ -20,9 +20,10 @@ class PassiveEffectsTest {
     private GameMode mode = GameMode.SURVIVAL;
     private boolean gliding;
     private Player player;
+    private AttributeInstance attribute;
     @BeforeEach void setUp() {
         previous = RuntimeSettings.get(); RuntimeSettings.load(new YamlConfiguration());
-        var attribute = api(AttributeInstance.class, (name, args) -> switch (name) {
+        attribute = api(AttributeInstance.class, (name, args) -> switch (name) {
             case "getModifiers" -> List.copyOf(modifiers.values());
             case "removeModifier" -> { modifiers.remove(args[0] instanceof AttributeModifier m ? m.getKey() : args[0]); yield null; }
             case "addTransientModifier" -> { var m = (AttributeModifier) args[0]; assertNull(modifiers.putIfAbsent(m.getKey(), m)); yield null; }
@@ -43,16 +44,17 @@ class PassiveEffectsTest {
     @Test void strongestIsIdempotentAndRemovalPreservesForeignModifiers() {
         var foreign = new AttributeModifier(new NamespacedKey("other", "speed"), .2, AttributeModifier.Operation.ADD_SCALAR);
         modifiers.put(foreign.getKey(), foreign);
-        var effect = new WalkingSpeedEffect(); var controller = controller();
+        var effect = new WalkingSpeedEffect(p -> attribute); var controller = controller();
         var first = request(effect, item()); var second = request(effect, item());
         controller.reconcile(holder, List.of(first, second));
         controller.reconcile(holder, List.of(first, second));
         assertEquals(2, modifiers.size()); assertEquals(.25, additiveSum(), 1e-9);
         controller.reconcile(holder, List.of(second)); assertEquals(2, modifiers.size());
         controller.clear(holder); assertEquals(Map.of(foreign.getKey(), foreign), modifiers);
+        effect.cleanupPlayer(player); assertEquals(Map.of(foreign.getKey(), foreign), modifiers);
     }
     @Test void additiveBonusesSumAgainstBaseAndConfigSwitchReleasesOldMode() {
-        var effect = new WalkingSpeedEffect(); var controller = controller(); var first = item(); var second = item();
+        var effect = new WalkingSpeedEffect(p -> attribute); var controller = controller(); var first = item(); var second = item();
         controller.reconcile(holder, List.of(request(effect, first), request(effect, second)));
         assertEquals(.05, additiveSum(), 1e-9);
         var config = new YamlConfiguration(); config.set("abilities.passive-speed.stacking", "additive"); RuntimeSettings.load(config);
@@ -63,7 +65,7 @@ class PassiveEffectsTest {
         controller.clear(holder); assertTrue(modifiers.isEmpty());
     }
     @Test void flightAndGlidingDoNotAcquireSpeedOrFlightOwnership() {
-        var effect = new WalkingSpeedEffect(); var item = item();
+        var effect = new WalkingSpeedEffect(p -> attribute); var item = item();
         mode = GameMode.CREATIVE; assertNull(effect.contribution(player, item, null));
         mode = GameMode.SPECTATOR; assertNull(effect.contribution(player, item, null));
         mode = GameMode.SURVIVAL; gliding = true; assertNull(effect.contribution(player, item, null));

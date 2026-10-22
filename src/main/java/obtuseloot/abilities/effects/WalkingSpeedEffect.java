@@ -12,12 +12,20 @@ import org.bukkit.entity.Player;
 
 /** Transient additive-base modifiers; never overwrites base speed, flight or other plugins' effects. */
 public final class WalkingSpeedEffect implements PassiveAbilityEffect {
+    private final java.util.function.Function<Player, org.bukkit.attribute.AttributeInstance> attributes;
+    public WalkingSpeedEffect() {
+        this(player -> player.getAttribute(Attribute.MOVEMENT_SPEED));
+    }
+    /** Allows controlled attribute fixtures without booting the server registry. */
+    public WalkingSpeedEffect(java.util.function.Function<Player, org.bukkit.attribute.AttributeInstance> attributes) {
+        this.attributes = java.util.Objects.requireNonNull(attributes);
+    }
     @Override public Contribution contribution(Player player, Artifact artifact, AbilityDefinition definition) {
         var settings = RuntimeSettings.get();
         double bonus = settings.passiveSpeedBonus();
         if (bonus == 0 || !player.isOnline() || player.isDead() || player.isFlying() || player.isGliding()
                 || player.isInsideVehicle() || player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return null;
-        var attribute = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        var attribute = attributes.apply(player);
         if (attribute == null) return null;
         var key = new NamespacedKey("obtuseloot", "passive_speed/" + ArtifactStorageKeys.itemId(artifact.getArtifactStorageKey()));
         var modifier = new AttributeModifier(key, bonus, AttributeModifier.Operation.ADD_SCALAR);
@@ -30,7 +38,7 @@ public final class WalkingSpeedEffect implements PassiveAbilityEffect {
                 });
     }
     @Override public void cleanupPlayer(Player player) {
-        var attribute = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        var attribute = attributes.apply(player);
         if (attribute == null) return;
         for (var modifier : java.util.List.copyOf(attribute.getModifiers())) {
             var key = modifier.getKey();

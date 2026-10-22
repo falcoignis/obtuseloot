@@ -117,9 +117,11 @@ See:
 
 ### Requirements
 
-- Java **21**
+- Java **25**
 - Maven **3.9+**
-- Paper/Purpur **1.21 API line**
+- Paper/Purpur **26.2**
+
+See the [26.2 target migration and validation](docs/minecraft-26.2-target.md).
 
 ### Standard build (tests enabled by default)
 

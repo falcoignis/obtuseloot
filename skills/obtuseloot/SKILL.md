@@ -89,18 +89,18 @@ Other stale or misleading files (decision: refresh or archive them via PR):
 
 ### Build and test
 
-Use the official Maven image in a disposable container. Never install or modify a custom image. This exact invocation worked on 2026-10-19:
+Use the official Maven image in a disposable container. Never install or modify a custom image. The owner selected Minecraft 26.2 on 2026-10-21; use Java 25 for the build:
 
 ```bash
 docker volume create obtuseloot-m2
 docker run --rm -v obtuseloot-m2:/m2 alpine chown 1000:1000 /m2
 docker run --rm --user 1000:1000 -v "$PWD":/src -w /src \
   -v obtuseloot-m2:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2 \
-  maven:3.9-eclipse-temurin-21 \
+  maven:3.9-eclipse-temurin-25 \
   mvn -B -ntp -Duser.home=/var/maven clean package
 ```
 
-- **The Java tag follows the build target.** The pom targets Java 21 today. The decision is to match HomesteadCraft's server version, so after retargeting, change the image tag to that Java version.
+- **The Java tag follows the build target.** Target Minecraft 26.2 and Java 25 per the owner decision. Keep the Maven API dependency, compiler release, plugin API version and all Java CI jobs aligned. See `docs/minecraft-26.2-target.md` for migration evidence and limits.
 - **Iterate on single tests** with `-Dtest=ClassName -Dsurefire.failIfNoSpecifiedTests=false`. The pom also has a `fast` profile (`-Pfast`, sets `maven.test.skip=true`) that skips test compilation and execution.
 - **The full suite is long-running.** The PR #403 local run took about 21 minutes; its changes remove the target-only long-horizon test. Check the current branch before assuming that deletion is present. Run executable-code/test changes through the full suite before a PR; validate skill/documentation-only changes with the skill validator and reference checks.
 - **Judge a run by Maven's exit code and the surefire reports.** Grepped log lines are not enough. A shell pipeline that prints the log after Maven fails can still exit 0.

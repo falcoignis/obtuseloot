@@ -10,7 +10,7 @@ Respect the target community's restrictions. HomesteadCraft rewards must not cre
 
 ## Server target
 
-Verify the target's current server software, API and Java version with the owner. Retarget these together: the API dependency and Java release in `pom.xml`, `api-version` in `plugin.yml`, and the official Maven build-image Java tag. Rebuild and run the full suite afterward.
+The owner selected Minecraft **26.2** on 2026-10-21. Build against the pinned stable Purpur 26.2 API with **Java 25**. Confirm the chosen testing/deployment destination separately; this target choice does not authorize a server upgrade or deployment. Retarget these together: the API dependency and Java release in `pom.xml`, `api-version` in `plugin.yml`, and the official Maven build-image Java tag. Rebuild and run the full suite afterward.
 
 ## Installation once the path is authorized
 

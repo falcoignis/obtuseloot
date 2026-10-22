@@ -28,7 +28,7 @@
     <description>Persistent convergence-based artifact progression for Paper/Purpur servers, with ecosystem telemetry, dashboard reporting, and configurable persistence backends.</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -59,12 +59,12 @@
 
           Check https://repo.purpurmc.org/snapshots/org/purpurmc/purpur/purpur-api/
           for the exact build string for your server version.
-          The version below targets Purpur 1.21.1.
+          The version below pins the stable Purpur 26.2 API.
         -->
         <dependency>
             <groupId>org.purpurmc.purpur</groupId>
             <artifactId>purpur-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <version>26.2.build.2633-stable</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -91,7 +91,7 @@
 
         <plugins>
             <!--
-              maven-compiler-plugin — compile to Java 21 with full records,
+              maven-compiler-plugin — compile to Java 25 with full records,
               sealed classes, and switch expressions support (all used by this plugin).
             -->
             <plugin>
