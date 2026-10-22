@@ -1,7 +1,6 @@
 package obtuseloot.analytics;
 
 import obtuseloot.abilities.genome.ArtifactGenome;
-import obtuseloot.abilities.genome.GenomeResolver;
 import obtuseloot.abilities.genome.GenomeTrait;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.lineage.ArtifactLineage;
@@ -12,7 +11,6 @@ import java.util.*;
 public class TraitInteractionAnalyzer {
     private static final double GENOME_ACTIVITY_THRESHOLD = 0.55D;
 
-    private final GenomeResolver genomeResolver = new GenomeResolver();
     private final Set<String> knownTraits = Arrays.stream(GenomeTrait.values())
             .map(trait -> toCamelCase(trait.name()))
             .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -50,7 +48,7 @@ public class TraitInteractionAnalyzer {
     }
 
     private Set<String> extractArtifactGenomeTraits(Artifact artifact) {
-        ArtifactGenome genome = genomeResolver.resolve(artifact.getArtifactSeed());
+        ArtifactGenome genome = artifact.getGenome();
         Set<String> traits = new LinkedHashSet<>();
         for (GenomeTrait trait : GenomeTrait.values()) {
             if (genome.trait(trait) >= GENOME_ACTIVITY_THRESHOLD) {

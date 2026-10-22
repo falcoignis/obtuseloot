@@ -13,14 +13,29 @@ public record ArtifactIdentityTransition(
         if (discarded != null && discarded == replacement) {
             throw new IllegalArgumentException("Artifact identity transition must replace the discarded instance.");
         }
+        if (discarded != null && Objects.equals(discarded.getArtifactStorageKey(), replacement.getArtifactStorageKey())) {
+            var genome = discarded.getGenome();
+            replacement.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(replacement.getArtifactSeed(),
+                    genome.traits(), genome.latentTraits(), genome.activatedLatentTraits()));
+            replacement.restoreGenomeEvolution(discarded.getGenomeRevision(), discarded.getGenomeEvolutionState());
+            replacement.setItemReputation(discarded.getItemReputation());
+            replacement.setParentStorageKey(discarded.getParentStorageKey());
+            replacement.setInheritanceGeneration(discarded.getInheritanceGeneration());
+        }
     }
 
     public static ArtifactIdentityTransition recreate(Artifact discarded, Artifact replacement) {
-        return new ArtifactIdentityTransition(discarded, replacement, "artifact-recreate");
+        return baseline(discarded, replacement, "artifact-recreate");
     }
 
     public static ArtifactIdentityTransition regenerate(Artifact discarded, Artifact replacement) {
-        return new ArtifactIdentityTransition(discarded, replacement, "artifact-regenerate");
+        return baseline(discarded, replacement, "artifact-regenerate");
+    }
+
+    public static ArtifactIdentityTransition baseline(Artifact discarded, Artifact replacement, String reason) {
+        var transition = new ArtifactIdentityTransition(discarded, replacement, reason);
+        replacement.restoreGenomeEvolution(replacement.getGenomeRevision(), replacement.evolutionStateKey());
+        return transition;
     }
 
     public boolean preservesOwnerStorageContinuity() {

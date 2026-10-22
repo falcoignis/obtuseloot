@@ -51,6 +51,22 @@ class TriggerSubscriptionIndexIdentityRefreshTest {
         assertEquals("seed-22", second.bindingsFor(AbilityTrigger.ON_HIT).getFirst().abilityId());
     }
 
+    @Test void sameItemRefreshesSubscriptionsWhenItsStoredGenomeChanges() {
+        var index = new TriggerSubscriptionIndex();
+        var owner = new UUID(0, 30);
+        var artifact = artifact(owner, 8, obtuseloot.artifacts.ArtifactStorageKeys.create());
+        var manager = new ItemAbilityManager((item, rep) -> new AbilityProfile("genes", List.of(
+                ability("kinetic-" + item.getGenome().trait(obtuseloot.abilities.genome.GenomeTrait.KINETIC_BIAS)))));
+        var initial = index.getOrRebuild(owner, artifact, artifact.getItemReputation(), manager, "initial");
+        artifact.setEvolutionPath("strider-formed");
+        new obtuseloot.evolution.GenomeEvolutionEngine().advance(artifact);
+        var evolved = index.getOrRebuild(owner, artifact, artifact.getItemReputation(), manager, "evolved");
+        assertNotSame(initial, evolved);
+        assertEquals("kinetic-" + artifact.getGenome().trait(obtuseloot.abilities.genome.GenomeTrait.KINETIC_BIAS),
+                evolved.bindingsFor(AbilityTrigger.ON_HIT).getFirst().abilityId());
+        assertSame(evolved, index.getOrRebuild(owner, artifact, artifact.getItemReputation(), manager, "read"));
+    }
+
     private Artifact artifact(UUID ownerId, long seed, String storageKey) {
         Artifact artifact = new Artifact(ownerId, "wooden_sword");
         artifact.setArtifactSeed(seed);

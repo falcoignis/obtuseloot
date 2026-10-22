@@ -1,5 +1,7 @@
 package obtuseloot.awakening;
 
+import obtuseloot.evolution.GenomeEvolutionEngine;
+
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.ArtifactIdentityTransition;
@@ -16,6 +18,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class AwakeningEngine {
+    private final GenomeEvolutionEngine genomeEvolution;
+
+    public AwakeningEngine() { this(new GenomeEvolutionEngine()); }
+
+    public AwakeningEngine(GenomeEvolutionEngine genomeEvolution) {
+        this.genomeEvolution = genomeEvolution;
+    }
+
     private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
     private final MemoryInfluenceResolver memoryInfluenceResolver = new MemoryInfluenceResolver();
 
@@ -82,8 +92,10 @@ public class AwakeningEngine {
         if (player != null) {
             player.sendMessage("§d" + textResolver.compose(replacement, ArtifactTextChannel.AWAKENING, resolution.path()));
         }
-        return new ArtifactIdentityTransition(artifact, replacement,
+        var transition = new ArtifactIdentityTransition(artifact, replacement,
                 "artifact-awakening:" + resolution.profileId() + ":" + resolution.variantId());
+        genomeEvolution.advanceReplacement(transition);
+        return transition;
     }
 
     private Artifact createReplacement(Artifact artifact,

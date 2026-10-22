@@ -136,7 +136,6 @@ public final class ObtuseLootCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cThe target must hold a readable artifact item.");
                 return true;
             }
-            plugin.getEvolutionEngine().evaluate(refreshed, refreshed.getItemReputation());
             plugin.getItemAbilityManager().rebuildSubscriptions(target.getUniqueId(), refreshed, refreshed.getItemReputation(), "command-refresh");
             plugin.getArtifactManager().saveItem(refreshed);
             plugin.getLoreEngine().refreshLore(target, refreshed, refreshed.getItemReputation());

@@ -8,10 +8,17 @@ import obtuseloot.reputation.ArtifactReputation;
 import org.bukkit.entity.Player;
 
 public class EvolutionEngine {
+    private final GenomeEvolutionEngine genomeEvolution;
     private final ArchetypeResolver archetypeResolver;
     private final HybridEvolutionResolver hybridResolver;
 
     public EvolutionEngine(ArchetypeResolver archetypeResolver, HybridEvolutionResolver hybridResolver) {
+        this(archetypeResolver, hybridResolver, new GenomeEvolutionEngine());
+    }
+
+    public EvolutionEngine(ArchetypeResolver archetypeResolver, HybridEvolutionResolver hybridResolver,
+                           GenomeEvolutionEngine genomeEvolution) {
+        this.genomeEvolution = genomeEvolution;
         this.archetypeResolver = archetypeResolver;
         this.hybridResolver = hybridResolver;
     }
@@ -24,6 +31,7 @@ public class EvolutionEngine {
         RuntimeSettings.Snapshot s = RuntimeSettings.get();
         ArtifactArchetypeValidator.requireValid(artifact, "evolution evaluation");
         if (reputation.getTotalScore() < s.archetypeThreshold()) {
+            genomeEvolution.advance(artifact);
             return;
         }
         String archetype = archetypeResolver.resolve(artifact, reputation);
@@ -39,5 +47,6 @@ public class EvolutionEngine {
         } else {
             artifact.setEvolutionPath(archetype + "-formed");
         }
+        genomeEvolution.advance(artifact);
     }
 }

@@ -73,10 +73,10 @@ public class WorldSimulationHarness {
     private final List<Long> initialSeedPool = new ArrayList<>();
     private List<SimulatedPlayer> latestPlayers = List.of();
 
-    private final EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
-    private final DriftEngine driftEngine = new DriftEngine();
-    private final AwakeningEngine awakeningEngine = new AwakeningEngine();
-    private final ConvergenceEngine convergenceEngine = new ConvergenceEngine();
+    private final EvolutionEngine evolutionEngine;
+    private final DriftEngine driftEngine;
+    private final AwakeningEngine awakeningEngine;
+    private final ConvergenceEngine convergenceEngine;
     private final ArtifactMemoryEngine memoryEngine = new ArtifactMemoryEngine();
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine = new ArtifactEcosystemSelfBalancingEngine();
     private final ArtifactUsageTracker usageTracker = new ArtifactUsageTracker();
@@ -143,6 +143,12 @@ public class WorldSimulationHarness {
         this.speciesNicheEngine = new SpeciesNicheAnalyticsEngine(config.seed(), config.fitnessSharing(), config.behavioralProjection(), config.roleBasedRepulsion(), config.minimumRoleSeparation(), config.adaptiveNicheCapacity());
         this.opportunityMutationEngine = new OpportunityWeightedMutationEngine(config.opportunityWeightedMutation());
         this.evolutionaryAbilityEngine = new EvolutionaryAbilityEngine();
+        var genomeEvolution = new obtuseloot.evolution.GenomeEvolutionEngine(new AbilityRegistry(), memoryEngine,
+                lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine, config.scoringMode());
+        this.evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver(), genomeEvolution);
+        this.driftEngine = new DriftEngine(genomeEvolution);
+        this.awakeningEngine = new AwakeningEngine(genomeEvolution);
+        this.convergenceEngine = new ConvergenceEngine(genomeEvolution);
         this.abilityGenerator = new ProceduralAbilityGenerator(
                 new AbilityRegistry(),
                 config.enableEcosystemBias() ? ecosystemEngine : null,

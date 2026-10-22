@@ -45,6 +45,7 @@ class EngineSchedulerTimingTest {
     private AbilityTemplate first;
     private AbilityTemplate evolved;
     private boolean cancelled;
+    private boolean failNextRefresh;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -57,6 +58,7 @@ class EngineSchedulerTimingTest {
         var tracker = new ArtifactUsageTracker();
         abilities = new ItemAbilityManager((item, rep) -> {
             profileBuilds.incrementAndGet();
+            if (failNextRefresh) { failNextRefresh = false; throw new IllegalStateException("test refresh failure"); }
             return new AbilityProfile("test", List.of(definition(item.getEvolutionPath().endsWith("-formed") ? evolved : first)));
         }, catalog, tracker);
         artifacts = new ArtifactManager(store);
@@ -179,6 +181,19 @@ class EngineSchedulerTimingTest {
         for (var item : items) assertTrue(item.getEvolutionPath().endsWith("-formed"));
         assertSame(artifact, artifacts.getLoadedArtifacts().get(owner), "Equipment evolution does not replace the main-hand command target");
         assertEquals(0, reputation.getTotalScore());
+    }
+
+    @Test void failedProfileRefreshRetriesWithoutMutatingTheGenomeTwice() {
+        for (int i = 0; i < 100 && reputation.getTotalScore() < 10; i++) dispatch("retry-" + i);
+        failNextRefresh = true;
+        advance(100);
+        assertEquals(1, artifact.getGenomeRevision());
+        var genome = artifact.getGenome();
+        advance(100);
+        assertSame(genome, artifact.getGenome());
+        assertEquals(1, artifact.getGenomeRevision());
+        assertEquals(3, profileBuilds.get());
+        assertEquals(evolved.id(), abilities.triggerMap(owner).bindingsFor(first.trigger()).getFirst().abilityId());
     }
 
     private void advance(int ticks) { for (int i = 0; i < ticks; i++) tick.run(); }

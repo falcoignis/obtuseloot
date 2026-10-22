@@ -1,0 +1,5 @@
+name: ObtuseLootGenomeProbe
+version: 1
+main: obtuseloot.servertest.GenomeProbe
+api-version: '26.2'
+depend: [ObtuseLoot]

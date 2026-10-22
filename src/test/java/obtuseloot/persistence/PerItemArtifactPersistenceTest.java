@@ -32,7 +32,7 @@ class PerItemArtifactPersistenceTest {
         var artifact = item(1, -12);
         String encoded = ArtifactProfileCodec.encode(artifact);
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
-                encoded.replace("profile-version: 1", "profile-version: 90")));
+                encoded.replace("profile-version: 2", "profile-version: 90")));
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
                 encoded.replace("SURVIVAL_INSTINCT: 0.23", "SURVIVAL_INSTINCT: .NaN")));
         assertThrows(IllegalArgumentException.class, () -> ArtifactStorageKeys.itemId("artifact:../../unsafe"));
@@ -65,6 +65,8 @@ class PerItemArtifactPersistenceTest {
             var first = item(1, 1);
             manager.registerItem(first);
             first.setLastUtilityHistory("unsaved-observed-history");
+            first.setEvolutionPath("strider-formed");
+            new obtuseloot.evolution.GenomeEvolutionEngine().advance(first);
             refuseFirst.set(true);
             assertThrows(IllegalStateException.class, () -> manager.saveItem(first));
             for (int i = 2; i < 40; i++) manager.registerItem(item(i, i));
@@ -72,6 +74,10 @@ class PerItemArtifactPersistenceTest {
             assertSame(first, manager.resolveByStorageKey(firstKey), "Dirty state must remain in the retry buffer");
             refuseFirst.set(false); manager.saveAll();
             assertEquals("unsaved-observed-history", delegate.loadArtifactProfile(firstKey).getLastUtilityHistory());
+            var saved = delegate.loadArtifactProfile(firstKey);
+            assertEquals(first.getGenome().traits(), saved.getGenome().traits());
+            assertEquals(first.getGenomeRevision(), saved.getGenomeRevision());
+            assertFalse(new obtuseloot.evolution.GenomeEvolutionEngine().advance(saved));
             assertEquals(39, countProfiles(database), "Memory eviction must never delete persisted items");
         } finally {
             var field = obtuseloot.config.RuntimeSettings.class.getDeclaredField("current"); field.setAccessible(true); field.set(null, previous);
@@ -92,6 +98,8 @@ class PerItemArtifactPersistenceTest {
         first.addLoreHistory("A paid harvest");
         first.setParentStorageKey("artifact:" + new UUID(0, 8));
         first.setInheritanceGeneration(4);
+        first.setEvolutionPath("strider-formed");
+        new obtuseloot.evolution.GenomeEvolutionEngine().advance(first);
         var manager = new ArtifactManager(store);
         manager.registerItem(first);
         manager.registerItem(second);
@@ -113,6 +121,24 @@ class PerItemArtifactPersistenceTest {
         assertEquals(4, traded.getInheritanceGeneration());
         assertTrue(traded.getLoreHistory().contains("A paid harvest"));
         assertEquals(first.getGenome().traits(), traded.getGenome().traits());
+        assertEquals(first.getGenome().latentTraits(), traded.getGenome().latentTraits());
+        assertEquals(first.getGenome().activatedLatentTraits(), traded.getGenome().activatedLatentTraits());
+        assertEquals(first.getGenomeRevision(), traded.getGenomeRevision());
+        assertEquals(first.getGenomeEvolutionState(), traded.getGenomeEvolutionState());
+        assertFalse(new obtuseloot.evolution.GenomeEvolutionEngine().advance(traded), "A trade/restart cannot replay evolution");
+        freshManager.activateItem(buyer, traded);
+        traded.setArchetypePath("strider");
+        var transition = new obtuseloot.awakening.AwakeningEngine().forceAwakening(null, traded, traded.getItemReputation());
+        assertNotNull(transition);
+        var transitionedGenome = transition.replacement().getGenome();
+        var replacement = freshManager.replaceIdentity(buyer, transition);
+        assertSame(transitionedGenome, replacement.getGenome(), "Manager must not overwrite the newly evolved genome");
+        freshManager.saveAll();
+        var persistedReplacement = store.loadArtifactProfile(replacement.getArtifactStorageKey());
+        assertEquals(transitionedGenome.traits(), persistedReplacement.getGenome().traits());
+        assertEquals(replacement.getGenomeRevision(), persistedReplacement.getGenomeRevision());
+        assertThrows(IllegalStateException.class, () -> freshManager.replaceIdentity(buyer, transition));
+        assertSame(replacement, freshManager.getLoadedArtifacts().get(buyer), "Rejected identity replay cannot change loaded state");
         assertEquals(owner, store.loadArtifactProfile(second.getArtifactStorageKey()).getOwnerId());
         assertThrows(PlayerStateLoadException.class, () -> freshManager.resolveByStorageKey("artifact:" + new UUID(0, 99)));
     }

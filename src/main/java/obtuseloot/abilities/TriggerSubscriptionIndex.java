@@ -39,7 +39,9 @@ public final class TriggerSubscriptionIndex {
                 artifact.getArtifactSeed(),
                 artifact.getArtifactStorageKey(),
                 reason,
-                System.nanoTime() - start
+                System.nanoTime() - start,
+                artifact.getGenome(),
+                artifact.getGenomeRevision()
         );
         byPlayer.computeIfAbsent(playerId, ignored -> new ConcurrentHashMap<>()).put(artifact.getArtifactStorageKey(), map);
         latest.put(playerId, map);
@@ -61,7 +63,7 @@ public final class TriggerSubscriptionIndex {
                                                  ItemAbilityManager manager,
                                                  String reason) {
         PlayerArtifactTriggerMap existing = byPlayer.getOrDefault(playerId, Map.of()).get(artifact.getArtifactStorageKey());
-        if (existing != null && existing.matchesArtifactIdentity(artifact.getArtifactSeed(), artifact.getArtifactStorageKey())) {
+        if (existing != null && existing.matchesArtifactIdentity(artifact.getArtifactSeed(), artifact.getArtifactStorageKey()) && existing.matchesGenome(artifact.getGenome(), artifact.getGenomeRevision())) {
             return existing;
         }
         return rebuild(playerId, artifact, reputation, manager, reason);

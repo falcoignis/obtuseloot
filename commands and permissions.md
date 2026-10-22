@@ -18,7 +18,7 @@ This document lists all currently implemented ObtuseLoot commands and permission
 | `/obtuseloot ecosystem environment` | Show current environmental pressure multipliers | `obtuseloot.info` | Both |
 | `/obtuseloot ecosystem dump` | Write ecosystem safety JSON snapshot | `obtuseloot.info` | Both |
 | `/obtuseloot ecosystem reset-metrics` | Reset rolling ecosystem safety metrics | `obtuseloot.admin` | Both |
-| `/obtuseloot refresh [player]` | Recreate tracked artifact profile | `obtuseloot.admin` | Both |
+| `/obtuseloot refresh [player]` | Rebuild held artifact abilities and lore | `obtuseloot.admin` | Both |
 | `/obtuseloot reset [player]` | Clear tracked artifact/reputation state | `obtuseloot.admin` | Both |
 | `/obtuseloot reload` | Reload config/runtime/name pools | `obtuseloot.admin` | Both |
 | `/obtuseloot addname <pool> <value>` | Add name pool entry | `obtuseloot.edit` or `obtuseloot.edit.<pool>` | Both |
@@ -123,11 +123,11 @@ This document lists all currently implemented ObtuseLoot commands and permission
 - **Who can use it:** Both
 
 ### `/obtuseloot refresh [player]`
-- **What it does:** Unloads and recreates artifact profile for target.
+- **What it does:** Rebuilds and saves the target's held artifact ability profile and lore without advancing evolution or changing genes.
 - **Usage:** `/obtuseloot refresh [player]`
 - **Permission:** `obtuseloot.admin`
 - **Who can use it:** Both
-- **Notes:** If console omits player, it fails; players can omit target to act on self.
+- **Notes:** Requires a readable held artifact. If console omits player, it fails; players can omit target to act on self.
 
 ### `/obtuseloot reset [player]`
 - **What it does:** Clears tracked artifact + reputation state for target.

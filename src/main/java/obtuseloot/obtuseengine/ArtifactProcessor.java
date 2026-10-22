@@ -31,6 +31,7 @@ public final class ArtifactProcessor {
         if (rep == null || artifact == null) {
             return; // stored state unreadable; never act on (or create) a substitute
         }
+        plugin.getArtifactManager().markDirty(artifact);
         plugin.getArtifactUsageTracker().trackUse(artifact);
         CombatContext context = plugin.getCombatContextManager().get(player.getUniqueId());
 

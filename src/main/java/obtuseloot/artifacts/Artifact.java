@@ -13,6 +13,26 @@ public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
 
     private ArtifactGenome inheritedGenome;
+    private long genomeRevision;
+    private String genomeEvolutionState;
+
+    public long getGenomeRevision() { return genomeRevision; }
+    public String getGenomeEvolutionState() { return genomeEvolutionState; }
+    public void restoreGenomeEvolution(long revision, String state) {
+        if (revision < 0 || state == null || state.isBlank()) throw new IllegalArgumentException("Invalid genome evolution receipt");
+        genomeRevision = revision;
+        genomeEvolutionState = state;
+    }
+
+    /** Length-prefixed state excludes owner, seed, time, and profile diagnostics. */
+    public String evolutionStateKey() {
+        StringBuilder key = new StringBuilder();
+        for (String part : List.of(archetypePath, evolutionPath, awakeningPath, convergencePath,
+                Integer.toString(totalDrifts), Integer.toString(driftLevel), driftAlignment)) {
+            key.append(part.length()).append(':').append(part);
+        }
+        return key.toString();
+    }
     private String parentStorageKey;
     private int inheritanceGeneration;
     private ArtifactReputation itemReputation = new ArtifactReputation();
@@ -167,6 +187,7 @@ public class Artifact {
         this.awakeningMemorySignature = "none";
         this.naming = ArtifactNameResolver.initialize(this);
         this.generatedName = this.naming.getDisplayName();
+        this.genomeEvolutionState = evolutionStateKey();
     }
 
     public void resetMutableState() {
@@ -216,6 +237,7 @@ public class Artifact {
         awakeningContinuityTrace = "none";
         awakeningExpressionTrace = "none";
         awakeningMemorySignature = "none";
+        genomeEvolutionState = evolutionStateKey();
     }
 
     public long getArtifactSeed() { return artifactSeed; }

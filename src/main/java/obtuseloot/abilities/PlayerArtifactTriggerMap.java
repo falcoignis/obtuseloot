@@ -10,6 +10,8 @@ public final class PlayerArtifactTriggerMap {
     private static final List<ArtifactTriggerBinding> EMPTY_BINDINGS = List.of();
 
     private final EnumMap<AbilityTrigger, List<ArtifactTriggerBinding>> byTrigger;
+    private final obtuseloot.abilities.genome.ArtifactGenome genome;
+    private final long genomeRevision;
     private final long artifactSeed;
     private final String artifactStorageKey;
     private final int totalBindings;
@@ -21,8 +23,12 @@ public final class PlayerArtifactTriggerMap {
                                      String artifactStorageKey,
                                      int totalBindings,
                                      long rebuildNanos,
-                                     String lastRebuildReason) {
+                                     String lastRebuildReason,
+                                     obtuseloot.abilities.genome.ArtifactGenome genome,
+                                     long genomeRevision) {
         this.byTrigger = byTrigger;
+        this.genome = genome;
+        this.genomeRevision = genomeRevision;
         this.artifactSeed = artifactSeed;
         this.artifactStorageKey = artifactStorageKey;
         this.totalBindings = totalBindings;
@@ -35,6 +41,14 @@ public final class PlayerArtifactTriggerMap {
                                                         String artifactStorageKey,
                                                         String reason,
                                                         long rebuildNanos) {
+        return fromBindings(bindings, artifactSeed, artifactStorageKey, reason, rebuildNanos, null, -1);
+    }
+
+    public static PlayerArtifactTriggerMap fromBindings(List<ArtifactTriggerBinding> bindings,
+                                                        long artifactSeed, String artifactStorageKey,
+                                                        String reason, long rebuildNanos,
+                                                        obtuseloot.abilities.genome.ArtifactGenome genome,
+                                                        long genomeRevision) {
         EnumMap<AbilityTrigger, List<ArtifactTriggerBinding>> grouped = new EnumMap<>(AbilityTrigger.class);
         for (AbilityTrigger trigger : AbilityTrigger.values()) {
             grouped.put(trigger, EMPTY_BINDINGS);
@@ -48,7 +62,11 @@ public final class PlayerArtifactTriggerMap {
             existing.add(binding);
         }
         grouped.replaceAll((k, v) -> v == EMPTY_BINDINGS ? v : List.copyOf(v));
-        return new PlayerArtifactTriggerMap(grouped, artifactSeed, artifactStorageKey, bindings.size(), rebuildNanos, reason);
+        return new PlayerArtifactTriggerMap(grouped, artifactSeed, artifactStorageKey, bindings.size(), rebuildNanos, reason, genome, genomeRevision);
+    }
+
+    public boolean matchesGenome(obtuseloot.abilities.genome.ArtifactGenome current, long revision) {
+        return genome == current && genomeRevision == revision;
     }
 
     public List<ArtifactTriggerBinding> bindingsFor(AbilityTrigger trigger) {

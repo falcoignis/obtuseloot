@@ -190,7 +190,7 @@ public class ArtifactManager {
             ObtuseLoot.get().getArtifactUsageTracker().trackDiscard(existing);
         }
         Artifact fresh = createReplacementArtifact(existing, playerId, validated, true);
-        ArtifactIdentityTransition transition = new ArtifactIdentityTransition(existing, fresh,
+        ArtifactIdentityTransition transition = ArtifactIdentityTransition.baseline(existing, fresh,
                 reason == null || reason.isBlank() ? "artifact-recreate-with-archetype" : reason);
         replaceLoadedArtifact(playerId, transition, true);
         if (ObtuseLoot.get() != null) {
@@ -447,23 +447,16 @@ public class ArtifactManager {
 
     private void replaceLoadedArtifact(UUID playerId, ArtifactIdentityTransition transition, boolean dirty) {
         Artifact artifact = transition.replacement();
-        Artifact previous = loadedArtifacts.put(playerId, artifact);
+        Artifact previous = loadedArtifacts.get(playerId);
         if (transition.discarded() != null && previous != null && previous != transition.discarded()) {
             throw new IllegalStateException("Artifact transition discarded instance does not match loaded artifact for " + playerId);
         }
+        loadedArtifacts.put(playerId, artifact);
         if (previous != null) {
             storageToOwner.remove(previous.getArtifactStorageKey(), playerId);
         }
         storageToOwner.put(artifact.getArtifactStorageKey(), playerId);
         if (ArtifactStorageKeys.isItem(artifact.getArtifactStorageKey())) {
-            if (transition.discarded() != null) {
-                artifact.setItemReputation(transition.discarded().getItemReputation());
-                artifact.setParentStorageKey(transition.discarded().getParentStorageKey());
-                artifact.setInheritanceGeneration(transition.discarded().getInheritanceGeneration());
-                var inherited = transition.discarded().getGenome();
-                artifact.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(artifact.getArtifactSeed(), inherited.traits(),
-                        inherited.latentTraits(), inherited.activatedLatentTraits()));
-            }
             rememberItem(artifact);
             if (ObtuseLoot.get() != null) ObtuseLoot.get().getReputationManager().bindItem(playerId, artifact);
             if (dirty) markDirty(artifact);

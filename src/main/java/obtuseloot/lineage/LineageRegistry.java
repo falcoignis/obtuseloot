@@ -70,6 +70,7 @@ public class LineageRegistry {
         ArtifactLineage lineage = lineages.computeIfAbsent(lineageId, ArtifactLineage::new);
         if (!lineage.ancestorSeeds().contains(artifact.getArtifactSeed())) {
             lineage.addAncestor(new ArtifactAncestor(artifact.getArtifactSeed(), lineage.generationIndex() + 1));
+            lineage.observeGenome(artifact.getGenome());
             emit(EcosystemTelemetryEventType.LINEAGE_UPDATE, artifact, lineageId, Map.of("event", "ancestor-added", "context_tags", "lineage-update"));
         }
         return lineage;
