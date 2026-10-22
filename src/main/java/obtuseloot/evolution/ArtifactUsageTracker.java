@@ -118,7 +118,7 @@ public class ArtifactUsageTracker {
                 budgetCost,
                 context.source(),
                 System.currentTimeMillis(),
-                result.observationKey()
+                result.observationKey(), result.performance()
         ));
         double utilityDelta = updated.validatedUtility() - (previous == null ? 0 : previous.validatedUtility());
         signalCache.invalidate(artifact.getArtifactSeed());
@@ -164,6 +164,10 @@ public class ArtifactUsageTracker {
                     : context.liveExecution() ? "not_observed" : "classified");
             if (result.observedAmount() != null) {
                 attributes.put("observed_amount", String.valueOf(result.observedAmount()));
+            }
+            if (result.performance() != null) {
+                attributes.put("performance_benefit", String.valueOf(result.performance().benefit()));
+                attributes.put("recovery_ticks", String.valueOf(result.performance().recoveryTicks()));
             }
             emitter.emit(EcosystemTelemetryEventType.ABILITY_EXECUTION,
                     artifact.getArtifactSeed(),

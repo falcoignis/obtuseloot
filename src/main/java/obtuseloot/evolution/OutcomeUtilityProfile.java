@@ -66,6 +66,7 @@ public final class OutcomeUtilityProfile {
 
         UtilityScoreContext context = classifier.classify(record, repeatedOutcomeStreak, recentNoOpCount);
         double utilityDelta = classifier.score(context, record.outcomeType());
+        if (record.performance() != null) utilityDelta = record.performance().adjustUtility(utilityDelta);
         validatedUtility += utilityDelta;
         contextualUtility += context.contextualRelevance() * utilityDelta;
         budgetConsumed += context.budgetCost();

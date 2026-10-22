@@ -28,7 +28,7 @@ public final class LocalInheritancePool {
         var outcome = new UtilityOutcomeRecord(result.abilityId(), result.mechanic(), result.trigger(), result.status(),
                 result.outcomeType(), result.meaningfulOutcome(), observation.context().runtimeContext() != null
                 && observation.context().runtimeContext().intentional(), 1.0, budget.triggerCost() + budget.evaluationCost(),
-                observation.context().source(), gameTick, result.observationKey());
+                observation.context().source(), gameTick, result.observationKey(), result.performance());
         Evidence current = evidence.get(artifact.getArtifactStorageKey());
         if (current == null || current.seed != artifact.getArtifactSeed()) {
             current = new Evidence(artifact.getArtifactStorageKey(), artifact.getArtifactSeed(), artifact.getLatentLineage());
@@ -77,7 +77,7 @@ public final class LocalInheritancePool {
     }
     public String encode() {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 1); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
+        yaml.set("version", 2); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
         int index = 0;
         for (Evidence parent : evidence.values()) {
             String base = "parents." + index++ + ".";
@@ -94,6 +94,10 @@ public final class LocalInheritancePool {
                 yaml.set(path + "type", outcome.outcomeType().name()); yaml.set(path + "meaningful", outcome.meaningfulOutcome());
                 yaml.set(path + "intentional", outcome.intentional()); yaml.set(path + "budget", outcome.budgetCost());
                 yaml.set(path + "source", outcome.source()); yaml.set(path + "observation-key", outcome.observationKey());
+                if (outcome.performance() != null) {
+                    yaml.set(path + "performance.benefit", outcome.performance().benefit());
+                    yaml.set(path + "performance.recovery-ticks", outcome.performance().recoveryTicks());
+                }
             }
         }
         return yaml.saveToString();
@@ -103,7 +107,7 @@ public final class LocalInheritancePool {
         if (encoded == null) return pool;
         try {
             var yaml = new YamlConfiguration(); yaml.loadFromString(encoded);
-            if (yaml.getInt("version", 0) != 1 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
+            if (yaml.getInt("version", 0) != 2 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
             pool.gameTick = yaml.getLong("game-tick");
             if (pool.gameTick < 0) throw new IllegalArgumentException("Negative game tick");
             var parents = yaml.getConfigurationSection("parents");
@@ -133,10 +137,19 @@ public final class LocalInheritancePool {
                     double budget = yaml.getDouble(path + "budget", Double.NaN);
                     if (!Double.isFinite(budget) || budget < 0 || status != AbilityExecutionStatus.SUCCESS && status != AbilityExecutionStatus.NO_OP
                             || meaningful != (status == AbilityExecutionStatus.SUCCESS)) throw new IllegalArgumentException("Invalid measured evidence");
+                    AbilityPerformanceMeasurement performance = null;
+                    if (yaml.contains(path + "performance")) {
+                        if (!(yaml.get(path + "performance.benefit") instanceof Number benefit)
+                                || !(yaml.get(path + "performance.recovery-ticks") instanceof Long
+                                || yaml.get(path + "performance.recovery-ticks") instanceof Integer))
+                            throw new IllegalArgumentException("Incomplete performance evidence");
+                        performance = new AbilityPerformanceMeasurement(benefit.doubleValue(), yaml.getLong(path + "performance.recovery-ticks"));
+                        if ((performance.benefit() > 0) != meaningful) throw new IllegalArgumentException("Inconsistent performance evidence");
+                    }
                     var outcome = new UtilityOutcomeRecord(Objects.requireNonNull(yaml.getString(path + "ability")),
                             AbilityMechanic.valueOf(yaml.getString(path + "mechanic")), AbilityTrigger.valueOf(yaml.getString(path + "trigger")),
                             status, AbilityOutcomeType.valueOf(yaml.getString(path + "type")), meaningful, yaml.getBoolean(path + "intentional"),
-                            1.0, budget, Objects.requireNonNull(yaml.getString(path + "source")), tick, yaml.getString(path + "observation-key"));
+                            1.0, budget, Objects.requireNonNull(yaml.getString(path + "source")), tick, yaml.getString(path + "observation-key"), performance);
                     parent.samples.addLast(new Sample(tick, position, outcome));
                 }
                 pool.evidence.put(key, parent);

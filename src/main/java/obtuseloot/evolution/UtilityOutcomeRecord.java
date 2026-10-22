@@ -17,8 +17,16 @@ public record UtilityOutcomeRecord(
         double budgetCost,
         String source,
         long occurredAt,
-        String observationKey
+        String observationKey,
+        obtuseloot.abilities.AbilityPerformanceMeasurement performance
 ) {
+    public UtilityOutcomeRecord(String abilityId, AbilityMechanic mechanic, AbilityTrigger trigger,
+                                 AbilityExecutionStatus status, AbilityOutcomeType outcomeType,
+                                 boolean meaningfulOutcome, boolean intentional, double contextualRelevance,
+                                 double budgetCost, String source, long occurredAt, String observationKey) {
+        this(abilityId, mechanic, trigger, status, outcomeType, meaningfulOutcome, intentional,
+                contextualRelevance, budgetCost, source, occurredAt, observationKey, null);
+    }
     public UtilityOutcomeRecord(String abilityId, AbilityMechanic mechanic, AbilityTrigger trigger,
                                  AbilityExecutionStatus status, AbilityOutcomeType outcomeType,
                                  boolean meaningfulOutcome, boolean intentional, double contextualRelevance,

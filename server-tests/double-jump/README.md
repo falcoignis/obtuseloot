@@ -42,7 +42,13 @@ The client sends native input and movement packets at 20 Hz, integrates the rece
 velocity, and asserts baseline versus extra-jump height, one impulse/outcome across two
 copies and repeated input, effective permission denial even for OP, the custom protection
 veto, ordinary velocity-event cancellation, deferred gear removal, foreign flight ownership
-and elytra input reservation. Results are `client-results.json`; any assertion writes
+and elytra input reservation. The heritable-performance follow-up adds low/high kinetic
+fixtures, verifies their proposed and persisted recovery costs, and retries after landing
+before/after the long recovery deadline. Two real low-ceiling cases compare the same
+headroom with different recovery. The client waits for the ordinary head collision to
+release before pressing again. Native velocity veto checks allow Paper retry callbacks
+while requiring one artifact proposal and zero received impulses/successes. Baseline fixtures explicitly express the midpoint
+gene. These are controlled synthetic genomes, not a natural-selection demonstration. Results are `client-results.json`; any assertion writes
 `client-failure.txt`. The probe writes `failure.txt` on server-side failure. Archive
 those with the complete logs, exit codes, exact artifact digests and dependency lock.
 

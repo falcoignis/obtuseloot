@@ -102,7 +102,8 @@ class EquipmentAbilityServiceTest {
         assertEquals(.1, velocity.getX(), 1e-9); assertEquals(.2, velocity.getZ(), 1e-9);
         assertEquals(0, queue.pendingCount(), "An impulse write alone earns no outcome");
         assertTrue(movementOutcomes.isEmpty(), "Pending motion must not enter outcome history");
-        jumps.velocity(player, velocity, false); altitude += .2; jumps.tick(); jumps.tick();
+        jumps.velocity(player, velocity, false); altitude += .2;
+        for (int i = 0; i < 6; i++) jumps.tick();
         assertEquals(1, queue.pendingCount());
         press(); runMovementTasks(); assertEquals(1, movementEvents.size());
         inventory.remove(EquipmentSlot.HEAD); inventory.remove(EquipmentSlot.FEET);
@@ -237,11 +238,69 @@ class EquipmentAbilityServiceTest {
         press(); runMovementTasks(); assertEquals(1, velocity.getY(), 1e-9); assertEquals(0, queue.pendingCount());
         jumps.invalidate(player); press(); runMovementTasks(); assertEquals(1, movementEvents.size());
     }
+    @Test void inheritedPerformanceChangesTheImpulseAndSharedCooldownAndRecordsItsActualCost() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        var item = equip(EquipmentSlot.FEET, "diamond_boots", template); kinetic(item, 1);
+        movement(); grounded = false; press(); runMovementTasks();
+        assertEquals(.525, velocity.getY(), 1e-12);
+        assertEquals(90, ((obtuseloot.events.ArtifactAirJumpEvent) movementEvents.getFirst()).getRecoveryTicks());
+        jumps.velocity(player, velocity, false); altitude += .7;
+        for (int i = 0; i < 6; i++) jumps.tick();
+        assertEquals(1, movementOutcomes.size());
+        var result = movementOutcomes.getFirst().result();
+        assertEquals(.7, result.observedAmount(), 1e-10); assertEquals(90, result.performance().recoveryTicks());
+        assertTrue(movementOutcomes.getFirst().utilityDelta() > 0);
+        // Landing, switching to a cheaper genome/copy and changing config cannot erase an already spent cooldown.
+        grounded = true; jumps.tick(); kinetic(item, 0);
+        grounded = false; velocity.setY(-.1); press(); runMovementTasks(); assertEquals(1, movementEvents.size());
+        for (int i = 0; i < 83; i++) jumps.tick(); // tick 91: original deadline, not the cheaper genome's deadline
+        press(); runMovementTasks(); assertEquals(2, movementEvents.size()); assertEquals(.315, velocity.getY(), 1e-12);
+    }
+    @Test void genomeChangesInsideAProtectionCallbackOrBeforeReceiptCannotTransferCredit() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        var item = equip(EquipmentSlot.FEET, "diamond_boots", template);
+        movement(); grounded = false;
+        veto = e -> kinetic(item, 1); press(); runMovementTasks();
+        assertEquals(-.1, velocity.getY(), 1e-12);
+        assertTrue(movementOutcomes.stream().noneMatch(AbilityOutcomeObservation::liveMeasured));
+        movementOutcomes.clear(); // A suppressed classification exists, but is not measured reproductive evidence.
+        veto = e -> { }; press(); runMovementTasks(); assertEquals(.525, velocity.getY(), 1e-12);
+        jumps.velocity(player, velocity, false); altitude += .7; kinetic(item, 0);
+        for (int i = 0; i < 6; i++) jumps.tick();
+        assertTrue(movementOutcomes.isEmpty(), "The old impulse is not evidence for a new genetic profile");
+    }
+    @Test void capturedConfigurationAndActualCostSurviveReloadDuringVetoCallback() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        equip(EquipmentSlot.FEET, "diamond_boots", template); movement(); grounded = false;
+        veto = e -> {
+            var config = new org.bukkit.configuration.file.YamlConfiguration(); config.set("abilities.double-jump.enabled", true);
+            config.set("abilities.double-jump.cooldown-ticks", 1); obtuseloot.config.RuntimeSettings.load(config);
+        };
+        press(); runMovementTasks(); jumps.velocity(player, velocity, false); altitude += .4;
+        for (int i = 0; i < 6; i++) jumps.tick();
+        assertEquals(60, movementOutcomes.getFirst().result().performance().recoveryTicks());
+    }
+    private void kinetic(Artifact item, double value) {
+        var traits = new EnumMap<>(item.getGenome().traits());
+        traits.put(obtuseloot.abilities.genome.GenomeTrait.KINETIC_BIAS, value);
+        item.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(item.getArtifactSeed(), traits));
+    }
+    @Test void shortFirstTickRiseIsMeasuredEvenWhenACeilingStopsTheNextFrame() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        equip(EquipmentSlot.FEET, "diamond_boots", template); movement(); grounded = false;
+        press(); runMovementTasks(); jumps.velocity(player, velocity, false);
+        altitude += .1; jumps.tick(); // Brief clearance before a ceiling/normal gravity removes it.
+        altitude -= .1;
+        for (int i = 0; i < 5; i++) jumps.tick();
+        assertEquals(1, movementOutcomes.size());
+        assertEquals(.1, movementOutcomes.getFirst().result().observedAmount(), 1e-10);
+    }
     private void dispatch(EquipmentAbilityService.Token token) {
         service.dispatch(player, token, inspect.trigger(), 1, "test", AbilityRuntimeContext.intentional(AbilitySource.OTHER), null);
     }
     private Artifact equip(EquipmentSlot slot, String type, AbilityTemplate template) {
         var a = EquipmentBindingsTest.artifact(owner, type); artifacts.registerItem(a);
+        kinetic(a, .5); // Existing ownership tests exercise the configured baseline phenotype.
         profiles.put(a.getArtifactStorageKey(), List.of(definition(template)));
         inventory.put(slot, new Stack(a.getArtifactStorageKey())); return a;
     }

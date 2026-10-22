@@ -14,8 +14,20 @@ public record AbilityExecutionResult(
         String suppressionReason,
         String outputText,
         Double observedAmount,
-        String observationKey
+        String observationKey,
+        AbilityPerformanceMeasurement performance
 ) {
+    public AbilityExecutionResult {
+        if (performance != null && (observedAmount == null || Double.compare(performance.benefit(), observedAmount) != 0))
+            throw new IllegalArgumentException("Performance measurement must match the observed response");
+    }
+    public AbilityExecutionResult(String abilityId, AbilityMechanic mechanic, AbilityTrigger trigger,
+                                  String artifactStorageKey, UUID holderId, AbilityExecutionStatus status,
+                                  AbilityOutcomeType outcomeType, boolean meaningfulOutcome,
+                                  String suppressionReason, String outputText, Double observedAmount, String observationKey) {
+        this(abilityId, mechanic, trigger, artifactStorageKey, holderId, status, outcomeType,
+                meaningfulOutcome, suppressionReason, outputText, observedAmount, observationKey, null);
+    }
     public AbilityExecutionResult(String abilityId, AbilityMechanic mechanic, AbilityTrigger trigger,
                                   String artifactStorageKey, UUID holderId, AbilityExecutionStatus status,
                                   AbilityOutcomeType outcomeType, boolean meaningfulOutcome,
@@ -26,7 +38,11 @@ public record AbilityExecutionResult(
 
     public AbilityExecutionResult withObservationKey(String key) {
         return new AbilityExecutionResult(abilityId, mechanic, trigger, artifactStorageKey, holderId, status,
-                outcomeType, meaningfulOutcome, suppressionReason, outputText, observedAmount, key);
+                outcomeType, meaningfulOutcome, suppressionReason, outputText, observedAmount, key, performance);
+    }
+    public AbilityExecutionResult withPerformance(AbilityPerformanceMeasurement measurement) {
+        return new AbilityExecutionResult(abilityId, mechanic, trigger, artifactStorageKey, holderId, status,
+                outcomeType, meaningfulOutcome, suppressionReason, outputText, observedAmount, observationKey, measurement);
     }
     public static AbilityExecutionResult observed(AbilityDefinition definition, AbilityEventContext context,
                                                   AbilityOutcomeType type, double amount, String reason, String text) {

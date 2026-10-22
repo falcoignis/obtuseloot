@@ -41,6 +41,13 @@ class LocalEcosystemIntegrationTest {
         assertNotEquals(new GenomeResolver().resolve(child.getArtifactSeed()).traits(), child.getGenome().traits(), "Inherited genes must replace seed-only reconstruction");
         assertEquals(child.getGenome().traits(), store.loadArtifactProfile(child.getArtifactStorageKey()).getGenome().traits());
         assertEquals(parent.getGenome().traits(), store.loadArtifactProfile(parent.getArtifactStorageKey()).getGenome().traits());
+        var model = new obtuseloot.abilities.AbilityRegistry().registrationById("mobility.double_jump").performanceModel();
+        var childPerformance = model.express(child.getGenome());
+        assertNotEquals(model.express(parent.getGenome()), childPerformance, "Ordinary inherited mutation changes physical performance");
+        assertEquals(childPerformance, model.express(store.loadArtifactProfile(child.getArtifactStorageKey()).getGenome()));
+        var replay = reopened.createEquipment(owner, EquipmentArchetype.IRON_AXE, origin, new Random(2));
+        assertEquals(child.getGenome().traits(), replay.getGenome().traits());
+        assertEquals(childPerformance, model.express(replay.getGenome()));
     }
 
     @Test void noNearbySuccessCreatesFounderAndDistantSuccessCannotLeakIn() throws Exception {

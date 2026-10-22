@@ -118,11 +118,12 @@ manifest afterward. Focused verification: 91 passing. Canonical skill status rec
 the publication and merge boundary separately.
 
 Expiry means loss of **recent reproductive eligibility**, not proof of lineage extinction.
-Owned dormant items remain. Real effects currently have fixed behavior for different
-genomes; inherited genes participate in existing ability selection/regulation. Whether
-they should also change effect behavior/reliability is an open owner question.
+Owned dormant items remain. The owner subsequently required genes to change real ability
+performance and tradeoffs. The first follow-up expresses Double Jump output/recovery and
+measures response/cost; other effects remain fixed/configurable. Read
+[heritable ability performance](heritable-ability-performance.md) for scope and validation.
 
-Natural niche formation, heritable performance differences, measured lineage extinction,
+Natural niche formation, broader heritable performance, measured lineage extinction,
 co-evolving environmental pressure and removal/ablation of the old selection aids remain
 necessary before claiming a fully functioning emergent ecosystem. The old fixed event
 rotation and niche machinery are not removed or presented as proof by this slice.
