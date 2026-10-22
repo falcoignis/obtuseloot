@@ -79,21 +79,14 @@ public class ExperienceEvolutionEngine {
     public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long artifactSeed, int nichePopulation,
                                                    double lineageMutationInfluence, String lineageId,
                                                    LineageRegistry lineageRegistry, ArtifactUsageProfile usage) {
-        RolePressureMetrics pressure = usageTracker.nichePopulationTracker().pressureFor(artifactSeed);
-        AdaptiveSupportAllocation support = adaptiveSupportFor(artifactSeed, lineageId, lineageRegistry);
-        double lineageInfluence = clamp(lineageMutationInfluence, 0.75D, 1.25D) * support.mutationOpportunity();
-
         EnumMap<GenomeTrait, Double> adjusted = new EnumMap<>(GenomeTrait.class);
-        EnumMap<GenomeTrait, Double> latentAdjusted = new EnumMap<>(GenomeTrait.class);
         for (Map.Entry<GenomeTrait, Double> entry : genome.traits().entrySet()) {
-            // Aggregate success selects reproductive parents; it cannot identify which genes should rise or fall.
-            // Retain the existing ecological/context adjustment for its own separate ablation.
-            double multiplier = ecoTraitBias(pressure, lineageInfluence, support);
+            // Local outcomes select parents; macro context cannot identify a direction for every gene.
+            // The separate trait-specific environmental transform remains for its own evaluation.
             double environmental = pressureEngine.multiplierFor(entry.getKey());
-            adjusted.put(entry.getKey(), clamp01(entry.getValue() * multiplier * environmental));
-            latentAdjusted.put(entry.getKey(), clamp01(genome.latentTrait(entry.getKey()) * (1.0D + ((multiplier - 1.0D) * 0.35D))));
+            adjusted.put(entry.getKey(), clamp01(entry.getValue() * environmental));
         }
-        return new ArtifactGenome(genome.seed(), adjusted, latentAdjusted, genome.activatedLatentTraits());
+        return new ArtifactGenome(genome.seed(), adjusted, genome.latentTraits(), genome.activatedLatentTraits());
     }
 
     public AdaptiveSupportAllocation adaptiveSupportFor(long artifactSeed, String lineageId, LineageRegistry lineageRegistry) {
@@ -178,15 +171,6 @@ public class ExperienceEvolutionEngine {
             tilt += 0.02D;
         }
         return clamp(tilt, 0.96D, 1.14D);
-    }
-
-    private double ecoTraitBias(RolePressureMetrics pressure,
-                                double lineageInfluence,
-                                AdaptiveSupportAllocation support) {
-        double supportBlend = 0.94D + (support.retentionOpportunity() * 0.04D) + (support.diminishingReturnFactor() * 0.02D);
-        return clamp((0.95D + ((pressure.retentionBias() - 1.0D) * 0.35D) + (pressure.specializationPressure() * 0.08D) - (pressure.ecologicalRepulsion() * 0.10D))
-                * (1.0D + ((lineageInfluence - 1.0D) * 0.25D))
-                * supportBlend, 0.90D, 1.12D);
     }
 
     private static double clamp(double v, double min, double max) {

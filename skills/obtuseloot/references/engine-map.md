@@ -1,5 +1,11 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-22 ecological gene-multiplier follow-up:** the blanket context transform
+retained by #417 is removed from active and latent genes. Fixed trait-specific
+environmental modifiers and existing ecological mutation/support controls remain.
+Read [`docs/ecological-gene-multiplier-ablation.md`](../../../docs/ecological-gene-multiplier-ablation.md).
+The earlier comparison below is now reproduced with frozen test controls.
+
 **2026-10-22 genetic reinforcement ablation:** aggregate fitness no longer directly
 multiplies every expressed/latent trait at genetic transitions. Per-revision measured
 history, ordinary variation and local measured parent selection remain. Other existing

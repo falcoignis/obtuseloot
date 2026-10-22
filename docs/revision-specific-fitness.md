@@ -17,7 +17,9 @@ item reputation and ability preferences remain separate and are not erased on ev
 At an explicit genetic transition, the feedback API receives a snapshot built from the
 producing revision's measured summaries, excluding lifetime activity and ancestor fitness.
 The blanket-reinforcement ablation removes direct aggregate-fitness scaling of genes;
-see `blanket-gene-reinforcement-ablation.md`. Measured outcomes still drive reputation,
+see `blanket-gene-reinforcement-ablation.md`. The subsequent ecological gene-multiplier
+ablation removes blanket context scaling as well; see `ecological-gene-multiplier-ablation.md`.
+Measured outcomes still drive reputation,
 progression and local reproduction. Existing macro ecology, lineage support, pressure,
 memory and ordinary mutation remain; other historical selection scaffolding remains.
 

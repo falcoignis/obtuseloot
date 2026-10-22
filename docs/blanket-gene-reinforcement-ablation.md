@@ -1,5 +1,10 @@
 # Blanket genetic reinforcement ablation
 
+This records the #417 transform and its original validation. The subsequent
+[ecological gene multiplier ablation](ecological-gene-multiplier-ablation.md) removes
+the context term retained here. This experiment now uses frozen controls for both
+historical transforms; its numerical results below remain scoped to #417.
+
 The owner selected this ablation after revision-specific fitness: remove the aggregate
 fitness term that prescribed the direction of every trait, and compare selection when
 local conditions change midway through a multi-generation run.
