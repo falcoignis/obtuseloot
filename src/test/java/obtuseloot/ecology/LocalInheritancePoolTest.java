@@ -86,6 +86,18 @@ class LocalInheritancePoolTest {
         assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode("version: 1\ngame-tick: -1\n"));
         assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode("not: [yaml"));
     }
+    @Test void measuredRecoveryAffectsLocalFitnessAndSurvivesRestartWithoutImportingOldUtilityBonuses() {
+        var pool = new LocalInheritancePool();
+        var low = observation(item(1), origin, true, .6, 9999, "low");
+        var high = observation(item(2), origin, true, .6, -9999, "high");
+        pool.record(new AbilityOutcomeObservation(low.context(), low.result().withPerformance(new AbilityPerformanceMeasurement(.6, 30)), low.definition(), low.utilityDelta()), 100);
+        pool.record(new AbilityOutcomeObservation(high.context(), high.result().withPerformance(new AbilityPerformanceMeasurement(.6, 90)), high.definition(), high.utilityDelta()), 100);
+        var candidates = pool.candidates(origin, 20, 100);
+        assertEquals(2, candidates.size()); assertTrue(candidates.get(0).fitness() > candidates.get(1).fitness());
+        assertEquals(candidates, LocalInheritancePool.decode(pool.encode()).candidates(origin, 20, 100));
+        assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode(pool.encode().replace("recovery-ticks: 30", "recovery-ticks: -1")));
+        assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode(pool.encode().replace("benefit: 0.6", "benefit: .NaN")));
+    }
 
     static Artifact item(long id) {
         var artifact = new Artifact(new UUID(0, 90), "wooden_sword");

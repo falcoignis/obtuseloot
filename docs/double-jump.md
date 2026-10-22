@@ -28,12 +28,12 @@ its ordinary catalog, effective permissions and captured per-item key/seed. It c
 binding again after scheduling and after protection callbacks. A swap, reseed, world change,
 death, disconnect or permission denial cannot transfer the input to another item.
 
-The charge and game-tick cooldown belong to the player. Several equipped copies give one
+The charge and expressed game-tick cooldown belong to the player. Several equipped copies give one
 extra jump, and swapping copies does not reset the airborne charge. A landing restores the
 charge but does not bypass cooldown. A pre-impulse veto does not spend the charge; a distinct later
 press can retry. A native velocity veto occurs after submission, so its cooldown is retained. Teleports and invalid movement states require a new grounded frame.
 
-The effect changes only vertical velocity to the configured value and preserves horizontal
+The effect changes only vertical velocity to the genome-expressed configured baseline and preserves horizontal
 velocity. It declines to replace an already stronger upward launch or a velocity changed
 by another callback. It never grants flight, sets flight speed, resets fall distance,
 changes gravity, replaces potion effects or changes another plugin's configuration.
@@ -46,7 +46,7 @@ survival/adventure. Wearing elytra reserves jump input for ordinary gliding even
 ## Protection and measurement
 
 `ArtifactAirJumpEvent` exposes the player, artifact key, ability ID and a copy of the
-proposed velocity. It is cancellable and runs before the velocity write. The effect
+proposed velocity and expressed recovery ticks. It is cancellable and runs before the velocity write. The effect
 revalidates equipment, permissions and movement state afterward. Original move, input,
 teleport, flight and velocity events are not replaced or uncancelled. Cancelled or redirected
 movement invalidates the attempt; native velocity cancellation/modification earns no success.
@@ -54,11 +54,12 @@ movement invalidates the attempt; native velocity cancellation/modification earn
 Submitting velocity returns `PENDING`, a generic execution status excluded from utility
 outcome history. It earns no reputation or reproductive evidence. A short receipt waits for
 an accepted matching native velocity event and more than 0.02 blocks of actual upward
-position change. It then records one completed observation through the shared feedback path;
+position change. The heritable-performance follow-up samples peak rise through six game ticks,
+then records response and committed recovery rather than a binary success. It records one completed observation through the shared feedback path;
 no qualifying motion within six game ticks records a measured no-op. Invalidated or no-longer
 bound identities discard the receipt. Idle frames generate no ability outcomes.
 
-This measures the first observed motion response after an accepted impulse, not proof of
+This measures the peak short-window motion response after an accepted impulse, not proof of
 player benefit or strict causal isolation from every other movement source. Later corrections
 beyond the observation window are outside the measurement. Permission/equipment invalidation
 can discard credit for a physical effect whose confirmation was still pending.
@@ -79,7 +80,11 @@ mana, stat, placed-block tracking or extra XP award is introduced. Actual AuraSk
 claim-plugin and external-anticheat compatibility still needs the intended plugin combination.
 The effect stays disabled by default. See [plugin compatibility](plugin-compatibility.md).
 
-## Verification
+Read [heritable ability performance](heritable-ability-performance.md) for gene expression,
+measurement/cost semantics and the follow-up validation. The figures below describe the
+original fixed-performance implementation.
+
+## Verification (original fixed-performance slice)
 
 The owner selected a disposable local Purpur 26.2 server. Both Java and protocol-client
 execution use official Docker images. Server data is temporary; the offline test listener

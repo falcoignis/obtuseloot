@@ -28,6 +28,13 @@ This file condenses what the 2026-10-19 doc-ingest agents verified against sourc
 
 Line numbers drift. Re-grep before citing any of them in a PR.
 
+**Heritable-performance follow-up, 2026-10-21:** Double Jump expresses persisted kinetic
+bias through a catalog-owned output/recovery model. Peak observed rise and committed
+recovery feed item utility and local reproductive fitness; unchanged registrations retain
+fixed performance. Local evidence format is version 2. Read
+[`docs/heritable-ability-performance.md`](../../../docs/heritable-ability-performance.md)
+and dated validation status; this is not proof of natural niche formation.
+
 ## Contents
 1. Runtime wiring and lifecycle
 2. Identity and persistence

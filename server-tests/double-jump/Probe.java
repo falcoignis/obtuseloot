@@ -18,6 +18,8 @@ public final class Probe extends JavaPlugin implements Listener {
     private Path root;
     private String stage = "none", last = "";
     private int proposals, nativeVelocity, inputs;
+    private double kinetic = .5, proposedY;
+    private long proposedRecovery;
     private long seeds = -1000;
     private PermissionAttachment attachment;
     private final List<Artifact> gear = new ArrayList<>();
@@ -52,11 +54,14 @@ public final class Probe extends JavaPlugin implements Listener {
     }
     private void setup(Player player, String next) {
         stage = "reset";
+        kinetic = next.startsWith("low-") ? 0 : next.startsWith("high-") ? 1 : .5;
         if (attachment != null) { player.removeAttachment(attachment); attachment = null; }
         player.setOp(true); player.setFlying(false); player.setAllowFlight(false); player.setGameMode(GameMode.ADVENTURE);
         player.getInventory().clear(); gear.clear();
         var world = player.getWorld();
         for (int x = -4; x <= 4; x++) for (int z = -4; z <= 4; z++) world.getBlockAt(x, 63, z).setType(Material.STONE);
+        for (int x = -4; x <= 4; x++) for (int z = -4; z <= 4; z++)
+            world.getBlockAt(x, 67, z).setType(next.endsWith("ceiling") ? Material.STONE : Material.AIR);
         player.teleport(new Location(world, .5, 64, .5)); player.setVelocity(new org.bukkit.util.Vector());
         if (!next.equals("baseline")) {
             player.getInventory().setBoots(item(player, Material.DIAMOND_BOOTS));
@@ -65,7 +70,7 @@ public final class Probe extends JavaPlugin implements Listener {
         if (next.equals("denied")) attachment = player.addAttachment(this, "obtuseloot.ability.mobility.double_jump", false);
         if (next.equals("flight")) player.setAllowFlight(true);
         if (next.equals("elytra")) player.getInventory().setChestplate(new ItemStack(Material.ELYTRA));
-        proposals = nativeVelocity = inputs = 0; stage = next;
+        proposals = nativeVelocity = inputs = 0; proposedY = 0; proposedRecovery = 0; stage = next;
         ObtuseLoot.get().getEquipmentAbilities().reconcile(player);
     }
     private ItemStack item(Player player, Material type) {
@@ -73,6 +78,9 @@ public final class Probe extends JavaPlugin implements Listener {
         for (int i = 0; i < 80; i++) {
             var artifact = new Artifact(player.getUniqueId(), type.name().toLowerCase(Locale.ROOT));
             artifact.setArtifactStorageKey(ArtifactStorageKeys.create()); artifact.setArtifactSeed(seeds--);
+            var traits = new EnumMap<>(artifact.getGenome().traits());
+            traits.put(obtuseloot.abilities.genome.GenomeTrait.KINETIC_BIAS, kinetic);
+            artifact.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(artifact.getArtifactSeed(), traits));
             core.getArtifactManager().registerItem(artifact);
             if (core.getItemAbilityManager().equippedDefinitions(player.getUniqueId(), artifact).stream().noneMatch(d -> d.id().equals("mobility.double_jump"))) continue;
             var stack = new ItemStack(type); core.getArtifactItemStorage().stampMinimalIdentity(stack, artifact); gear.add(artifact); return stack;
@@ -81,22 +89,41 @@ public final class Probe extends JavaPlugin implements Listener {
     }
     private void snapshot(Player player, String id) throws Exception {
         long outcomes = 0, attempts = 0;
+        double utility = 0, benefit = 0;
+        long measuredRecovery = 0;
         for (Artifact artifact : gear) {
             var signal = ObtuseLoot.get().getArtifactUsageTracker().profileFor(artifact).utilitySignalsByMechanic().get("MOVEMENT_ECHO@ON_AIR_JUMP");
-            if (signal != null) { outcomes += signal.meaningfulOutcomes(); attempts += signal.attempts(); }
+            if (signal != null) { outcomes += signal.meaningfulOutcomes(); attempts += signal.attempts(); utility += signal.validatedUtility(); }
+        }
+        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
+        yaml.loadFromString(ObtuseLoot.get().getLocalEcosystem().pool().encode());
+        var parents = yaml.getConfigurationSection("parents");
+        for (String parent : parents == null ? Set.<String>of() : parents.getKeys(false)) {
+            String base = "parents." + parent + ".";
+            if (gear.stream().noneMatch(a -> a.getArtifactStorageKey().equals(yaml.getString(base + "key")))) continue;
+            var samples = yaml.getConfigurationSection(base + "samples");
+            for (String sample : samples == null ? Set.<String>of() : samples.getKeys(false)) {
+                String path = base + "samples." + sample + ".performance.";
+                benefit += yaml.getDouble(path + "benefit");
+                measuredRecovery = Math.max(measuredRecovery, yaml.getLong(path + "recovery-ticks"));
+            }
         }
         String value = "{\"id\":\"" + id + "\",\"stage\":\"" + stage + "\",\"proposals\":" + proposals
                 + ",\"nativeVelocity\":" + nativeVelocity + ",\"inputs\":" + inputs + ",\"outcomes\":" + outcomes
-                + ",\"attempts\":" + attempts + ",\"allowFlight\":" + player.getAllowFlight() + ",\"gliding\":" + player.isGliding() + "}\n";
+                + ",\"attempts\":" + attempts + ",\"kinetic\":" + kinetic + ",\"proposedY\":" + proposedY
+                + ",\"proposedRecovery\":" + proposedRecovery + ",\"measuredRecovery\":" + measuredRecovery
+                + ",\"benefit\":" + benefit + ",\"utility\":" + utility
+                + ",\"allowFlight\":" + player.getAllowFlight() + ",\"gliding\":" + player.isGliding() + "}\n";
         Path temp = root.resolve("snapshot.tmp"); Files.writeString(temp, value);
         Files.move(temp, root.resolve("snapshot.json"), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
     @EventHandler(priority = EventPriority.HIGHEST) public void proposal(ArtifactAirJumpEvent event) {
         proposals++;
+        proposedY = event.getVelocity().getY(); proposedRecovery = event.getRecoveryTicks();
         if (stage.equals("veto")) event.setCancelled(true);
     }
     @EventHandler(priority = EventPriority.HIGHEST) public void velocity(PlayerVelocityEvent event) {
-        if (!stage.equals("reset") && event.getVelocity().getY() > .35) {
+        if (!stage.equals("reset") && event.getVelocity().getY() > .25) {
             nativeVelocity++;
         }
         if (stage.equals("velocity-veto") && proposals > 0) event.setCancelled(true);

@@ -29,11 +29,16 @@ public final class AirJumpService {
         final Vector velocity;
         final double y;
         final long tick;
+        final long recoveryTicks;
+        final obtuseloot.abilities.genome.ArtifactGenome genome;
+        double peakRise;
         boolean seen, denied;
         Motion(EquipmentAbilityService.Token token, AbilityDefinition definition, AbilityEventContext context,
-               Vector velocity, double y, long tick) {
+               Vector velocity, double y, long tick, long recoveryTicks,
+               obtuseloot.abilities.genome.ArtifactGenome genome) {
             this.token = token; this.definition = definition; this.context = context;
             this.velocity = velocity.clone(); this.y = y; this.tick = tick;
+            this.recoveryTicks = recoveryTicks; this.genome = genome;
         }
     }
     public AirJumpService(ObtuseLoot plugin) {
@@ -65,17 +70,20 @@ public final class AirJumpService {
         for (Player player : online.get()) {
             frame(player);
             Motion motion = motions.get(player.getUniqueId());
-            if (motion == null || ticks - motion.tick < 2) continue;
-            if (!eligible(player) || !equipment.isCurrentActivation(player, motion.token, motion.definition, motion.context)) {
+            if (motion == null || ticks - motion.tick < 1) continue;
+            if (!eligible(player) || !equipment.isCurrentActivation(player, motion.token, motion.definition, motion.context)
+                    || motion.context.artifact().getGenome() != motion.genome) {
                 motions.remove(player.getUniqueId()); continue;
             }
             double rise = player.getLocation().getY() - motion.y;
-            if (!motion.denied && (!motion.seen || rise <= 0.02) && ticks - motion.tick < 6) continue;
+            if (Double.isFinite(rise)) motion.peakRise = Math.max(motion.peakRise, rise);
+            if (!motion.denied && ticks - motion.tick < 6) continue;
             motions.remove(player.getUniqueId());
-            double observed = !motion.denied && motion.seen && rise > 0.02 ? 1 : 0;
+            double observed = !motion.denied && motion.seen && motion.peakRise > 0.02 ? motion.peakRise : 0;
             var result = AbilityExecutionResult.observed(motion.definition, motion.context, AbilityOutcomeType.WORLD_INTERACTION,
                     observed, observed > 0 ? null : "movement-not-observed", null)
-                    .withObservationKey(motion.token.world() + ":air-jump:" + motion.tick);
+                    .withObservationKey(motion.token.world() + ":air-jump:" + motion.tick)
+                    .withPerformance(new AbilityPerformanceMeasurement(observed, motion.recoveryTicks));
             abilities.observeDeferred(motion.definition, motion.context, result);
         }
     }
@@ -97,19 +105,26 @@ public final class AirJumpService {
         if (!state.reserved(ticket) || !eligible(player) || player.isOnGround()
                 || !equipment.isCurrentActivation(player, token, definition, context)) return false;
         Vector before = player.getVelocity();
-        double upward = RuntimeSettings.get().doubleJumpVelocity();
+        var genome = context.artifact().getGenome();
+        var registration = abilities.registry().registrationById(definition.id());
+        var performance = registration.performanceModel().express(genome);
+        var settings = RuntimeSettings.get();
+        double upward = performance.output(settings.doubleJumpVelocity());
+        long recoveryTicks = performance.recoveryTicks(settings.doubleJumpCooldownTicks());
+        Math.addExact(ticks, recoveryTicks); // Reject an overflowing deadline before submitting any motion.
         // Never reduce a stronger launch or take over somebody else's current impulse.
         if (!Double.isFinite(before.getX()) || !Double.isFinite(before.getY()) || !Double.isFinite(before.getZ()) || before.getY() >= upward) return false;
         Vector velocity = before.clone().setY(upward);
-        var event = new ArtifactAirJumpEvent(player, context.artifact().getArtifactStorageKey(), definition.id(), velocity);
+        var event = new ArtifactAirJumpEvent(player, context.artifact().getArtifactStorageKey(), definition.id(), velocity, recoveryTicks);
         events.accept(event);
         if (event.isCancelled() || !state.reserved(ticket) || !eligible(player) || player.isOnGround()
-                || !equipment.isCurrentActivation(player, token, definition, context) || !before.equals(player.getVelocity())) return false;
-        var motion = new Motion(token, definition, context, velocity, player.getLocation().getY(), ticks);
+                || !equipment.isCurrentActivation(player, token, definition, context) || !before.equals(player.getVelocity())
+                || context.artifact().getGenome() != genome) return false;
+        var motion = new Motion(token, definition, context, velocity, player.getLocation().getY(), ticks, recoveryTicks, genome);
         motions.put(player.getUniqueId(), motion);
         try { player.setVelocity(velocity); }
         catch (RuntimeException exception) { motions.remove(player.getUniqueId(), motion); throw exception; }
-        state.complete(ticket, true, ticks, RuntimeSettings.get().doubleJumpCooldownTicks());
+        state.complete(ticket, true, ticks, recoveryTicks);
         return true;
     }
     /** Observe the server's ordinary velocity event; never emit, modify or uncancel one ourselves. */

@@ -20,7 +20,9 @@ public class AbilityRegistry {
                         "Equipped gear permits one additional airborne jump", "steady airborne footing", "varied airborne footing", "steady second step", "shared route memory", "remembers traveled paths",
                         metadata(Set.of("traversal", "exploration"), Set.of("jump-input"), Set.of("exploration", "mobility"),
                                 0.5D, 0.8D, 0.3D, 0.1D, 0.1D, 0.3D))
-                        .withLiveEffect(new obtuseloot.abilities.effects.DoubleJumpEffect()),
+                        .withLiveEffect(new obtuseloot.abilities.effects.DoubleJumpEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.KINETIC_BIAS, 0.25D, 0.50D)),
                 template("mobility.fleetfoot", "Fleetfoot", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY,
                         AbilityTrigger.ON_MOVEMENT, AbilityMechanic.MOVEMENT_ECHO,
                         "Equipped gear improves walking speed", "steady footwork", "varied footwork", "steady stride", "shared route memory", "remembers traveled paths",
