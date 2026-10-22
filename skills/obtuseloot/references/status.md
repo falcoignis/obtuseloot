@@ -1,5 +1,8 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-21: owner resolves heritable performance
+- Inherited genes must change actual ability performance and tradeoffs. The decision ledger now records this as a requirement rather than an unanswered question. This documentation update adds no runtime behavior; mappings, costs, ranges and validation are the next design/implementation work.
+
 ## 2026-10-21: authorized stack merge closeout
 - The owner explicitly authorized merging the completed #408–#412 stack after the score-normalization results. This supersedes the historical lack of authorization recorded below for these follow-ups only; future merges still require owner authorization.
 - #408, #409, #410 and #411 merged into `main`, in dependency order, with merge commits `5293f68465097a30e7160dc22a93e337f3dee962`, `19a1cb8084b20450da098d2b4e6da79d98a45499`, `d768825384bf21cd2f972329b3d8113d329aa5e7` and `551ed4e50cbbedb904b54cc8d219f39e53411fd3`. Their exact tested heads had successful CI before merging.
