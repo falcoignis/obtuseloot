@@ -18,7 +18,9 @@ public final class ArtifactProfileCodec {
         var yaml = new YamlConfiguration();
         writeArtifact(yaml, artifact);
         writeReputation(yaml, artifact.getItemReputation());
-        yaml.set("profile-version", 1);
+        yaml.set("profile-version", 2);
+        yaml.set("genome.revision", artifact.getGenomeRevision());
+        yaml.set("genome.evolution-state", artifact.getGenomeEvolutionState());
         yaml.set("inheritance.parent", artifact.getParentStorageKey());
         yaml.set("inheritance.generation", artifact.getInheritanceGeneration());
         for (GenomeTrait trait : GenomeTrait.values()) {
@@ -33,7 +35,7 @@ public final class ArtifactProfileCodec {
         try {
             var yaml = new YamlConfiguration();
             yaml.loadFromString(encoded);
-            if (yaml.getInt("profile-version", 0) != 1 || !key.equals(yaml.getString("artifact.storage-key"))) {
+            if (yaml.getInt("profile-version", 0) != 2 || !key.equals(yaml.getString("artifact.storage-key"))) {
                 throw new IllegalArgumentException("Invalid per-item profile identity/version");
             }
             if (!yaml.isString("artifact.owner-id") || !yaml.isString("artifact.latent-lineage")
@@ -59,6 +61,9 @@ public final class ArtifactProfileCodec {
             var activated = EnumSet.noneOf(GenomeTrait.class);
             yaml.getStringList("genome.activated").forEach(name -> activated.add(GenomeTrait.valueOf(name)));
             artifact.setGenome(new ArtifactGenome(artifact.getArtifactSeed(), expressed, latent, activated));
+            if ((!yaml.isLong("genome.revision") && !yaml.isInt("genome.revision"))
+                    || !yaml.isString("genome.evolution-state")) throw new IllegalArgumentException("Missing genome evolution receipt");
+            artifact.restoreGenomeEvolution(yaml.getLong("genome.revision"), yaml.getString("genome.evolution-state"));
             artifact.setParentStorageKey(yaml.getString("inheritance.parent"));
             if (artifact.getParentStorageKey() != null) ArtifactStorageKeys.itemId(artifact.getParentStorageKey());
             artifact.setInheritanceGeneration(yaml.getInt("inheritance.generation"));

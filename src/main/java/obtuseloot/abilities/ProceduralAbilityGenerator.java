@@ -1,8 +1,6 @@
 package obtuseloot.abilities;
 
 import obtuseloot.abilities.genome.ArtifactGenome;
-import obtuseloot.abilities.genome.GenomeMutationEngine;
-import obtuseloot.lineage.LineageGenomeInheritance;
 import obtuseloot.ObtuseLoot;
 import obtuseloot.evolution.AdaptiveSupportAllocation;
 import obtuseloot.evolution.ExperienceEvolutionEngine;
@@ -82,14 +80,11 @@ public class ProceduralAbilityGenerator {
     private final ArtifactEcosystemSelfBalancingEngine ecosystemEngine;
     private final LineageRegistry lineageRegistry;
     private final LineageInfluenceResolver lineageResolver;
-    private final GenomeMutationEngine mutationEngine;
-    private final LineageGenomeInheritance lineageGenomeInheritance;
     private final TraitInterferenceResolver traitInterferenceResolver;
     private final ExperienceEvolutionEngine experienceEvolutionEngine;
     private final boolean traitInteractionsEnabled;
     private final RegulatoryGateResolver regulatoryGateResolver;
     private final RegulatoryEligibilityFilter regulatoryEligibilityFilter;
-    private final LatentTraitActivationResolver latentTraitActivationResolver;
     private final NicheTaxonomy nicheTaxonomy;
     private final Map<MechanicNicheTag, Double> nicheTemplatePressure;
     private final Map<AbilityCategory, Double> categoryTemplatePressure;
@@ -174,15 +169,12 @@ public class ProceduralAbilityGenerator {
         this.ecosystemEngine = ecosystemEngine;
         this.lineageRegistry = lineageRegistry;
         this.lineageResolver = lineageResolver;
-        this.mutationEngine = new GenomeMutationEngine();
-        this.lineageGenomeInheritance = new LineageGenomeInheritance();
         this.traitInterferenceResolver = new TraitInterferenceResolver(registry.templates());
         this.traitInterferenceResolver.setScoringMode(scoringMode);
         this.experienceEvolutionEngine = experienceEvolutionEngine;
         this.traitInteractionsEnabled = traitInteractionsEnabled;
         this.regulatoryGateResolver = new RegulatoryGateResolver();
         this.regulatoryEligibilityFilter = new RegulatoryEligibilityFilter();
-        this.latentTraitActivationResolver = new LatentTraitActivationResolver();
         this.nicheTaxonomy = new NicheTaxonomy();
         this.nicheTemplatePressure = computeNicheTemplatePressure();
         this.categoryTemplatePressure = computeCategoryTemplatePressure();
@@ -209,34 +201,10 @@ public class ProceduralAbilityGenerator {
         AdaptiveSupportAllocation supportAllocation = experienceEvolutionEngine == null
                 ? AdaptiveSupportAllocation.neutral()
                 : experienceEvolutionEngine.adaptiveSupportFor(artifact.getArtifactSeed(), lineageId, lineageRegistry);
-        double mutationEcologyPressure = experienceEvolutionEngine == null
-                ? 1.0D
-                : experienceEvolutionEngine.mutationEcologyPressureFor(artifact.getArtifactSeed(), lineageId, lineageRegistry);
         List<AbilityFamily> ranked = new ArrayList<>(List.of(AbilityFamily.values()));
         ranked.sort(Comparator.comparingDouble((AbilityFamily f) -> -scoreFamily(artifact, f, memoryProfile, lineage, utilityHistory)));
 
-        ArtifactGenome baseGenome = mutationEngine.mutate(
-                artifact.getGenome(),
-                evolutionStage,
-                lineageMutationInfluence,
-                mutationEcologyPressure,
-                supportAllocation.mutationOpportunity(),
-                lineage == null ? null : lineage.evolutionaryBiasGenome().tendencies());
-        ArtifactGenome lineageGenome = (lineage == null)
-                ? baseGenome
-                : lineageGenomeInheritance.inherit(lineage, baseGenome, artifact.getArtifactSeed());
-        ArtifactGenome evolvedGenome = experienceEvolutionEngine == null
-                ? lineageGenome
-                : experienceEvolutionEngine.applyExperienceFeedback(lineageGenome, artifact.getArtifactSeed(), 1, lineageMutationInfluence, lineageId, lineageRegistry);
-        TraitInterferenceSnapshot preActivationInterference = traitInterferenceResolver.summarizeInterference(registry.templates(), evolvedGenome, traitInterferenceResolver.scoringMode());
-        LatentActivationContext activationContext = LatentActivationContext.bounded(
-                memoryProfile.survivalWeight() / 4.0D,
-                preActivationInterference.latentActivationBias(),
-                evolutionStage / 6.0D,
-                Math.min(1.0D, artifact.getDriftLevel() / 8.0D),
-                Math.min(1.0D, memoryProfile.pressure() / 12.0D));
-        LatentActivationResult latentActivationResult = latentTraitActivationResolver.resolve(evolvedGenome, activationContext);
-        ArtifactGenome genome = latentActivationResult.genome();
+        ArtifactGenome genome = artifact.getGenome();
         int picks = evolutionStage >= 4 ? 3 : 2;
         AbilityRegulatoryProfile regulatoryProfile = regulatoryGateResolver.resolve(
                 artifact,
@@ -263,8 +231,6 @@ public class ProceduralAbilityGenerator {
         artifact.setLastOpenRegulatoryGates(regulatoryProfile.openGatesCsv());
         artifact.setLastGateCandidatePool(allCandidates.size() + "->" + scoringPool.size());
         artifact.setLastInterferenceEffects(activeInterference.activeEffects().isEmpty() ? "none" : String.join(";", activeInterference.activeEffects().stream().limit(3).toList()));
-        artifact.setLastLatentActivationRate(latentActivationResult.activationRate());
-        artifact.setLastActivatedLatentTraits(latentActivationResult.activatedTraits().toString());
         for (AbilityTemplate template : selected) {
             picked.add(fromTemplate(template, template.family(), evolutionStage));
         }

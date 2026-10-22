@@ -1,5 +1,7 @@
 package obtuseloot.drift;
 
+import obtuseloot.evolution.GenomeEvolutionEngine;
+
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.reputation.ArtifactReputation;
@@ -12,6 +14,14 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class DriftEngine {
+    private final GenomeEvolutionEngine genomeEvolution;
+
+    public DriftEngine() { this(new GenomeEvolutionEngine()); }
+
+    public DriftEngine(GenomeEvolutionEngine genomeEvolution) {
+        this.genomeEvolution = genomeEvolution;
+    }
+
     private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
     public boolean shouldDrift(ArtifactReputation reputation) {
         RuntimeSettings.Snapshot s = RuntimeSettings.get();
@@ -40,6 +50,7 @@ public class DriftEngine {
         artifact.addDriftHistory(msg);
         artifact.addLoreHistory(msg);
         artifact.addNotableEvent("drift." + profile.name().toLowerCase());
+        genomeEvolution.advance(artifact);
         return new DriftMutation(true, profile.name().toLowerCase(), msg, true, instability);
     }
     public DriftMutation forceDrift(Player player, Artifact artifact, ArtifactReputation reputation) {
@@ -59,6 +70,7 @@ public class DriftEngine {
         artifact.addDriftHistory(msg);
         artifact.addLoreHistory(msg);
         artifact.addNotableEvent("drift." + profile.name().toLowerCase());
+        genomeEvolution.advance(artifact);
         player.sendMessage(msg);
         return new DriftMutation(true, profile.name().toLowerCase(), msg, true, instability);
     }

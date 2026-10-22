@@ -1,5 +1,7 @@
 package obtuseloot.convergence;
 
+import obtuseloot.evolution.GenomeEvolutionEngine;
+
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.artifacts.ArtifactArchetypeValidator;
 import obtuseloot.artifacts.ArtifactIdentityTransition;
@@ -21,6 +23,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConvergenceEngine {
+    private final GenomeEvolutionEngine genomeEvolution;
+
+    public ConvergenceEngine() { this(new GenomeEvolutionEngine()); }
+
+    public ConvergenceEngine(GenomeEvolutionEngine genomeEvolution) {
+        this.genomeEvolution = genomeEvolution;
+    }
+
     private static final List<ConvergenceRecipe> RECIPES = buildRecipes();
 
     private final ArtifactTextResolver textResolver = new ArtifactTextResolver();
@@ -68,8 +78,10 @@ public class ConvergenceEngine {
                 player.sendMessage("§6" + textResolver.compose(replacement, ArtifactTextChannel.CONVERGENCE, recipe.id()));
             }
             convergenceApplied.incrementAndGet();
-            return new ArtifactIdentityTransition(artifact, replacement,
+            var transition = new ArtifactIdentityTransition(artifact, replacement,
                     "artifact-convergence:" + recipe.id() + ":" + expansion.variantId());
+            genomeEvolution.advanceReplacement(transition);
+            return transition;
         }
 
         convergencePrereqFailed.incrementAndGet();

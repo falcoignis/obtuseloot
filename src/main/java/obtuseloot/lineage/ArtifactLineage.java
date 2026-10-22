@@ -88,6 +88,11 @@ public class ArtifactLineage {
     public void registerGenome(long ancestorSeed, ArtifactGenome genome) {
         int nextGeneration = generationIndex + 1;
         addAncestor(new ArtifactAncestor(ancestorSeed, nextGeneration));
+        observeGenome(genome);
+    }
+
+    /** Latest committed genes; observing an existing item never creates an ancestor. */
+    public void observeGenome(ArtifactGenome genome) {
         for (GenomeTrait trait : GenomeTrait.values()) {
             genomeTraits.put(trait, genome.trait(trait));
         }

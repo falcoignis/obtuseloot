@@ -50,7 +50,6 @@ public final class EngineBootstrap {
         PluginPathLayout paths = context.require(PluginPathLayout.class);
 
         CombatContextManager combatContextManager = new CombatContextManager();
-        EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver());
         ArtifactUsageTracker artifactUsageTracker = new ArtifactUsageTracker();
         artifactUsageTracker.setTelemetryEmitter(ecosystemTelemetryEmitter);
 
@@ -66,9 +65,6 @@ public final class EngineBootstrap {
                 evolutionParameterRegistry);
         experienceEvolutionEngine.setTelemetryEmitter(ecosystemTelemetryEmitter);
 
-        DriftEngine driftEngine = new DriftEngine();
-        AwakeningEngine awakeningEngine = new AwakeningEngine();
-        ConvergenceEngine convergenceEngine = new ConvergenceEngine();
         ArtifactMemoryEngine artifactMemoryEngine = new ArtifactMemoryEngine();
         EcosystemMapRenderer ecosystemMapRenderer = new EcosystemMapRenderer(plugin);
 
@@ -79,6 +75,12 @@ public final class EngineBootstrap {
 
         LineageInfluenceResolver lineageInfluenceResolver = new LineageInfluenceResolver();
         AbilityRegistry abilityRegistry = new AbilityRegistry().implementedOnly();
+        var genomeEvolution = new obtuseloot.evolution.GenomeEvolutionEngine(abilityRegistry, artifactMemoryEngine,
+                lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine, obtuseloot.abilities.ScoringMode.PROJECTION_WITH_CACHE);
+        EvolutionEngine evolutionEngine = new EvolutionEngine(new ArchetypeResolver(), new HybridEvolutionResolver(), genomeEvolution);
+        DriftEngine driftEngine = new DriftEngine(genomeEvolution);
+        AwakeningEngine awakeningEngine = new AwakeningEngine(genomeEvolution);
+        ConvergenceEngine convergenceEngine = new ConvergenceEngine(genomeEvolution);
         ItemAbilityManager itemAbilityManager = new ItemAbilityManager(
                 new SeededAbilityResolver(abilityRegistry, artifactMemoryEngine, ecosystemEngine,
                         lineageRegistry, lineageInfluenceResolver, experienceEvolutionEngine), abilityRegistry, artifactUsageTracker);

@@ -30,9 +30,9 @@ Higher output costs more availability. There is no universally rewarded high-gen
 Birth applies ordinary inherited mutation before storing the child's genome; the extra
 wild mutation roll remains held. The model uses the item's persisted expressed genes,
 including inherited values, rather than reconstructing a genome from its seed. It rolls
-no randomness. The model also accepts explicitly activated latent genomes (covered by a
-direct unit test), but existing generation-time latent promotion remains transient and is
-not newly persisted by this slice. Durability of those generation-time changes remains work.
+no randomness. The durable-evolution follow-up commits ordinary mutation, experience feedback
+and latent activation at explicit state transitions. Selection and real performance now read
+that same stored genome; see `durable-genome-evolution.md`.
 
 ## Physical ownership and integrations
 

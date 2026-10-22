@@ -23,6 +23,11 @@ class ConvergenceEngineIdentityTransitionTest {
         artifact.setEvolutionPath("advanced-deadeye");
         artifact.setAwakeningPath("Stormblade");
         artifact.setLatentLineage("lineage-omega");
+        var inheritedTraits = new java.util.EnumMap<obtuseloot.abilities.genome.GenomeTrait, Double>(obtuseloot.abilities.genome.GenomeTrait.class);
+        var latent = new java.util.EnumMap<obtuseloot.abilities.genome.GenomeTrait, Double>(obtuseloot.abilities.genome.GenomeTrait.class);
+        for (var trait : obtuseloot.abilities.genome.GenomeTrait.values()) { inheritedTraits.put(trait, 0.23D); latent.put(trait, 0.0D); }
+        artifact.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(41L, inheritedTraits, latent,
+                Set.of(obtuseloot.abilities.genome.GenomeTrait.RESONANCE)));
         artifact.addLoreHistory("earned through battle");
         artifact.addNotableEvent("awakening.stormblade");
         artifact.getMemory().record(ArtifactMemoryEvent.AWAKENING);
@@ -52,6 +57,12 @@ class ConvergenceEngineIdentityTransitionTest {
         assertTrue(replacement.getArchetypePath().startsWith("horizon-"));
         assertNotEquals(artifact.getArtifactSeed(), replacement.getArtifactSeed());
         assertNotEquals(artifact.getNaming().getNamingSeed(), replacement.getNaming().getNamingSeed());
+        assertEquals(1, replacement.getGenomeRevision());
+        assertTrue(replacement.getGenome().activatedLatentTraits().contains(obtuseloot.abilities.genome.GenomeTrait.RESONANCE));
+        for (double expressed : replacement.getGenome().traits().values()) {
+            assertTrue(expressed > 0.15D && expressed < 0.31D, "Convergence must evolve carried genes rather than regenerate them from the new seed");
+        }
+        assertFalse(new obtuseloot.evolution.GenomeEvolutionEngine().advance(replacement));
         assertTrue(Set.of(EquipmentArchetype.ELYTRA.id(), EquipmentArchetype.TRIDENT.id()).contains(replacement.getItemCategory()));
         assertTrue(replacement.getNotableEvents().stream().anyMatch(event -> event.startsWith("identity.replaced.")));
         assertEquals(artifact.getMemory().pressure(), replacement.getMemory().pressure());

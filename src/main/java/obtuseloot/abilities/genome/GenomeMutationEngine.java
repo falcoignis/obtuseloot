@@ -43,13 +43,25 @@ public class GenomeMutationEngine {
                                  double ecologicalPressure,
                                  double mutationOpportunity,
                                  Map<LineageBiasDimension, Double> lineageBias) {
+        return mutate(baseGenome, evolutionStage, mutationInfluence, ecologicalPressure, mutationOpportunity, lineageBias, 0L);
+    }
+
+    /** A saved transition revision changes the deterministic draw, without adding a mutation roll. */
+    public ArtifactGenome mutate(ArtifactGenome baseGenome,
+                                 int evolutionStage,
+                                 double mutationInfluence,
+                                 double ecologicalPressure,
+                                 double mutationOpportunity,
+                                 Map<LineageBiasDimension, Double> lineageBias,
+                                 long transitionRevision) {
         if (evolutionStage <= 1) {
             return baseGenome;
         }
 
         EnumMap<GenomeTrait, Double> mutated = new EnumMap<>(GenomeTrait.class);
         EnumMap<GenomeTrait, Double> latentMutated = new EnumMap<>(GenomeTrait.class);
-        Random random = new Random(baseGenome.seed() ^ ((long) evolutionStage * 0x9E3779B97F4A7C15L));
+        Random random = new Random(baseGenome.seed() ^ ((long) evolutionStage * 0x9E3779B97F4A7C15L)
+                ^ (transitionRevision * 0xD1B54A32D192ED03L));
         double sensitivity = baseGenome.trait(GenomeTrait.MUTATION_SENSITIVITY);
         double volatility = baseGenome.trait(GenomeTrait.VOLATILITY);
         double lineageRisk = tendency(lineageBias, LineageBiasDimension.RISK_APPETITE);

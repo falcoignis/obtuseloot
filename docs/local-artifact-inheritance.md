@@ -96,6 +96,9 @@ profiles and ecology snapshots. Both use the same extracted artifact/reputation 
 Incomplete profiles, invalid traits and malformed evidence are refused. Ecology corruption
 at startup follows the fatal storage-initialization path; runtime item failures use the
 existing load guard and retry backoff. Failed saves remain retryable and are logged.
+The durable-genome follow-up uses per-item profile version 2 to save genetic revisions and
+transition markers alongside expressed/latent genes and activation flags; see
+`durable-genome-evolution.md`. No existing-player-data migration is supplied.
 
 The inheritance clock advances with the scheduler's game ticks and persists with the
 outcome evidence at autosave/shutdown. Downtime does not advance it. An abrupt crash can
