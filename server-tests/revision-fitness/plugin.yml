@@ -1,0 +1,5 @@
+name: ObtuseLootRevisionFitnessProbe
+version: 1
+main: obtuseloot.servertest.RevisionFitnessProbe
+api-version: '26.2'
+depend: [ObtuseLoot]

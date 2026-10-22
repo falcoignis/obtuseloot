@@ -7,7 +7,14 @@ import org.bukkit.event.Event;
 public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                   double value, String source,
                                   AbilityRuntimeContext runtimeContext, Event liveEvent, boolean liveExecution,
-                                  obtuseloot.ecology.WorldPosition position, AbilityActivation activation) {
+                                  obtuseloot.ecology.WorldPosition position, AbilityActivation activation,
+                                  obtuseloot.abilities.genome.GenomeRevision genomeRevision) {
+    public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
+                               double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent,
+                               boolean liveExecution, obtuseloot.ecology.WorldPosition position, AbilityActivation activation) {
+        this(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation,
+                obtuseloot.abilities.genome.GenomeRevision.capture(artifact));
+    }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent,
                                boolean liveExecution, obtuseloot.ecology.WorldPosition position) {
@@ -21,10 +28,10 @@ public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, Art
         return position != null ? position : obtuseloot.ecology.WorldPosition.fromEvent(liveEvent);
     }
     public AbilityEventContext withPosition(obtuseloot.ecology.WorldPosition location) {
-        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location, activation);
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location, activation, genomeRevision);
     }
     public AbilityEventContext withActivation(AbilityActivation activation) {
-        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation);
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation, genomeRevision);
     }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent) {

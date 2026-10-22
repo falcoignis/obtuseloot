@@ -18,10 +18,16 @@ public final class ArtifactProfileCodec {
         var yaml = new YamlConfiguration();
         writeArtifact(yaml, artifact);
         writeReputation(yaml, artifact.getItemReputation());
-        yaml.set("profile-version", 2);
+        yaml.set("profile-version", 3);
         yaml.set("genome.revision", artifact.getGenomeRevision());
         yaml.set("genome.evolution-state", artifact.getGenomeEvolutionState());
         yaml.set("inheritance.parent", artifact.getParentStorageKey());
+        if ((artifact.getParentStorageKey() == null) != (artifact.getParentGenomeRevision() == -1)
+                || (artifact.getParentStorageKey() == null) != (artifact.getParentGenomeSeed() == 0))
+            throw new IllegalArgumentException("Incomplete parent genome attribution");
+        yaml.set("inheritance.parent-revision", artifact.getParentGenomeRevision());
+        yaml.set("inheritance.parent-seed", artifact.getParentGenomeSeed());
+        artifact.getGenomeFitnessHistory().writeTo(yaml, "genome.fitness");
         yaml.set("inheritance.generation", artifact.getInheritanceGeneration());
         for (GenomeTrait trait : GenomeTrait.values()) {
             yaml.set("genome.expressed." + trait.name(), artifact.getGenome().trait(trait));
@@ -35,7 +41,7 @@ public final class ArtifactProfileCodec {
         try {
             var yaml = new YamlConfiguration();
             yaml.loadFromString(encoded);
-            if (yaml.getInt("profile-version", 0) != 2 || !key.equals(yaml.getString("artifact.storage-key"))) {
+            if (yaml.getInt("profile-version", 0) != 3 || !key.equals(yaml.getString("artifact.storage-key"))) {
                 throw new IllegalArgumentException("Invalid per-item profile identity/version");
             }
             if (!yaml.isString("artifact.owner-id") || !yaml.isString("artifact.latent-lineage")
@@ -66,6 +72,16 @@ public final class ArtifactProfileCodec {
             artifact.restoreGenomeEvolution(yaml.getLong("genome.revision"), yaml.getString("genome.evolution-state"));
             artifact.setParentStorageKey(yaml.getString("inheritance.parent"));
             if (artifact.getParentStorageKey() != null) ArtifactStorageKeys.itemId(artifact.getParentStorageKey());
+            if (!yaml.isInt("inheritance.parent-revision") && !yaml.isLong("inheritance.parent-revision"))
+                throw new IllegalArgumentException("Missing parent genome revision");
+            artifact.setParentGenomeRevision(yaml.getLong("inheritance.parent-revision"));
+            if (!yaml.isInt("inheritance.parent-seed") && !yaml.isLong("inheritance.parent-seed"))
+                throw new IllegalArgumentException("Missing parent genome seed");
+            artifact.setParentGenomeSeed(yaml.getLong("inheritance.parent-seed"));
+            if ((artifact.getParentStorageKey() == null) != (artifact.getParentGenomeRevision() == -1)
+                    || (artifact.getParentStorageKey() == null) != (artifact.getParentGenomeSeed() == 0))
+                throw new IllegalArgumentException("Invalid parent genome attribution");
+            artifact.setGenomeFitnessHistory(obtuseloot.evolution.GenomeFitnessHistory.readFrom(yaml, "genome.fitness"));
             artifact.setInheritanceGeneration(yaml.getInt("inheritance.generation"));
             artifact.setItemReputation(readReputation(yaml));
             return artifact;

@@ -50,14 +50,15 @@ write paths. Profile resolution still updates existing diagnostics and populatio
 selection bookkeeping; this change guarantees genetic read stability, not complete purity
 of the entire ability resolver.
 
-Per-item profile format is now version 2 for both YAML and SQL. It stores the expressed
+Per-item profile format is now version 3 for both YAML and SQL. It stores the expressed
 and latent values, activation flags, revision and transition marker together. Missing receipts, invalid revisions and non-string/blank state markers fail closed. The owner confirmed no player data exists, so no migration
-or fallback generation is supplied. Ecology evidence remains at its separate version 2.
+or fallback generation is supplied. Revision-specific fitness history and parental genome
+attribution are saved alongside these values; ecology evidence is also version 3.
 
 Double Jump is still the first real benefit/recovery expression. Other effects remain
 fixed/configurable. This does not change permissions, optional integration hooks, XP, flight
-ownership or movement protection. Local fitness still aggregates recent item attempts
-that can span genetic revisions; revision-specific fitness attribution remains future work.
+ownership or movement protection. Revision-specific fitness now separates measured genetic
+experience and local reproductive evidence; see `revision-specific-fitness.md`.
 Durability alone does not demonstrate an emergent ecosystem.
 
 ## Validation
@@ -67,7 +68,7 @@ only at transitions, persisted latent activation, read/refresh stability, restar
 of the next mutation draw, YAML/SQLite saves/trades, failed-save retry, rejected identity
 replay, convergence continuity, subscription invalidation and refresh failure after commit.
 The disposable server fixture is documented in `server-tests/durable-evolution/README.md`.
-Final official Java 25 Docker validation passed 93 focused tests and all 532 full-suite
+The original durable-evolution slice's official Java 25 Docker validation passed 93 focused tests and all 532 full-suite
 tests (102 classes), with zero failures/errors/skips and Maven exit 0. The full build took
 31:39. All 521 frozen source hashes and 560 server-tested production entries matched.
 The standalone Purpur 26.2 build 2633 probe passed all three process phases, including

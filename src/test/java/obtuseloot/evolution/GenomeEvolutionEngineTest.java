@@ -121,7 +121,7 @@ class GenomeEvolutionEngineTest {
         var lastExperienceSeed = new java.util.concurrent.atomic.AtomicLong();
         var experience = new ExperienceEvolutionEngine(new ArtifactUsageTracker(), new ArtifactFitnessEvaluator()) {
             @Override public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long seed, int population,
-                    double mutationInfluence, String lineageId, LineageRegistry registry) {
+                    double mutationInfluence, String lineageId, LineageRegistry registry, ArtifactUsageProfile measuredUsage) {
                 calls.incrementAndGet();
                 lastExperienceSeed.set(seed);
                 var changed = new EnumMap<GenomeTrait, Double>(GenomeTrait.class);
@@ -164,6 +164,33 @@ class GenomeEvolutionEngineTest {
                 () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), encoded.replace("revision: 0", "revision: -1")));
         assertThrows(obtuseloot.persistence.PlayerStateLoadException.class,
                 () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), encoded.replace("evolution-state:", "missing-state:")));
+    }
+
+    @Test void explicitTransitionsUseOnlyTheProducingRevisionsMeasuredFitness() {
+        var item = item();
+        var tracker = new ArtifactUsageTracker();
+        var received = new ArrayList<Map<String, MechanicUtilitySignal>>();
+        var experience = new ExperienceEvolutionEngine(tracker, new ArtifactFitnessEvaluator()) {
+            @Override public ArtifactGenome applyExperienceFeedback(ArtifactGenome genome, long seed, int population,
+                    double influence, String lineage, LineageRegistry registry, ArtifactUsageProfile usage) {
+                received.add(usage.utilitySignalsByMechanic());
+                assertEquals(0, usage.killParticipation());
+                return genome;
+            }
+        };
+        var genetics = new GenomeEvolutionEngine(new AbilityRegistry(), new ArtifactMemoryEngine(), null, null,
+                experience, ScoringMode.PROJECTION_WITH_CACHE);
+        var producingRevision = GenomeRevision.capture(item);
+        var outcome = new UtilityOutcomeRecord("precision.material_insight", new AbilityRegistry().templateById("precision.material_insight").mechanic(),
+                AbilityTrigger.ON_BLOCK_INSPECT, AbilityExecutionStatus.SUCCESS, AbilityOutcomeType.INFORMATION,
+                true, true, 1, 1, "inspect", 1, "target", null, producingRevision);
+        item.getGenomeFitnessHistory().record(outcome);
+        tracker.profileFor(item).recordUtilityOutcome(outcome);
+        item.setEvolutionPath("strider-formed"); genetics.advance(item);
+        assertEquals(item.getGenomeFitnessHistory().signals(producingRevision), received.getFirst());
+        item.setEvolutionPath("strider-tempered"); genetics.advance(item);
+        assertTrue(received.getLast().isEmpty(), "A new revision cannot reuse an ancestor's fitness or lifetime activity");
+        assertFalse(tracker.profileFor(item).utilitySignalsByMechanic().isEmpty(), "Lifetime item history remains intact");
     }
 
     @Test void explicitBaselineResetsDoNotSuppressTheNextOccurrenceOfTheSameEvolutionPath() {

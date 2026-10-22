@@ -37,19 +37,13 @@ public final class LocalEcosystem {
     public Artifact createEquipment(UUID initialHolder, EquipmentArchetype archetype, WorldPosition origin, RandomGenerator random) {
         Objects.requireNonNull(origin); Objects.requireNonNull(random);
         var settings = RuntimeSettings.get();
-        Artifact parent = null;
-        while (true) {
-            var selected = pool.choose(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random);
-            if (selected == null) break;
-            Artifact candidate = artifacts.resolveByStorageKey(selected.storageKey());
-            if (candidate == null) throw new IllegalStateException("Missing reproductive parent profile " + selected.storageKey());
-            if (candidate.getArtifactSeed() != selected.seed()) {
-                pool.forget(selected.storageKey()); // an explicit identity replacement cannot reuse old fitness
-                continue;
-            }
-            parent = candidate;
-            break;
-        }
+        var resolved = new java.util.HashMap<String, Artifact>();
+        var selected = pool.choose(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random, candidate -> {
+            Artifact item = resolved.computeIfAbsent(candidate.storageKey(), artifacts::resolveByStorageKey);
+            if (item == null) throw new IllegalStateException("Missing reproductive parent profile " + candidate.storageKey());
+            return item.getArtifactSeed() == candidate.seed() && item.getGenomeRevision() == candidate.genomeRevision();
+        });
+        Artifact parent = selected == null ? null : resolved.get(selected.storageKey());
         long seed;
         do { seed = random.nextLong(); } while (seed == 0);
         Artifact child = new Artifact(initialHolder, Objects.requireNonNull(archetype));
@@ -64,6 +58,8 @@ public final class LocalEcosystem {
             child.setGenome(mutation.mutate(inherited, 2));
             child.setLatentLineage(parent.getLatentLineage());
             child.setParentStorageKey(parent.getArtifactStorageKey());
+            child.setParentGenomeRevision(parent.getGenomeRevision());
+            child.setParentGenomeSeed(parent.getArtifactSeed());
             child.setInheritanceGeneration(Math.addExact(parent.getInheritanceGeneration(), 1));
             child.setSeedPrecisionAffinity(parent.getSeedPrecisionAffinity());
             child.setSeedBrutalityAffinity(parent.getSeedBrutalityAffinity());

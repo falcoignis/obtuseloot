@@ -2,6 +2,7 @@ package obtuseloot.ecology;
 
 import obtuseloot.abilities.*;
 import obtuseloot.artifacts.ArtifactStorageKeys;
+import obtuseloot.abilities.genome.GenomeRevision;
 import obtuseloot.evolution.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.*;
@@ -9,7 +10,7 @@ import java.util.random.RandomGenerator;
 
 /** Recent measured evidence; spatially filtered before scoring, with no global parent fallback. */
 public final class LocalInheritancePool {
-    private final Map<String, Evidence> evidence = new LinkedHashMap<>();
+    private final Map<Identity, Evidence> evidence = new LinkedHashMap<>();
     private final TriggerBudgetResolver budgets = new TriggerBudgetResolver();
     private long gameTick;
 
@@ -28,12 +29,9 @@ public final class LocalInheritancePool {
         var outcome = new UtilityOutcomeRecord(result.abilityId(), result.mechanic(), result.trigger(), result.status(),
                 result.outcomeType(), result.meaningfulOutcome(), observation.context().runtimeContext() != null
                 && observation.context().runtimeContext().intentional(), 1.0, budget.triggerCost() + budget.evaluationCost(),
-                observation.context().source(), gameTick, result.observationKey(), result.performance());
-        Evidence current = evidence.get(artifact.getArtifactStorageKey());
-        if (current == null || current.seed != artifact.getArtifactSeed()) {
-            current = new Evidence(artifact.getArtifactStorageKey(), artifact.getArtifactSeed(), artifact.getLatentLineage());
-            evidence.put(current.key, current);
-        }
+                observation.context().source(), gameTick, result.observationKey(), result.performance(), observation.context().genomeRevision());
+        var identity = new Identity(artifact.getArtifactStorageKey(), observation.context().genomeRevision());
+        Evidence current = evidence.computeIfAbsent(identity, ignored -> new Evidence(identity, artifact.getLatentLineage()));
         current.samples.addLast(new Sample(gameTick, observation.context().position(), outcome));
         prune(windowTicks);
     }
@@ -51,12 +49,16 @@ public final class LocalInheritancePool {
             }
             double utility = profiles.values().stream().map(OutcomeUtilityProfile::snapshot).mapToDouble(MechanicUtilitySignal::validatedUtility).sum();
             double fitness = attempts == 0 ? 0 : utility / attempts;
-            if (Double.isFinite(fitness) && fitness > 0) candidates.add(new ParentCandidate(parent.key, parent.seed, parent.lineage, fitness, attempts));
+            if (Double.isFinite(fitness) && fitness > 0) candidates.add(new ParentCandidate(parent.identity.key(), parent.identity.genome().seed(), parent.identity.genome().revision(), parent.lineage, fitness, attempts));
         }
         return List.copyOf(candidates);
     }
     public ParentCandidate choose(WorldPosition origin, int radiusChunks, long windowTicks, RandomGenerator random) {
-        List<ParentCandidate> candidates = candidates(origin, radiusChunks, windowTicks);
+        return choose(origin, radiusChunks, windowTicks, random, candidate -> true);
+    }
+    public ParentCandidate choose(WorldPosition origin, int radiusChunks, long windowTicks, RandomGenerator random,
+                                  java.util.function.Predicate<ParentCandidate> eligible) {
+        List<ParentCandidate> candidates = candidates(origin, radiusChunks, windowTicks).stream().filter(eligible).toList();
         double total = candidates.stream().mapToDouble(ParentCandidate::fitness).sum();
         if (candidates.isEmpty()) return null;
         double roll = random.nextDouble() * total;
@@ -66,7 +68,7 @@ public final class LocalInheritancePool {
         }
         return candidates.getLast();
     }
-    public void forget(String key) { evidence.remove(key); }
+    public void forget(String key) { evidence.keySet().removeIf(identity -> identity.key().equals(key)); }
     private void prune(long windowTicks) {
         if (windowTicks <= 0) throw new IllegalArgumentException("Outcome window must be positive game ticks");
         long cutoff = gameTick - windowTicks;
@@ -77,11 +79,12 @@ public final class LocalInheritancePool {
     }
     public String encode() {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 2); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
+        yaml.set("version", 3); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
         int index = 0;
         for (Evidence parent : evidence.values()) {
             String base = "parents." + index++ + ".";
-            yaml.set(base + "key", parent.key); yaml.set(base + "seed", parent.seed); yaml.set(base + "lineage", parent.lineage);
+            yaml.set(base + "key", parent.identity.key()); yaml.set(base + "seed", parent.identity.genome().seed());
+            yaml.set(base + "genome-revision", parent.identity.genome().revision()); yaml.set(base + "lineage", parent.lineage);
             yaml.set(base + "sample-count", parent.samples.size());
             int attempt = 0;
             for (Sample sample : parent.samples) {
@@ -107,7 +110,7 @@ public final class LocalInheritancePool {
         if (encoded == null) return pool;
         try {
             var yaml = new YamlConfiguration(); yaml.loadFromString(encoded);
-            if (yaml.getInt("version", 0) != 2 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
+            if (yaml.getInt("version", 0) != 3 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
             pool.gameTick = yaml.getLong("game-tick");
             if (pool.gameTick < 0) throw new IllegalArgumentException("Negative game tick");
             var parents = yaml.getConfigurationSection("parents");
@@ -117,9 +120,14 @@ public final class LocalInheritancePool {
                 String base = "parents." + name + ".";
                 String key = Objects.requireNonNull(yaml.getString(base + "key"));
                 ArtifactStorageKeys.itemId(key);
+                if (!yaml.isLong(base + "seed") && !yaml.isInt(base + "seed"))
+                    throw new IllegalArgumentException("Missing reproductive genome seed");
                 long seed = yaml.getLong(base + "seed");
-                if (seed == 0 || pool.evidence.containsKey(key)) throw new IllegalArgumentException("Invalid ecology identity");
-                var parent = new Evidence(key, seed, Objects.requireNonNull(yaml.getString(base + "lineage")));
+                if (!yaml.isLong(base + "genome-revision") && !yaml.isInt(base + "genome-revision"))
+                    throw new IllegalArgumentException("Missing reproductive genome revision");
+                var identity = new Identity(key, new GenomeRevision(seed, yaml.getLong(base + "genome-revision")));
+                if (pool.evidence.containsKey(identity)) throw new IllegalArgumentException("Duplicate ecology identity");
+                var parent = new Evidence(identity, Objects.requireNonNull(yaml.getString(base + "lineage")));
                 var samples = Objects.requireNonNull(yaml.getConfigurationSection(base + "samples"));
                 if (parent.lineage.isBlank() || !yaml.isInt(base + "sample-count") || yaml.getInt(base + "sample-count") != samples.getKeys(false).size()) throw new IllegalArgumentException("Incomplete ecology evidence");
                 long previous = -1;
@@ -149,18 +157,19 @@ public final class LocalInheritancePool {
                     var outcome = new UtilityOutcomeRecord(Objects.requireNonNull(yaml.getString(path + "ability")),
                             AbilityMechanic.valueOf(yaml.getString(path + "mechanic")), AbilityTrigger.valueOf(yaml.getString(path + "trigger")),
                             status, AbilityOutcomeType.valueOf(yaml.getString(path + "type")), meaningful, yaml.getBoolean(path + "intentional"),
-                            1.0, budget, Objects.requireNonNull(yaml.getString(path + "source")), tick, yaml.getString(path + "observation-key"), performance);
+                            1.0, budget, Objects.requireNonNull(yaml.getString(path + "source")), tick, yaml.getString(path + "observation-key"), performance, identity.genome());
                     parent.samples.addLast(new Sample(tick, position, outcome));
                 }
-                pool.evidence.put(key, parent);
+                pool.evidence.put(identity, parent);
             }
             return pool;
         } catch (Exception exception) { throw new IllegalStateException("Unreadable local ecology state; refusing a silent reset", exception); }
     }
-    public record ParentCandidate(String storageKey, long seed, String lineageId, double fitness, int attempts) { }
+    public record ParentCandidate(String storageKey, long seed, long genomeRevision, String lineageId, double fitness, int attempts) { }
+    private record Identity(String key, GenomeRevision genome) { }
     private record Sample(long tick, WorldPosition position, UtilityOutcomeRecord outcome) { }
     private static final class Evidence {
-        final String key; final long seed; final String lineage; final Deque<Sample> samples = new ArrayDeque<>();
-        Evidence(String key, long seed, String lineage) { this.key = key; this.seed = seed; this.lineage = lineage; }
+        final Identity identity; final String lineage; final Deque<Sample> samples = new ArrayDeque<>();
+        Evidence(Identity identity, String lineage) { this.identity = identity; this.lineage = lineage; }
     }
 }
