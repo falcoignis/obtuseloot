@@ -43,8 +43,10 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
 2. **Real ability effects** with outcome feedback into selection. Prioritize social, interaction and exploration; keep combat effects minimal (owner, 2026-10-20). Gentle Harvest and Material Insight implement the first slice. The follow-up adds game-tick noncombat timing and a shared catalog for easy ability add/remove; see `docs/noncombat-evolution-timing.md`. See `references/status.md` for validation and refresh publication/merge state before relying on it.
 3. **Per-item identity and reproduction.** The owner approved new loot inheriting from successful local lineages, with variation, and a configurable **20-chunk radius**. The follow-up adds persistent item genomes/reputation/ancestry and local measured-outcome parent selection. Read `docs/local-artifact-inheritance.md` and refresh the PR state in `references/status.md`. No migration is needed; no player data exists anywhere.
 4. **Remove scaffolding,** each layer behind an ablation test. The first follow-up
-   removes the final top-three weight compressor; other aids remain. Read
-   `docs/top-three-compression-ablation.md` and refresh its review/validation state.
+   removes the final top-three weight compressor. The next removes gamma/mean
+   score normalization while retaining the soft cap for its own later ablation.
+   Read `docs/top-three-compression-ablation.md`, `docs/score-normalization-ablation.md`
+   and refresh their review/validation state; other aids remain.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
 
 Unless the owner says otherwise, work from the top. When a request touches a later item, say where it sits in this order.

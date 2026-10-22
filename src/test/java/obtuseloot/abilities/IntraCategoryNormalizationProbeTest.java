@@ -158,13 +158,13 @@ class IntraCategoryNormalizationProbeTest {
                     List.class,
                     AbilityDiversityIndex.AbilitySignature.class,
                     List.class);
-            Method normalizeCategoryTemplateScores = ProceduralAbilityGenerator.class.getDeclaredMethod(
-                    "normalizeCategoryTemplateScores", List.class, double[].class);
+            Method categoryTemplateSamplingScores = ProceduralAbilityGenerator.class.getDeclaredMethod(
+                    "categoryTemplateSamplingScores", List.class, double[].class);
             Method applyCategoryLocalColdBalancing = ProceduralAbilityGenerator.class.getDeclaredMethod(
                     "applyCategoryLocalColdBalancing", List.class, double[].class);
 
             compositeTemplateScore.setAccessible(true);
-            normalizeCategoryTemplateScores.setAccessible(true);
+            categoryTemplateSamplingScores.setAccessible(true);
             applyCategoryLocalColdBalancing.setAccessible(true);
 
             List<AbilityTemplate> templates = registry.templates().stream()
@@ -189,7 +189,7 @@ class IntraCategoryNormalizationProbeTest {
                         List.of()));
             }
 
-            double[] samplingScores = (double[]) normalizeCategoryTemplateScores.invoke(generator, templates, rawScores);
+            double[] samplingScores = (double[]) categoryTemplateSamplingScores.invoke(generator, templates, rawScores);
             applyCategoryLocalColdBalancing.invoke(generator, templates, samplingScores);
 
             double[] weights = new double[templates.size()];

@@ -11,10 +11,18 @@ separate follow-ups.
 
 **2026-10-21 compression ablation:** the follow-up removes the final top-three
 weight compressor from production. Its historical policy survives only as a test
-control; the rest of the selection pipeline below remains. Read
+control. The rest of the selection pipeline remained at that snapshot; the next
+normalization follow-up is described below. Read
 [`docs/top-three-compression-ablation.md`](../../../docs/top-three-compression-ablation.md)
 for the paired fixture and limits. The current live catalog has at most two
 implemented templates per category, so this layer was dormant there.
+
+**2026-10-21 normalization ablation:** the next follow-up removes gamma and mean
+blending from within-category score preparation. The mean-relative soft-cap formula,
+constant and original-mean reference remain for a separate ablation. The old transform
+exists only in a paired test control that calls the same production cap. Read
+[`docs/score-normalization-ablation.md`](../../../docs/score-normalization-ablation.md)
+for the generation-trace comparison, multi-entry live-category scope and limits.
 
 This file condenses what the 2026-10-19 doc-ingest agents verified against source. The full evidence, with file:line citations, is in `ingest-2026-10-19-fab9f2b/`. Items marked **inference:** were not directly verified. "What confirms it" says how to settle each one.
 
