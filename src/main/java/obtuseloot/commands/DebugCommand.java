@@ -82,7 +82,7 @@ public class DebugCommand {
             case "ability" -> ability(sender, label, args);
             case "memory" -> memory(sender, label, args);
             case "persistence" -> persistence(sender, label, args);
-            case "ecosystem" -> ecosystem(sender, args);
+            case "ecosystem" -> ecosystem(sender, label, args);
             case "lineage" -> lineage(sender, label, args);
             case "genome" -> genome(sender, label, args);
             case "projection" -> projection(sender, args);
@@ -306,7 +306,32 @@ public class DebugCommand {
     }
 
 
-    private boolean ecosystem(CommandSender sender, String[] args) {
+    private boolean ecosystem(CommandSender sender, String label, String[] args) {
+        if (args.length >= 2 && "health".equalsIgnoreCase(args[1])) {
+            Player target = resolveTarget(sender, label, args, 2, "ecosystem health");
+            if (target == null) return true;
+            var health = plugin.getLocalEcosystem().healthSnapshot(obtuseloot.ecology.WorldPosition.from(target.getLocation()));
+            sender.sendMessage("§dLocal measured ecology: §f" + health.radiusChunks() + " chunks / " + health.windowTicks() + " game ticks");
+            sender.sendMessage("§7Observed current items=§f" + health.observedItems() + " §7eligible parents=§f" + health.eligibleParents()
+                    + " §7excluded old revisions=§f" + health.oldRevisions());
+            sender.sendMessage("§7Observed lineages=§f" + health.observedLineages() + " §7unassigned items=§f" + health.unassignedLineageItems()
+                    + " §7lineage Simpson=§f" + healthNumber(health.lineageSimpson()));
+            if (health.nonFiniteFitnessItems() > 0 || !health.finiteSamplerTotal())
+                sender.sendMessage("§cNon-finite reproductive evidence: items=" + health.nonFiniteFitnessItems()
+                        + ", finite sampler total=" + health.finiteSamplerTotal());
+            if (health.finiteSamplerTotal()) sender.sendMessage("§7Effective parents=§f" + healthNumber(health.effectiveParents())
+                    + " §7largest parent probability=§f" + healthNumber(health.maximumParentShare()));
+            if (health.observedItems() == 0) sender.sendMessage("§eNo measured current revisions in this radius/window.");
+            health.traits().forEach((trait, spread) -> sender.sendMessage("§7" + trait + " mean/variance=§f"
+                    + healthNumber(spread.mean()) + "/" + healthNumber(spread.variance()) + " §7latent=§f"
+                    + healthNumber(spread.latentMean()) + "/" + healthNumber(spread.latentVariance())));
+            health.activities().forEach((key, activity) -> sender.sendMessage("§7" + key + " attempts=§f" + activity.attempts()
+                    + " §7mean utility=§f" + healthNumber(activity.meanUtility())
+                    + (activity.performanceSamples() == 0 ? "" : " §7benefit/recovery=§f" + healthNumber(activity.meanBenefit())
+                    + "/" + healthNumber(activity.meanRecoveryTicks()) + " ticks (" + activity.performanceSamples() + " samples)")));
+            sender.sendMessage("§7Observed activity is aggregated across this radius. Habitat-specific adaptation and long-term ecosystem health are not assessed.");
+            return true;
+        }
         var snapshot = plugin.getEcosystemEngine().snapshot();
         if (args.length >= 2 && "bias".equalsIgnoreCase(args[1])) {
             sender.sendMessage("§dEcosystem bias: §f" + snapshot.get("bias"));
@@ -318,6 +343,10 @@ public class DebugCommand {
         }
         sender.sendMessage("§dEcosystem snapshot: §f" + snapshot);
         return true;
+    }
+
+    private String healthNumber(Double value) {
+        return value == null || !Double.isFinite(value) ? "unavailable" : String.format(Locale.ROOT, "%.5f", value);
     }
 
     private boolean lineage(CommandSender sender, String label, String[] args) {
@@ -1110,7 +1139,7 @@ public class DebugCommand {
                 "/" + label + " debug memory [player]",
                 "/" + label + " debug persistence [status|migrate <sqlite|mysql>]",
                 "/" + label + " debug artifact [storage|resolve|cache|stats] [player]",
-                "/" + label + " debug ecosystem [bias|balance]",
+                "/" + label + " debug ecosystem [health [player]|bias|balance]",
                 "/" + label + " debug lineage [player]",
                 "/" + label + " debug genome interactions",
                 "/" + label + " debug projection [cache|stats]",

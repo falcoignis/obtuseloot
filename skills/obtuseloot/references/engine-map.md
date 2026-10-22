@@ -1,5 +1,12 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-22 local health follow-up:** a read-only census and staff command expose
+current measured item/revision eligibility, observed lineage/gene variation and actual
+benefit/recovery data inside the existing chunk radius/window. Shared scoring preserves
+the parent sampler; the new multi-seed neutral and overlapping-habitat controls identify
+modeled habitat mixing while distinguishing ancestry contraction from useful specialization.
+Read [`docs/local-ecosystem-health.md`](../../../docs/local-ecosystem-health.md).
+
 **2026-10-22 ecological gene-multiplier follow-up:** the blanket context transform
 retained by #417 is removed from active and latent genes. Fixed trait-specific
 environmental modifiers and existing ecological mutation/support controls remain.

@@ -26,6 +26,12 @@ public final class LocalEcosystem {
         this.pool = Objects.requireNonNull(pool);
     }
     public LocalInheritancePool pool() { return pool; }
+    public LocalEcosystemHealth healthSnapshot(WorldPosition origin) {
+        var settings = RuntimeSettings.get();
+        return LocalEcosystemHealth.capture(pool.gameTick(), settings.inheritanceRadiusChunks(),
+                settings.inheritanceOutcomeWindowTicks(), pool.recentEvidence(origin, settings.inheritanceRadiusChunks(),
+                        settings.inheritanceOutcomeWindowTicks()), artifacts::resolveByStorageKey);
+    }
     public void advanceTick() { pool.advanceTick(RuntimeSettings.get().inheritanceOutcomeWindowTicks()); }
     public void observe(AbilityOutcomeObservation observation) {
         pool.record(observation, RuntimeSettings.get().inheritanceOutcomeWindowTicks());

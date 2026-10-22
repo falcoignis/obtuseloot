@@ -383,9 +383,10 @@ This document lists all currently implemented ObtuseLoot commands and permission
 - **Who can use it:** Both
 - **Notes:** `nbt-artifacts` migration scans online players.
 
-### `/obtuseloot debug ecosystem [bias|balance]`
-- **What it does:** Shows ecosystem snapshot, bias, or balance weights.
-- **Usage:** `/obtuseloot debug ecosystem [bias|balance]`
+### `/obtuseloot debug ecosystem [health [player]|bias|balance]`
+
+- **What it does:** `health` reports recent measured local items, current breeding eligibility, genetic variation and observed benefit/recovery. Its radius and game-tick window follow inheritance settings. It supplies diagnostics, not an ecosystem-health verdict. Other forms show the existing aggregate snapshot, bias, or balance weights.
+- **Usage:** `/obtuseloot debug ecosystem health [player]`; console must name an online player.
 - **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both
 
