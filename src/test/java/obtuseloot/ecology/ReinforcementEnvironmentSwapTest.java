@@ -24,11 +24,20 @@ class ReinforcementEnvironmentSwapTest {
             new WorldPosition(new UUID(0, 800), 2048, 0));
 
     @Test void swappedConditionsChangeMeasuredSelectionWithTheBlanketTermAblated() throws Exception {
-        var currentSwap = run(false, true);
-        var currentSteady = run(false, false);
-        var legacySwap = run(true, true);
-        var legacySteady = run(true, false);
-        var replay = run(false, true);
+        compareAndWrite(FeedbackMode.CONTEXT_LEGACY, FeedbackMode.AGGREGATE_LEGACY,
+                "reinforcement-ablation");
+    }
+
+    @Test void swappedConditionsChangeMeasuredSelectionWithEcologicalScalingAblated() throws Exception {
+        compareAndWrite(FeedbackMode.ABLATED, FeedbackMode.CONTEXT_LEGACY, "ecological-gene-ablation");
+    }
+
+    private void compareAndWrite(FeedbackMode current, FeedbackMode legacy, String reportDirectory) throws Exception {
+        var currentSwap = run(current, true);
+        var currentSteady = run(current, false);
+        var legacySwap = run(legacy, true);
+        var legacySteady = run(legacy, false);
+        var replay = run(current, true);
         assertEquals(currentSwap, replay, "Parentage, all genes and measurements must replay with isolated state");
         int prefix = SWAP_AT * positions.size() * COHORT;
         assertEquals(currentSteady.births.subList(0, prefix), currentSwap.births.subList(0, prefix));
@@ -37,6 +46,9 @@ class ReinforcementEnvironmentSwapTest {
                 currentSwap.births.subList(prefix, currentSwap.births.size()), "Changed responses must reach actual parent draws");
         assertNotEquals(legacySteady.births.subList(prefix, legacySteady.births.size()),
                 legacySwap.births.subList(prefix, legacySwap.births.size()));
+        assertNotEquals(parentDraws(currentSteady).subList(prefix, currentSteady.births.size()),
+                parentDraws(currentSwap).subList(prefix, currentSwap.births.size()),
+                "Changed local conditions must change selected parent identities, not only child gene values");
         assertNotEquals(legacySwap.births, currentSwap.births, "The removed term must affect real inherited genes/parentage");
 
         var runs = new LinkedHashMap<String, Run>();
@@ -59,10 +71,11 @@ class ReinforcementEnvironmentSwapTest {
                 ancestry.append('\n');
             }
         }
-        var directory = Path.of("target/reinforcement-ablation"); Files.createDirectories(directory);
+        var directory = Path.of("target", reportDirectory); Files.createDirectories(directory);
         Files.writeString(directory.resolve("generations.csv"), csv);
         Files.writeString(directory.resolve("parentage.csv"), ancestry);
         Files.writeString(directory.resolve("protocol.txt"), "Modeled observations; no native gameplay claim.\n"
+                + "Current transform: " + current + "; legacy transform: " + legacy + "\n"
                 + "32 samples per site, 12 generations, swap at generation 6; RNG seeds 722 and 723.\n"
                 + "Sites are 2048 blocks apart in the same world; actual configured chunk-radius parent filtering is used.\n"
                 + "No target mean, lineage count or distribution threshold; diversity/variance are reported.\n"
@@ -71,13 +84,20 @@ class ReinforcementEnvironmentSwapTest {
                 + "Fixed cohorts/evidence expiry are test protocol, not production population controls.\nreplay_equal=true\n");
     }
 
-    private Run run(boolean legacy, boolean swap) {
+    private List<Map.Entry<Long, Long>> parentDraws(Run run) {
+        return run.births.stream().map(birth -> Map.entry(birth.parentSeed, birth.parentRevision)).toList();
+    }
+
+    private Run run(FeedbackMode mode, boolean swap) {
         var store = new MemoryStore(); var manager = new ArtifactManager(store);
         var ecosystem = new LocalEcosystem(store, manager);
         var tracker = new ArtifactUsageTracker(); var evaluator = new ArtifactFitnessEvaluator();
         var environment = new EnvironmentPressureEngine();
-        ExperienceEvolutionEngine feedback = legacy ? new LegacyExperienceEvolutionEngine(tracker, evaluator, environment)
-                : new ExperienceEvolutionEngine(tracker, evaluator, environment);
+        ExperienceEvolutionEngine feedback = switch (mode) {
+            case AGGREGATE_LEGACY -> new LegacyExperienceEvolutionEngine(tracker, evaluator, environment);
+            case CONTEXT_LEGACY -> new LegacyEcologicalExperienceEvolutionEngine(tracker, evaluator, environment);
+            case ABLATED -> new ExperienceEvolutionEngine(tracker, evaluator, environment);
+        };
         var genetics = new GenomeEvolutionEngine(catalog, new ArtifactMemoryEngine(), null, null, feedback, ScoringMode.PROJECTION_WITH_CACHE);
         var randoms = List.of(new Random(722), new Random(723));
         var cohorts = new ArrayList<List<Artifact>>(); var founders = new HashMap<String, Long>();
@@ -177,6 +197,7 @@ class ReinforcementEnvironmentSwapTest {
         return new AbilityDefinition(t.id(), t.name(), t.family(), t.trigger(), t.mechanic(), "", "", "", "", "", "",
                 List.of(), List.of(), t.metadata(), "1", "2", "3", "4", "5");
     }
+    private enum FeedbackMode { AGGREGATE_LEGACY, CONTEXT_LEGACY, ABLATED }
     private record Row(int generation, int site, double headroom, double gene, double variance, double response,
                        double recovery, double fitness, double diversity, int founders, int parents) { }
     private record Birth(int generation, int site, long parentSeed, long parentRevision, long childSeed, long founder,

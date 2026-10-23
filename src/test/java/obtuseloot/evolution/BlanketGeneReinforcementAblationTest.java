@@ -23,11 +23,11 @@ class BlanketGeneReinforcementAblationTest {
         }
     }
 
-    @Test void frozenControlDemonstratesTheRemovedTermAndPreservesTheRemainingTransform() {
+    @Test void frozenControlsDemonstrateTheEarlierAggregateFitnessAblation() {
         var tracker = new ArtifactUsageTracker(); var evaluator = new ArtifactFitnessEvaluator();
         var environment = new EnvironmentPressureEngine();
         var legacy = new LegacyExperienceEvolutionEngine(tracker, evaluator, environment);
-        var current = new ExperienceEvolutionEngine(tracker, evaluator, environment);
+        var previous = new LegacyEcologicalExperienceEvolutionEngine(tracker, evaluator, environment);
         var positive = legacy.applyExperienceFeedback(genome(), 77, 1, 1, null, null, usage(true));
         var negative = legacy.applyExperienceFeedback(genome(), 77, 1, 1, null, null, usage(false));
         for (var trait : GenomeTrait.values()) {
@@ -36,7 +36,7 @@ class BlanketGeneReinforcementAblationTest {
         }
         var empty = new ArtifactUsageProfile();
         assertGenomeEquals(legacy.applyExperienceFeedback(genome(), 77, 1, 1, null, null, empty),
-                current.applyExperienceFeedback(genome(), 77, 1, 1, null, null, empty));
+                previous.applyExperienceFeedback(genome(), 77, 1, 1, null, null, empty));
     }
 
     @Test void realTransitionsKeepMutationAndRevisionHistoryWithoutFitnessDirectedGenes() {
