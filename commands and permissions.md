@@ -385,7 +385,7 @@ This document lists all currently implemented ObtuseLoot commands and permission
 
 ### `/obtuseloot debug ecosystem [health [player]|bias|balance]`
 
-- **What it does:** `health` reports recent measured local items, current breeding eligibility, genetic variation and observed benefit/recovery. Its radius and game-tick window follow inheritance settings. Breeding probabilities use the nearest supported overhead context and report supporting item/attempt counts; gene/activity statistics cover the whole local census. It supplies diagnostics, not an ecosystem-health verdict. Other forms show the existing aggregate snapshot, bias, or balance weights.
+- **What it does:** `health` reports recent measured local items, current breeding eligibility, genetic variation and observed benefit/recovery. Its radius and game-tick window follow inheritance settings. Breeding probabilities use the nearest supported column-height context and report supporting item/attempt counts; gene/activity statistics cover the whole local census. It supplies diagnostics, not an ecosystem-health verdict. Other forms show the existing aggregate snapshot, bias, or balance weights.
 - **Usage:** `/obtuseloot debug ecosystem health [player]`; console must name an online player.
 - **Permission:** `obtuseloot.debug` (players; console exempt)
 - **Who can use it:** Both

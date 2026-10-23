@@ -1,5 +1,12 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-23 native habitat validation:** the first overhead-relative model selected
+neighboring-room parents for native low-ceiling loot because airborne and chest
+reference heights differed. The correction captures lower/upper column boundaries,
+uses their span and stores explicit version 5 units. No sampler weight or genetic
+transform changes. Read [`docs/native-habitat-validation.md`](../../../docs/native-habitat-validation.md).
+
+
 **2026-10-22 habitat-aware competition follow-up:** captured overhead-column evidence
 conditions current-genome parent competition inside the unchanged chunk radius/window.
 Nearest supported depths retain their original measured utility, including failure and

@@ -1,5 +1,11 @@
 # Habitat-aware local competition
 
+> Historical #420 model. Native validation subsequently exposed actor-height
+> aliasing. The [capture-frame correction](native-habitat-validation.md) measures
+> a column span and uses ecology format 5; the findings below remain the first
+> controlled model's results and limitations.
+
+
 The owner approved implementing habitat-aware competition after the #419 health
 baseline identified mixing between overlapping environments. This is a dependent
 follow-up, not authorization to merge the pending stack.

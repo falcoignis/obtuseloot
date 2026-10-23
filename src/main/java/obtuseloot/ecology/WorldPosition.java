@@ -27,7 +27,7 @@ public record WorldPosition(UUID worldId, double x, double z, HabitatContext hab
         return new WorldPosition(Objects.requireNonNull(location.getWorld()).getUID(), location.getX(), location.getZ(), HabitatContext.capture(location));
     }
     public static WorldPosition from(Block block) {
-        return from(new Location(block.getWorld(), block.getX() + 0.5, block.getY(), block.getZ() + 0.5));
+        return from(new Location(block.getWorld(), block.getX() + 0.5, block.getY() + 1.0, block.getZ() + 0.5));
     }
     public static WorldPosition fromEvent(Event event) {
         if (event instanceof PlayerInteractEvent interaction && interaction.getClickedBlock() != null) return from(interaction.getClickedBlock());

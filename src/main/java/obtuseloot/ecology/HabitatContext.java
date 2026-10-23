@@ -3,29 +3,35 @@ package obtuseloot.ecology;
 import org.bukkit.Location;
 import java.util.Objects;
 
-/** A measured column descriptor, independent of ability IDs and genotype. Null ceiling means open sky. */
-public record HabitatContext(Integer overheadBlocks) {
+/** Measured vertical cavity span, independent of actor elevation, ability IDs and genotype. Null height means open sky. */
+public record HabitatContext(Integer columnHeightBlocks) {
     public HabitatContext {
-        if (overheadBlocks != null && overheadBlocks < 0) throw new IllegalArgumentException("Negative overhead space");
+        if (columnHeightBlocks != null && columnHeightBlocks < 0) throw new IllegalArgumentException("Negative column height");
     }
 
-    /** Read only the already-loaded column; never load/generate a chunk to collect reproductive evidence. */
+    /** Read only the loaded column. The reference cell may contain a loot source or an actor. */
     public static HabitatContext capture(Location location) {
         var world = Objects.requireNonNull(location.getWorld());
         int x = location.getBlockX(), z = location.getBlockZ();
         if (!world.isChunkLoaded(x >> 4, z >> 4)) return null;
-        int start = Math.max(world.getMinHeight(), location.getBlockY() + 1);
-        if (start >= world.getMaxHeight()) return new HabitatContext(null);
-        for (int y = start; y < world.getMaxHeight(); y++)
-            if (!world.getBlockAt(x, y, z).isPassable()) return new HabitatContext(y - start);
-        return new HabitatContext(null);
+        int anchor = location.getBlockY(), minimum = world.getMinHeight(), maximum = world.getMaxHeight();
+        if (anchor < minimum) return null;
+        if (anchor >= maximum - 1) return new HabitatContext(null);
+        Integer ceiling = null;
+        for (int y = anchor + 1; y < maximum; y++) {
+            if (!world.getBlockAt(x, y, z).isPassable()) { ceiling = y; break; }
+        }
+        if (ceiling == null) return new HabitatContext(null);
+        for (int y = anchor - 1; y >= minimum; y--)
+            if (!world.getBlockAt(x, y, z).isPassable()) return new HabitatContext(ceiling - y - 1);
+        return null; // A roof without an observed lower boundary is unsupported, not a fabricated height.
     }
 
-    /** Open sky and roofed columns are incomparable; finite observations interpolate by nearest measured depth. */
+    /** Open sky and roofed columns are incomparable; finite observations use the nearest measured column height. */
     public double distanceTo(HabitatContext other) {
-        if (overheadBlocks == null || other.overheadBlocks == null)
-            return Objects.equals(overheadBlocks, other.overheadBlocks) ? 0 : Double.POSITIVE_INFINITY;
-        return Math.abs((double) overheadBlocks - other.overheadBlocks);
+        if (columnHeightBlocks == null || other.columnHeightBlocks == null)
+            return Objects.equals(columnHeightBlocks, other.columnHeightBlocks) ? 0 : Double.POSITIVE_INFINITY;
+        return Math.abs((double) columnHeightBlocks - other.columnHeightBlocks);
     }
-    public String description() { return overheadBlocks == null ? "open sky" : overheadBlocks + " passable overhead blocks"; }
+    public String description() { return columnHeightBlocks == null ? "open sky" : columnHeightBlocks + " passable column blocks"; }
 }

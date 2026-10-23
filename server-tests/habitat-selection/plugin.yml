@@ -1,0 +1,5 @@
+name: ObtuseLootHabitatProbe
+version: 1
+main: obtuseloot.servertest.HabitatProbe
+api-version: '26.2'
+depend: [ObtuseLoot]

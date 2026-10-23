@@ -332,7 +332,7 @@ public class DebugCommand {
                     + " §7mean utility=§f" + healthNumber(activity.meanUtility())
                     + (activity.performanceSamples() == 0 ? "" : " §7benefit/recovery=§f" + healthNumber(activity.meanBenefit())
                     + "/" + healthNumber(activity.meanRecoveryTicks()) + " ticks (" + activity.performanceSamples() + " samples)")));
-            sender.sendMessage("§7Genes/activity describe the radius; breeding probabilities use the nearest measured overhead context. Long-term ecosystem health is unassessed.");
+            sender.sendMessage("§7Genes/activity describe the radius; breeding probabilities use the nearest measured column height. Long-term ecosystem health is unassessed.");
             return true;
         }
         var snapshot = plugin.getEcosystemEngine().snapshot();
