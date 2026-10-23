@@ -10,7 +10,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /** Horizontal distance in one world, independent of chunk-grid boundaries. */
-public record WorldPosition(UUID worldId, double x, double z) {
+public record WorldPosition(UUID worldId, double x, double z, HabitatContext habitat) {
+    /** Explicit unknown context, used by offline callers; it cannot stand in for a measured habitat. */
+    public WorldPosition(UUID worldId, double x, double z) { this(worldId, x, z, null); }
     public WorldPosition {
         Objects.requireNonNull(worldId);
         if (!Double.isFinite(x) || !Double.isFinite(z)) throw new IllegalArgumentException("Invalid position");
@@ -22,10 +24,10 @@ public record WorldPosition(UUID worldId, double x, double z) {
         return worldId.equals(other.worldId) && dx * dx + dz * dz <= radius * radius;
     }
     public static WorldPosition from(Location location) {
-        return new WorldPosition(Objects.requireNonNull(location.getWorld()).getUID(), location.getX(), location.getZ());
+        return new WorldPosition(Objects.requireNonNull(location.getWorld()).getUID(), location.getX(), location.getZ(), HabitatContext.capture(location));
     }
     public static WorldPosition from(Block block) {
-        return new WorldPosition(block.getWorld().getUID(), block.getX() + 0.5, block.getZ() + 0.5);
+        return from(new Location(block.getWorld(), block.getX() + 0.5, block.getY(), block.getZ() + 0.5));
     }
     public static WorldPosition fromEvent(Event event) {
         if (event instanceof PlayerInteractEvent interaction && interaction.getClickedBlock() != null) return from(interaction.getClickedBlock());

@@ -38,7 +38,7 @@ public final class LocalInheritancePool {
     public List<ParentCandidate> candidates(WorldPosition origin, int radiusChunks, long windowTicks) {
         prune(windowTicks);
         var candidates = new ArrayList<ParentCandidate>();
-        for (LocalEvidence local : recentEvidence(origin, radiusChunks, windowTicks)) {
+        for (LocalEvidence local : competitiveEvidence(origin, radiusChunks, windowTicks, candidate -> true)) {
             var candidate = local.individual();
             if (Double.isFinite(candidate.fitness()) && candidate.fitness() > 0) candidates.add(candidate);
         }
@@ -46,16 +46,49 @@ public final class LocalInheritancePool {
     }
     /** A read-only census, including failures; it never advances time or prunes persisted evidence. */
     public List<LocalEvidence> recentEvidence(WorldPosition origin, int radiusChunks, long windowTicks) {
+        return summarize(origin, radiusChunks, windowTicks, sample -> true, identity -> true);
+    }
+
+    /** Find the nearest supported measured column before scoring. Failures participate; old genes do not. */
+    public List<LocalEvidence> competitiveEvidence(WorldPosition origin, int radiusChunks, long windowTicks,
+            java.util.function.Predicate<ParentCandidate> currentGenome) {
+        var current = new HashSet<Identity>();
+        for (var local : recentEvidence(origin, radiusChunks, windowTicks)) {
+            var candidate = local.individual();
+            if (currentGenome.test(candidate)) current.add(new Identity(candidate.storageKey(),
+                    new GenomeRevision(candidate.seed(), candidate.genomeRevision())));
+        }
+        double nearest = Double.POSITIVE_INFINITY;
+        long cutoff = gameTick - windowTicks;
+        for (Evidence parent : evidence.values()) {
+            if (!current.contains(parent.identity)) continue;
+            for (Sample sample : parent.samples) {
+                if (sample.tick <= cutoff || !sample.position.within(origin, radiusChunks)) continue;
+                nearest = Math.min(nearest, habitatDistance(origin.habitat(), sample.position.habitat()));
+            }
+        }
+        if (!Double.isFinite(nearest)) return List.of();
+        double distance = nearest;
+        return summarize(origin, radiusChunks, windowTicks,
+                sample -> habitatDistance(origin.habitat(), sample.position.habitat()) == distance, current::contains);
+    }
+    private static double habitatDistance(HabitatContext target, HabitatContext sample) {
+        if (target == null || sample == null) return target == sample ? 0 : Double.POSITIVE_INFINITY;
+        return target.distanceTo(sample);
+    }
+    private List<LocalEvidence> summarize(WorldPosition origin, int radiusChunks, long windowTicks,
+            java.util.function.Predicate<Sample> relevant, java.util.function.Predicate<Identity> current) {
         Objects.requireNonNull(origin);
         if (radiusChunks <= 0 || windowTicks <= 0) throw new IllegalArgumentException("Positive radius/window required");
         var result = new ArrayList<LocalEvidence>();
         long cutoff = gameTick - windowTicks;
         for (Evidence parent : evidence.values()) {
+            if (!current.test(parent.identity)) continue;
             var profiles = new LinkedHashMap<String, OutcomeUtilityProfile>();
             var performance = new LinkedHashMap<String, PerformanceAccumulator>();
             int attempts = 0;
             for (Sample sample : parent.samples) {
-                if (sample.tick <= cutoff || !sample.position.within(origin, radiusChunks)) continue;
+                if (sample.tick <= cutoff || !sample.position.within(origin, radiusChunks) || !relevant.test(sample)) continue;
                 String key = sample.outcome.mechanic() + "@" + sample.outcome.trigger();
                 profiles.computeIfAbsent(key, OutcomeUtilityProfile::new).ingest(sample.outcome, new ValidatedOutcomeClassifier());
                 if (sample.outcome.performance() != null)
@@ -79,7 +112,9 @@ public final class LocalInheritancePool {
     }
     public ParentCandidate choose(WorldPosition origin, int radiusChunks, long windowTicks, RandomGenerator random,
                                   java.util.function.Predicate<ParentCandidate> eligible) {
-        List<ParentCandidate> candidates = candidates(origin, radiusChunks, windowTicks).stream().filter(eligible).toList();
+        prune(windowTicks);
+        List<ParentCandidate> candidates = competitiveEvidence(origin, radiusChunks, windowTicks, eligible).stream()
+                .map(LocalEvidence::individual).filter(candidate -> Double.isFinite(candidate.fitness()) && candidate.fitness() > 0).toList();
         double total = candidates.stream().mapToDouble(ParentCandidate::fitness).sum();
         if (candidates.isEmpty()) return null;
         double roll = random.nextDouble() * total;
@@ -100,7 +135,7 @@ public final class LocalInheritancePool {
     }
     public String encode() {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 3); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
+        yaml.set("version", 4); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
         int index = 0;
         for (Evidence parent : evidence.values()) {
             String base = "parents." + index++ + ".";
@@ -112,6 +147,9 @@ public final class LocalInheritancePool {
                 String path = base + "samples." + attempt++ + ".";
                 yaml.set(path + "tick", sample.tick); yaml.set(path + "world", sample.position.worldId().toString());
                 yaml.set(path + "x", sample.position.x()); yaml.set(path + "z", sample.position.z());
+                var habitat = sample.position.habitat();
+                yaml.set(path + "habitat.kind", habitat == null ? "unknown" : habitat.overheadBlocks() == null ? "sky" : "roofed");
+                if (habitat != null && habitat.overheadBlocks() != null) yaml.set(path + "habitat.overhead-blocks", habitat.overheadBlocks());
                 var outcome = sample.outcome;
                 yaml.set(path + "ability", outcome.abilityId()); yaml.set(path + "mechanic", outcome.mechanic().name());
                 yaml.set(path + "trigger", outcome.trigger().name()); yaml.set(path + "status", outcome.status().name());
@@ -131,7 +169,7 @@ public final class LocalInheritancePool {
         if (encoded == null) return pool;
         try {
             var yaml = new YamlConfiguration(); yaml.loadFromString(encoded);
-            if (yaml.getInt("version", 0) != 3 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
+            if (yaml.getInt("version", 0) != 4 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
             pool.gameTick = yaml.getLong("game-tick");
             if (pool.gameTick < 0) throw new IllegalArgumentException("Negative game tick");
             var parents = yaml.getConfigurationSection("parents");
@@ -159,7 +197,19 @@ public final class LocalInheritancePool {
                     if (tick < 0 || tick < previous || tick > pool.gameTick) throw new IllegalArgumentException("Invalid evidence time");
                     previous = tick;
                     if (!yaml.isDouble(path + "x") && !yaml.isInt(path + "x") || !yaml.isDouble(path + "z") && !yaml.isInt(path + "z")) throw new IllegalArgumentException("Missing evidence position");
-                    var position = new WorldPosition(UUID.fromString(yaml.getString(path + "world")), yaml.getDouble(path + "x"), yaml.getDouble(path + "z"));
+                    String kind = Objects.requireNonNull(yaml.getString(path + "habitat.kind"));
+                    HabitatContext habitat = switch (kind) {
+                        case "unknown", "sky" -> {
+                            if (yaml.contains(path + "habitat.overhead-blocks")) throw new IllegalArgumentException("Unexpected overhead evidence");
+                            yield kind.equals("sky") ? new HabitatContext(null) : null;
+                        }
+                        case "roofed" -> {
+                            if (!yaml.isInt(path + "habitat.overhead-blocks")) throw new IllegalArgumentException("Missing overhead evidence");
+                            yield new HabitatContext(yaml.getInt(path + "habitat.overhead-blocks"));
+                        }
+                        default -> throw new IllegalArgumentException("Unknown habitat kind");
+                    };
+                    var position = new WorldPosition(UUID.fromString(yaml.getString(path + "world")), yaml.getDouble(path + "x"), yaml.getDouble(path + "z"), habitat);
                     var status = AbilityExecutionStatus.valueOf(yaml.getString(path + "status"));
                     if (!yaml.isBoolean(path + "meaningful") || !yaml.isBoolean(path + "intentional")) throw new IllegalArgumentException("Missing outcome flags");
                     boolean meaningful = yaml.getBoolean(path + "meaningful");

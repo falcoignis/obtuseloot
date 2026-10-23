@@ -21,6 +21,21 @@ class LootInheritanceIntegrationTest {
     private final UUID worldId = new UUID(0, 10);
     private final WorldPosition origin = new WorldPosition(worldId, 0, 0);
     private final Map<ItemStack, Artifact> stamped = new IdentityHashMap<>();
+    private Integer overheadDepth;
+
+    @Test void actualLootBirthUsesCapturedHabitatInsteadOfLargerSuccessInAnotherNearbyContext() throws Exception {
+        overheadDepth = 0;
+        var ecosystem = ecosystem(store());
+        var low = ecosystem.createEquipment(new UUID(0, 90), EquipmentArchetype.IRON_AXE, origin, new Random(1));
+        var high = ecosystem.createEquipment(new UUID(0, 90), EquipmentArchetype.IRON_AXE, origin, new Random(2));
+        ecosystem.observe(LocalEcosystemHealthTest.observation(low, new WorldPosition(worldId, 0, 0, new HabitatContext(0)), .0784, 30, "low"));
+        ecosystem.observe(LocalEcosystemHealthTest.observation(high, new WorldPosition(worldId, 160, 0, new HabitatContext(20)), 10, 90, "high"));
+        var loot = stack(Material.IRON_AXE, 1);
+        var event = event(List.of(loot));
+        new LootInsertionListener(ecosystem, item -> false, stamped::put, Logger.getLogger("loot-test")).onLootGenerate(event);
+        assertEquals(low.getArtifactStorageKey(), stamped.get(loot).getParentStorageKey());
+        assertSame(loot, event.getLoot().getFirst()); assertFalse(event.isCancelled());
+    }
 
     @Test void actualLootEventKeepsItemsAndOnlyStampsDistinctUntrackedEquipment() throws Exception {
         var ecosystem = ecosystem(store());
@@ -104,6 +119,14 @@ class LootInheritanceIntegrationTest {
     }
     private <T> T api(Class<T> type) {
         return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, (proxy, method, args) -> switch (method.getName()) {
+            case "isChunkLoaded" -> overheadDepth != null;
+            case "getMinHeight" -> -64;
+            case "getMaxHeight" -> 320;
+            case "getBlockAt" -> {
+                int y = (Integer) args[1];
+                yield Proxy.newProxyInstance(org.bukkit.block.Block.class.getClassLoader(), new Class<?>[]{org.bukkit.block.Block.class},
+                        (block, query, ignored) -> { assertEquals("isPassable", query.getName()); return y < 65 + overheadDepth; });
+            }
             case "getUID" -> worldId;
             case "equals" -> proxy == args[0];
             case "hashCode" -> System.identityHashCode(proxy);

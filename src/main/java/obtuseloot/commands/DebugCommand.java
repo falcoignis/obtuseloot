@@ -310,7 +310,9 @@ public class DebugCommand {
         if (args.length >= 2 && "health".equalsIgnoreCase(args[1])) {
             Player target = resolveTarget(sender, label, args, 2, "ecosystem health");
             if (target == null) return true;
-            var health = plugin.getLocalEcosystem().healthSnapshot(obtuseloot.ecology.WorldPosition.from(target.getLocation()));
+            var origin = obtuseloot.ecology.WorldPosition.from(target.getLocation());
+            var health = plugin.getLocalEcosystem().healthSnapshot(origin);
+            sender.sendMessage("§7Breeding context: §f" + (origin.habitat() == null ? "unknown" : origin.habitat().description()));
             sender.sendMessage("§dLocal measured ecology: §f" + health.radiusChunks() + " chunks / " + health.windowTicks() + " game ticks");
             sender.sendMessage("§7Observed current items=§f" + health.observedItems() + " §7eligible parents=§f" + health.eligibleParents()
                     + " §7excluded old revisions=§f" + health.oldRevisions());
@@ -319,6 +321,7 @@ public class DebugCommand {
             if (health.nonFiniteFitnessItems() > 0 || !health.finiteSamplerTotal())
                 sender.sendMessage("§cNon-finite reproductive evidence: items=" + health.nonFiniteFitnessItems()
                         + ", finite sampler total=" + health.finiteSamplerTotal());
+            sender.sendMessage("§7Context support: §f" + health.competingItems() + " items / " + health.competingAttempts() + " attempts");
             if (health.finiteSamplerTotal()) sender.sendMessage("§7Effective parents=§f" + healthNumber(health.effectiveParents())
                     + " §7largest parent probability=§f" + healthNumber(health.maximumParentShare()));
             if (health.observedItems() == 0) sender.sendMessage("§eNo measured current revisions in this radius/window.");
@@ -329,7 +332,7 @@ public class DebugCommand {
                     + " §7mean utility=§f" + healthNumber(activity.meanUtility())
                     + (activity.performanceSamples() == 0 ? "" : " §7benefit/recovery=§f" + healthNumber(activity.meanBenefit())
                     + "/" + healthNumber(activity.meanRecoveryTicks()) + " ticks (" + activity.performanceSamples() + " samples)")));
-            sender.sendMessage("§7Observed activity is aggregated across this radius. Habitat-specific adaptation and long-term ecosystem health are not assessed.");
+            sender.sendMessage("§7Genes/activity describe the radius; breeding probabilities use the nearest measured overhead context. Long-term ecosystem health is unassessed.");
             return true;
         }
         var snapshot = plugin.getEcosystemEngine().snapshot();

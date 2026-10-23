@@ -66,6 +66,7 @@ class LiveAbilityEffectsTest {
         current = data(Material.AIR, 0);
         world = api(World.class, (method, args) -> switch (method) {
             case "getEnvironment" -> World.Environment.NORMAL;
+            case "isChunkLoaded" -> false;
             case "getUID" -> new UUID(0, 10);
             case "getGameTime" -> 200L;
             case "getSpawnLocation" -> new Location(world, 0, 64, 0);
@@ -219,6 +220,7 @@ class LiveAbilityEffectsTest {
         // Both horizontal coordinates must be inside the spawn radius.
         world = api(World.class, (method, args) -> switch (method) {
             case "getEnvironment" -> World.Environment.NORMAL;
+            case "isChunkLoaded" -> false;
             case "getUID" -> new UUID(0, 10);
             case "getGameTime" -> 200L;
             case "getSpawnLocation" -> new Location(world, 0, 64, 100);

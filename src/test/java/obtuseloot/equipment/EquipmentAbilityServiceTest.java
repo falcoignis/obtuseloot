@@ -64,7 +64,8 @@ class EquipmentAbilityServiceTest {
         var store = new Store(); artifacts = new ArtifactManager(store);
         abilities = new ItemAbilityManager((a, r) -> { builds.incrementAndGet(); return new AbilityProfile("test", profiles.getOrDefault(a.getArtifactStorageKey(), List.of())); }, registry, new ArtifactUsageTracker());
         abilities.setOutcomeObserver(o -> { movementOutcomes.add(o); queue.observe(o); });
-        world = api(World.class, (name, args) -> switch (name) { case "getUID" -> new UUID(0, 5); default -> unexpected(name); });
+        world = api(World.class, (name, args) -> switch (name) { case "isChunkLoaded" -> false;
+            case "getUID" -> new UUID(0, 5); default -> unexpected(name); });
         PlayerInventory inv = api(PlayerInventory.class, (name, args) -> switch (name) { case "getItem" -> inventory.get(args[0]); case "getChestplate" -> inventory.get(EquipmentSlot.CHEST); default -> unexpected(name); });
         player = api(Player.class, (name, args) -> switch (name) {
             case "getUniqueId" -> owner; case "getInventory" -> inv; case "getWorld" -> world;

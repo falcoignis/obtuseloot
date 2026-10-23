@@ -43,14 +43,17 @@ class LocalEcosystemHealthBaselineTest {
     }
 
     @Test void compareMeasuredSelectionWithNeutralSamplingInSeparatedAndOverlappingHabitats() throws Exception {
+        compare(false);
+    }
+    void compare(boolean habitatAware) throws Exception {
         var csv = new StringBuilder("seed,mode,generation,site,headroom,mean_gene,variance,mean_response,mean_recovery,mean_pool_fitness,founder_simpson,founders,distinct_parents,mean_local_fitness,effective_parents,max_parent_share,cross_site_parents\n");
         var ancestry = new StringBuilder();
         for (long seed : new long[]{722, 1722, 2722, 3722, 4722, 5722, 6722, 7722}) {
             for (boolean neutral : List.of(false, true)) for (int separation : new int[]{160, 2048}) {
                 String mode = (neutral ? "neutral" : "measured") + (separation == 160 ? "_overlap" : "_separate");
-                var run = run(seed, separation, neutral);
+                var run = run(seed, separation, neutral, habitatAware);
                 if (seed == 722 && !neutral && separation == 160)
-                    assertEquals(run, run(seed, separation, false), "The diagnostic must replay with independent state");
+                    assertEquals(run, run(seed, separation, false, habitatAware), "The diagnostic must replay with independent state");
                 for (var row : run.rows) csv.append(String.format(Locale.ROOT,
                         "%d,%s,%d,%d,%.4f,%.8f,%.8f,%.8f,%.3f,%.8f,%.8f,%d,%d,%.8f,%.8f,%.8f,%d%n", seed, mode,
                         row.generation, row.site, row.headroom, row.gene, row.variance, row.response, row.recovery,
@@ -67,13 +70,14 @@ class LocalEcosystemHealthBaselineTest {
                 }
             }
         }
-        var directory = Path.of("target/local-ecosystem-health"); Files.createDirectories(directory);
+        var directory = Path.of("target", habitatAware ? "habitat-competition" : "local-ecosystem-health"); Files.createDirectories(directory);
         Files.writeString(directory.resolve("generations.csv"), csv);
         Files.writeString(directory.resolve("parentage.csv"), ancestry);
         Files.writeString(directory.resolve("protocol.txt"), "Modeled observations, not native gameplay.\n"
                 + "8 seed pairs; 32 items per site; 12 rounds; open/low-headroom conditions stay fixed.\n"
                 + "Sites separated by 160 or 2048 blocks; production radius remains 20 chunks.\n"
                 + "Neutral control maps one RNG draw onto equal chances among eligible current revisions.\n"
+                + "Captured habitats=" + habitatAware + "; overhead descriptor 20 / 0, without changing response headroom.\n"
                 + "The real production selector, inheritance, mutations, revisions, codecs and measured utility execute.\n"
                 + "No diversity threshold, distribution target or coefficient tuning.\n"
                 + "Fixed cohort replacement is a diagnostic protocol, not production extinction.\nreplay_equal=true\n");
@@ -100,9 +104,9 @@ class LocalEcosystemHealthBaselineTest {
         };
     }
 
-    private Run run(long seed, int separation, boolean neutral) {
-        var positions = List.of(new WorldPosition(new UUID(0, 800), 0, 0),
-                new WorldPosition(new UUID(0, 800), separation, 0));
+    private Run run(long seed, int separation, boolean neutral, boolean habitatAware) {
+        var positions = List.of(new WorldPosition(new UUID(0, 800), 0, 0, habitatAware ? new HabitatContext(20) : null),
+                new WorldPosition(new UUID(0, 800), separation, 0, habitatAware ? new HabitatContext(0) : null));
         var store = new MemoryStore(); var manager = new ArtifactManager(store);
         var ecosystem = new LocalEcosystem(store, manager);
         var tracker = new ArtifactUsageTracker(); var evaluator = new ArtifactFitnessEvaluator();

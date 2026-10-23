@@ -1,5 +1,10 @@
 # Local ecosystem health diagnostics
 
+> Historical #419 baseline and diagnostic behavior. The subsequent
+> [habitat-aware competition](habitat-aware-competition.md) follow-up changes breeding
+> context and advances ecology storage to version 4. The findings below remain the
+> unconditioned control, not results from the new mechanism.
+
 This first health slice supplies local measurements and a controlled multi-seed
 baseline. It changes no reproductive weight, genetic transform, diversity target or
 population quota. Habitat-aware competition remains a separate design change.
