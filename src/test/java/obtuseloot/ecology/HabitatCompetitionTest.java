@@ -116,17 +116,17 @@ class HabitatCompetitionTest {
                 item, item.getItemReputation(), 1, "snapshot", obtuseloot.abilities.AbilityRuntimeContext.intentional(
                 obtuseloot.abilities.AbilitySource.OTHER), event);
         reference.set(world(calls, true, 80));
-        assertEquals(new HabitatContext(3), context.position().habitat());
+        assertEquals(new HabitatContext(4), context.position().habitat());
         assertEquals(context.position(), context.withActivation(null).position());
-        assertEquals(new HabitatContext(15), WorldPosition.fromEvent(event).habitat());
+        assertEquals(new HabitatContext(16), WorldPosition.fromEvent(event).habitat());
     }
 
     @Test void storageRequiresCapturedHabitatAndRejectsOldOrIncompleteFormats() {
         var pool = new LocalInheritancePool(); observe(pool, LocalInheritancePoolTest.item(1), at(3), 1, "one");
         String encoded = pool.encode();
-        for (String invalid : List.of(encoded.replace("version: 4", "version: 3"),
-                encoded.replace("kind: roofed", "kind: bogus"), encoded.replace("overhead-blocks: 3", "overhead-blocks: -1"),
-                encoded.replace("overhead-blocks: 3", "overhead-blocks: broken"), encoded.replace("kind: roofed", "kind: sky")))
+        for (String invalid : List.of(encoded.replace("version: 5", "version: 4"),
+                encoded.replace("kind: roofed", "kind: bogus"), encoded.replace("column-height-blocks: 3", "column-height-blocks: -1"),
+                encoded.replace("column-height-blocks: 3", "column-height-blocks: broken"), encoded.replace("kind: roofed", "kind: sky")))
             assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode(invalid));
     }
 
@@ -135,7 +135,7 @@ class HabitatCompetitionTest {
         for (int depth : new int[]{0, 1, 3, 12}) {
             World world = world(calls, true, 65 + depth);
             var captured = WorldPosition.from(new Location(world, -1.2, 64.8, 2));
-            assertEquals(new HabitatContext(depth), captured.habitat());
+            assertEquals(new HabitatContext(depth + 1), captured.habitat());
         }
         assertNull(WorldPosition.from(new Location(world(calls, false, 70), 0, 64, 0)).habitat());
         assertEquals(new HabitatContext(null), WorldPosition.from(new Location(world(calls, true, 500), 0, 64, 0)).habitat());
@@ -152,7 +152,7 @@ class HabitatCompetitionTest {
                 case "getBlockAt" -> {
                     assertTrue(loaded); int y = (Integer) args[1];
                     yield Proxy.newProxyInstance(Block.class.getClassLoader(), new Class<?>[]{Block.class},
-                            (block, query, ignored) -> { assertEquals("isPassable", query.getName()); return y < ceiling; });
+                            (block, query, ignored) -> { assertEquals("isPassable", query.getName()); return y > 63 && y < ceiling; });
                 }
                 default -> throw new AssertionError(method.getName());
             };

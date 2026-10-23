@@ -28,7 +28,7 @@ class LootInheritanceIntegrationTest {
         var ecosystem = ecosystem(store());
         var low = ecosystem.createEquipment(new UUID(0, 90), EquipmentArchetype.IRON_AXE, origin, new Random(1));
         var high = ecosystem.createEquipment(new UUID(0, 90), EquipmentArchetype.IRON_AXE, origin, new Random(2));
-        ecosystem.observe(LocalEcosystemHealthTest.observation(low, new WorldPosition(worldId, 0, 0, new HabitatContext(0)), .0784, 30, "low"));
+        ecosystem.observe(LocalEcosystemHealthTest.observation(low, new WorldPosition(worldId, 0, 0, new HabitatContext(1)), .0784, 30, "low"));
         ecosystem.observe(LocalEcosystemHealthTest.observation(high, new WorldPosition(worldId, 160, 0, new HabitatContext(20)), 10, 90, "high"));
         var loot = stack(Material.IRON_AXE, 1);
         var event = event(List.of(loot));
@@ -125,7 +125,7 @@ class LootInheritanceIntegrationTest {
             case "getBlockAt" -> {
                 int y = (Integer) args[1];
                 yield Proxy.newProxyInstance(org.bukkit.block.Block.class.getClassLoader(), new Class<?>[]{org.bukkit.block.Block.class},
-                        (block, query, ignored) -> { assertEquals("isPassable", query.getName()); return y < 65 + overheadDepth; });
+                        (block, query, ignored) -> { assertEquals("isPassable", query.getName()); return y > 63 && y < 65 + overheadDepth; });
             }
             case "getUID" -> worldId;
             case "equals" -> proxy == args[0];

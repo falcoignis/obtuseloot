@@ -135,7 +135,7 @@ public final class LocalInheritancePool {
     }
     public String encode() {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 4); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
+        yaml.set("version", 5); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
         int index = 0;
         for (Evidence parent : evidence.values()) {
             String base = "parents." + index++ + ".";
@@ -148,8 +148,8 @@ public final class LocalInheritancePool {
                 yaml.set(path + "tick", sample.tick); yaml.set(path + "world", sample.position.worldId().toString());
                 yaml.set(path + "x", sample.position.x()); yaml.set(path + "z", sample.position.z());
                 var habitat = sample.position.habitat();
-                yaml.set(path + "habitat.kind", habitat == null ? "unknown" : habitat.overheadBlocks() == null ? "sky" : "roofed");
-                if (habitat != null && habitat.overheadBlocks() != null) yaml.set(path + "habitat.overhead-blocks", habitat.overheadBlocks());
+                yaml.set(path + "habitat.kind", habitat == null ? "unknown" : habitat.columnHeightBlocks() == null ? "sky" : "roofed");
+                if (habitat != null && habitat.columnHeightBlocks() != null) yaml.set(path + "habitat.column-height-blocks", habitat.columnHeightBlocks());
                 var outcome = sample.outcome;
                 yaml.set(path + "ability", outcome.abilityId()); yaml.set(path + "mechanic", outcome.mechanic().name());
                 yaml.set(path + "trigger", outcome.trigger().name()); yaml.set(path + "status", outcome.status().name());
@@ -169,7 +169,7 @@ public final class LocalInheritancePool {
         if (encoded == null) return pool;
         try {
             var yaml = new YamlConfiguration(); yaml.loadFromString(encoded);
-            if (yaml.getInt("version", 0) != 4 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
+            if (yaml.getInt("version", 0) != 5 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
             pool.gameTick = yaml.getLong("game-tick");
             if (pool.gameTick < 0) throw new IllegalArgumentException("Negative game tick");
             var parents = yaml.getConfigurationSection("parents");
@@ -200,12 +200,12 @@ public final class LocalInheritancePool {
                     String kind = Objects.requireNonNull(yaml.getString(path + "habitat.kind"));
                     HabitatContext habitat = switch (kind) {
                         case "unknown", "sky" -> {
-                            if (yaml.contains(path + "habitat.overhead-blocks")) throw new IllegalArgumentException("Unexpected overhead evidence");
+                            if (yaml.contains(path + "habitat.column-height-blocks")) throw new IllegalArgumentException("Unexpected column-height evidence");
                             yield kind.equals("sky") ? new HabitatContext(null) : null;
                         }
                         case "roofed" -> {
-                            if (!yaml.isInt(path + "habitat.overhead-blocks")) throw new IllegalArgumentException("Missing overhead evidence");
-                            yield new HabitatContext(yaml.getInt(path + "habitat.overhead-blocks"));
+                            if (!yaml.isInt(path + "habitat.column-height-blocks")) throw new IllegalArgumentException("Missing column-height evidence");
+                            yield new HabitatContext(yaml.getInt(path + "habitat.column-height-blocks"));
                         }
                         default -> throw new IllegalArgumentException("Unknown habitat kind");
                     };
