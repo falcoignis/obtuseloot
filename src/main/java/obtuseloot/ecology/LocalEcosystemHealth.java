@@ -9,6 +9,7 @@ import java.util.function.Function;
 /** Measured local diagnostics, not a verdict about ecosystem health or a control on reproduction. */
 public record LocalEcosystemHealth(long gameTick, int radiusChunks, long windowTicks,
         int observedItems, int oldRevisions, int eligibleParents, int nonFiniteFitnessItems,
+        int competingItems, long competingAttempts,
         int observedLineages, int unassignedLineageItems, double lineageSimpson,
         double effectiveParents, double maximumParentShare, boolean finiteSamplerTotal,
         Map<GenomeTrait, TraitSpread> traits, Map<String, Activity> activities) {
@@ -23,7 +24,8 @@ public record LocalEcosystemHealth(long gameTick, int radiusChunks, long windowT
                            long performanceSamples, Double meanBenefit, Double meanRecoveryTicks) { }
 
     static LocalEcosystemHealth capture(long tick, int radius, long window,
-            List<LocalInheritancePool.LocalEvidence> evidence, Function<String, Artifact> resolver) {
+            List<LocalInheritancePool.LocalEvidence> evidence, List<LocalInheritancePool.LocalEvidence> competition,
+            Function<String, Artifact> resolver) {
         var lineages = new TreeMap<String, Integer>();
         var genes = new EnumMap<GenomeTrait, Moments>(GenomeTrait.class);
         var latent = new EnumMap<GenomeTrait, Moments>(GenomeTrait.class);
@@ -40,7 +42,7 @@ public record LocalEcosystemHealth(long gameTick, int radiusChunks, long windowT
             }
             current++;
             if (!Double.isFinite(individual.fitness())) nonFinite++;
-            else if (individual.fitness() > 0) fitness.add(individual.fitness());
+
             String lineage = artifact.getLatentLineage();
             if (lineage == null || lineage.isBlank() || "unassigned".equalsIgnoreCase(lineage)) unassigned++;
             else lineages.merge(lineage, 1, Integer::sum);
@@ -51,6 +53,13 @@ public record LocalEcosystemHealth(long gameTick, int radiusChunks, long windowT
             }
             local.activities().forEach((key, signal) -> activities.computeIfAbsent(key, ignored -> new ActivityAccumulator())
                     .add(signal.attempts(), signal.meaningfulOutcomes(), signal.validatedUtility(), local.performance().get(key)));
+        }
+        for (var local : competition) {
+            var candidate = local.individual();
+            var artifact = resolved.computeIfAbsent(candidate.storageKey(), resolver);
+            if (artifact == null) throw new IllegalStateException("Missing reproductive profile " + candidate.storageKey());
+            if (artifact.getArtifactSeed() == candidate.seed() && artifact.getGenomeRevision() == candidate.genomeRevision()
+                    && Double.isFinite(candidate.fitness()) && candidate.fitness() > 0) fitness.add(candidate.fitness());
         }
         var traits = new EnumMap<GenomeTrait, TraitSpread>(GenomeTrait.class);
         genes.forEach((trait, values) -> traits.put(trait,
@@ -66,6 +75,7 @@ public record LocalEcosystemHealth(long gameTick, int radiusChunks, long windowT
         }
         var diversity = NicheDiversityMetrics.diversity(lineages);
         return new LocalEcosystemHealth(tick, radius, window, current, old, fitness.size(), nonFinite,
+                competition.size(), competition.stream().mapToLong(local -> local.individual().attempts()).sum(),
                 diversity.liveNiches(), unassigned, diversity.simpsonDiversity(),
                 squares == 0 ? 0 : 1 / squares, largestShare,
                 Double.isFinite(fitness.stream().mapToDouble(Double::doubleValue).sum()), traits, measured);

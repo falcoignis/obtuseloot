@@ -1,5 +1,13 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-22 habitat-aware competition follow-up:** captured overhead-column evidence
+conditions current-genome parent competition inside the unchanged chunk radius/window.
+Nearest supported depths retain their original measured utility, including failure and
+repeat penalties. Read [`docs/habitat-aware-competition.md`](../../../docs/habitat-aware-competition.md)
+for version 4 ecology storage, the broader census versus conditional breeding diagnostics,
+and limitations. This is a first measured contextual mechanism, not proof of emergence.
+
+
 **2026-10-22 local health follow-up:** a read-only census and staff command expose
 current measured item/revision eligibility, observed lineage/gene variation and actual
 benefit/recovery data inside the existing chunk radius/window. Shared scoring preserves

@@ -28,9 +28,18 @@ public final class LocalEcosystem {
     public LocalInheritancePool pool() { return pool; }
     public LocalEcosystemHealth healthSnapshot(WorldPosition origin) {
         var settings = RuntimeSettings.get();
+        var resolved = new java.util.HashMap<String, Artifact>();
+        var competition = pool.competitiveEvidence(origin, settings.inheritanceRadiusChunks(),
+                settings.inheritanceOutcomeWindowTicks(), candidate -> isCurrent(candidate, resolved));
         return LocalEcosystemHealth.capture(pool.gameTick(), settings.inheritanceRadiusChunks(),
                 settings.inheritanceOutcomeWindowTicks(), pool.recentEvidence(origin, settings.inheritanceRadiusChunks(),
-                        settings.inheritanceOutcomeWindowTicks()), artifacts::resolveByStorageKey);
+                        settings.inheritanceOutcomeWindowTicks()), competition,
+                key -> resolved.computeIfAbsent(key, artifacts::resolveByStorageKey));
+    }
+    private boolean isCurrent(LocalInheritancePool.ParentCandidate candidate, java.util.Map<String, Artifact> resolved) {
+        Artifact item = resolved.computeIfAbsent(candidate.storageKey(), artifacts::resolveByStorageKey);
+        if (item == null) throw new IllegalStateException("Missing reproductive parent profile " + candidate.storageKey());
+        return item.getArtifactSeed() == candidate.seed() && item.getGenomeRevision() == candidate.genomeRevision();
     }
     public void advanceTick() { pool.advanceTick(RuntimeSettings.get().inheritanceOutcomeWindowTicks()); }
     public void observe(AbilityOutcomeObservation observation) {
@@ -44,11 +53,8 @@ public final class LocalEcosystem {
         Objects.requireNonNull(origin); Objects.requireNonNull(random);
         var settings = RuntimeSettings.get();
         var resolved = new java.util.HashMap<String, Artifact>();
-        var selected = pool.choose(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random, candidate -> {
-            Artifact item = resolved.computeIfAbsent(candidate.storageKey(), artifacts::resolveByStorageKey);
-            if (item == null) throw new IllegalStateException("Missing reproductive parent profile " + candidate.storageKey());
-            return item.getArtifactSeed() == candidate.seed() && item.getGenomeRevision() == candidate.genomeRevision();
-        });
+        var selected = pool.choose(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random,
+                candidate -> isCurrent(candidate, resolved));
         Artifact parent = selected == null ? null : resolved.get(selected.storageKey());
         long seed;
         do { seed = random.nextLong(); } while (seed == 0);
