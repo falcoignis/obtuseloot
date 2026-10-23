@@ -47,6 +47,8 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
    score normalization while retaining the soft cap for its own later ablation.
    Read `docs/top-three-compression-ablation.md`, `docs/score-normalization-ablation.md`
    and refresh their review/validation state; other aids remain.
+   On 2026-10-22 the owner selected the direct blanket gene-reinforcement ablation next;
+   read `docs/blanket-gene-reinforcement-ablation.md`. The soft cap remains a later candidate.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
 
 Unless the owner says otherwise, work from the top. When a request touches a later item, say where it sits in this order.
@@ -120,7 +122,7 @@ docker run --rm --user 1000:1000 -v "$PWD":/src -w /src \
 - **Grouped PRs.** Batch related fixes, for example one "restore green baseline" PR. The owner reviews and merges unless explicitly authorizing a particular merge. Never infer standing merge permission from a one-batch authorization; see `references/decisions.md`.
 - **Show the owner the diff and the test result before pushing or opening a PR.**
 - No branch naming convention has been decided. History uses `codex/<task>` and `claude/<task>-<id>`.
-- Every commit carries the session's attribution trailers (Co-Authored-By / Claude-Session).
+- Every commit carries `Co-Authored-By` plus the agent's `Claude-Session` or `Codex-Session` trailer. For agent-initiated GitHub merges, supply those trailers in the merge-message body using `gh pr merge --body-file`; default merge messages did not include them in the #413–#416 closeout.
 - **Releases** use `v`-prefixed tags through `release.yml`. The next release bumps the version and gets corrected notes. Leave `0.9.50-beta` alone.
 
 ## Key engine facts
@@ -131,6 +133,7 @@ These are the facts most likely to matter. The full verified map, with the scaff
 - **First measured effects:** Gentle Harvest replants with an existing drop after protection checks; Material Insight reports the inspected block's material, light and growth. Unfinished live effects have no measurement. Live selection uses implemented catalog entries and retains executable originals for unsupported variants; direct unsupported definitions return no-op. Offline classification is marked separately in telemetry and is not evidence of gameplay success. Read `docs/measured-ability-effects.md` in the repository for limitations and required server validation.
 - **Heritable performance:** the owner requires inherited genes to change real benefits and tradeoffs. The first follow-up expresses Double Jump kinetic bias through a catalog-owned output/recovery model and feeds observed response/cost into item utility and local reproduction. Other effects remain fixed/configurable; read `docs/heritable-ability-performance.md` and refresh its test/review state. This does not establish natural niche formation. The durable-evolution follow-up moves genetic changes out of profile lookup and into explicit state transitions, with saved revisions and activation flags; read `docs/durable-genome-evolution.md`.
 - **Revision fitness:** measured genetic experience and local reproductive evidence belong to the producing seed/revision; only current genes enter reproduction. Offspring retain their parent seed/revision and start with empty fitness. Read `docs/revision-specific-fitness.md`.
+- **Genetic reinforcement ablation:** aggregate fitness no longer directly prescribes the direction of every gene. Ordinary mutation and measured local reproduction remain, alongside the other existing ecological/context and environmental biases. Controlled swap experiments report parentage, performance, costs and ancestry diversity without imposing target distributions; read `docs/blanket-gene-reinforcement-ablation.md`.
 - **Ecology runs live, not only in simulation.** It is timed by the wall clock (5 s evaluation throttle, 60 s cooldown), and its state is probably not persisted (inference). The decision is to move it to game time and persist it.
 - **Storage failure safety.** PR #400 replaced failure-as-missing-record behavior: startup storage failure is fatal; runtime failure refuses that player's state and retries. Failed saves stay dirty. Never regenerate an identity on a failed load; verify current code against the decision ledger.
 - **Permissions.**
