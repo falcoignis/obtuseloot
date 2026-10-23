@@ -106,3 +106,10 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 - Precision affinity, four baseline facts/60 ticks and 0.5 expression spreads are implementation choices, not a new owner-approved balance target. Record actual applicable facts and recovery separately from jump meters.
 - Keep the catalog-owned model and generic per-item timing extensible; ordinary mutation, measured current-revision reproduction, the configurable chunk radius and optional-plugin/XP requirements remain. Wild mutation stays held.
 - Initial implementation approval did not authorize merging. The owner subsequently instructed "merge" on 2026-10-23, authorizing the completed/tested #421 prerequisite and this Material Insight follow-up after validation. #421 merged as `418807e45706b44e06eaf6697bb3b005d41dda08`. This is scoped to the current batch, not future merges or live deployment.
+
+## 2026-10-23: independent ecosystem-condition experiment
+
+- Owner approved crossing crop/stone targets independently of low/open ceilings, varying ability loadouts/opportunities and tracking output, recovery, parentage and diversity through environmental changes ("do it").
+- This slice is a diagnostic experiment. Keep production selection and mutation unchanged; report limitations and measured deficits rather than forcing population distributions. Assigned loadouts and modeled jump physics do not establish natural ability selection or niches.
+- Four sites, three input arms, separate birth-slot input streams, 12 rounds at 20 ticks and the generation-4 target/generation-6 ceiling changes are test-design choices, not production balance rules.
+- The previous scoped merge authorization covered #421/#422 and has been consumed. This new experiment has no merge or live-deployment authorization. Wild mutation remains held; integration/XP coexistence requirements remain.
