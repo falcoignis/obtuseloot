@@ -59,6 +59,7 @@ class LiveAbilityEffectsTest {
     private boolean dropValid = true;
     private int originalAge = -1;
     private int x = 100;
+    private long gameTick = 200;
     private GameMode gameMode = GameMode.SURVIVAL;
 
     @BeforeEach
@@ -68,7 +69,8 @@ class LiveAbilityEffectsTest {
             case "getEnvironment" -> World.Environment.NORMAL;
             case "isChunkLoaded" -> false;
             case "getUID" -> new UUID(0, 10);
-            case "getGameTime" -> 200L;
+            case "getGameTime" -> gameTick;
+            case "getMinHeight" -> -64;
             case "getSpawnLocation" -> new Location(world, 0, 64, 0);
             default -> unexpected(method);
         });
@@ -222,7 +224,8 @@ class LiveAbilityEffectsTest {
             case "getEnvironment" -> World.Environment.NORMAL;
             case "isChunkLoaded" -> false;
             case "getUID" -> new UUID(0, 10);
-            case "getGameTime" -> 200L;
+            case "getGameTime" -> gameTick;
+            case "getMinHeight" -> -64;
             case "getSpawnLocation" -> new Location(world, 0, 64, 100);
             default -> unexpected(method);
         });
@@ -238,11 +241,12 @@ class LiveAbilityEffectsTest {
     }
 
     @Test
-    void materialInsightSendsAnActualReportAndCountsDelivery() {
+    void materialInsightSendsAnActualReportAndCountsDeliveredFacts() {
         current = data(Material.WHEAT, 4);
         var result = execute("precision.material_insight", inspection(EquipmentSlot.HAND));
         assertEquals(AbilityExecutionStatus.SUCCESS, result.status());
-        assertEquals(1.0, result.observedAmount());
+        assertEquals(4.0, result.observedAmount());
+        assertEquals(60, result.performance().recoveryTicks());
         assertEquals(1, messages.size());
         assertTrue(messages.getFirst().contains("growth 4/7"));
         assertTrue(messages.getFirst().contains("light 12"));
@@ -288,6 +292,7 @@ class LiveAbilityEffectsTest {
         assertNotNull(originalKey);
         assertEquals(originalKey, execute(definition.id(), inspection(EquipmentSlot.HAND)).observationKey());
         for (int i = 0; i < 30; i++) {
+            gameTick += 120;
             x = 100 + i;
             var context = context(varied, definition, inspection(EquipmentSlot.HAND));
             var result = executor.execute(definition, context, 1);
@@ -461,12 +466,15 @@ class LiveAbilityEffectsTest {
     private Artifact artifact() {
         Artifact artifact = new Artifact(holder, "wooden_sword");
         artifact.setArtifactSeed(19);
+        var traits = new java.util.EnumMap<>(artifact.getGenome().traits());
+        traits.put(obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY, .5);
+        artifact.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(19, traits));
         return artifact;
     }
 
     private AbilityEventContext context(Artifact artifact, AbilityDefinition definition, Event event) {
         return new AbilityEventContext(definition.trigger(), artifact, new ArtifactReputation(), 1,
-                "test-live", AbilityRuntimeContext.intentional(AbilitySource.OTHER), event);
+                "test-live", AbilityRuntimeContext.intentional(AbilitySource.OTHER), event).withGameTick(gameTick);
     }
 
     private AbilityDefinition definition(String id) {

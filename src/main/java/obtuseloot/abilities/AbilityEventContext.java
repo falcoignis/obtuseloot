@@ -8,9 +8,26 @@ public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, Art
                                   double value, String source,
                                   AbilityRuntimeContext runtimeContext, Event liveEvent, boolean liveExecution,
                                   obtuseloot.ecology.WorldPosition position, AbilityActivation activation,
-                                  obtuseloot.abilities.genome.GenomeRevision genomeRevision) {
+                                  obtuseloot.abilities.genome.GenomeRevision genomeRevision, long gameTick) {
     public AbilityEventContext {
+        if (gameTick < -1) throw new IllegalArgumentException("Invalid action game tick");
         if (position == null && liveExecution) position = obtuseloot.ecology.WorldPosition.fromEvent(liveEvent);
+    }
+    public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
+                               double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent,
+                               boolean liveExecution, obtuseloot.ecology.WorldPosition position, AbilityActivation activation,
+                               obtuseloot.abilities.genome.GenomeRevision genomeRevision) {
+        this(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation,
+                genomeRevision, captureGameTick(liveExecution));
+    }
+    private static long captureGameTick(boolean live) {
+        var plugin = obtuseloot.ObtuseLoot.get();
+        return live && plugin != null && plugin.getLocalEcosystem() != null
+                ? plugin.getLocalEcosystem().pool().gameTick() : -1;
+    }
+    public AbilityEventContext withGameTick(long tick) {
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent,
+                liveExecution, position, activation, genomeRevision, tick);
     }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent,
@@ -28,10 +45,10 @@ public record AbilityEventContext(AbilityTrigger trigger, Artifact artifact, Art
         this(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, null);
     }
     public AbilityEventContext withPosition(obtuseloot.ecology.WorldPosition location) {
-        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location, activation, genomeRevision);
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, location, activation, genomeRevision, gameTick);
     }
     public AbilityEventContext withActivation(AbilityActivation activation) {
-        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation, genomeRevision);
+        return new AbilityEventContext(trigger, artifact, reputation, value, source, runtimeContext, liveEvent, liveExecution, position, activation, genomeRevision, gameTick);
     }
     public AbilityEventContext(AbilityTrigger trigger, Artifact artifact, ArtifactReputation reputation,
                                double value, String source, AbilityRuntimeContext runtimeContext, Event liveEvent) {

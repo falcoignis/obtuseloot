@@ -12,6 +12,22 @@ import java.util.*;
 public class Artifact {
     private static final int MAX_HISTORY_ENTRIES = 120;
 
+    private Map<String, Long> abilityRecovery = new TreeMap<>();
+    private Set<String> executingAbilities = new HashSet<>();
+    // A new genome instance for the same physical identity continues even an in-flight lease.
+    void continueAbilityRuntimeFrom(Artifact previous) {
+        abilityRecovery = previous.abilityRecovery;
+        executingAbilities = previous.executingAbilities;
+    }
+    public long abilityReadyAt(String ability) { return abilityRecovery.getOrDefault(ability, 0L); }
+    public Map<String, Long> abilityRecoverySnapshot() { return Collections.unmodifiableMap(new TreeMap<>(abilityRecovery)); }
+    public void setAbilityReadyAt(String ability, long tick) {
+        if (ability == null || ability.isBlank() || tick < 0) throw new IllegalArgumentException("Invalid ability recovery");
+        if (tick == 0) abilityRecovery.remove(ability); else abilityRecovery.put(ability, tick);
+    }
+    public boolean beginAbilityExecution(String ability) { return executingAbilities.add(Objects.requireNonNull(ability)); }
+    public void endAbilityExecution(String ability) { executingAbilities.remove(ability); }
+
     private ArtifactGenome inheritedGenome;
     private long genomeRevision;
     private String genomeEvolutionState;

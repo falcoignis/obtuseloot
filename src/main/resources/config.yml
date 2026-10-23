@@ -358,3 +358,8 @@ abilities:
     enabled: false
     upward-velocity: 0.42
     cooldown-ticks: 60
+
+  # Precision expresses 0.5–1.5 times these baselines. Only applicable facts are sent.
+  material-insight:
+    base-facts: 4
+    recovery-ticks: 60
