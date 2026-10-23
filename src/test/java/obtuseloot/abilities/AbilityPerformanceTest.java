@@ -28,7 +28,7 @@ class AbilityPerformanceTest {
     }
     @Test void otherCatalogEntriesKeepFixedPerformanceAndRegistrationBuildersRetainTheModel() {
         var catalog = new AbilityRegistry();
-        for (var entry : catalog.registrations()) if (!entry.template().id().equals("mobility.double_jump"))
+        for (var entry : catalog.registrations()) if (!java.util.Set.of("mobility.double_jump", "precision.material_insight").contains(entry.template().id()))
             assertEquals(AbilityPerformance.FIXED, entry.performanceModel().express(genome(1)));
         var original = catalog.registrationById("mobility.double_jump");
         assertSame(original.performanceModel(), original.withLiveEffect(original.liveEffect()).performanceModel());

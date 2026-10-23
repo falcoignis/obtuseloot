@@ -99,3 +99,10 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 - **Branch naming convention** for new work. History uses `codex/<task>` and `claude/<task>-<id>`.
 
 - **HomesteadCraft test and deploy path.** Testing backends versus a local disposable server first. Not decided.
+
+## 2026-10-23: second inherited ability tradeoff
+
+- Owner approved the suggestion to give Material Insight more information per inspection versus longer recovery, and test it alongside Double Jump across generations and changing conditions ("do it").
+- Precision affinity, four baseline facts/60 ticks and 0.5 expression spreads are implementation choices, not a new owner-approved balance target. Record actual applicable facts and recovery separately from jump meters.
+- Keep the catalog-owned model and generic per-item timing extensible; ordinary mutation, measured current-revision reproduction, the configurable chunk radius and optional-plugin/XP requirements remain. Wild mutation stays held.
+- Initial implementation approval did not authorize merging. The owner subsequently instructed "merge" on 2026-10-23, authorizing the completed/tested #421 prerequisite and this Material Insight follow-up after validation. #421 merged as `418807e45706b44e06eaf6697bb3b005d41dda08`. This is scoped to the current batch, not future merges or live deployment.

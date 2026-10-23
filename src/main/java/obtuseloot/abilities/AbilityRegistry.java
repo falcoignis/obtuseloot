@@ -37,7 +37,9 @@ public class AbilityRegistry {
                         metadata(Set.of("informational-interpretation", "environmental-sensing"), Set.of("chunk-change"), Set.of("watchful", "exploration"), 0.68D, 0.76D, 0.84D, 0.15D, 0.18D, 0.46D)),
                 template("precision.material_insight", "Material Insight", AbilityCategory.SENSING_INFORMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_BLOCK_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
                         "Inspected blocks whisper practical context and odd utility lore", "broader material lexicon", "drift adds cryptic readings", "awakening clarifies odd traits", "convergence links shared interpretations", "memory curates known materials",
-                        metadata(Set.of("information", "world-interpretation"), Set.of("intentional-interact"), Set.of("watchful", "curious"), 0.61D, 0.44D, 0.90D, 0.25D, 0.24D, 0.51D)).withLiveEffect(new MaterialInsightEffect()),
+                        metadata(Set.of("information", "world-interpretation"), Set.of("intentional-interact"), Set.of("watchful", "curious"), 0.61D, 0.44D, 0.90D, 0.25D, 0.24D, 0.51D)).withLiveEffect(new MaterialInsightEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY, 0.50D, 0.50D)),
 
                 template("mobility.footprint_memory", "Footprint Memory", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.NAVIGATION_ANCHOR,
                         "Sneak-use marks a location and later points back to it", "longer recall range", "drift can misalign memory", "awakening anchors dimension-safe recall", "convergence broadcasts anchor to allies", "memory persists trusted waypoints",

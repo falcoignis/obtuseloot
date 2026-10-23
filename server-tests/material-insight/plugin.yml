@@ -1,0 +1,5 @@
+name: ObtuseLootInsightProbe
+version: 1
+main: obtuseloot.servertest.InsightProbe
+api-version: '26.2'
+depend: [ObtuseLoot]

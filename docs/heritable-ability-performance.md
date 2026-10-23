@@ -111,3 +111,7 @@ native 26.2 client or actual AuraSkills/claims/anticheat combinations. Purpur ma
 published MD5 (no published SHA-256 at that endpoint). The existing missing-dashboard-data
 startup warning remains recorded. Live deployment is not authorized and Double Jump
 remains disabled by default pending the intended plugin combination tests.
+
+The second inherited effect is [Material Insight](material-insight-performance.md):
+precision affinity expresses information depth versus durable per-item recovery.
+Its mixed-ability experiment reports facts and jump meters separately.

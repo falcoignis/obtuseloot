@@ -18,7 +18,13 @@ public final class ArtifactProfileCodec {
         var yaml = new YamlConfiguration();
         writeArtifact(yaml, artifact);
         writeReputation(yaml, artifact.getItemReputation());
-        yaml.set("profile-version", 3);
+        yaml.set("profile-version", 4);
+        yaml.set("ability-recovery.count", artifact.abilityRecoverySnapshot().size());
+        int recoveryIndex = 0;
+        for (var entry : artifact.abilityRecoverySnapshot().entrySet()) {
+            String path = "ability-recovery.entries." + recoveryIndex++ + ".";
+            yaml.set(path + "id", entry.getKey()); yaml.set(path + "ready-at", entry.getValue());
+        }
         yaml.set("genome.revision", artifact.getGenomeRevision());
         yaml.set("genome.evolution-state", artifact.getGenomeEvolutionState());
         yaml.set("inheritance.parent", artifact.getParentStorageKey());
@@ -41,7 +47,7 @@ public final class ArtifactProfileCodec {
         try {
             var yaml = new YamlConfiguration();
             yaml.loadFromString(encoded);
-            if (yaml.getInt("profile-version", 0) != 3 || !key.equals(yaml.getString("artifact.storage-key"))) {
+            if (yaml.getInt("profile-version", 0) != 4 || !key.equals(yaml.getString("artifact.storage-key"))) {
                 throw new IllegalArgumentException("Invalid per-item profile identity/version");
             }
             if (!yaml.isString("artifact.owner-id") || !yaml.isString("artifact.latent-lineage")
@@ -83,6 +89,21 @@ public final class ArtifactProfileCodec {
                 throw new IllegalArgumentException("Invalid parent genome attribution");
             artifact.setGenomeFitnessHistory(obtuseloot.evolution.GenomeFitnessHistory.readFrom(yaml, "genome.fitness"));
             artifact.setInheritanceGeneration(yaml.getInt("inheritance.generation"));
+            var recovery = yaml.getConfigurationSection("ability-recovery.entries");
+            int recoveryCount = recovery == null ? 0 : recovery.getKeys(false).size();
+            if (!yaml.isInt("ability-recovery.count") || yaml.getInt("ability-recovery.count") != recoveryCount)
+                throw new IllegalArgumentException("Incomplete ability recovery state");
+            var ids = new HashSet<String>();
+            for (String name : recovery == null ? Set.<String>of() : recovery.getKeys(false)) {
+                String path = "ability-recovery.entries." + name + ".";
+                String ability = yaml.getString(path + "id");
+                if (ability == null || ability.isBlank() || !ids.add(ability)
+                        || !yaml.isLong(path + "ready-at") && !yaml.isInt(path + "ready-at"))
+                    throw new IllegalArgumentException("Invalid ability recovery state");
+                long ready = yaml.getLong(path + "ready-at");
+                if (ready <= 0) throw new IllegalArgumentException("Invalid stored recovery deadline");
+                artifact.setAbilityReadyAt(ability, ready);
+            }
             artifact.setItemReputation(readReputation(yaml));
             return artifact;
         } catch (Exception exception) {

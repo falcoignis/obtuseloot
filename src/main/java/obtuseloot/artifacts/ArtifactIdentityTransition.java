@@ -14,6 +14,7 @@ public record ArtifactIdentityTransition(
             throw new IllegalArgumentException("Artifact identity transition must replace the discarded instance.");
         }
         if (discarded != null && Objects.equals(discarded.getArtifactStorageKey(), replacement.getArtifactStorageKey())) {
+            replacement.continueAbilityRuntimeFrom(discarded);
             var genome = discarded.getGenome();
             replacement.setGenome(new obtuseloot.abilities.genome.ArtifactGenome(replacement.getArtifactSeed(),
                     genome.traits(), genome.latentTraits(), genome.activatedLatentTraits()));

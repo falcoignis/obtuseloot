@@ -54,7 +54,8 @@ public final class AbilityExecutor {
             if (!registration.supports(definition)) {
                 return unimplemented(definition, context, "effect-variant-not-implemented");
             }
-            return registration.liveEffect().execute(definition, context, stage);
+            return registration.liveEffect().execute(definition, context, stage,
+                    registration.performanceModel().express(context.artifact().getGenome()));
         }
         // A live event must never turn an unimplemented template's label into success.
         if (context.liveExecution()) {

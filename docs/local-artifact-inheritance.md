@@ -131,3 +131,6 @@ Natural niche formation, broader heritable performance, measured lineage extinct
 co-evolving environmental pressure and removal/ablation of the old selection aids remain
 necessary before claiming a fully functioning emergent ecosystem. The old fixed event
 rotation and niche machinery are not removed or presented as proof by this slice.
+
+The Material Insight follow-up advances per-item profiles to version 4 for mandatory
+ability recovery state; ecology remains version 5. See [its performance design](material-insight-performance.md).
