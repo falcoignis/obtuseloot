@@ -38,21 +38,42 @@ public final class LocalInheritancePool {
     public List<ParentCandidate> candidates(WorldPosition origin, int radiusChunks, long windowTicks) {
         prune(windowTicks);
         var candidates = new ArrayList<ParentCandidate>();
-        for (Evidence parent : evidence.values()) {
-            var profiles = new LinkedHashMap<String, OutcomeUtilityProfile>();
-            int attempts = 0;
-            for (Sample sample : parent.samples) {
-                if (!sample.position.within(origin, radiusChunks)) continue;
-                String key = sample.outcome.mechanic() + "@" + sample.outcome.trigger();
-                profiles.computeIfAbsent(key, OutcomeUtilityProfile::new).ingest(sample.outcome, new ValidatedOutcomeClassifier());
-                attempts++;
-            }
-            double utility = profiles.values().stream().map(OutcomeUtilityProfile::snapshot).mapToDouble(MechanicUtilitySignal::validatedUtility).sum();
-            double fitness = attempts == 0 ? 0 : utility / attempts;
-            if (Double.isFinite(fitness) && fitness > 0) candidates.add(new ParentCandidate(parent.identity.key(), parent.identity.genome().seed(), parent.identity.genome().revision(), parent.lineage, fitness, attempts));
+        for (LocalEvidence local : recentEvidence(origin, radiusChunks, windowTicks)) {
+            var candidate = local.individual();
+            if (Double.isFinite(candidate.fitness()) && candidate.fitness() > 0) candidates.add(candidate);
         }
         return List.copyOf(candidates);
     }
+    /** A read-only census, including failures; it never advances time or prunes persisted evidence. */
+    public List<LocalEvidence> recentEvidence(WorldPosition origin, int radiusChunks, long windowTicks) {
+        Objects.requireNonNull(origin);
+        if (radiusChunks <= 0 || windowTicks <= 0) throw new IllegalArgumentException("Positive radius/window required");
+        var result = new ArrayList<LocalEvidence>();
+        long cutoff = gameTick - windowTicks;
+        for (Evidence parent : evidence.values()) {
+            var profiles = new LinkedHashMap<String, OutcomeUtilityProfile>();
+            var performance = new LinkedHashMap<String, PerformanceAccumulator>();
+            int attempts = 0;
+            for (Sample sample : parent.samples) {
+                if (sample.tick <= cutoff || !sample.position.within(origin, radiusChunks)) continue;
+                String key = sample.outcome.mechanic() + "@" + sample.outcome.trigger();
+                profiles.computeIfAbsent(key, OutcomeUtilityProfile::new).ingest(sample.outcome, new ValidatedOutcomeClassifier());
+                if (sample.outcome.performance() != null)
+                    performance.computeIfAbsent(key, ignored -> new PerformanceAccumulator()).add(sample.outcome.performance());
+                attempts++;
+            }
+            if (attempts == 0) continue;
+            var activities = new LinkedHashMap<String, MechanicUtilitySignal>();
+            profiles.forEach((key, profile) -> activities.put(key, profile.snapshot()));
+            double utility = activities.values().stream().mapToDouble(MechanicUtilitySignal::validatedUtility).sum();
+            var measured = new LinkedHashMap<String, PerformanceSummary>();
+            performance.forEach((key, value) -> measured.put(key, value.snapshot()));
+            result.add(new LocalEvidence(new ParentCandidate(parent.identity.key(), parent.identity.genome().seed(),
+                    parent.identity.genome().revision(), parent.lineage, utility / attempts, attempts), activities, measured));
+        }
+        return List.copyOf(result);
+    }
+
     public ParentCandidate choose(WorldPosition origin, int radiusChunks, long windowTicks, RandomGenerator random) {
         return choose(origin, radiusChunks, windowTicks, random, candidate -> true);
     }
@@ -166,6 +187,23 @@ public final class LocalInheritancePool {
         } catch (Exception exception) { throw new IllegalStateException("Unreadable local ecology state; refusing a silent reset", exception); }
     }
     public record ParentCandidate(String storageKey, long seed, long genomeRevision, String lineageId, double fitness, int attempts) { }
+    public record PerformanceSummary(long samples, double meanBenefit, double meanRecoveryTicks) { }
+    public record LocalEvidence(ParentCandidate individual, Map<String, MechanicUtilitySignal> activities,
+                                Map<String, PerformanceSummary> performance) {
+        public LocalEvidence {
+            activities = Collections.unmodifiableMap(new LinkedHashMap<>(activities));
+            performance = Collections.unmodifiableMap(new LinkedHashMap<>(performance));
+        }
+    }
+    private static final class PerformanceAccumulator {
+        long count; double benefit, recovery;
+        void add(AbilityPerformanceMeasurement sample) {
+            count++;
+            benefit += (sample.benefit() - benefit) / count;
+            recovery += (sample.recoveryTicks() - recovery) / count;
+        }
+        PerformanceSummary snapshot() { return new PerformanceSummary(count, benefit, recovery); }
+    }
     private record Identity(String key, GenomeRevision genome) { }
     private record Sample(long tick, WorldPosition position, UtilityOutcomeRecord outcome) { }
     private static final class Evidence {

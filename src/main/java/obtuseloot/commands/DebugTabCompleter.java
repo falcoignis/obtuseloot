@@ -18,7 +18,7 @@ public class DebugTabCompleter {
     private static final List<String> SEED_ACTIONS = List.of("show", "reroll", "set", "export", "import");
     private static final List<String> ABILITY_ACTIONS = List.of("show", "refresh", "explain", "tree");
     private static final List<String> PERSISTENCE_ACTIONS = List.of("backend", "test", "migrate");
-    private static final List<String> ECOSYSTEM_ACTIONS = List.of("bias", "balance");
+    private static final List<String> ECOSYSTEM_ACTIONS = List.of("health", "bias", "balance");
     private static final List<String> GENOME_ACTIONS = List.of("interactions");
     private static final List<String> PROJECTION_ACTIONS = List.of("cache", "stats");
     private static final List<String> SUBSCRIPTION_ACTIONS = List.of("stats");
@@ -98,6 +98,7 @@ public class DebugTabCompleter {
             return false;
         }
         String sub = args[1].toLowerCase(Locale.ROOT);
+        if (args.length == 4 && "ecosystem".equals(sub) && "health".equalsIgnoreCase(args[2])) return true;
         boolean base = (args.length == 3 && List.of("inspect", "evolve", "drift", "awaken", "fuse", "lore", "reset", "save").contains(sub))
                 || (args.length == 4 && "rep".equals(sub) && "reset".equalsIgnoreCase(args[2]))
                 || (args.length == 5 && "rep".equals(sub) && ("set".equalsIgnoreCase(args[2]) || "add".equalsIgnoreCase(args[2])))
