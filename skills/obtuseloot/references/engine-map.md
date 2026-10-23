@@ -1,5 +1,13 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-23 independent-condition diagnostic:** four crossed target/ceiling sites
+and varied assigned loadouts/opportunities retain the production sampler. An
+inspection-only witness shows crop/stone evidence at the same column height
+receives identical pooled weights despite different target-specific tradeoffs.
+The population experiment records a stone/sky output/cost deficit and keeps
+other outcomes separate; it adopts no context rule or health verdict. Read
+[`docs/independent-ecosystem-conditions.md`](../../../docs/independent-ecosystem-conditions.md).
+
 **2026-10-23 native habitat validation:** the first overhead-relative model selected
 neighboring-room parents for native low-ceiling loot because airborne and chest
 reference heights differed. The correction captures lower/upper column boundaries,
