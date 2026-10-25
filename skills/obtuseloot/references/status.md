@@ -1,14 +1,16 @@
 # ObtuseLoot project status (volatile; dated entries)
 
-## 2026-10-25 UTC: recovery counted once, shared recovery, holder targets (local, not yet published)
+## 2026-10-25 UTC: recovery counted once, shared recovery, holder targets (merged)
 
+- **Merged:** #424 merged into main as `397789ce61444c1f1f51a2199cbe85d7e3afe2d5` on 2026-10-25, carrying #423 (`eaafdc0`, marked merged by GitHub). Scoped owner authorization ("retarget and carry both, then merge"); no standing merge permission. CI passed on head `0e4b8df`.
 - Branch `feat/shared-recovery-holder-context` from #423 head `eaafdc08817f59e1a7ee62df13f9a9839fa7c12f`; includes the held holder-context work with total per-target fitness. Plasticity is excluded (owner, 2026-10-25). No merge or live-deployment authorization.
 - Parent and per-target fitness are total validated utility; recovery no longer divides a use's utility. Abilities on one item share recovery (`Artifact.abilitiesReadyAt`). See `docs/recovery-selection-research.md`.
 - Results (16 seeds, 64 items per site, 40 generations): two-ability birth share 0.50 to 0.39 (16/16); per-site holders split crop/stone precision 0.56 / 0.23 (16/16), a shared holder does not (5/16). Founder Simpson 0.57 pooled, 0.60 shared holder, 0.47 per-site.
 - The three runs reproduce the research outputs byte for byte without plasticity. Full clean Docker suite: **597 tests**, zero failures/errors, 5 skipped (opt-in `-Dobtuseloot.experiments=true` runs), exit 0, **41:15 min**. Five checks pinned to the recovery divisor were updated; each passed with it and failed without it.
 
-## 2026-10-24 UTC: holder target context (local snapshot, not yet published)
+## 2026-10-24 UTC: holder target context (superseded; merged through #424)
 
+- The branch below was never published. Its change merged through #424 with total per-target fitness; the per-attempt numbers below are historical.
 - Owner selected holder-activity target context ("go with option 1") after the #423 counterexample. Branch `feat/holder-target-context`, stacked on unmerged #423 head `eaafdc08817f59e1a7ee62df13f9a9839fa7c12f`. No merge or live-deployment authorization.
 - Ecology storage version 6 records each sample's holder and exact action-target material. Births weight current local parents by the receiving holder's recent target mix; no holder or no overlap keeps pooled fitness. `MixedAbilityEvolutionTest` is pinned to pooled selection. See `docs/holder-target-context.md`.
 - Witness: no-holder pooled weights stay **1.2 / 0.954545**; crop and stone holders receive exactly the crop-only **1.2 / 1.363636** and stone-only **1.2 / 0.545455** weights at the same origin, surviving encode/decode.
