@@ -47,7 +47,7 @@ class AbilityPerformanceTest {
         // Controlled measurement fixtures, not claims about a natural live population.
         double lowOpen = utility(.6, 30), highOpen = utility(1.7, 90);
         assertTrue(highOpen > lowOpen, "Additional measured clearance can pay for a longer recovery");
-        assertTrue(utility(.6, 30) > utility(.6, 90), "With equal clearance, the cheaper action wins");
+        assertEquals(utility(.6, 30), utility(.6, 90), "One use is valued by its benefit; recovery costs later uses, not this one");
         assertTrue(utility(0, 30) < 0, "No observed benefit still earns a failure penalty");
         assertEquals(utility(0, 30), utility(0, 90), "Recovery never erases a failed-attempt penalty");
     }

@@ -81,9 +81,9 @@ Both origins have the same three-block column, 80 blocks apart. The high-precisi
 item sends five crop facts versus two for low precision; both send two stone facts.
 Their recovery is 90/30 ticks. The unchanged selector pools the two targets into
 identical weights at both origins. Its captured context contains column geometry,
-not target properties. The equality assertion records this baseline limitation;
-a future context change should intentionally replace that witness, not preserve
-aliasing as a health requirement. These weights are the existing classifier's
+not target properties. The equality assertion records this baseline limitation
+for holder-blind queries. [Holder target context](holder-target-context.md) now
+separates the two targets for holders with measured activity. These weights are the existing classifier's
 units, not a calibrated human-value scale.
 
 Frequent-opportunity control: over 12 offered rounds at ticks 0..220, the real

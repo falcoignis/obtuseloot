@@ -124,7 +124,10 @@ class HabitatCompetitionTest {
     @Test void storageRequiresCapturedHabitatAndRejectsOldOrIncompleteFormats() {
         var pool = new LocalInheritancePool(); observe(pool, LocalInheritancePoolTest.item(1), at(3), 1, "one");
         String encoded = pool.encode();
-        for (String invalid : List.of(encoded.replace("version: 5", "version: 4"),
+        assertTrue(encoded.contains("target: none"));
+        for (String invalid : List.of(encoded.replace("version: 6", "version: 5"),
+                encoded.replace("target: none", "target: Not A Material"), encoded.replaceAll("(?m)^\\s*target: none\\n", ""),
+                encoded.replaceAll("(?m)^\\s*holder: .*\\n", ""),
                 encoded.replace("kind: roofed", "kind: bogus"), encoded.replace("column-height-blocks: 3", "column-height-blocks: -1"),
                 encoded.replace("column-height-blocks: 3", "column-height-blocks: broken"), encoded.replace("kind: roofed", "kind: sky")))
             assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode(invalid));

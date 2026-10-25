@@ -3,6 +3,7 @@ package obtuseloot.abilities.effects;
 import obtuseloot.abilities.AbilityDefinition;
 import obtuseloot.abilities.AbilityEventContext;
 import obtuseloot.abilities.AbilityExecutionResult;
+import obtuseloot.abilities.AbilityExecutionStatus;
 import obtuseloot.abilities.AbilityOutcomeType;
 import obtuseloot.abilities.LiveAbilityEffect;
 import org.bukkit.Bukkit;
@@ -34,6 +35,12 @@ public final class GentleHarvestEffect implements LiveAbilityEffect {
                 || !Bukkit.isPrimaryThread() || !event.getPlayer().isOnline()
                 || event.getPlayer().getGameMode() != GameMode.SURVIVAL) {
             return AbilityExecutionResult.observed(definition, context, AbilityOutcomeType.CROP_REPLANT, 0, "harvest-unavailable", null);
+        }
+        // No recovery of its own, but it shares the item's recovery from other abilities. Without the clock none applies.
+        if (context.gameTick() >= 0 && context.gameTick() < context.artifact().abilitiesReadyAt()) {
+            return new AbilityExecutionResult(definition.id(), definition.mechanic(), context.trigger(),
+                    context.artifact().getArtifactStorageKey(), context.artifact().getOwnerId(), AbilityExecutionStatus.SUPPRESSED,
+                    AbilityOutcomeType.CROP_REPLANT, false, "ability-recovering", null);
         }
         Player player = event.getPlayer();
         Block block = event.getBlock();

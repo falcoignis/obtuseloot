@@ -26,6 +26,16 @@ class MaterialInsightLivePerformanceTest {
             assertEquals(2, f.messages.size());
         }
     }
+    @Test void anotherAbilitysRecoveryOnTheSameItemBlocksInspection() throws Exception {
+        try (var f = new InformationFixture()) {
+            var item = f.item(1, 1); item.setAbilityReadyAt("mobility.double_jump", 150);
+            assertEquals(AbilityExecutionStatus.SUPPRESSED, f.inspect(item, 149).status());
+            assertEquals(0, item.abilityReadyAt(ID)); assertTrue(f.messages.isEmpty());
+            assertEquals(AbilityExecutionStatus.SUCCESS, f.inspect(item, 150).status());
+            assertEquals(240, item.abilityReadyAt(ID)); assertEquals(240, item.abilitiesReadyAt());
+            var other = f.item(2, 1); assertEquals(AbilityExecutionStatus.SUCCESS, f.inspect(other, 150).status(), "Recovery is per item, not per holder");
+        }
+    }
     @Test void sameItemReplacementPreservesCommittedRecoveryButNewIdentityDoesNot() throws Exception {
         try (var f = new InformationFixture()) {
             var item = f.item(1, 1); f.inspect(item, 100);

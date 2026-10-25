@@ -20,6 +20,8 @@ public class Artifact {
         executingAbilities = previous.executingAbilities;
     }
     public long abilityReadyAt(String ability) { return abilityRecovery.getOrDefault(ability, 0L); }
+    /** Abilities on one item share recovery: the item is ready only once every recorded recovery has elapsed. */
+    public long abilitiesReadyAt() { return abilityRecovery.values().stream().mapToLong(Long::longValue).max().orElse(0L); }
     public Map<String, Long> abilityRecoverySnapshot() { return Collections.unmodifiableMap(new TreeMap<>(abilityRecovery)); }
     public void setAbilityReadyAt(String ability, long tick) {
         if (ability == null || ability.isBlank() || tick < 0) throw new IllegalArgumentException("Invalid ability recovery");

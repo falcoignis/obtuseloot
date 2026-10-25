@@ -8,6 +8,7 @@ import obtuseloot.evolution.*;
 import obtuseloot.persistence.*;
 import obtuseloot.reputation.ArtifactReputation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import java.nio.file.*;
 import java.util.*;
 import java.util.random.RandomGenerator;
@@ -16,6 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Controlled input experiment, not native play or procedurally selected loadouts. */
 class IndependentConditionsExperimentTest {
     private static final int SITES = 4, COHORT = 16, GENERATIONS = 8, ROUNDS = 12, STEP = 20;
+    /** The pre-registered research runs use 40 generations, so founders need many births to drift or be selected. */
+    private static final int LONG_GENERATIONS = 40;
+    /** Sixteen pre-registered study seeds, disjoint from the four exploratory seeds. */
+    private static final long[] STUDY_SEEDS = {4722, 5722, 6722, 7722, 8722, 9722, 10722, 11722, 12722, 13722, 14722, 15722, 16722, 17722, 18722, 19722};
     private final AbilityRegistry catalog = new AbilityRegistry();
     private final AbilityDefinition jumpDefinition = definition("mobility.double_jump");
     private final AbilityPerformanceModel jump = catalog.registrationById(jumpDefinition.id()).performanceModel();
@@ -25,8 +30,21 @@ class IndependentConditionsExperimentTest {
         final boolean insight, jump;
         Loadout(boolean insight, boolean jump) { this.insight = insight; this.jump = jump; }
     }
+    /** Pooled reproduces the #423 selector; holder modes weight parents by the receiving holder's recent targets. */
+    private enum HolderMode {
+        POOLED("independent-conditions"), SHARED("independent-conditions-holder-shared"), PER_SITE("independent-conditions-holder-site");
+        final String directory;
+        HolderMode(String directory) { this.directory = directory; }
+        UUID holder(int site) { return this == PER_SITE ? new UUID(0, 1000 + site) : InformationFixture.OWNER; }
+        UUID selection(int site) { return this == POOLED ? null : holder(site); }
+    }
+    /** Pre-registered research runs take minutes each; run them with -Dobtuseloot.experiments=true. */
+    @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+    @java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+    @EnabledIfSystemProperty(named = "obtuseloot.experiments", matches = "true")
+    private @interface Experiment { }
     private record Conditions(boolean rich, boolean low) { }
-    private record Run(List<String> generations, List<String> activities, List<String> births) { }
+    private record Run(List<String> generations, List<String> activities, List<String> births, List<String> genes, List<String> candidates) { }
 
     @Test void crossedConditionsAndIndependentSchedulesAreReplayable() {
         for (int generation = 0; generation < GENERATIONS; generation++) {
@@ -51,7 +69,7 @@ class IndependentConditionsExperimentTest {
         assertEquals(Set.of(Loadout.values()), loadouts); assertEquals(Set.of(true, false), offered);
     }
 
-    @Test void frequentOpportunitiesExposeActualRecoveryAndColumnOnlyContextAliasing() throws Exception {
+    @Test void frequentOpportunitiesExposeActualRecoveryAndHolderTargetContextSeparatesAliasedColumns() throws Exception {
         try (var f = new InformationFixture()) {
             var low = f.item(1, 0); var high = f.item(2, 1); int lowCount = 0, highCount = 0;
             for (int round = 0; round < ROUNDS; round++) {
@@ -63,9 +81,17 @@ class IndependentConditionsExperimentTest {
         }
         var crop = counterexample(true, false); var stone = counterexample(false, false); var pooled = counterexample(true, true);
         assertTrue(crop[1] > crop[0], "Five facts can pay for longer recovery on the controlled crop");
-        assertTrue(stone[0] > stone[1], "Identical stone facts favor shorter recovery");
+        assertEquals(stone[0], stone[1], "One identical stone inspection is worth the same; shorter recovery pays through the extra uses counted above");
         assertEquals(pooled[0], pooled[2]); assertEquals(pooled[1], pooled[3]);
+        var holders = holderCounterexample();
+        assertEquals(crop[0], holders[0]); assertEquals(crop[1], holders[1]);
+        assertEquals(stone[0], holders[2]); assertEquals(stone[1], holders[3]);
+        assertEquals(pooled[0], holders[4]); assertEquals(pooled[1], holders[5]);
         var output = Path.of("target", "independent-conditions"); Files.createDirectories(output);
+        Files.writeString(output.resolve("holder-context-counterexample.csv"),
+                "case,low_precision_weight,high_precision_weight\n"
+                + "crop_holder_crop_origin," + holders[0] + "," + holders[1] + "\nstone_holder_crop_origin," + holders[2] + "," + holders[3]
+                + "\nunknown_holder_crop_origin," + holders[4] + "," + holders[5] + "\n");
         Files.writeString(output.resolve("context-counterexample.csv"),
                 "case,low_precision_weight,high_precision_weight\n"
                 + "crop_only," + crop[0] + "," + crop[1] + "\nstone_only," + stone[0] + "," + stone[1]
@@ -73,15 +99,19 @@ class IndependentConditionsExperimentTest {
                 + "\npooled_stone_origin," + pooled[2] + "," + pooled[3] + "\n");
     }
 
-    @Test void compareCrossedTargetsCeilingsLoadoutsAndOpportunities() throws Exception {
+    @Test void compareCrossedTargetsCeilingsLoadoutsAndOpportunities() throws Exception { experiment(HolderMode.POOLED); }
+    @Test void compareSharedHolderTargetContext() throws Exception { experiment(HolderMode.SHARED); }
+    @Test void comparePerSiteHolderTargetContext() throws Exception { experiment(HolderMode.PER_SITE); }
+
+    private void experiment(HolderMode mode) throws Exception {
         var generations = new StringBuilder("seed,arm,selection,changing,generation,site,rich,low,precision_mean,precision_variance,kinetic_mean,kinetic_variance,eligible_parents,pool_fitness,effective_parents,max_parent_share,newborn_founder_simpson,newborn_founders,distinct_parents,cross_target_parents,cross_ceiling_parents,founder_births,unobserved_current_items\n");
         var activities = new StringBuilder("seed,arm,selection,changing,generation,site,item_seed,input_seed,revision,loadout,activity,precision,kinetic,opportunities,unavailable,attempts,cooldown_suppressions,successes,benefit_total,benefit_mean,recovery_mean,unique_reports,revision_utility\n");
         var births = new StringBuilder("seed,arm,selection,changing,generation,site,parent_site,parent_seed,parent_revision,parent_loadout,child_seed,child_loadout,founder,inheritance_generation,genome\n");
         for (long seed : new long[]{722, 1722, 2722, 3722}) for (var arm : Arm.values()) for (boolean neutral : List.of(false, true)) {
-            var steady = run(seed, arm, neutral, false); var changed = run(seed, arm, neutral, true);
+            var steady = run(seed, arm, neutral, false, mode); var changed = run(seed, arm, neutral, true, mode);
             assertEquals(steady.births.subList(0, SITES * COHORT * 4), changed.births.subList(0, SITES * COHORT * 4), "Paired prefixes must match before any condition changes");
             if (seed == 722 && arm == Arm.VARIED_OPPORTUNITIES && !neutral)
-                assertEquals(changed, run(seed, arm, false, true), "Independent state must replay every recorded row");
+                assertEquals(changed, run(seed, arm, false, true, mode), "Independent state must replay every recorded row");
             for (boolean changing : List.of(false, true)) {
                 var result = changing ? changed : steady;
                 String prefix = seed + "," + arm + "," + (neutral ? "neutral" : "measured") + "," + changing + ",";
@@ -90,7 +120,7 @@ class IndependentConditionsExperimentTest {
                 for (var row : result.births) births.append(prefix).append(row).append('\n');
             }
         }
-        var output = Path.of("target", "independent-conditions"); Files.createDirectories(output);
+        var output = Path.of("target", mode.directory); Files.createDirectories(output);
         Files.writeString(output.resolve("generations.csv"), generations); Files.writeString(output.resolve("activities.csv"), activities); Files.writeString(output.resolve("parentage.csv"), births);
         Files.writeString(output.resolve("protocol.txt"), "4 paired seeds; 4 crossed crop/stone x low/sky sites; 16 founders/site; 8 generations.\n"
                 + "Target swap at generation 4, ceiling swap at generation 6; paired steady control and exact independent replay.\n"
@@ -107,10 +137,19 @@ class IndependentConditionsExperimentTest {
                 + "Output/performance describe observed parent cohorts; founder ancestry describes resulting births. Missing mean/utility fields are empty.\n"
                 + "Facts, modeled meters, availability, recovery and existing utility are separate; facts are not proof of learning.\n"
                 + "Fixed cohorts and scripted conditions are not natural extinction, open-ended niches or ecosystem-health certification.\n"
-                + "No production change, coefficient tuning, forced niche, diversity floor or wild mutation.\nreplay_equal=true\n");
+                + "No coefficient tuning, forced niche, diversity floor or wild mutation.\n"
+                + "replay_equal=true\n"
+                + (mode == HolderMode.POOLED ? "" : "selection_context=" + mode + ": births weight current local parents by the receiving holder's recent action-target mix;"
+                + (mode == HolderMode.SHARED ? " one holder owns every site.\n" : " each site has its own holder, so its mix tracks that site's targets (best case; no holder moves between sites).\n")));
     }
 
     private Run run(long seed, Arm arm, boolean neutral, boolean changing) throws Exception {
+        return run(seed, arm, neutral, changing, HolderMode.POOLED);
+    }
+    private Run run(long seed, Arm arm, boolean neutral, boolean changing, HolderMode mode) throws Exception {
+        return run(seed, arm, neutral, changing, GENERATIONS, COHORT, mode);
+    }
+    private Run run(long seed, Arm arm, boolean neutral, boolean changing, int horizon, int cohortSize, HolderMode mode) throws Exception {
         try (var f = new InformationFixture()) {
             var store = new MemoryStore(); var manager = new ArtifactManager(store); var ecosystem = new LocalEcosystem(store, manager);
             var feedback = new ExperienceEvolutionEngine(new ArtifactUsageTracker(), new ArtifactFitnessEvaluator(), new obtuseloot.ecosystem.EnvironmentPressureEngine());
@@ -118,29 +157,32 @@ class IndependentConditionsExperimentTest {
             var randoms = new ArrayList<Random>(); var cohorts = new ArrayList<List<Artifact>>(); var founders = new HashMap<String, Long>(); var inputSeeds = new HashMap<String, Long>();
             for (int site = 0; site < SITES; site++) {
                 randoms.add(new Random(seed + site)); var items = new ArrayList<Artifact>();
-                for (int i = 0; i < COHORT; i++) {
-                    var item = ecosystem.createEquipment(f.holder, EquipmentArchetype.DIAMOND_AXE, position(site, conditions(site, 0, changing)), randoms.get(site));
+                for (int i = 0; i < cohortSize; i++) {
+                    var item = ecosystem.createEquipment(mode.holder(site), EquipmentArchetype.DIAMOND_AXE, position(site, conditions(site, 0, changing)), randoms.get(site), mode.selection(site));
                     assertNull(item.getParentStorageKey()); var genes = new EnumMap<GenomeTrait, Double>(GenomeTrait.class);
                     for (var trait : GenomeTrait.values()) genes.put(trait, .5);
-                    genes.put(GenomeTrait.PRECISION_AFFINITY, (i / 4) / 3.0); genes.put(GenomeTrait.KINETIC_BIAS, (i % 4) / 3.0);
+                    genes.put(GenomeTrait.PRECISION_AFFINITY, (i % 16 / 4) / 3.0); genes.put(GenomeTrait.KINETIC_BIAS, (i % 4) / 3.0);
                     item.setGenome(new ArtifactGenome(item.getArtifactSeed(), genes, genes, Set.of()));
                     item.setLatentLineage("founder-" + item.getArtifactSeed()); manager.saveItem(item); items.add(item); founders.put(item.getArtifactStorageKey(), item.getArtifactSeed()); inputSeeds.put(item.getArtifactStorageKey(), inputSeed(seed, site, 0, i));
                 }
                 cohorts.add(items);
             }
-            var rows = new ArrayList<String>(); var activityRows = new ArrayList<String>(); var births = new ArrayList<String>();
-            for (int generation = 0; generation < GENERATIONS; generation++) {
-                var stats = new HashMap<String, Stats[]>(); var jumpReady = new HashMap<String, Long>();
+            var rows = new ArrayList<String>(); var activityRows = new ArrayList<String>(); var births = new ArrayList<String>(); var geneRows = new ArrayList<String>(); var candidateRows = new ArrayList<String>();
+            for (int generation = 0; generation < horizon; generation++) {
+                var stats = new HashMap<String, Stats[]>();
                 for (var cohort : cohorts) for (var item : cohort) stats.put(item.getArtifactStorageKey(), new Stats[]{new Stats(), new Stats()});
                 for (int round = 0; round < ROUNDS; round++) {
                     if (round > 0) for (int tick = 0; tick < STEP; tick++) ecosystem.advanceTick();
                     for (int site = 0; site < SITES; site++) {
-                        var condition = conditions(site, generation, changing); f.rich = condition.rich;
+                        var condition = conditions(site, generation, changing); f.rich = condition.rich; f.holder = mode.holder(site);
                         for (var item : cohorts.get(site)) {
                             if (round == 1) { item.setEvolutionPath("strider-formed"); assertTrue(genetics.advance(item)); assertEquals(1, item.getGenomeRevision()); }
                             long schedule = inputSeeds.get(item.getArtifactStorageKey());
                             var loadout = loadout(schedule, arm); var counters = stats.get(item.getArtifactStorageKey());
-                            for (int activity = 0; activity < 2; activity++) {
+                            // Shared recovery makes the order matter for two-ability items, so it is a seeded input, not a fixed priority.
+                            int first = new Random(schedule ^ (round * 0x2545f4914f6cdd1dL) ^ 0x7a5c3b1e9d2f4a61L).nextInt(2);
+                            for (int step = 0; step < 2; step++) {
+                                int activity = first ^ step;
                                 if (!offered(schedule, round, activity, arm)) continue;
                                 var counter = round == 0 ? new Stats() : counters[activity]; counter.opportunities++;
                                 if (!(activity == 0 ? loadout.insight : loadout.jump)) { counter.unavailable++; continue; }
@@ -154,9 +196,9 @@ class IndependentConditionsExperimentTest {
                                     if (result.status() == AbilityExecutionStatus.SUPPRESSED) { counter.suppressed++; assertNull(result.observedAmount()); continue; }
                                     assertEquals(AbilityExecutionStatus.SUCCESS, result.status()); counter.add(result); record(ecosystem, f.definition, context, result);
                                 } else {
-                                    if (tick < jumpReady.getOrDefault(item.getArtifactStorageKey(), 0L)) { counter.suppressed++; continue; }
+                                    if (tick < item.abilitiesReadyAt()) { counter.suppressed++; continue; }
                                     var performance = jump.express(item.getGenome()); double meters = response(performance, condition.low ? .0784 : 20);
-                                    long recovery = performance.recoveryTicks(60); jumpReady.put(item.getArtifactStorageKey(), Math.addExact(tick, recovery));
+                                    long recovery = performance.recoveryTicks(60); item.setAbilityReadyAt(jumpDefinition.id(), Math.addExact(tick, recovery));
                                     var context = new AbilityEventContext(jumpDefinition.trigger(), item, item.getItemReputation(), 1, "modeled-independent-jump",
                                             AbilityRuntimeContext.intentional(AbilitySource.OTHER), null, true).withPosition(position(site, condition)).withGameTick(tick);
                                     var result = AbilityExecutionResult.observed(jumpDefinition, context, AbilityOutcomeType.WORLD_INTERACTION, meters, null, "modeled jump")
@@ -173,11 +215,13 @@ class IndependentConditionsExperimentTest {
                 var next = new ArrayList<List<Artifact>>();
                 for (int site = 0; site < SITES; site++) {
                     var condition = conditions(site, generation, changing); var origin = position(site, condition); var items = cohorts.get(site);
-                    var eligible = eligible(ecosystem, manager, origin); var health = ecosystem.healthSnapshot(origin);
+                    var eligible = eligible(ecosystem, manager, origin, mode.selection(site)); var health = ecosystem.healthSnapshot(origin);
+                    for (var c : eligible) candidateRows.add(csv(generation, site, c.seed(), loadout(inputSeeds.get(c.storageKey()), arm), c.fitness(), c.attempts()));
                     var children = new ArrayList<Artifact>(); var parents = new HashSet<String>(); var counts = new TreeMap<Long,Integer>();
                     int crossTarget = 0, crossCeiling = 0, fresh = 0;
-                    for (int i = 0; i < COHORT; i++) {
-                        var child = ecosystem.createEquipment(f.holder, EquipmentArchetype.DIAMOND_AXE, origin, parentRandom(ecosystem, manager, origin, randoms.get(site), neutral));
+                    for (int i = 0; i < cohortSize; i++) {
+                        var child = ecosystem.createEquipment(mode.holder(site), EquipmentArchetype.DIAMOND_AXE, origin,
+                                parentRandom(ecosystem, manager, origin, randoms.get(site), neutral, mode.selection(site)), mode.selection(site));
                         assertTrue(child.abilityRecoverySnapshot().isEmpty()); assertTrue(child.getGenomeFitnessHistory().revisions().isEmpty());
                         int parentSite = -1; long founder; String parentSeed = "", parentLoadout = "";
                         if (child.getParentStorageKey() == null) { fresh++; founder = child.getArtifactSeed(); assertEquals(0, child.getInheritanceGeneration()); }
@@ -197,13 +241,18 @@ class IndependentConditionsExperimentTest {
                                 child.getInheritanceGeneration(), genome(child))); children.add(child);
                     }
                     double precision = mean(items,GenomeTrait.PRECISION_AFFINITY), kinetic = mean(items,GenomeTrait.KINETIC_BIAS);
-                    double diversity = 1-counts.values().stream().mapToDouble(n->Math.pow(n/(double)COHORT,2)).sum();
+                    double diversity = 1-counts.values().stream().mapToDouble(n->Math.pow(n/(double)cohortSize,2)).sum();
                     long unobserved = items.stream().filter(a->a.getGenomeFitnessHistory().signals(GenomeRevision.capture(a)).isEmpty()).count();
                     rows.add(csv(generation, site, condition.rich, condition.low, precision,
                             variance(items, GenomeTrait.PRECISION_AFFINITY, precision), kinetic,
                             variance(items, GenomeTrait.KINETIC_BIAS, kinetic), eligible.size(), averageFitness(eligible),
                             health.effectiveParents(), health.maximumParentShare(), diversity, counts.size(), parents.size(),
                             crossTarget, crossCeiling, fresh, unobserved));
+                    for (var item : items) {
+                        var genes = new ArrayList<Object>(List.of(generation, site, item.getArtifactSeed(), item.getGenomeRevision()));
+                        for (var trait : GenomeTrait.values()) genes.add(item.getGenome().trait(trait));
+                        geneRows.add(csv(genes.toArray()));
+                    }
                     for (var item : items) for (int activity=0;activity<2;activity++) {
                         var stat=stats.get(item.getArtifactStorageKey())[activity];var definition=activity==0?f.definition:jumpDefinition;
                         var utility=item.getGenomeFitnessHistory().signals(GenomeRevision.capture(item)).get(definition.mechanic()+"@"+definition.trigger());
@@ -219,8 +268,75 @@ class IndependentConditionsExperimentTest {
                 for(int site=0;site<SITES;site++)assertTrue(ecosystem.pool().candidates(position(site,conditions(site,generation,changing)),20,window).isEmpty());
                 assertNotNull(store.loadArtifactProfile(cohorts.getFirst().getFirst().getArtifactStorageKey()));cohorts=next;
             }
-            return new Run(List.copyOf(rows),List.copyOf(activityRows),List.copyOf(births));
+            return new Run(List.copyOf(rows),List.copyOf(activityRows),List.copyOf(births),List.copyOf(geneRows),List.copyOf(candidateRows));
         }
+    }
+
+    /** Pre-registered in docs/shared-recovery-preregistration.md; abilities on one item share recovery. */
+    @Test @Experiment void sharedRecoveryAblation() throws Exception {
+        writeLargerPopulation("shared-recovery");
+    }
+    /** Generation-0 activity and parent-fitness rows for the shared-recovery calculation and regression check. */
+    @Test @Experiment void sharedRecoveryGenerationZero() throws Exception {
+        writeGenerationZero("shared-recovery-generation-zero");
+    }
+    /** Generation-0 parent fitness under each holder mode, for the holder-target calculation. */
+    @Test @Experiment void holderTargetGenerationZero() throws Exception {
+        writeGenerationZero("holder-shared-generation-zero", HolderMode.SHARED);
+        writeGenerationZero("holder-per-site-generation-zero", HolderMode.PER_SITE);
+    }
+    private void writeGenerationZero(String directory) throws Exception {
+        writeGenerationZero(directory, HolderMode.POOLED);
+    }
+    private void writeGenerationZero(String directory, HolderMode mode) throws Exception {
+        var arm = Arm.VARIED_OPPORTUNITIES; int cohort = 4 * COHORT;
+        var activities = new StringBuilder("seed,generation,site,item_seed,input_seed,revision,loadout,activity,precision,kinetic,opportunities,unavailable,attempts,cooldown_suppressions,successes,benefit_total,benefit_mean,recovery_mean,unique_reports,revision_utility\n");
+        var candidates = new StringBuilder("seed,generation,site,item_seed,loadout,fitness,attempts\n");
+        var births = new StringBuilder("seed,arm,cohort,generation,site,parent_site,parent_seed,parent_revision,parent_loadout,child_seed,child_loadout,founder,inheritance_generation,genome\n");
+        for (long seed : STUDY_SEEDS) {
+            var result = run(seed, arm, false, false, 1, cohort, mode);
+            for (var row : result.activities) activities.append(seed).append(',').append(row).append('\n');
+            for (var row : result.candidates) candidates.append(seed).append(',').append(row).append('\n');
+            for (var row : result.births) births.append(seed + "," + arm + "," + cohort + ",").append(row).append('\n');
+        }
+        var output = Path.of("target", directory); Files.createDirectories(output);
+        Files.writeString(output.resolve("activities.csv"), activities); Files.writeString(output.resolve("candidates.csv"), candidates); Files.writeString(output.resolve("parentage.csv"), births);
+    }
+    /** Pre-registered in docs/holder-target-shared-recovery-preregistration.md; one holder owns every site. */
+    @Test @Experiment void holderSharedAblation() throws Exception {
+        writeLargerPopulation("holder-shared", HolderMode.SHARED);
+    }
+    /** Pre-registered in docs/holder-target-shared-recovery-preregistration.md; each site has its own holder (best case). */
+    @Test @Experiment void holderPerSiteAblation() throws Exception {
+        writeLargerPopulation("holder-per-site", HolderMode.PER_SITE);
+    }
+    private void writeLargerPopulation(String directory) throws Exception {
+        writeLargerPopulation(directory, HolderMode.POOLED);
+    }
+    private void writeLargerPopulation(String directory, HolderMode mode) throws Exception {
+        var arm = Arm.VARIED_OPPORTUNITIES; int cohort = 4 * COHORT;
+        var generations = new StringBuilder("seed,arm,cohort,generation,site,rich,low,precision_mean,precision_variance,kinetic_mean,kinetic_variance,eligible_parents,pool_fitness,effective_parents,max_parent_share,newborn_founder_simpson,newborn_founders,distinct_parents,cross_target_parents,cross_ceiling_parents,founder_births,unobserved_current_items\n");
+        var genes = new StringBuilder(genesHeader().replace("seed,arm,selection,changing,", "seed,arm,cohort,"));
+        var births = new StringBuilder("seed,arm,cohort,generation,site,parent_site,parent_seed,parent_revision,parent_loadout,child_seed,child_loadout,founder,inheritance_generation,genome\n");
+        for (long seed : STUDY_SEEDS) {
+            var result = run(seed, arm, false, false, LONG_GENERATIONS, cohort, mode);
+            String prefix = seed + "," + arm + "," + cohort + ",";
+            for (var row : result.generations) generations.append(prefix).append(row).append('\n');
+            for (var row : result.genes) genes.append(prefix).append(row).append('\n');
+            for (var row : result.births) births.append(prefix).append(row).append('\n');
+        }
+        var output = Path.of("target", directory); Files.createDirectories(output);
+        Files.writeString(output.resolve("generations.csv"), generations); Files.writeString(output.resolve("genes.csv"), genes);
+        Files.writeString(output.resolve("parentage.csv"), births);
+        Files.writeString(output.resolve("protocol.txt"), "See docs/larger-population-preregistration.md. " + STUDY_SEEDS.length + " seeds; cohort " + cohort
+                + " per site; steady; measured selection; " + LONG_GENERATIONS + " generations. Founder precision/kinetic grid repeats every 16 slots.\n"
+                + "selection_context=" + mode + "\n");
+    }
+
+    private static String genesHeader() {
+        var header = new StringJoiner(",", "seed,arm,selection,changing,generation,site,item_seed,revision,", "\n");
+        for (var trait : GenomeTrait.values()) header.add(trait.name().toLowerCase(Locale.ROOT));
+        return header.toString();
     }
 
     private double[] counterexample(boolean rich, boolean pooled) throws Exception {
@@ -238,23 +354,49 @@ class IndependentConditionsExperimentTest {
             return new double[]{fitness(first,1),fitness(first,2),fitness(second,1),fitness(second,2)};
         }
     }
+    /** Pooled crop/stone parents at one column; two outside holders worked only crops or only stone, beyond the radius. */
+    private double[] holderCounterexample() throws Exception {
+        try (var f = new InformationFixture()) {
+            var store = new MemoryStore(); var manager = new ArtifactManager(store); var ecosystem = new LocalEcosystem(store, manager);
+            var low = f.item(1, 0); var high = f.item(2, 1); manager.registerItem(low); manager.registerItem(high);
+            for (int target = 0; target < 2; target++) {
+                f.rich = target == 0; f.x = target * 80;
+                for (int tick = 0; tick < 100; tick++) ecosystem.advanceTick();
+                var position = new WorldPosition(InformationFixture.WORLD, f.x, 0, new HabitatContext(3));
+                for (var item : List.of(low, high)) { var context = f.context(item, ecosystem.pool().gameTick(), f.event()).withPosition(position); record(ecosystem, f.definition, context, f.executor.execute(f.definition, context, 1)); }
+            }
+            var cropHolder = new UUID(0, 2001); var stoneHolder = new UUID(0, 2002); var far = new WorldPosition(InformationFixture.WORLD, 10_000, 0, new HabitatContext(3));
+            for (var holder : List.of(cropHolder, stoneHolder)) {
+                f.holder = holder; f.rich = holder == cropHolder; f.x = 10_000; var own = f.item(holder == cropHolder ? 3 : 4, .5); manager.registerItem(own);
+                var context = f.context(own, ecosystem.pool().gameTick(), f.event()).withPosition(far); record(ecosystem, f.definition, context, f.executor.execute(f.definition, context, 1));
+            }
+            var origin = new WorldPosition(InformationFixture.WORLD, 0, 0, new HabitatContext(3));
+            var crop = ecosystem.pool().candidates(origin, cropHolder, 20, 6000); var stone = ecosystem.pool().candidates(origin, stoneHolder, 20, 6000);
+            var unknown = ecosystem.pool().candidates(origin, new UUID(0, 2003), 20, 6000);
+            assertEquals(2, crop.size()); assertEquals(2, stone.size());
+            var restored = LocalInheritancePool.decode(ecosystem.pool().encode());
+            assertEquals(crop, restored.candidates(origin, cropHolder, 20, 6000)); assertEquals(stone, restored.candidates(origin, stoneHolder, 20, 6000));
+            assertEquals(ecosystem.pool().candidates(origin, 20, 6000), unknown, "A holder without measured targets keeps pooled selection");
+            return new double[]{fitness(crop, 1), fitness(crop, 2), fitness(stone, 1), fitness(stone, 2), fitness(unknown, 1), fitness(unknown, 2)};
+        }
+    }
     private double fitness(List<LocalInheritancePool.ParentCandidate> candidates, long seed) {
         return candidates.stream().filter(c -> c.seed() == seed).findFirst().orElseThrow().fitness();
     }
-    private List<LocalInheritancePool.ParentCandidate> eligible(LocalEcosystem e, ArtifactManager manager, WorldPosition origin) {
+    /** The exact list the production selector draws from, so neutral draws stay uniform over it. */
+    private List<LocalInheritancePool.ParentCandidate> eligible(LocalEcosystem e, ArtifactManager manager, WorldPosition origin, UUID holder) {
         var settings = RuntimeSettings.get();
-        return e.pool().competitiveEvidence(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), c -> {
+        return e.pool().selectionCandidates(origin, holder, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), c -> {
             var item = manager.resolveByStorageKey(c.storageKey());
             return item.getArtifactSeed() == c.seed() && item.getGenomeRevision() == c.genomeRevision();
-        }).stream().map(LocalInheritancePool.LocalEvidence::individual)
-                .filter(c -> Double.isFinite(c.fitness()) && c.fitness() > 0).toList();
+        });
     }
-    private RandomGenerator parentRandom(LocalEcosystem e, ArtifactManager manager, WorldPosition origin, Random random, boolean neutral) {
+    private RandomGenerator parentRandom(LocalEcosystem e, ArtifactManager manager, WorldPosition origin, Random random, boolean neutral, UUID holder) {
         if (!neutral) return random;
         return new RandomGenerator() {
             public long nextLong() { return random.nextLong(); }
             public double nextDouble() {
-                var candidates = eligible(e, manager, origin); assertFalse(candidates.isEmpty());
+                var candidates = eligible(e, manager, origin, holder); assertFalse(candidates.isEmpty());
                 int selected = Math.min(candidates.size() - 1, (int) (random.nextDouble() * candidates.size()));
                 double total = candidates.stream().mapToDouble(LocalInheritancePool.ParentCandidate::fitness).sum();
                 double prefix = candidates.subList(0, selected).stream().mapToDouble(LocalInheritancePool.ParentCandidate::fitness).sum();

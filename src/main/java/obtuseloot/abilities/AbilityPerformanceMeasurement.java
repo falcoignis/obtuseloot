@@ -8,6 +8,7 @@ public record AbilityPerformanceMeasurement(double benefit, long recoveryTicks) 
     }
     public double adjustUtility(double utility) {
         // Preserve measured failure penalties. No predicted gene bonus or target distribution enters fitness.
-        return utility > 0 ? utility * benefit / (1 + recoveryTicks / 20.0D) : utility;
+        // Recovery is not divided out here: it already costs uses within the evidence window.
+        return utility > 0 ? utility * benefit : utility;
     }
 }

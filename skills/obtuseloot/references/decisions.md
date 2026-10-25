@@ -113,3 +113,10 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 - This slice is a diagnostic experiment. Keep production selection and mutation unchanged; report limitations and measured deficits rather than forcing population distributions. Assigned loadouts and modeled jump physics do not establish natural ability selection or niches.
 - Four sites, three input arms, separate birth-slot input streams, 12 rounds at 20 ticks and the generation-4 target/generation-6 ceiling changes are test-design choices, not production balance rules.
 - The previous scoped merge authorization covered #421/#422 and has been consumed. This new experiment has no merge or live-deployment authorization. Wild mutation remains held; integration/XP coexistence requirements remain.
+
+## 2026-10-24: holder target context
+
+- After the #423 counterexample, the owner was offered three options: holder-activity context, per-target relative scoring, or recording the target only. The owner selected **holder-activity context** ("go with option 1"). An origin material descriptor was rejected first because birth origins (enchanting tables, loot locations) do not carry the targets evidence is measured on.
+- Each sample records holder and exact block-material action target. Births weight current local parents by the receiving holder's recent attempt mix over targets the competing parents were measured on. No holder, or no overlap, keeps pooled fitness. Parents stay inside the configured chunk radius.
+- Implementation choices, not owner-confirmed niche boundaries: the holder mix comes from the whole pool inside the outcome window; materials are exact and ungrouped; unmeasured targets contribute zero; health diagnostics stay holder-blind.
+- No quotas, floors, boosts or distribution tuning. No merge or live-deployment authorization. Wild mutation remains held.

@@ -50,10 +50,15 @@ public final class LocalEcosystem {
         return createEquipment(initialHolder, archetype, origin, ThreadLocalRandom.current());
     }
     public Artifact createEquipment(UUID initialHolder, EquipmentArchetype archetype, WorldPosition origin, RandomGenerator random) {
+        return createEquipment(initialHolder, archetype, origin, random, initialHolder);
+    }
+    /** The selection holder's recent action targets weight parents; null keeps pooled selection. */
+    public Artifact createEquipment(UUID initialHolder, EquipmentArchetype archetype, WorldPosition origin, RandomGenerator random,
+                                    UUID selectionHolder) {
         Objects.requireNonNull(origin); Objects.requireNonNull(random);
         var settings = RuntimeSettings.get();
         var resolved = new java.util.HashMap<String, Artifact>();
-        var selected = pool.choose(origin, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random,
+        var selected = pool.choose(origin, selectionHolder, settings.inheritanceRadiusChunks(), settings.inheritanceOutcomeWindowTicks(), random,
                 candidate -> isCurrent(candidate, resolved));
         Artifact parent = selected == null ? null : resolved.get(selected.storageKey());
         long seed;

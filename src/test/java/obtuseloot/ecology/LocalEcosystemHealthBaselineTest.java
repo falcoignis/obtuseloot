@@ -26,7 +26,8 @@ class LocalEcosystemHealthBaselineTest {
         var position = new WorldPosition(new UUID(0, 800), 0, 0);
         var first = LocalEcosystemHealthTest.item(manager, 1, 0);
         var second = LocalEcosystemHealthTest.item(manager, 2, 1);
-        observe(first, ecosystem, position, .0784, "first"); observe(second, ecosystem, position, .0784, "second");
+        // Open sky, so the two genes deliver different measured lift and fitness.
+        observe(first, ecosystem, position, 20, "first"); observe(second, ecosystem, position, 20, "second");
         var candidates = ecosystem.pool().candidates(position, 20, 6000);
         assertEquals(2, candidates.size()); assertNotEquals(candidates.getFirst().fitness(), candidates.getLast().fitness());
         var counts = new HashMap<String, Integer>();

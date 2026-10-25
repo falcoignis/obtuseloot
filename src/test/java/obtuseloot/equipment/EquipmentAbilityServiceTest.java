@@ -111,6 +111,19 @@ class EquipmentAbilityServiceTest {
         equip(EquipmentSlot.LEGS, "diamond_leggings", template); press(); runMovementTasks();
         assertEquals(1, movementEvents.size(), "A new item cannot reset the player's charge");
     }
+    @Test void doubleJumpSharesTheItemsRecoveryOnTheEcologyClock() {
+        var template = new AbilityRegistry().templateById("mobility.double_jump");
+        var item = equip(EquipmentSlot.FEET, "diamond_boots", template); item.setAbilityReadyAt("precision.material_insight", 50);
+        var clock = new java.util.concurrent.atomic.AtomicLong(49);
+        jumps = new obtuseloot.movement.AirJumpService(service, abilities, movementTasks::add,
+                e -> { movementEvents.add(e); veto.accept(e); }, () -> List.of(player), clock::get);
+        jumps.tick(); grounded = false;
+        press(); runMovementTasks(); assertTrue(movementEvents.isEmpty(), "Another ability's recovery blocks the jump");
+        assertEquals(-.1, velocity.getY(), 1e-9); assertEquals(0, item.abilityReadyAt("mobility.double_jump"));
+        clock.set(50); press(); runMovementTasks(); assertEquals(.42, velocity.getY(), 1e-9, "The unspent charge works once recovered");
+        long recovery = ((obtuseloot.events.ArtifactAirJumpEvent) movementEvents.getFirst()).getRecoveryTicks();
+        assertEquals(50 + recovery, item.abilityReadyAt("mobility.double_jump")); assertEquals(50 + recovery, item.abilitiesReadyAt());
+    }
     @Test void doubleJumpHonorsVetoPermissionAndDeferredSwapWithoutSpendingACharge() {
         var template = new AbilityRegistry().templateById("mobility.double_jump");
         equip(EquipmentSlot.FEET, "diamond_boots", template); movement(); grounded = false;
