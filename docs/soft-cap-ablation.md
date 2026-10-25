@@ -43,4 +43,21 @@ restore the cap. Its printed result must match main exactly.
 
 ## Recorded result
 
-RESULT_PENDING
+Focused validation passed 11 tests across four classes (`SoftCapAblationTest`,
+`ScoreNormalizationAblationTest`, `SeededEcosystemHealthTest`,
+`IntraCategoryNormalizationProbeTest`).
+
+| Arm | Baseline diversity | Lowest later | Largest relative drop | Healthy |
+| --- | ---: | ---: | ---: | --- |
+| Soft cap restored (control) | 0.8509 | 0.8398 | 1.30% | yes |
+| Soft cap removed | 0.8379 | 0.8496 | 0.00% | yes |
+
+The restored cap changed scores at 960 preparation points and changed 372 of the
+generated profiles. Treatment windows and ordered profiles replayed exactly. The
+control arm equals the treatment arm of the score-normalization comparison
+(0.8509 / 1.30%), as it should: both are current scoring with the cap. On main and on
+this branch, `ScoreNormalizationAblationTest` prints the same result line
+(legacy 9.45% / capped 1.30% drop on the current pipeline; the 8.02% / 0.84% in
+that document were recorded on the earlier pipeline).
+
+The prediction held. This is one seed with other aids present.
