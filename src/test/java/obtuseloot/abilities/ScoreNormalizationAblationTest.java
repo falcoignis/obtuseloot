@@ -14,12 +14,15 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Gamma/mean-blend ablation only: the existing mean-relative soft cap remains. */
+/**
+ * Gamma/mean-blend ablation only. The soft cap was removed later (docs/soft-cap-ablation.md); both arms here
+ * restore it from {@link LegacySoftCap} so this historical comparison is unchanged.
+ */
 class ScoreNormalizationAblationTest {
     @Test
     void rawScoresReachTheExistingSoftCapWithoutGammaOrMeanBlending() {
         var registry = new AbilityRegistry();
-        var generator = new RecordingGenerator(registry, null);
+        var generator = new CappedGenerator(registry, null);
         double[] scores = {1, 2, 9};
         double[] result = generator.categoryTemplateSamplingScores(registry.templates().subList(0, 3), scores);
         assertEquals(1.0D, result[0], 1.0E-12D, "A below-mean score must not be raised toward the mean");
@@ -50,7 +53,7 @@ class ScoreNormalizationAblationTest {
     @Test
     void legacyControlRestoresTheRemovedInflationBeforeTheSameSoftCap() {
         var registry = new AbilityRegistry();
-        var current = new RecordingGenerator(registry, null);
+        var current = new CappedGenerator(registry, null);
         var legacy = new LegacyGenerator(registry, null);
         List<AbilityTemplate> three = registry.templates().subList(0, 3);
         double[] scores = {1, 2, 9};
@@ -73,12 +76,12 @@ class ScoreNormalizationAblationTest {
             return generator;
         });
         var after = SeededEcosystemHealthTest.simulate((registry, feedback) -> {
-            var generator = new RecordingGenerator(registry, feedback);
+            var generator = new CappedGenerator(registry, feedback);
             currentHolder.set(generator);
             return generator;
         });
         var replay = SeededEcosystemHealthTest.simulate((registry, feedback) -> {
-            var generator = new RecordingGenerator(registry, feedback);
+            var generator = new CappedGenerator(registry, feedback);
             replayHolder.set(generator);
             return generator;
         });
@@ -103,7 +106,7 @@ class ScoreNormalizationAblationTest {
                 + " legacyWindows=" + before + " ablatedWindows=" + after);
     }
 
-    private static class RecordingGenerator extends ProceduralAbilityGenerator {
+    static class RecordingGenerator extends ProceduralAbilityGenerator {
         final List<List<String>> profiles = new ArrayList<>();
 
         RecordingGenerator(AbilityRegistry registry, ExperienceEvolutionEngine feedback) {
@@ -119,7 +122,19 @@ class ScoreNormalizationAblationTest {
         }
     }
 
-    private static final class LegacyGenerator extends RecordingGenerator {
+    /** Current scoring with the removed soft cap restored: the treatment arm of the original ablation. */
+    private static class CappedGenerator extends RecordingGenerator {
+        CappedGenerator(AbilityRegistry registry, ExperienceEvolutionEngine feedback) {
+            super(registry, feedback);
+        }
+
+        @Override double[] categoryTemplateSamplingScores(List<AbilityTemplate> templates, double[] scores) {
+            double[] current = super.categoryTemplateSamplingScores(templates, scores);
+            return current == scores ? scores : LegacySoftCap.samplingScores(scores);
+        }
+    }
+
+    private static final class LegacyGenerator extends CappedGenerator {
         int changedScores;
 
         LegacyGenerator(AbilityRegistry registry, ExperienceEvolutionEngine feedback) {
@@ -134,7 +149,7 @@ class ScoreNormalizationAblationTest {
         }
 
         // Test-only control from 6e886ec742c697af34d46b802c79095ff659014c.
-        // Uses the unchanged production soft cap; restores only gamma and mean blending.
+        // Restores gamma and mean blending before the same restored soft cap.
         private double[] normalizeAsBefore(List<AbilityTemplate> templates, double[] scores) {
             if (templates.isEmpty() || templates.size() <= 1) return scores;
             double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY, sum = 0.0D;
@@ -153,7 +168,7 @@ class ScoreNormalizationAblationTest {
                 double expanded = min + curved * span;
                 transformed[i] = expanded + (mean - expanded) * 0.35D;
             }
-            return applyMeanRelativeSoftTopCap(transformed, mean);
+            return LegacySoftCap.apply(transformed, mean);
         }
     }
 }

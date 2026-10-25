@@ -51,7 +51,6 @@ public class ProceduralAbilityGenerator {
     private static final double TRIGGER_SMOOTHING_MAX_RELIEF = 0.10D;
     private static final double NARROW_TRIGGER_SMOOTHING_MAX_RELIEF = 0.15D;
     private static final int SMALL_CATEGORY_TEMPLATE_LIMIT = 6;
-    private static final double GLOBAL_CATEGORY_TOP_CAP_RATIO = 1.28D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR = 0.97D;
     private static final double SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING = 1.03D;
     private static final double SMALL_CATEGORY_UNIFORM_BLEND = 0.45D;
@@ -793,42 +792,23 @@ public class ProceduralAbilityGenerator {
                 + (relative * (SMALL_CATEGORY_SAMPLING_WEIGHT_CEILING - SMALL_CATEGORY_SAMPLING_WEIGHT_FLOOR));
     }
 
+    // Composite scores are sampled as measured; no cap pulls a leader toward the category mean.
+    // Ablation controls override this seam in tests. Cold balancing later edits the returned array in place,
+    // so a varied category gets a copy and the composite scores stay untouched.
     double[] categoryTemplateSamplingScores(List<AbilityTemplate> templates, double[] scores) {
         if (templates.isEmpty() || templates.size() <= 1) {
             return scores;
         }
         double minScore = Double.POSITIVE_INFINITY;
         double maxScore = Double.NEGATIVE_INFINITY;
-        double sum = 0.0D;
         for (double score : scores) {
             minScore = Math.min(minScore, score);
             maxScore = Math.max(maxScore, score);
-            sum += score;
         }
         if (!Double.isFinite(minScore) || !Double.isFinite(maxScore) || maxScore <= minScore) {
             return scores;
         }
-        double meanScore = sum / scores.length;
-        return applyMeanRelativeSoftTopCap(scores, meanScore);
-    }
-
-    double[] applyMeanRelativeSoftTopCap(double[] scores, double meanScore) {
-        if (scores.length <= 1 || meanScore <= 0.0D || !Double.isFinite(meanScore)) {
-            return scores;
-        }
-        double capStart = meanScore;
-        double capRange = Math.max(meanScore * (GLOBAL_CATEGORY_TOP_CAP_RATIO - 1.0D), 1.0E-9D);
-        double[] capped = new double[scores.length];
-        for (int i = 0; i < scores.length; i++) {
-            double score = Math.max(0.0001D, scores[i]);
-            if (score <= capStart) {
-                capped[i] = score;
-                continue;
-            }
-            double excess = score - capStart;
-            capped[i] = capStart + (capRange * Math.tanh(excess / capRange));
-        }
-        return capped;
+        return scores.clone();
     }
 
     private double lerp(double start, double end, double alpha) {
