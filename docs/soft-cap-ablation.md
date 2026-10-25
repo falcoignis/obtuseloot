@@ -57,7 +57,7 @@ generated profiles. Treatment windows and ordered profiles replayed exactly. The
 control arm equals the treatment arm of the score-normalization comparison
 (0.8509 / 1.30%), as it should: both are current scoring with the cap. On main and on
 this branch, `ScoreNormalizationAblationTest` prints the same result line
-(legacy 9.45% / capped 1.30% drop on the current pipeline; the 8.02% / 0.84% in
-that document were recorded on the earlier pipeline).
+(legacy 9.45% / capped 1.30% drop). That document's 8.02% / 0.84% were recorded
+before later merges; which change moved them was not checked.
 
 The prediction held. This is one seed with other aids present.
