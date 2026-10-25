@@ -32,11 +32,19 @@ class IndependentConditionsExperimentTest {
     }
     /** Pooled reproduces the #423 selector; holder modes weight parents by the receiving holder's recent targets. */
     private enum HolderMode {
-        POOLED("independent-conditions"), SHARED("independent-conditions-holder-shared"), PER_SITE("independent-conditions-holder-site");
+        POOLED("independent-conditions", 1), SHARED("independent-conditions-holder-shared", 1), PER_SITE("independent-conditions-holder-site", 1),
+        PER_SITE_75("independent-conditions-holder-site-75", .75), PER_SITE_50("independent-conditions-holder-site-50", .5);
         final String directory;
-        HolderMode(String directory) { this.directory = directory; }
-        UUID holder(int site) { return this == PER_SITE ? new UUID(0, 1000 + site) : InformationFixture.OWNER; }
+        /** Share of a site's items its own holder owns; the rest belong to the holder of the paired site (other target, same ceiling). */
+        final double own;
+        HolderMode(String directory, double own) { this.directory = directory; this.own = own; }
+        boolean perSite() { return this == PER_SITE || this == PER_SITE_75 || this == PER_SITE_50; }
+        UUID holder(int site) { return perSite() ? new UUID(0, 1000 + site) : InformationFixture.OWNER; }
         UUID selection(int site) { return this == POOLED ? null : holder(site); }
+        /** Drawn from the input-seed stream, never the selection random; own = 1 always returns the site's holder. */
+        UUID owner(int site, long inputSeed) {
+            return own >= 1 || new Random(inputSeed ^ 0x3c6ef372fe94f82aL).nextDouble() < own ? holder(site) : holder(site ^ 1);
+        }
     }
     /** Pre-registered research runs take minutes each; run them with -Dobtuseloot.experiments=true. */
     @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
@@ -158,7 +166,7 @@ class IndependentConditionsExperimentTest {
             for (int site = 0; site < SITES; site++) {
                 randoms.add(new Random(seed + site)); var items = new ArrayList<Artifact>();
                 for (int i = 0; i < cohortSize; i++) {
-                    var item = ecosystem.createEquipment(mode.holder(site), EquipmentArchetype.DIAMOND_AXE, position(site, conditions(site, 0, changing)), randoms.get(site), mode.selection(site));
+                    var item = ecosystem.createEquipment(mode.owner(site, inputSeed(seed, site, 0, i)), EquipmentArchetype.DIAMOND_AXE, position(site, conditions(site, 0, changing)), randoms.get(site), mode.selection(site));
                     assertNull(item.getParentStorageKey()); var genes = new EnumMap<GenomeTrait, Double>(GenomeTrait.class);
                     for (var trait : GenomeTrait.values()) genes.put(trait, .5);
                     genes.put(GenomeTrait.PRECISION_AFFINITY, (i % 16 / 4) / 3.0); genes.put(GenomeTrait.KINETIC_BIAS, (i % 4) / 3.0);
@@ -174,8 +182,9 @@ class IndependentConditionsExperimentTest {
                 for (int round = 0; round < ROUNDS; round++) {
                     if (round > 0) for (int tick = 0; tick < STEP; tick++) ecosystem.advanceTick();
                     for (int site = 0; site < SITES; site++) {
-                        var condition = conditions(site, generation, changing); f.rich = condition.rich; f.holder = mode.holder(site);
+                        var condition = conditions(site, generation, changing); f.rich = condition.rich;
                         for (var item : cohorts.get(site)) {
+                            f.holder = item.getOwnerId();
                             if (round == 1) { item.setEvolutionPath("strider-formed"); assertTrue(genetics.advance(item)); assertEquals(1, item.getGenomeRevision()); }
                             long schedule = inputSeeds.get(item.getArtifactStorageKey());
                             var loadout = loadout(schedule, arm); var counters = stats.get(item.getArtifactStorageKey());
@@ -220,7 +229,7 @@ class IndependentConditionsExperimentTest {
                     var children = new ArrayList<Artifact>(); var parents = new HashSet<String>(); var counts = new TreeMap<Long,Integer>();
                     int crossTarget = 0, crossCeiling = 0, fresh = 0;
                     for (int i = 0; i < cohortSize; i++) {
-                        var child = ecosystem.createEquipment(mode.holder(site), EquipmentArchetype.DIAMOND_AXE, origin,
+                        var child = ecosystem.createEquipment(mode.owner(site, inputSeed(seed, site, generation + 1, i)), EquipmentArchetype.DIAMOND_AXE, origin,
                                 parentRandom(ecosystem, manager, origin, randoms.get(site), neutral, mode.selection(site)), mode.selection(site));
                         assertTrue(child.abilityRecoverySnapshot().isEmpty()); assertTrue(child.getGenomeFitnessHistory().revisions().isEmpty());
                         int parentSite = -1; long founder; String parentSeed = "", parentLoadout = "";
@@ -309,6 +318,19 @@ class IndependentConditionsExperimentTest {
     /** Pre-registered in docs/holder-target-shared-recovery-preregistration.md; each site has its own holder (best case). */
     @Test @Experiment void holderPerSiteAblation() throws Exception {
         writeLargerPopulation("holder-per-site", HolderMode.PER_SITE);
+    }
+    /** Pre-registered in docs/holder-specialization-preregistration.md; each holder owns 75% of its own site's items. */
+    @Test @Experiment void holderSpecialization75() throws Exception {
+        writeLargerPopulation("holder-per-site-75", HolderMode.PER_SITE_75);
+    }
+    /** Pre-registered in docs/holder-specialization-preregistration.md; each holder owns 50% of its own site's items. */
+    @Test @Experiment void holderSpecialization50() throws Exception {
+        writeLargerPopulation("holder-per-site-50", HolderMode.PER_SITE_50);
+    }
+    /** Generation-0 parent fitness for the specialization calculation. */
+    @Test @Experiment void holderSpecializationGenerationZero() throws Exception {
+        for (var mode : List.of(HolderMode.PER_SITE, HolderMode.PER_SITE_75, HolderMode.PER_SITE_50))
+            writeGenerationZero(mode.directory.replace("independent-conditions-", "") + "-generation-zero", mode);
     }
     private void writeLargerPopulation(String directory) throws Exception {
         writeLargerPopulation(directory, HolderMode.POOLED);
