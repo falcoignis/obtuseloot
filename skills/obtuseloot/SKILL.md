@@ -57,6 +57,13 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
    The owner then approved habitat-aware competition; read `docs/habitat-aware-competition.md`.
    Native validation exposed a capture-height alias; the correction measures column
    span in a stable frame. Read `docs/native-habitat-validation.md` for current validation.
+   The next diagnostic independently crosses targets and ceilings, varies assigned loadouts
+   and opportunities, and records a column-only context counterexample; read
+   `docs/independent-ecosystem-conditions.md`. It changes no production selection rule.
+   The owner then selected holder-activity target context; births weight local parents by
+   the receiving holder's recent action targets. Read `docs/holder-target-context.md`.
+   On 2026-10-25 recovery is counted once and abilities on one item share recovery;
+   read `docs/recovery-selection-research.md`.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
 
 Unless the owner says otherwise, work from the top. When a request touches a later item, say where it sits in this order.

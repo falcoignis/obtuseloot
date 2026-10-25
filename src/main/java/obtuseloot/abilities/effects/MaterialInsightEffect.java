@@ -35,7 +35,7 @@ public final class MaterialInsightEffect implements LiveAbilityEffect {
         if (!Objects.equals(context.genomeRevision(), GenomeRevision.capture(artifact)))
             return suppressed(definition, context, "genome-changed-before-inspection");
         long previous = artifact.abilityReadyAt(definition.id());
-        if (context.gameTick() < previous) return suppressed(definition, context, "ability-recovering");
+        if (context.gameTick() < artifact.abilitiesReadyAt()) return suppressed(definition, context, "ability-recovering");
         if (!artifact.beginAbilityExecution(definition.id())) return suppressed(definition, context, "inspection-in-progress");
         try {
             var settings = RuntimeSettings.get();

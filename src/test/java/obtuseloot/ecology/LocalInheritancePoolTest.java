@@ -86,12 +86,17 @@ class LocalInheritancePoolTest {
         assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode("version: 1\ngame-tick: -1\n"));
         assertThrows(IllegalStateException.class, () -> LocalInheritancePool.decode("not: [yaml"));
     }
-    @Test void measuredRecoveryAffectsLocalFitnessAndSurvivesRestartWithoutImportingOldUtilityBonuses() {
+    @Test void recoveryCostsUsesNotTheValueOfOneAndSurvivesRestartWithoutImportingOldUtilityBonuses() {
         var pool = new LocalInheritancePool();
         var low = observation(item(1), origin, true, .6, 9999, "low");
         var high = observation(item(2), origin, true, .6, -9999, "high");
         pool.record(new AbilityOutcomeObservation(low.context(), low.result().withPerformance(new AbilityPerformanceMeasurement(.6, 30)), low.definition(), low.utilityDelta()), 100);
         pool.record(new AbilityOutcomeObservation(high.context(), high.result().withPerformance(new AbilityPerformanceMeasurement(.6, 90)), high.definition(), high.utilityDelta()), 100);
+        var single = pool.candidates(origin, 20, 100);
+        assertEquals(2, single.size()); assertEquals(single.get(0).fitness(), single.get(1).fitness(), "One use is valued by its benefit");
+        // A shorter recovery fits another use into the same window; that is where recovery is counted.
+        var again = observation(item(1), origin, true, .6, 9999, "low-again");
+        pool.record(new AbilityOutcomeObservation(again.context(), again.result().withPerformance(new AbilityPerformanceMeasurement(.6, 30)), again.definition(), again.utilityDelta()), 100);
         var candidates = pool.candidates(origin, 20, 100);
         assertEquals(2, candidates.size()); assertTrue(candidates.get(0).fitness() > candidates.get(1).fitness());
         assertEquals(candidates, LocalInheritancePool.decode(pool.encode()).candidates(origin, 20, 100));

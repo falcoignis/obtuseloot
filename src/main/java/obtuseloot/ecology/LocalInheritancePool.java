@@ -32,17 +32,57 @@ public final class LocalInheritancePool {
                 observation.context().source(), gameTick, result.observationKey(), result.performance(), observation.context().genomeRevision());
         var identity = new Identity(artifact.getArtifactStorageKey(), observation.context().genomeRevision());
         Evidence current = evidence.computeIfAbsent(identity, ignored -> new Evidence(identity, artifact.getLatentLineage()));
-        current.samples.addLast(new Sample(gameTick, observation.context().position(), outcome));
+        current.samples.addLast(new Sample(gameTick, observation.context().position(), outcome, result.holderId(),
+                ActionTarget.of(observation.context().liveEvent())));
         prune(windowTicks);
     }
     public List<ParentCandidate> candidates(WorldPosition origin, int radiusChunks, long windowTicks) {
+        return candidates(origin, null, radiusChunks, windowTicks);
+    }
+    public List<ParentCandidate> candidates(WorldPosition origin, UUID holder, int radiusChunks, long windowTicks) {
         prune(windowTicks);
-        var candidates = new ArrayList<ParentCandidate>();
-        for (LocalEvidence local : competitiveEvidence(origin, radiusChunks, windowTicks, candidate -> true)) {
-            var candidate = local.individual();
-            if (Double.isFinite(candidate.fitness()) && candidate.fitness() > 0) candidates.add(candidate);
+        return selectionCandidates(origin, holder, radiusChunks, windowTicks, candidate -> true);
+    }
+
+    /**
+     * The exact positive-fitness list {@link #choose} draws from. A null holder, or one without recent measured
+     * attempts on any target the competing parents were measured on, keeps pooled fitness. Otherwise each parent's
+     * fitness is its per-target fitness weighted by the holder's own recent attempt mix over those targets.
+     */
+    public List<ParentCandidate> selectionCandidates(WorldPosition origin, UUID holder, int radiusChunks, long windowTicks,
+            java.util.function.Predicate<ParentCandidate> currentGenome) {
+        var competition = competitiveEvidence(origin, radiusChunks, windowTicks, currentGenome);
+        var weighted = holderWeighted(competition, holder, windowTicks);
+        return (weighted == null ? competition.stream().map(LocalEvidence::individual) : weighted.stream())
+                .filter(candidate -> Double.isFinite(candidate.fitness()) && candidate.fitness() > 0).toList();
+    }
+    /** The holder's recent measured attempts per action target, from the whole pool inside the outcome window. */
+    public Map<String, Long> holderTargetAttempts(UUID holder, long windowTicks) {
+        var attempts = new TreeMap<String, Long>();
+        if (holder == null) return attempts;
+        long cutoff = gameTick - windowTicks;
+        for (Evidence parent : evidence.values()) for (Sample sample : parent.samples)
+            if (sample.tick > cutoff && holder.equals(sample.holder)) attempts.merge(sample.target, 1L, Long::sum);
+        return attempts;
+    }
+    private List<ParentCandidate> holderWeighted(List<LocalEvidence> competition, UUID holder, long windowTicks) {
+        if (holder == null || competition.isEmpty()) return null;
+        var measured = new HashSet<String>();
+        for (var local : competition) measured.addAll(local.targetFitness().keySet());
+        var mix = holderTargetAttempts(holder, windowTicks);
+        mix.keySet().retainAll(measured);
+        long total = mix.values().stream().mapToLong(Long::longValue).sum();
+        if (total == 0) return null;
+        var result = new ArrayList<ParentCandidate>();
+        for (var local : competition) {
+            var individual = local.individual();
+            double fitness = 0;
+            for (var entry : mix.entrySet())
+                fitness += entry.getValue() / (double) total * local.targetFitness().getOrDefault(entry.getKey(), 0.0);
+            result.add(new ParentCandidate(individual.storageKey(), individual.seed(), individual.genomeRevision(),
+                    individual.lineageId(), fitness, individual.attempts()));
         }
-        return List.copyOf(candidates);
+        return result;
     }
     /** A read-only census, including failures; it never advances time or prunes persisted evidence. */
     public List<LocalEvidence> recentEvidence(WorldPosition origin, int radiusChunks, long windowTicks) {
@@ -86,11 +126,14 @@ public final class LocalInheritancePool {
             if (!current.test(parent.identity)) continue;
             var profiles = new LinkedHashMap<String, OutcomeUtilityProfile>();
             var performance = new LinkedHashMap<String, PerformanceAccumulator>();
+            var targetProfiles = new TreeMap<String, Map<String, OutcomeUtilityProfile>>();
             int attempts = 0;
             for (Sample sample : parent.samples) {
                 if (sample.tick <= cutoff || !sample.position.within(origin, radiusChunks) || !relevant.test(sample)) continue;
                 String key = sample.outcome.mechanic() + "@" + sample.outcome.trigger();
                 profiles.computeIfAbsent(key, OutcomeUtilityProfile::new).ingest(sample.outcome, new ValidatedOutcomeClassifier());
+                targetProfiles.computeIfAbsent(sample.target, ignored -> new LinkedHashMap<>())
+                        .computeIfAbsent(key, OutcomeUtilityProfile::new).ingest(sample.outcome, new ValidatedOutcomeClassifier());
                 if (sample.outcome.performance() != null)
                     performance.computeIfAbsent(key, ignored -> new PerformanceAccumulator()).add(sample.outcome.performance());
                 attempts++;
@@ -98,11 +141,15 @@ public final class LocalInheritancePool {
             if (attempts == 0) continue;
             var activities = new LinkedHashMap<String, MechanicUtilitySignal>();
             profiles.forEach((key, profile) -> activities.put(key, profile.snapshot()));
+            // Fitness is the total measured utility in the window; an attempt divisor would turn recovery into a benefit.
             double utility = activities.values().stream().mapToDouble(MechanicUtilitySignal::validatedUtility).sum();
             var measured = new LinkedHashMap<String, PerformanceSummary>();
             performance.forEach((key, value) -> measured.put(key, value.snapshot()));
+            var targetFitness = new LinkedHashMap<String, Double>();
+            targetProfiles.forEach((target, byKey) -> targetFitness.put(target, byKey.values().stream()
+                    .mapToDouble(profile -> profile.snapshot().validatedUtility()).sum()));
             result.add(new LocalEvidence(new ParentCandidate(parent.identity.key(), parent.identity.genome().seed(),
-                    parent.identity.genome().revision(), parent.lineage, utility / attempts, attempts), activities, measured));
+                    parent.identity.genome().revision(), parent.lineage, utility, attempts), activities, measured, targetFitness));
         }
         return List.copyOf(result);
     }
@@ -112,9 +159,12 @@ public final class LocalInheritancePool {
     }
     public ParentCandidate choose(WorldPosition origin, int radiusChunks, long windowTicks, RandomGenerator random,
                                   java.util.function.Predicate<ParentCandidate> eligible) {
+        return choose(origin, null, radiusChunks, windowTicks, random, eligible);
+    }
+    public ParentCandidate choose(WorldPosition origin, UUID holder, int radiusChunks, long windowTicks, RandomGenerator random,
+                                  java.util.function.Predicate<ParentCandidate> eligible) {
         prune(windowTicks);
-        List<ParentCandidate> candidates = competitiveEvidence(origin, radiusChunks, windowTicks, eligible).stream()
-                .map(LocalEvidence::individual).filter(candidate -> Double.isFinite(candidate.fitness()) && candidate.fitness() > 0).toList();
+        List<ParentCandidate> candidates = selectionCandidates(origin, holder, radiusChunks, windowTicks, eligible);
         double total = candidates.stream().mapToDouble(ParentCandidate::fitness).sum();
         if (candidates.isEmpty()) return null;
         double roll = random.nextDouble() * total;
@@ -135,7 +185,7 @@ public final class LocalInheritancePool {
     }
     public String encode() {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 5); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
+        yaml.set("version", 6); yaml.set("game-tick", gameTick); yaml.set("parent-count", evidence.size());
         int index = 0;
         for (Evidence parent : evidence.values()) {
             String base = "parents." + index++ + ".";
@@ -147,6 +197,7 @@ public final class LocalInheritancePool {
                 String path = base + "samples." + attempt++ + ".";
                 yaml.set(path + "tick", sample.tick); yaml.set(path + "world", sample.position.worldId().toString());
                 yaml.set(path + "x", sample.position.x()); yaml.set(path + "z", sample.position.z());
+                yaml.set(path + "holder", sample.holder.toString()); yaml.set(path + "target", sample.target);
                 var habitat = sample.position.habitat();
                 yaml.set(path + "habitat.kind", habitat == null ? "unknown" : habitat.columnHeightBlocks() == null ? "sky" : "roofed");
                 if (habitat != null && habitat.columnHeightBlocks() != null) yaml.set(path + "habitat.column-height-blocks", habitat.columnHeightBlocks());
@@ -169,7 +220,7 @@ public final class LocalInheritancePool {
         if (encoded == null) return pool;
         try {
             var yaml = new YamlConfiguration(); yaml.loadFromString(encoded);
-            if (yaml.getInt("version", 0) != 5 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
+            if (yaml.getInt("version", 0) != 6 || !yaml.isLong("game-tick") && !yaml.isInt("game-tick")) throw new IllegalArgumentException("Invalid ecology version/clock");
             pool.gameTick = yaml.getLong("game-tick");
             if (pool.gameTick < 0) throw new IllegalArgumentException("Negative game tick");
             var parents = yaml.getConfigurationSection("parents");
@@ -229,7 +280,10 @@ public final class LocalInheritancePool {
                             AbilityMechanic.valueOf(yaml.getString(path + "mechanic")), AbilityTrigger.valueOf(yaml.getString(path + "trigger")),
                             status, AbilityOutcomeType.valueOf(yaml.getString(path + "type")), meaningful, yaml.getBoolean(path + "intentional"),
                             1.0, budget, Objects.requireNonNull(yaml.getString(path + "source")), tick, yaml.getString(path + "observation-key"), performance, identity.genome());
-                    parent.samples.addLast(new Sample(tick, position, outcome));
+                    var holder = UUID.fromString(Objects.requireNonNull(yaml.getString(path + "holder"), "Missing evidence holder"));
+                    String target = Objects.requireNonNull(yaml.getString(path + "target"), "Missing action target");
+                    if (!ActionTarget.valid(target)) throw new IllegalArgumentException("Invalid action target");
+                    parent.samples.addLast(new Sample(tick, position, outcome, holder, target));
                 }
                 pool.evidence.put(identity, parent);
             }
@@ -238,11 +292,13 @@ public final class LocalInheritancePool {
     }
     public record ParentCandidate(String storageKey, long seed, long genomeRevision, String lineageId, double fitness, int attempts) { }
     public record PerformanceSummary(long samples, double meanBenefit, double meanRecoveryTicks) { }
+    /** Target fitness uses the pooled formula restricted to samples measured on each action target. */
     public record LocalEvidence(ParentCandidate individual, Map<String, MechanicUtilitySignal> activities,
-                                Map<String, PerformanceSummary> performance) {
+                                Map<String, PerformanceSummary> performance, Map<String, Double> targetFitness) {
         public LocalEvidence {
             activities = Collections.unmodifiableMap(new LinkedHashMap<>(activities));
             performance = Collections.unmodifiableMap(new LinkedHashMap<>(performance));
+            targetFitness = Collections.unmodifiableMap(new LinkedHashMap<>(targetFitness));
         }
     }
     private static final class PerformanceAccumulator {
@@ -255,7 +311,9 @@ public final class LocalInheritancePool {
         PerformanceSummary snapshot() { return new PerformanceSummary(count, benefit, recovery); }
     }
     private record Identity(String key, GenomeRevision genome) { }
-    private record Sample(long tick, WorldPosition position, UtilityOutcomeRecord outcome) { }
+    private record Sample(long tick, WorldPosition position, UtilityOutcomeRecord outcome, UUID holder, String target) {
+        Sample { Objects.requireNonNull(holder); Objects.requireNonNull(target); }
+    }
     private static final class Evidence {
         final Identity identity; final String lineage; final Deque<Sample> samples = new ArrayDeque<>();
         Evidence(Identity identity, String lineage) { this.identity = identity; this.lineage = lineage; }

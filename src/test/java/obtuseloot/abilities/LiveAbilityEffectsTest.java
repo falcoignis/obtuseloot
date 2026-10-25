@@ -146,6 +146,17 @@ class LiveAbilityEffectsTest {
     }
 
     @Test
+    void anotherAbilitysRecoveryOnTheSameItemSuppressesReplantWithoutTouchingTheWorld() {
+        var definition = definition("survival.gentle_harvest"); var item = artifact();
+        item.setAbilityReadyAt("precision.material_insight", gameTick + 1);
+        var result = executor.execute(definition, context(item, definition, harvestEvent(3)), 1);
+        assertEquals(AbilityExecutionStatus.SUPPRESSED, result.status()); assertEquals("ability-recovering", result.suppressionReason());
+        assertTrue(placements.isEmpty()); assertEquals(3, dropStack.getAmount());
+        item.setAbilityReadyAt("precision.material_insight", gameTick);
+        assertEquals(AbilityExecutionStatus.SUCCESS, executor.execute(definition, context(item, definition, harvestEvent(3)), 1).status());
+    }
+
+    @Test
     void singlePlantingItemIsRemovedRatherThanDuplicated() {
         assertEquals(AbilityExecutionStatus.SUCCESS, execute("survival.gentle_harvest", harvestEvent(1)).status());
         assertTrue(dropRemoved);

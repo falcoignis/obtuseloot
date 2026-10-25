@@ -19,6 +19,7 @@ public final class AirJumpService {
     private final Consumer<Runnable> later;
     private final Consumer<Event> events;
     private final Supplier<Collection<? extends Player>> online;
+    private final LongSupplier itemClock;
     private final Map<UUID, AirJumpState> states = new HashMap<>();
     private final Map<UUID, Motion> motions = new HashMap<>();
     private long ticks;
@@ -44,11 +45,18 @@ public final class AirJumpService {
     public AirJumpService(ObtuseLoot plugin) {
         this(plugin.getEquipmentAbilities(), plugin.getItemAbilityManager(),
                 task -> plugin.getServer().getScheduler().runTask(plugin, task),
-                plugin.getServer().getPluginManager()::callEvent, () -> plugin.getServer().getOnlinePlayers());
+                plugin.getServer().getPluginManager()::callEvent, () -> plugin.getServer().getOnlinePlayers(),
+                () -> plugin.getLocalEcosystem() == null ? -1 : plugin.getLocalEcosystem().pool().gameTick());
     }
     public AirJumpService(EquipmentAbilityService equipment, ItemAbilityManager abilities, Consumer<Runnable> later,
                           Consumer<Event> events, Supplier<Collection<? extends Player>> online) {
+        this(equipment, abilities, later, events, online, () -> -1);
+    }
+    /** {@code itemClock} is the persisted ecology tick that item recovery uses; negative means unavailable. */
+    public AirJumpService(EquipmentAbilityService equipment, ItemAbilityManager abilities, Consumer<Runnable> later,
+                          Consumer<Event> events, Supplier<Collection<? extends Player>> online, LongSupplier itemClock) {
         this.equipment = equipment; this.abilities = abilities; this.later = later; this.events = events; this.online = online;
+        this.itemClock = Objects.requireNonNull(itemClock);
     }
     public static boolean eligible(Player player) {
         return RuntimeSettings.get().doubleJumpEnabled() && player.isOnline() && !player.isDead()
@@ -104,6 +112,10 @@ public final class AirJumpService {
                           AbilityDefinition definition, AbilityEventContext context) {
         if (!state.reserved(ticket) || !eligible(player) || player.isOnGround()
                 || !equipment.isCurrentActivation(player, token, definition, context)) return false;
+        // The item's shared recovery runs on the persisted ecology clock, not this service's counter.
+        // Without that clock only the player's own cooldown applies.
+        long itemTick = itemClock.getAsLong();
+        if (itemTick >= 0 && itemTick < context.artifact().abilitiesReadyAt()) return false;
         Vector before = player.getVelocity();
         var genome = context.artifact().getGenome();
         var registration = abilities.registry().registrationById(definition.id());
@@ -112,6 +124,7 @@ public final class AirJumpService {
         double upward = performance.output(settings.doubleJumpVelocity());
         long recoveryTicks = performance.recoveryTicks(settings.doubleJumpCooldownTicks());
         Math.addExact(ticks, recoveryTicks); // Reject an overflowing deadline before submitting any motion.
+        long itemReadyAt = itemTick >= 0 ? Math.addExact(itemTick, recoveryTicks) : 0;
         // Never reduce a stronger launch or take over somebody else's current impulse.
         if (!Double.isFinite(before.getX()) || !Double.isFinite(before.getY()) || !Double.isFinite(before.getZ()) || before.getY() >= upward) return false;
         Vector velocity = before.clone().setY(upward);
@@ -125,6 +138,7 @@ public final class AirJumpService {
         try { player.setVelocity(velocity); }
         catch (RuntimeException exception) { motions.remove(player.getUniqueId(), motion); throw exception; }
         state.complete(ticket, true, ticks, recoveryTicks);
+        if (itemTick >= 0) context.artifact().setAbilityReadyAt(definition.id(), itemReadyAt);
         return true;
     }
     /** Observe the server's ordinary velocity event; never emit, modify or uncancel one ourselves. */

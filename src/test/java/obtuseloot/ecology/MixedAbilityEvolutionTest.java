@@ -104,8 +104,9 @@ class MixedAbilityEvolutionTest {
                     var health = ecosystem.healthSnapshot(origin); var parents = new HashSet<Long>(); var counts = new TreeMap<Long, Integer>();
                     var children = new ArrayList<Artifact>();
                     for (int i = 0; i < COHORT; i++) {
+                        // Pooled selection keeps this historical baseline and its neutral list aligned; holder context is in IndependentConditionsExperimentTest.
                         var child = ecosystem.createEquipment(f.holder, EquipmentArchetype.DIAMOND_AXE, origin,
-                                parentRandom(ecosystem, manager, origin, randoms.get(site), neutral));
+                                parentRandom(ecosystem, manager, origin, randoms.get(site), neutral), null);
                         assertTrue(allowed.contains(child.getParentStorageKey()));
                         var parent = manager.resolveByStorageKey(child.getParentStorageKey());
                         assertEquals(parent.getArtifactSeed(), child.getParentGenomeSeed()); assertEquals(1, child.getParentGenomeRevision());

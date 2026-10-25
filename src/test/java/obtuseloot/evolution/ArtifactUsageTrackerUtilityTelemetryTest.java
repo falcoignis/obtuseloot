@@ -24,7 +24,7 @@ class ArtifactUsageTrackerUtilityTelemetryTest {
         double oldDelta = new ArtifactUsageTracker().trackAbilityExecution(artifact, context, result, definition);
         var measured = result.withPerformance(new obtuseloot.abilities.AbilityPerformanceMeasurement(.6, 30)).withObservationKey("receipt");
         double delta = new ArtifactUsageTracker().trackAbilityExecution(artifact, context, measured, definition);
-        assertEquals(oldDelta * .6 / 2.5, delta, 1e-12);
+        assertEquals(oldDelta * .6, delta, 1e-12);
         var saved = UtilityHistoryRollup.parse(artifact.getLastUtilityHistory()).signalByMechanicTrigger().get("MOVEMENT_ECHO@ON_AIR_JUMP");
         assertEquals(delta, saved.validatedUtility(), 1e-12);
         assertTrue(new obtuseloot.abilities.AbilityOutcomeObservation(context, measured, definition, delta).liveMeasured());

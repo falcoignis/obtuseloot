@@ -1,5 +1,19 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-24 holder target context:** ecology samples (storage version 6) record
+holder and exact action-target material. `LocalInheritancePool.selectionCandidates`
+weights each competing parent's per-target fitness by the receiving holder's recent
+target mix, after the unchanged nearest-column filter; no holder or no overlap keeps
+pooled fitness. Read [`docs/holder-target-context.md`](../../../docs/holder-target-context.md).
+
+**2026-10-23 independent-condition diagnostic:** four crossed target/ceiling sites
+and varied assigned loadouts/opportunities retain the production sampler. An
+inspection-only witness shows crop/stone evidence at the same column height
+receives identical pooled weights despite different target-specific tradeoffs.
+The population experiment records a stone/sky output/cost deficit and keeps
+other outcomes separate; it adopts no context rule or health verdict. Read
+[`docs/independent-ecosystem-conditions.md`](../../../docs/independent-ecosystem-conditions.md).
+
 **2026-10-23 native habitat validation:** the first overhead-relative model selected
 neighboring-room parents for native low-ceiling loot because airborne and chest
 reference heights differed. The correction captures lower/upper column boundaries,
@@ -239,3 +253,10 @@ The decision is to rewire the Python tooling to Java harness output (decisions.m
 | Genome influences template choice only through the regulatory filter | C | Trace `genome` usage in `ProceduralAbilityGenerator` |
 | Self-balancing `evaluate` is harness-only | D | Find all callers of `evaluate` |
 | Sensing-probe flake source (16 vs 27 hits, same code) | baseline runs | Not needed if the floor is dropped (ask owner); otherwise run the class alone repeatedly with fixed UUIDs |
+
+**2026-10-25 recovery and shared recovery:** parent fitness and per-target fitness are
+total validated utility in the window; `AbilityPerformanceMeasurement.adjustUtility`
+no longer divides by recovery. `Artifact.abilitiesReadyAt` is the latest entry in the
+per-ability ready-time map; Material Insight, Gentle Harvest and native/modeled Double
+Jump check it, so abilities on one item share recovery. Passive effects record no
+outcomes and are not gated. Read [`docs/recovery-selection-research.md`](../../../docs/recovery-selection-research.md).
