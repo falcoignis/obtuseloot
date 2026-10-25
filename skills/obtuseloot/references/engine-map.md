@@ -253,3 +253,10 @@ The decision is to rewire the Python tooling to Java harness output (decisions.m
 | Genome influences template choice only through the regulatory filter | C | Trace `genome` usage in `ProceduralAbilityGenerator` |
 | Self-balancing `evaluate` is harness-only | D | Find all callers of `evaluate` |
 | Sensing-probe flake source (16 vs 27 hits, same code) | baseline runs | Not needed if the floor is dropped (ask owner); otherwise run the class alone repeatedly with fixed UUIDs |
+
+**2026-10-25 recovery and shared recovery:** parent fitness and per-target fitness are
+total validated utility in the window; `AbilityPerformanceMeasurement.adjustUtility`
+no longer divides by recovery. `Artifact.abilitiesReadyAt` is the latest entry in the
+per-ability ready-time map; Material Insight, Gentle Harvest and native/modeled Double
+Jump check it, so abilities on one item share recovery. Passive effects record no
+outcomes and are not gated. Read [`docs/recovery-selection-research.md`](../../../docs/recovery-selection-research.md).

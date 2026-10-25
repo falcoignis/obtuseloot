@@ -120,3 +120,10 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 - Each sample records holder and exact block-material action target. Births weight current local parents by the receiving holder's recent attempt mix over targets the competing parents were measured on. No holder, or no overlap, keeps pooled fitness. Parents stay inside the configured chunk radius.
 - Implementation choices, not owner-confirmed niche boundaries: the holder mix comes from the whole pool inside the outcome window; materials are exact and ungrouped; unmeasured targets contribute zero; health diagnostics stay holder-blind.
 - No quotas, floors, boosts or distribution tuning. No merge or live-deployment authorization. Wild mutation remains held.
+
+## 2026-10-24/25: recovery counting, extra abilities, plasticity scope
+
+- The owner approved each pre-registered run in turn: larger populations, total-utility parent fitness ("try it"), counting recovery once ("do it"), shared recovery and holder-weighted competition, then the holder run ("try it").
+- The owner asked for a downside to items having more abilities. Options offered: shared recovery, per-ability competition, averaging instead of summing, a shared gene budget, a fixed per-ability penalty. The owner chose **shared recovery** and **holder-weighted competition** ("i like 1 and 2"). Holder weighting was then found to add no cost to extra abilities; it is the crop/stone niche mechanism. The owner asked to resolve the shared-recovery gaps ("well figure it out").
+- **Plasticity stays out of the PR** (owner choice, 2026-10-25): inherited target plasticity was not confirmed and remains research only.
+- Adopting the formula changes is the owner's PR review decision; no merge authorization. No quotas, floors, boosts or distribution tuning. See `docs/recovery-selection-research.md`.
