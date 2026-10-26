@@ -166,9 +166,7 @@ and dated validation status; this is not proof of natural niche formation.
 
 - **Parent niches are fixed.** They are values of the `MechanicNicheTag` enum. Only child niches (`<PARENT>_A<n>`/`_B<n>`) are created at runtime.
 - **Bifurcation guards** (`NicheBifurcationRegistry.evaluateBifurcation`):
-  - a global cap of 8 dynamic niches and 4 per parent;
-  - a 60,000 ms **wall-clock** cooldown;
-  - a pressure gate.
+  - a pressure gate, with sustained pressure. The niche caps (8 global, 4 per parent) and the 60 s split cooldowns were **removed on 2026-10-26** (owner: splitting must be organic). A parent's split share and saturation exclude occupancy already absorbed into its children (relief). See `docs/organic-niche-splitting.md`.
   - **inference:** the effective gate is parent share >= 0.13 with 1 sustained window, and the specialization gate (>= 0.00) is vacuous.
   - **Share (2026-10-26):** every share reader divides rollup `occupancy` by total occupancy. Occupancy splits each artifact across its niches by utility mass (sums to one), and each signal's outcomes count only toward its own niches. Before this, an artifact counted fully in every niche it touched, which diluted share until no niche could split a second time (`docs/niche-split-gate-diagnosis.md`, `docs/niche-share-at-source.md`).
 - **Evaluation timing.** Evaluation is throttled to 5,000 ms of wall-clock time. Each evaluation is one "window" for grace, establishment, collapse and age.
@@ -216,7 +214,7 @@ Agent C counted about 20 corrective layers in ability selection, added 2026-03-1
 
 | Area | Mechanism |
 |---|---|
-| Ecology | Bifurcation caps (8 global / 4 per parent); forced displacement and soft migration; niche locks (x1.30); inversion multipliers (child x1.30 / parent x0.88); wall-clock cooldowns. Note the owner did rule that timing moves to **game time** and state **persists**. |
+| Ecology | ~~Bifurcation caps (8 global / 4 per parent)~~ and ~~split cooldowns~~ removed 2026-10-26 (owner ruling); forced displacement and soft migration; niche locks (x1.30); inversion multipliers (child x1.30 / parent x0.88). Note the owner did rule that timing moves to **game time** and state **persists**. |
 | Safety | Production safety guards / dominance suppression (`safety.*`, combined floor 0.75). These came from the v0.9.41/42 "production hardening" work. |
 | Progression | Fixed tier gates 10/25/45/70; archetype inertia 2.0 and switch margin 4.0; drift cap 0.40 |
 
