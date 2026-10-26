@@ -1,5 +1,13 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-25 UTC (late): niche scaffolding ablation; #425 to #427 merged
+
+- **#425, #426, #427 merged** under the scoped "merge it all" authorization: status refresh (`c6cac6c`), holder-specialization sweep (`ca49b37`; 75% own-site holders shown 12/16, 50% not, 1/16), soft-cap removal (`992c547`; capped 1.30% vs removed 0.00% largest relative diversity drop). Their branches were deleted.
+- **Niche scaffolding ablation** (branch `refactor/ablate-forced-bifurcation`, from main `992c547`): the tracker, registry and usage tracker share one supplied clock, and child loops, signal snapshots and niche profiles iterate in a fixed order (`Set.copyOf`/`Map.copyOf` order is salted per JVM). Forced bifurcation and one-occupant reconciliation are removed; the sticky lock, grace periods, hysteresis, caps and migration are unchanged.
+- Pre-registered three-arm run on GitHub Actions (run 40251774417; 16 seeds, 48 artifacts, 24 windows). Rule F not shown (9/16): in 7 seeds the only split was forced. Rule R not shown (0/16): reconciliation never acted (lineage-support bar never reached), though a unit witness shows it acted when reached. Final Simpson 0.8535 vs 0.8518, no seed past the guardrail. No seed split a second time in any arm; the gate is not identified. Seed 0 replays byte for byte across runners and matches a local run.
+- Full suite on GitHub at `64e2c37`: 606 tests, 0 failures, 0 errors, 9 opt-in experiments skipped. Merge authorized ("merge and yes") after the PR's CI passes; no standing permission. Wild mutation remains held.
+- Process: runs now go on GitHub Actions. A local 12-JVM run on 2026-10-25 froze the owner's server and lost the unpushed first build of this branch, which was rebuilt from the session record.
+
 ## 2026-10-25 UTC: recovery counted once, shared recovery, holder targets (merged)
 
 - **Merged:** #424 merged into main as `397789ce61444c1f1f51a2199cbe85d7e3afe2d5` on 2026-10-25, carrying #423 (`eaafdc0`, marked merged by GitHub). Scoped owner authorization ("retarget and carry both, then merge"); no standing merge permission. CI passed on head `0e4b8df`.

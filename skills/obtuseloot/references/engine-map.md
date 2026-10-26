@@ -171,7 +171,7 @@ and dated validation status; this is not proof of natural niche formation.
   - a pressure gate.
   - **inference:** the effective gate is parent share >= 0.13 with 1 sustained window, and the specialization gate (>= 0.00) is vacuous.
 - **Evaluation timing.** Evaluation is throttled to 5,000 ms of wall-clock time. Each evaluation is one "window" for grace, establishment, collapse and age.
-- **Forced bifurcation.** `FORCED_BIFURCATION_WINDOW = 3` in `NichePopulationTracker` guarantees one bifurcation per tracker instance whatever the pressure.
+- **Forced bifurcation (removed 2026-10-25).** `FORCED_BIFURCATION_WINDOW = 3` guaranteed one bifurcation per tracker instance whatever the pressure. It was removed with one-occupant reconciliation; see `docs/niche-scaffolding-ablation.md`. Evaluation, cooldown and age now read the registry's supplied clock (wall time by default).
 - **Child-niche aids:**
   - forced displacement and migration (seeded `0xC0FFEE1234ABCDEFL`);
   - locks (x1.30 utility);
@@ -206,7 +206,7 @@ Agent C counted about 20 corrective layers in ability selection, added 2026-03-1
 | Area | Mechanism |
 |---|---|
 | Ability selection | Top-3 compression (`applyConditionalTopThreeCompression`, 0.55 -> 0.50); nonlinear normalization (gamma 2.50, mean anchor 0.35); soft top cap 1.28x; category-local cold balancing; small-category flattening (<= 6 templates); 12% unseen-template override; under-sampled applicability boost (<= 1.16); tail preservation (<= +10%); cold template boost (<= +22%); context-align dampening; novelty floor (dead); similarity penalty bands; recency bias; trigger and niche saturation penalties from static template counts; ecological-yield clamp; low-volume category boost; category exposure bias; niche weight applied twice |
-| Ecology | Forced bifurcation (`FORCED_BIFURCATION_WINDOW=3`); one-occupant continuity reconciliation |
+| Ecology | Forced bifurcation (`FORCED_BIFURCATION_WINDOW=3`); one-occupant continuity reconciliation. **Both removed 2026-10-25** (`docs/niche-scaffolding-ablation.md`) |
 | Process | Analytics PROPOSED -> ACCEPTED human tuning loop |
 | Pressure | Fixed 4-template environment pressure (`Random(7331)`). This one is **replaced** by co-evolving pressure, not simply removed. |
 | Config | `analytics.ecology.*` block (never read live). Delete it. |

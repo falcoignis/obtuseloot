@@ -64,6 +64,9 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
    the receiving holder's recent action targets. Read `docs/holder-target-context.md`.
    On 2026-10-25 recovery is counted once and abilities on one item share recovery;
    read `docs/recovery-selection-research.md`.
+   Later on 2026-10-25, forced bifurcation and one-occupant reconciliation were removed behind a
+   three-arm ablation, after the niche ecology was made replayable on one supplied clock; read
+   `docs/niche-scaffolding-ablation.md`. No niche split a second time in any arm; that gate is not identified.
 5. **Tooling:** split into two Maven modules (plugin, offline tooling), rewire the Python pipeline to Java, redefine the metrics, untrack `analytics/`, fast/full test tiers.
 
 Unless the owner says otherwise, work from the top. When a request touches a later item, say where it sits in this order.
@@ -111,6 +114,8 @@ Other stale or misleading files (decision: refresh or archive them via PR):
 `commands and permissions.md` is at the **repo root**, not in `docs/`. It is mostly accurate.
 
 ### Build and test
+
+**Run full suites and research runs on GitHub Actions whenever possible** (owner, 2026-10-25: "run the tests through github from now on whenever possible"). A pushed branch can carry a research workflow that checks out each arm commit per matrix job and uploads its outputs. Drop a branch-pinned workflow before review, and record the run link and the commit that held it in the result note. The normal `build.yml` runs the full suite on every pull request. Local runs are for quick focused checks only, with explicit CPU and memory caps (for example `--cpus=2 --memory=4g` and a smaller `-Xmx`), one at a time, with the checkout on disk rather than in a RAM-backed `/tmp`. On 2026-10-25, 12 uncapped parallel Maven JVMs froze the owner's server.
 
 Use the official Maven image in a disposable container. Never install or modify a custom image. The owner selected Minecraft 26.2 on 2026-10-21; use Java 25 for the build:
 
