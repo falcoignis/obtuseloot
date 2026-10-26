@@ -1,0 +1,66 @@
+name: Niche scaffolding ablation
+
+# Pre-registered research run (docs/niche-scaffolding-ablation.md). Each arm is a fixed commit on
+# this branch; seeds are split across jobs and the CSVs are uploaded for the summarizer.
+on:
+  push:
+    branches: [refactor/ablate-forced-bifurcation]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        arm:
+          - { name: control, ref: c04d42ce071e35c4209938bac8b33a7247a98fb1 }
+          - { name: forced_off, ref: d082463b8155aa5a12c6b36be7d3f2e7911e3a8e }
+          - { name: both_off, ref: edac9471e452d7773700b9fac5c8ef4f33bbb269 }
+        seeds: ['0-3', '4-7', '8-11', '12-15']
+        include:
+          # Replay check: seed 0 of the control on a separate runner must match the main run.
+          - arm: { name: control-replay, ref: c04d42ce071e35c4209938bac8b33a7247a98fb1 }
+            seeds: '0-0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.arm.ref }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Run arm
+        run: >
+          mvn -B -ntp test -Dtest='NicheScaffoldingAblationTest#nicheScaffoldingAblation'
+          -Dsurefire.failIfNoSpecifiedTests=false -Dobtuseloot.experiments=true
+          -Dobtuseloot.arm=${{ matrix.arm.name }} -Dobtuseloot.seeds=${{ matrix.seeds }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.arm.name }}-seeds-${{ matrix.seeds }}
+          path: target/niche-scaffolding-ablation/
+          if-no-files-found: error
+
+  full-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Build and test
+        run: mvn -B -ntp clean package
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
