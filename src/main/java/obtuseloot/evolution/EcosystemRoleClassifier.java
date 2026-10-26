@@ -54,7 +54,8 @@ public class EcosystemRoleClassifier {
                 .map(Map.Entry::getKey)
                 .orElse(MechanicNicheTag.GENERALIST);
         NicheSpecializationProfile specialization = differentiationHeuristics.specializationFor(nicheScores, subnicheScores, dominant);
-        return new ArtifactNicheProfile(dominant, Set.copyOf(niches), Map.copyOf(nicheScores), specialization);
+        return new ArtifactNicheProfile(dominant, java.util.Collections.unmodifiableSet(EnumSet.copyOf(niches)),
+                java.util.Collections.unmodifiableMap(new EnumMap<>(nicheScores)), specialization);
     }
 
     private AbilityMechanic parseMechanic(String key) {

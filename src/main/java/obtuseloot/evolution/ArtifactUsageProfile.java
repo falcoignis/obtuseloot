@@ -96,7 +96,7 @@ public final class ArtifactUsageProfile {
     public Map<String, MechanicUtilitySignal> utilitySignalsByMechanic() {
         Map<String, MechanicUtilitySignal> snapshot = new ConcurrentHashMap<>();
         utilityProfiles.forEach((k, profile) -> snapshot.put(k, profile.snapshot()));
-        return Map.copyOf(snapshot);
+        return java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(snapshot));
     }
 
     public void restoreUtilitySignals(Map<String, MechanicUtilitySignal> signals) {

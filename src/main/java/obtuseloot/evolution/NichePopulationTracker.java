@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NichePopulationTracker {
@@ -138,7 +140,7 @@ public class NichePopulationTracker {
         }
         activeArtifacts.add(artifactSeed);
         ArtifactNicheProfile previous = nicheProfilesByArtifact.get(artifactSeed);
-        signalsByArtifact.put(artifactSeed, Map.copyOf(signals));
+        signalsByArtifact.put(artifactSeed, java.util.Collections.unmodifiableMap(new TreeMap<>(signals)));
         ArtifactNicheProfile next = classifier.classify(signals);
         nicheProfilesByArtifact.put(artifactSeed, next);
         double previousSpecialization = specializationScoreByArtifact.getOrDefault(artifactSeed, next.specialization().specializationScore());
@@ -165,7 +167,7 @@ public class NichePopulationTracker {
         }
 
         // Throttled bifurcation evaluation
-        long nowMs = System.currentTimeMillis();
+        long nowMs = bifurcationRegistry.nowMs();
         if (nowMs - lastBifurcationEvalMs >= BIFURCATION_EVAL_INTERVAL_MS) {
             lastBifurcationEvalMs = nowMs;
             evaluateBifurcations(nowMs);
@@ -300,7 +302,7 @@ public class NichePopulationTracker {
 
     private void enforceAssignmentContinuity(Map<String, Long> dynamicPopulation) {
         Map<String, Double> lineageSupport = lineageSupportByChild();
-        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
+        for (String child : new TreeSet<>(bifurcationRegistry.dynamicNiches())) {
             if (!qualifiesForContinuityBias(child, lineageSupport.getOrDefault(child, 0.0D))) {
                 continue;
             }
@@ -369,7 +371,7 @@ public class NichePopulationTracker {
 
     private void refreshOccupancyState(Map<String, Long> dynamicPopulation) {
         Map<String, Double> lineageSupport = lineageSupportByChild();
-        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
+        for (String child : new TreeSet<>(bifurcationRegistry.dynamicNiches())) {
             long population = dynamicPopulation.getOrDefault(child, 0L);
             bifurcationRegistry.recordChildOccupancy(child, population, lineageSupport.getOrDefault(child, 0.0D), evaluationWindowCount);
             if (population > 0L) {
@@ -384,7 +386,7 @@ public class NichePopulationTracker {
 
     private void reconcileProtectedOccupancy(Map<String, Long> dynamicPopulation) {
         Map<String, Double> lineageSupport = lineageSupportByChild();
-        for (String child : Set.copyOf(bifurcationRegistry.dynamicNiches())) {
+        for (String child : new TreeSet<>(bifurcationRegistry.dynamicNiches())) {
             if (dynamicPopulation.getOrDefault(child, 0L) > 0L) {
                 continue;
             }
@@ -1034,7 +1036,7 @@ public class NichePopulationTracker {
         if (latest == null) {
             return 1.0D;
         }
-        long ageMs = Math.max(0L, System.currentTimeMillis() - latest.timestampMs());
+        long ageMs = Math.max(0L, bifurcationRegistry.nowMs() - latest.timestampMs());
         long decayHorizonMs = INVERSION_DECAY_WINDOWS * INVERSION_WINDOW_MS;
         double decayFactor = clamp(1.0D - (ageMs / (double) Math.max(1L, decayHorizonMs)), 0.0D, 1.0D);
         if (decayFactor <= 0.0D) {
