@@ -959,7 +959,16 @@ public class NichePopulationTracker {
                 MutableRollup rollup = mutable.computeIfAbsent(niche, ignored -> new MutableRollup());
                 rollup.activeArtifacts++;
                 rollup.occupancy += 1.0D;
-                for (MechanicUtilitySignal signal : signalMap.values()) {
+            }
+            // Each signal's outcomes count only toward the niches that signal belongs to.
+            for (Map.Entry<String, MechanicUtilitySignal> entry : signalMap.entrySet()) {
+                Set<MechanicNicheTag> tags = classifier.nichesForSignal(entry.getKey());
+                if (tags.isEmpty() && profile.niches().contains(MechanicNicheTag.GENERALIST)) {
+                    tags = Set.of(MechanicNicheTag.GENERALIST);
+                }
+                MechanicUtilitySignal signal = entry.getValue();
+                for (MechanicNicheTag niche : tags) {
+                    MutableRollup rollup = mutable.computeIfAbsent(niche, ignored -> new MutableRollup());
                     rollup.attempts += signal.attempts();
                     rollup.meaningful += signal.meaningfulOutcomes();
                     rollup.validated += signal.validatedUtility();
