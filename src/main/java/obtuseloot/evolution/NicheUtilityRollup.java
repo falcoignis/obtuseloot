@@ -6,8 +6,15 @@ public record NicheUtilityRollup(
         long attempts,
         long meaningfulOutcomes,
         double validatedUtility,
-        double budgetConsumed
+        double budgetConsumed,
+        double occupancy
 ) {
+    /** Occupancy defaults to the member count. Population shares are occupancy over total occupancy. */
+    public NicheUtilityRollup(MechanicNicheTag niche, int activeArtifacts, long attempts, long meaningfulOutcomes,
+                              double validatedUtility, double budgetConsumed) {
+        this(niche, activeArtifacts, attempts, meaningfulOutcomes, validatedUtility, budgetConsumed, activeArtifacts);
+    }
+
     public double outcomeYield() {
         return attempts <= 0L ? 0.0D : meaningfulOutcomes / (double) attempts;
     }

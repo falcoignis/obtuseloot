@@ -58,6 +58,11 @@ public class EcosystemRoleClassifier {
                 java.util.Collections.unmodifiableMap(new EnumMap<>(nicheScores)), specialization);
     }
 
+    /** The niche tags one recorded mechanic signal belongs to. */
+    public Set<MechanicNicheTag> nichesForSignal(String signalKey) {
+        return taxonomy.nichesFor(parseMechanic(signalKey), parseTrigger(signalKey));
+    }
+
     private AbilityMechanic parseMechanic(String key) {
         String[] parts = key.split("@");
         if (parts.length == 0) {

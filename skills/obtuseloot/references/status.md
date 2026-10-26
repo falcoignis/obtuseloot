@@ -1,5 +1,11 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-26 UTC: niche share at its source (utility-weighted occupancy)
+
+- Pre-registered four-arm comparison on GitHub Actions (run 40269471357): control, signal attribution only, attribution plus count-once, attribution plus utility-weighted occupancy. The control matched the #429 outputs byte for byte. Splits per seed 0.56 / 0.62 / 3.00 / 2.81. Rule S (more than one split) 0, 0, 16 and 15 of 16; Rule E (a collapse) 2, 3, 16 and 11 of 16. Final Simpson 0.8518 / 0.8523 / 0.8516 / 0.8638, guardrail 0/16 everywhere.
+- Owner chose weighted (option A). Count-once split on the 60 s global-cooldown clock in every seed; weighted keeps the pressure gate selecting (521 blocks vs 82). The global cooldown is now the main limit on splitting and has not been ruled on.
+- Full suite on GitHub for the weighted head: 606 tests, 0 failures, 0 errors, 9 opt-in skipped. Merge authorized ("you merge once it's clean") after PR CI; no standing permission. See `docs/niche-share-at-source.md`.
+
 ## 2026-10-26 UTC: why no niche splits a second time (diagnostic)
 
 - Branch `diag/second-split-gate` from main `c207c78`. The registry records the gate that decided each parent's latest evaluation (`lastGate`, read-only), and the niche harness writes it per window to `gates.csv`. No selection rule changes; harness windows and children outputs are byte-identical to #428's both_off arm.

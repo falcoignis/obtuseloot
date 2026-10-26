@@ -128,12 +128,12 @@ public class AdaptiveSupportAllocator {
             return Map.of(MechanicNicheTag.GENERALIST, defaultNiche(MechanicNicheTag.GENERALIST));
         }
         Map<MechanicNicheTag, Double> rawWeights = new EnumMap<>(MechanicNicheTag.class);
-        double totalPopulation = rollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum();
+        double totalPopulation = rollups.values().stream().mapToDouble(NicheUtilityRollup::occupancy).sum();
         double avgDensity = rollups.values().stream().mapToDouble(NicheUtilityRollup::utilityDensity).average().orElse(0.0D);
 
         for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : rollups.entrySet()) {
             NicheUtilityRollup rollup = entry.getValue();
-            double popShare = rollup.activeArtifacts() / Math.max(1.0D, totalPopulation);
+            double popShare = rollup.occupancy() / Math.max(1.0D, totalPopulation);
             double utilityAdvantage = rollup.utilityDensity() - avgDensity;
             double crowdedPenalty = clamp((popShare - 0.16D) * 1.8D, 0.0D, 0.56D);
             double specializationDiversity = clamp((1.0D - popShare) * 0.32D + rollup.outcomeYield() * 0.24D, 0.0D, 0.42D);
@@ -153,7 +153,7 @@ public class AdaptiveSupportAllocator {
         Map<MechanicNicheTag, NicheOpportunityAllocation> out = new EnumMap<>(MechanicNicheTag.class);
         for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : rollups.entrySet()) {
             double share = rawWeights.get(entry.getKey()) / Math.max(0.0001D, rawTotal);
-            double popShare = entry.getValue().activeArtifacts() / Math.max(1.0D, totalPopulation);
+            double popShare = entry.getValue().occupancy() / Math.max(1.0D, totalPopulation);
             double pressure = clamp(Math.max(0.0D, popShare - share) + budget.saturationIndex() * 0.18D, 0.0D, 0.88D);
             double diminishing = 1.0D - (pressure / (pressure + 0.58D));
             double reinforcement = clamp((0.68D + share * 1.32D) * diminishing, 0.48D, 1.40D);
