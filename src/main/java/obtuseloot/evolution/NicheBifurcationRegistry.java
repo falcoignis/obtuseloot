@@ -72,6 +72,7 @@ public class NicheBifurcationRegistry {
 
     // ---------- configuration ----------
 
+    /** No longer read: niche counts are not capped (owner, 2026-10-26). Kept so existing constructors compile. */
     private final int  maxDynamicNiches;
     private final int  maxDynamicNichesPerParent;
     /** No longer read: splits are not clock-gated (owner, 2026-10-26). Kept so existing constructors compile. */
@@ -213,17 +214,7 @@ public class NicheBifurcationRegistry {
             int activeArtifacts,
             long nowMs) {
 
-        // Guard: global niche cap (counts pairs, so headroom must be >= 2)
-        if (dynamicNiches.size() + 2 > maxDynamicNiches) {
-            observe(parentNiche, "GLOBAL_CAP", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
-            return Optional.empty();
-        }
-
-        // Guard: per-parent cap
-        if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
-            observe(parentNiche, "PARENT_CAP", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
-            return Optional.empty();
-        }
+        // No count caps: how many niches exist is left to pressure and extinction (owner, 2026-10-26).
 
 
         // No clock gate: pressure and sustained pressure decide when a niche splits (owner, 2026-10-26).

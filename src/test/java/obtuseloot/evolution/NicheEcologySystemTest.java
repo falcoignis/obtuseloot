@@ -559,20 +559,18 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void maxNicheCapPreventsUnlimitedSpawning() {
-        // Cap at 2 dynamic niches: only one bifurcation (produces 2 children) should succeed
+    void configuredNicheCapDoesNotDecideTheNextSplit() {
+        // A configured cap of 2 dynamic niches is no longer read: pressure decides the next evaluation.
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(2, 0L, 1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         long nowMs = System.currentTimeMillis();
         tracker.evaluateBifurcations(nowMs);
-        assertEquals(1, registry.bifurcations().size(), "First bifurcation uses both slots");
-        assertEquals(2, registry.dynamicNicheCount());
+        assertEquals(1, registry.bifurcations().size(), "First bifurcation should occur");
 
-        // Attempt further bifurcation after cooldown — cap is now full
         tracker.evaluateBifurcations(nowMs + 200L);
-        assertEquals(1, registry.bifurcations().size(),
-                "No further bifurcation when niche cap is reached");
+        String gate = registry.lastGate("NAVIGATION").orElseThrow().gate();
+        assertFalse(gate.endsWith("_CAP"), "Second evaluation was decided by " + gate);
     }
 
     @Test
