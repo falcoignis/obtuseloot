@@ -39,7 +39,7 @@ class NicheScaffoldingAblationTest {
     @EnabledIfSystemProperty(named = "obtuseloot.experiments", matches = "true")
     private @interface Experiment { }
 
-    record Run(List<String> windows, List<String> children, List<String> gates) { }
+    record Run(List<String> windows, List<String> children, List<String> gates, List<String> competition) { }
 
     @Test
     void scenarioReplaysExactlyWithFreshState() {
@@ -49,6 +49,7 @@ class NicheScaffoldingAblationTest {
         assertEquals(first.windows(), second.windows());
         assertEquals(first.children(), second.children());
         assertEquals(first.gates(), second.gates());
+        assertEquals(first.competition(), second.competition());
         assertEquals(6, first.windows().size());
     }
 
@@ -80,8 +81,10 @@ class NicheScaffoldingAblationTest {
         List<String> windows = new ArrayList<>();
         List<String> children = new ArrayList<>();
         List<String> gates = new ArrayList<>();
+        List<String> competition = new ArrayList<>();
         windows.add("seed,window,live_children,births,collapses,live_niches,simpson,effective_niches,children");
         children.add("seed,child,parent,birth_window,collapse_window");
+        competition.add("seed,window,mean_competition_factor,max_competition_factor");
         gates.add("seed,window,niche,gate,saturation,specialization,share,active_artifacts,children_of_parent,live_children");
         for (int s = firstSeed; s <= lastSeed; s++) {
             long seed = 0x4E49434845L + s * 0x9E3779B97F4A7C15L;
@@ -89,10 +92,12 @@ class NicheScaffoldingAblationTest {
             windows.addAll(run.windows());
             children.addAll(run.children());
             gates.addAll(run.gates());
+            competition.addAll(run.competition());
         }
         Files.write(out.resolve("windows.csv"), windows);
         Files.write(out.resolve("children.csv"), children);
         Files.write(out.resolve("gates.csv"), gates);
+        Files.write(out.resolve("competition.csv"), competition);
         System.out.println("NICHE_SCAFFOLDING_ABLATION arm=" + arm + " rows=" + (windows.size() - 1) + " children=" + (children.size() - 1));
     }
 
@@ -137,6 +142,7 @@ class NicheScaffoldingAblationTest {
         var reputation = new ArtifactReputation();
         var windows = new ArrayList<String>();
         var gates = new ArrayList<String>();
+        var competition = new ArrayList<String>();
         var birthWindow = new TreeMap<String, Integer>();
         var parentOf = new TreeMap<String, String>();
         var collapseWindow = new TreeMap<String, Integer>();
@@ -190,6 +196,15 @@ class NicheScaffoldingAblationTest {
                         gate.saturationPressure(), gate.specializationPressure(), gate.populationShare(), gate.activeArtifacts(),
                         registry.childrenOf(tag.name()).size(), live.size()));
             }
+            // Competition divides each outcome's relevance; report how hard it bites per window.
+            double competitionSum = 0.0D;
+            double competitionMax = 0.0D;
+            for (Artifact artifact : artifacts) {
+                double factor = tracker.nicheCompetitionFactor(artifact.getArtifactSeed());
+                competitionSum += factor;
+                competitionMax = Math.max(competitionMax, factor);
+            }
+            competition.add(String.format(Locale.ROOT, "%d,%d,%.6f,%.6f", seed, window, competitionSum / artifacts.size(), competitionMax));
             var occupancy = new TreeMap<String, Integer>();
             for (Artifact artifact : artifacts) occupancy.merge(tracker.effectiveNicheName(artifact.getArtifactSeed()), 1, Integer::sum);
             var diversity = NicheDiversityMetrics.diversity(occupancy);
@@ -200,7 +215,7 @@ class NicheScaffoldingAblationTest {
         var children = new ArrayList<String>();
         birthWindow.forEach((child, born) -> children.add(seed + "," + child + "," + parentOf.get(child) + ","
                 + born + "," + collapseWindow.getOrDefault(child, -1)));
-        return new Run(windows, children, gates);
+        return new Run(windows, children, gates, competition);
     }
 
     private static double mix(double lineageBias, Random random) {

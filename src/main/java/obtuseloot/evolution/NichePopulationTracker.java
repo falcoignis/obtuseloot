@@ -191,7 +191,7 @@ public class NichePopulationTracker {
             return;
         }
 
-        int totalPopulation = allRollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum();
+        double totalPopulation = allRollups.values().stream().mapToDouble(NicheUtilityRollup::occupancy).sum();
         boolean bifurcatedThisCycle = false;
         for (Map.Entry<MechanicNicheTag, NicheUtilityRollup> entry : allRollups.entrySet()) {
             if (bifurcatedThisCycle) {
@@ -200,7 +200,7 @@ public class NichePopulationTracker {
             MechanicNicheTag nicheTag = entry.getKey();
             NicheUtilityRollup nicheRollup = entry.getValue();
             String nicheName = nicheTag.name();
-            double nicheShare = totalPopulation <= 0 ? 0.0D : nicheRollup.activeArtifacts() / (double) totalPopulation;
+            double nicheShare = totalPopulation <= 0.0D ? 0.0D : nicheRollup.occupancy() / totalPopulation;
 
             RolePressureMetrics pressure = saturationModel.pressureFor(nicheTag, nicheRollup, allRollups);
             // Use mean artifact specialization score as the "specialization" dimension.
@@ -872,8 +872,8 @@ public class NichePopulationTracker {
         if (nicheRollup == null) {
             return 1.0D;
         }
-        int totalPopulation = Math.max(1, allRollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum());
-        double nicheShare = nicheRollup.activeArtifacts() / (double) totalPopulation;
+        double totalPopulation = Math.max(1.0D, allRollups.values().stream().mapToDouble(NicheUtilityRollup::occupancy).sum());
+        double nicheShare = nicheRollup.occupancy() / totalPopulation;
         RolePressureMetrics pressure = saturationModel.pressureFor(profile.dominantNiche(), nicheRollup, allRollups);
         double saturationPressure = clamp(pressure.saturationPenalty(), 0.0D, 1.0D);
         double artifactDensity = clamp(nicheRollup.attempts() / Math.max(1.0D, nicheRollup.activeArtifacts() * 12.0D), 0.0D, 1.0D);
@@ -958,6 +958,7 @@ public class NichePopulationTracker {
             for (MechanicNicheTag niche : profile.niches()) {
                 MutableRollup rollup = mutable.computeIfAbsent(niche, ignored -> new MutableRollup());
                 rollup.activeArtifacts++;
+                rollup.occupancy += 1.0D;
                 for (MechanicUtilitySignal signal : signalMap.values()) {
                     rollup.attempts += signal.attempts();
                     rollup.meaningful += signal.meaningfulOutcomes();
@@ -967,7 +968,7 @@ public class NichePopulationTracker {
             }
         }
         Map<MechanicNicheTag, NicheUtilityRollup> out = new EnumMap<>(MechanicNicheTag.class);
-        mutable.forEach((niche, r) -> out.put(niche, new NicheUtilityRollup(niche, r.activeArtifacts, r.attempts, r.meaningful, r.validated, r.budget)));
+        mutable.forEach((niche, r) -> out.put(niche, new NicheUtilityRollup(niche, r.activeArtifacts, r.attempts, r.meaningful, r.validated, r.budget, r.occupancy)));
         return out;
     }
 
@@ -1153,6 +1154,7 @@ public class NichePopulationTracker {
 
     private static class MutableRollup {
         private int activeArtifacts;
+        private double occupancy;
         private long attempts;
         private long meaningful;
         private double validated;

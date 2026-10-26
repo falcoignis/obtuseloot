@@ -10,8 +10,8 @@ public class EcosystemSaturationModel {
     public RolePressureMetrics pressureFor(MechanicNicheTag niche,
                                            NicheUtilityRollup nicheRollup,
                                            Map<MechanicNicheTag, NicheUtilityRollup> allRollups) {
-        double totalPopulation = allRollups.values().stream().mapToInt(NicheUtilityRollup::activeArtifacts).sum();
-        double share = totalPopulation <= 0.0D ? 0.0D : nicheRollup.activeArtifacts() / totalPopulation;
+        double totalPopulation = allRollups.values().stream().mapToDouble(NicheUtilityRollup::occupancy).sum();
+        double share = totalPopulation <= 0.0D ? 0.0D : nicheRollup.occupancy() / totalPopulation;
 
         double meanUtilityDensity = allRollups.values().stream().mapToDouble(NicheUtilityRollup::utilityDensity).average().orElse(0.0D);
         double utilityDelta = nicheRollup.utilityDensity() - meanUtilityDensity;
