@@ -427,39 +427,43 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void deterministicReconciliationRestoresProtectedChildBeforeZeroWindowRecords() {
+    void emptiedProtectedChildIsNotRefilledByReconciliation() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
         long nowMs = System.currentTimeMillis();
 
         tracker.evaluateBifurcations(nowMs);
         NicheBifurcation bifurcation = registry.bifurcations().get(0);
-        String protectedChild = bifurcation.childNicheA();
-
-        for (int window = 0; window < NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS; window++) {
+        String protectedChild = null;
+        // Successful outcomes build lineage support until an occupied child is eligible for continuity protection.
+        for (int window = 0; window < 20 && protectedChild == null; window++) {
             for (long seed = 10L; seed < 16L; seed++) {
                 tracker.recordTelemetry(seed, "lineage-alpha", Map.of(
                         "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
                         new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                                0.35D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
+                                0.35D, 40.0D, 0.4D, 0.0D, 0.0D, 0.0D, 12L, 12L, 10.0D)
                 ));
             }
             tracker.evaluateBifurcations(nowMs + 100L + window);
+            protectedChild = java.util.stream.Stream.of(bifurcation.childNicheA(), bifurcation.childNicheB())
+                    .filter(registry::eligibleForContinuityProtection)
+                    .filter(child -> !occupants(tracker, child).isEmpty())
+                    .findFirst().orElse(null);
         }
+        assertNotNull(protectedChild, "Fixture must establish a protected, occupied child");
 
-        assertTrue(registry.isEstablishedOrHistoricalChild(protectedChild));
-
-        for (long seed = 10L; seed < 16L; seed++) {
-            tracker.recordTelemetry(seed, "lineage-alpha", Map.of(
-                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                            0.35D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
-            ));
-        }
+        occupants(tracker, protectedChild).forEach(tracker::markDiscarded);
         tracker.evaluateBifurcations(nowMs + 1_000L);
 
-        assertNotEquals("NAVIGATION", tracker.effectiveNicheName(10L),
-                "A protected child should be deterministically repopulated before the next snapshot window");
+        // Unassigned NAVIGATION artifacts remain; only outcomes may move one into the emptied child.
+        assertTrue(registry.isDynamicNiche(protectedChild), "Collapse hysteresis still holds the empty child");
+        assertEquals(List.of(), occupants(tracker, protectedChild));
+    }
+
+    private static List<Long> occupants(NichePopulationTracker tracker, String child) {
+        return java.util.stream.LongStream.range(10L, 16L).boxed()
+                .filter(seed -> child.equals(tracker.effectiveNicheName(seed)))
+                .toList();
     }
 
     @Test

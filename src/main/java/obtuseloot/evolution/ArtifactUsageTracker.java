@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class ArtifactUsageTracker {
     private final Map<Long, ArtifactUsageProfile> profiles = new ConcurrentHashMap<>();
     private final TriggerBudgetResolver budgetResolver = new TriggerBudgetResolver();
-    private final NichePopulationTracker nichePopulationTracker = new NichePopulationTracker();
+    private final NichePopulationTracker nichePopulationTracker;
     private final ArtifactRuntimeCache<Map<String, MechanicUtilitySignal>> signalCache;
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
 
@@ -27,7 +27,18 @@ public class ArtifactUsageTracker {
     }
 
     public ArtifactUsageTracker(ArtifactRuntimeCache<Map<String, MechanicUtilitySignal>> signalCache) {
+        this(signalCache, new NichePopulationTracker());
+    }
+
+    public ArtifactUsageTracker(ArtifactRuntimeCache<Map<String, MechanicUtilitySignal>> signalCache,
+                                NichePopulationTracker nichePopulationTracker) {
         this.signalCache = signalCache;
+        this.nichePopulationTracker = nichePopulationTracker;
+    }
+
+    /** Usage stamps share the niche ecology's clock, so a supplied clock covers both. */
+    private long nowMs() {
+        return nichePopulationTracker.bifurcationRegistry().nowMs();
     }
 
     public void setTelemetryEmitter(EcosystemTelemetryEmitter telemetryEmitter) {
@@ -44,29 +55,29 @@ public class ArtifactUsageTracker {
     }
 
     public void trackCreated(Artifact artifact) {
-        profileFor(artifact).markCreated(System.currentTimeMillis());
+        profileFor(artifact).markCreated(nowMs());
         nichePopulationTracker.markCreated(artifact.getArtifactSeed());
     }
 
     public void trackUse(Artifact artifact) {
-        profileFor(artifact).recordUse(System.currentTimeMillis());
+        profileFor(artifact).recordUse(nowMs());
     }
 
     public void trackKillParticipation(Artifact artifact) {
-        profileFor(artifact).recordKill(System.currentTimeMillis());
+        profileFor(artifact).recordKill(nowMs());
     }
 
     public void trackDiscard(Artifact artifact) {
-        profileFor(artifact).recordDiscard(System.currentTimeMillis());
+        profileFor(artifact).recordDiscard(nowMs());
         nichePopulationTracker.markDiscarded(artifact.getArtifactSeed());
     }
 
     public void trackConvergenceParticipation(Artifact artifact) {
-        profileFor(artifact).recordConvergence(System.currentTimeMillis());
+        profileFor(artifact).recordConvergence(nowMs());
     }
 
     public void trackAwakening(Artifact artifact) {
-        profileFor(artifact).recordAwakening(System.currentTimeMillis());
+        profileFor(artifact).recordAwakening(nowMs());
     }
 
     public void transitionIdentity(Artifact previous, Artifact replacement) {
@@ -77,7 +88,7 @@ public class ArtifactUsageTracker {
         if (profile != null) {
             profiles.put(replacement.getArtifactSeed(), profile);
         } else {
-            profileFor(replacement).markCreated(System.currentTimeMillis());
+            profileFor(replacement).markCreated(nowMs());
         }
         signalCache.invalidate(previous.getArtifactSeed());
         signalCache.invalidate(replacement.getArtifactSeed());
@@ -117,7 +128,7 @@ public class ArtifactUsageTracker {
                 relevance,
                 budgetCost,
                 context.source(),
-                System.currentTimeMillis(),
+                nowMs(),
                 result.observationKey(), result.performance(), context.genomeRevision()
         );
         MechanicUtilitySignal updated = profile.recordUtilityOutcome(outcome);
