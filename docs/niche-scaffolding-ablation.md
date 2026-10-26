@@ -52,4 +52,20 @@ Summarizer: `scripts/summarize-niche-scaffolding.py CONTROL FORCED_OFF BOTH_OFF`
 
 ## Result
 
-RESULT_PENDING
+Run on GitHub Actions, run 40251774417, arm commits c04d42c (control), d082463 (forced_off) and edac947 (both_off). The workflow that ran them is `.github/workflows/niche-scaffolding-ablation.yml` at 64e2c37; it was removed afterward because it pins this branch's commits. The full suite at 64e2c37 passed in the same run: 606 tests, 0 failures, 0 errors, 9 opt-in experiments skipped. The control's seed 0 on a separate runner matched the main control run byte for byte. It also matched a pre-run local control on falco-servo (children and births), so the harness replays across machines.
+
+| | control | forced_off | both_off |
+|---|---|---|---|
+| mean child births per seed | 2.00 | 1.12 | 1.12 |
+| mean child collapses per seed | 0.50 | 0.12 | 0.12 |
+| mean live child-windows | 37.31 | 24.06 | 24.06 |
+| mean final Simpson | 0.8535 | 0.8518 | 0.8518 |
+| mean final effective niches | 8.112 | 7.953 | 7.953 |
+| guardrail drop over 25% | 0/16 | 0/16 | 0/16 |
+
+- **Rule F: not shown (9/16).** forced_off is identical to the control in 9 seeds. In each of those, the one bifurcation is organic and happens in window 1. In the other 7 seeds, the control's only bifurcation is in window 2 (evaluation 3, `FORCED_BIFURCATION_WINDOW`), and without forcing those seeds have no bifurcation in 24 windows. In 6 of the 7 forced pairs, one child collapsed after 6 windows and the other stayed to the end; in the seventh both stayed.
+- **Rule R: not shown (0/16).** both_off is byte-identical to forced_off in all 16 seeds, so reconciliation never acted in this harness. Continuity protection needs smoothed lineage support of at least 0.20. Affinity grows by `0.05 x outcome quality` per update, decays by 0.93 per window, and is pruned below 0.005. The unit witness `emptiedProtectedChildIsNotRefilledByReconciliation` shows the removed behavior did act when that support is reached (it fails on the previous commit, where the emptied child is refilled), but this harness never reached it.
+- Organic children collapsed in 2 seeds in every arm, with reconciliation present, so those children were never protected.
+- Not explained by this run: in every seed and arm, no bifurcation happened after the first one, although the 60 s cooldown (10 windows) left at least 11 more windows. Which gate blocks later splits is not identified.
+
+Interpretation, limited to this harness: forced bifurcation guaranteed a niche split that 7 of 16 seeds did not produce from their own pressure. Removing it lowered child-niche presence, but generated-niche diversity stayed about the same (final Simpson 0.8535 vs 0.8518, no seed over the guardrail). Reconciliation was inert here. The ablation does not show organic niche formation is robust: births are rare and one-shot. The generator's `variantFor` path and live play are untested.
