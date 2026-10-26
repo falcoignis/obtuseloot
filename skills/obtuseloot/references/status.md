@@ -1,5 +1,12 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-26 UTC (afternoon): organic niche splitting (no cooldowns, no caps, parent relief)
+
+- Owner rulings: the split cooldowns must not set the pace, the niche caps go too, and the ecology should be as organic as possible (decision ledger).
+- 24-window comparison (GitHub Actions run 40273932781). The control matched the weighted-occupancy arm byte for byte. Splits per seed: control 2.81, no cooldowns 6.19, no caps 20.44, relief 16.25. Without cooldowns the caps set the pace (2,366 cap blocks); without caps only pressure blocks. Relief: Rule P 15/16, S 15/16, E 14/16; 32.5 births and 20.6 collapses per seed; Simpson 0.8753 vs 0.8638.
+- 72-window check (run 40348984997): Rule B (no growth between halves) not shown (no caps 10/16, relief 11/16), but both plateau by about window 24, relief near 12 live children and no caps near 15. Relief has higher diversity (0.8748 vs 0.8575) and less churn.
+- Adopted relief ("do it and merge"); the unread cap and cooldown constructor parameters are removed. Full suites passed on the arm heads (606 tests, 0 failures). The PR's CI covers the final head. No standing merge permission. Live play and the generator `variantFor` path remain untested.
+
 ## 2026-10-26 UTC: niche share at its source (utility-weighted occupancy)
 
 - Pre-registered four-arm comparison on GitHub Actions (run 40269471357): control, signal attribution only, attribution plus count-once, attribution plus utility-weighted occupancy. The control matched the #429 outputs byte for byte. Splits per seed 0.56 / 0.62 / 3.00 / 2.81. Rule S (more than one split) 0, 0, 16 and 15 of 16; Rule E (a collapse) 2, 3, 16 and 11 of 16. Final Simpson 0.8518 / 0.8523 / 0.8516 / 0.8638, guardrail 0/16 everywhere.

@@ -33,7 +33,7 @@ class EcosystemSaturationModelTest {
         assertTrue(pressure.saturationPenalty() > 0.0D, "saturationPenalty should be active");
         assertTrue(pressure.specializationPressure() > 0.0D, "specializationPressure should be active");
 
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 2);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(2);
 
         Optional<NicheBifurcation> firstWindow = registry.evaluateBifurcation(
                 MechanicNicheTag.NAVIGATION.name(),

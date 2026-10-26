@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class NicheScaffoldingAblationTest {
     static final int ARTIFACTS = 48;
     static final int LINEAGES = 8;
-    static final int WINDOWS = 24;
+    /** Research runs can lengthen the horizon with -Dobtuseloot.windows=N; the default keeps earlier runs comparable. */
+    static final int WINDOWS = Integer.getInteger("obtuseloot.windows", 24);
     static final long WINDOW_MS = 6_000L;
     static final long START_MS = 1_000_000_000L;
     static final long STEP_MS = 10L;
@@ -54,18 +55,17 @@ class NicheScaffoldingAblationTest {
     }
 
     @Test
-    void retiredChildCooldownUsesTheSuppliedClock() {
+    void retiredChildDoesNotPaceItsParent() {
         AtomicLong clock = new AtomicLong(START_MS);
-        var registry = new NicheBifurcationRegistry(8, 4, 60_000L, 1, 1, 0, clock::get);
+        var registry = new NicheBifurcationRegistry(1, 1, 0, clock::get);
         assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get()).isPresent());
         String child = registry.dynamicNiches().iterator().next();
         clock.addAndGet(120_000L);
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 10);
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 11);
         assertFalse(registry.isDynamicNiche(child), "Both children are empty past grace and should retire");
-        // The retirement stamp is the supplied time, so the parent cooldown runs from there.
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get() + 1L).isEmpty());
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get() + 60_000L).isPresent());
+        // Retirement no longer starts a parent cooldown: sustained pressure splits it again immediately.
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get() + 1L).isPresent());
     }
 
     @Experiment

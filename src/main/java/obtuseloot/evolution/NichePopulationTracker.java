@@ -200,9 +200,15 @@ public class NichePopulationTracker {
             MechanicNicheTag nicheTag = entry.getKey();
             NicheUtilityRollup nicheRollup = entry.getValue();
             String nicheName = nicheTag.name();
-            double nicheShare = totalPopulation <= 0.0D ? 0.0D : nicheRollup.occupancy() / totalPopulation;
+            // Members already absorbed into this niche's children relieve the parent's own pressure.
+            double residual = Math.max(0.0D, nicheRollup.occupancy() - absorbedOccupancy(nicheTag));
+            NicheUtilityRollup parentRollup = new NicheUtilityRollup(nicheTag, nicheRollup.activeArtifacts(), nicheRollup.attempts(),
+                    nicheRollup.meaningfulOutcomes(), nicheRollup.validatedUtility(), nicheRollup.budgetConsumed(), residual);
+            Map<MechanicNicheTag, NicheUtilityRollup> parentView = new EnumMap<>(allRollups);
+            parentView.put(nicheTag, parentRollup);
+            double nicheShare = totalPopulation <= 0.0D ? 0.0D : residual / totalPopulation;
 
-            RolePressureMetrics pressure = saturationModel.pressureFor(nicheTag, nicheRollup, allRollups);
+            RolePressureMetrics pressure = saturationModel.pressureFor(nicheTag, parentRollup, parentView);
             // Use mean artifact specialization score as the "specialization" dimension.
             // This is independent of saturationPenalty and can be simultaneously high
             // even when the niche has below-mean utility density.
@@ -945,6 +951,29 @@ public class NichePopulationTracker {
         return nicheProfilesByArtifact.getOrDefault(artifactSeed,
                 new ArtifactNicheProfile(MechanicNicheTag.GENERALIST, Set.of(MechanicNicheTag.GENERALIST), Map.of(MechanicNicheTag.GENERALIST, 1.0D),
                         new NicheSpecializationProfile(MechanicNicheTag.GENERALIST, "unspecialized", 0.0D, 0.0D)));
+    }
+
+    /** Occupancy on {@code parent} carried by artifacts currently assigned to one of its child niches. */
+    private double absorbedOccupancy(MechanicNicheTag parent) {
+        double absorbed = 0.0D;
+        for (Long seed : activeArtifacts) {
+            String child = dynamicNicheByArtifact.get(seed);
+            if (child == null || !parent.name().equals(parentByChildNiche.get(child))) {
+                continue;
+            }
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+            if (profile == null || !profile.niches().contains(parent)) {
+                continue;
+            }
+            double totalMass = 0.0D;
+            for (MechanicNicheTag niche : profile.niches()) {
+                totalMass += Math.max(0.0D, profile.nicheScores().getOrDefault(niche, 0.0D));
+            }
+            absorbed += totalMass > 0.0D
+                    ? Math.max(0.0D, profile.nicheScores().getOrDefault(parent, 0.0D)) / totalMass
+                    : 1.0D / profile.niches().size();
+        }
+        return absorbed;
     }
 
     public Map<MechanicNicheTag, NicheUtilityRollup> rollups() {

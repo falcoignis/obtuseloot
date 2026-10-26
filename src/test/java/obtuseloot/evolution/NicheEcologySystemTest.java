@@ -146,7 +146,7 @@ class NicheEcologySystemTest {
     @Test
     void bifurcationTriggersUnderSustainedHighPressure() {
         // sustainedWindowsRequired=1 so a single high-pressure evaluation fires immediately
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
@@ -167,7 +167,7 @@ class NicheEcologySystemTest {
     void bifurcationDoesNotOccurUnderLowPressure() {
         // Single artifact alone — no saturationPenalty fires (no below-mean peer) and
         // activeArtifacts=1 < MIN_ARTIFACT_COUNT=2
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = new NichePopulationTracker(
                 new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
 
@@ -186,7 +186,7 @@ class NicheEcologySystemTest {
     @Test
     void bifurcationDoesNotOccurWhenArtifactCountBelowMinimum() {
         // Two niches but only 1 artifact in NAVIGATION → fails MIN_ARTIFACT_COUNT=2
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = new NichePopulationTracker(
                 new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
 
@@ -212,7 +212,7 @@ class NicheEcologySystemTest {
 
     @Test
     void newlyCreatedNichesCanReceiveArtifactAssignments() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
@@ -244,7 +244,7 @@ class NicheEcologySystemTest {
 
     @Test
     void structuralPartitionPrefersLowerUtilityHalfAndRespectsCap() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = new NichePopulationTracker(
                 new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
 
@@ -283,7 +283,7 @@ class NicheEcologySystemTest {
 
     @Test
     void childNichesAreRecognizedAsValidDynamicNiches() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
@@ -311,7 +311,7 @@ class NicheEcologySystemTest {
         TelemetryAggregationService service = telemetryService(buffer, archive, rollups, 4, tempDir.resolve("bifurcation-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
         tracker.setTelemetryEmitter(emitter);
 
@@ -346,7 +346,7 @@ class NicheEcologySystemTest {
 
     @Test
     void analyticsSnapshotIncludesEmergentNiches() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
@@ -377,7 +377,7 @@ class NicheEcologySystemTest {
         TelemetryAggregationService service = telemetryService(buffer, archive, rollupScheduler, 4, tempDir.resolve("bifurcation-pop-snapshot.properties"));
         EcosystemTelemetryEmitter emitter = new EcosystemTelemetryEmitter(service);
 
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
         tracker.setTelemetryEmitter(emitter);
 
@@ -407,7 +407,7 @@ class NicheEcologySystemTest {
 
     @Test
     void occupancyStateTracksEstablishedSupportedChildrenAcrossWindows() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
         NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
                 .orElseThrow();
@@ -428,7 +428,7 @@ class NicheEcologySystemTest {
 
     @Test
     void emptiedProtectedChildIsNotRefilledByReconciliation() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
         long nowMs = System.currentTimeMillis();
 
@@ -468,7 +468,7 @@ class NicheEcologySystemTest {
 
     @Test
     void establishedChildrenRequireMultipleEmptyWindowsBeforeCollapse() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
         NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
                 .orElseThrow();
@@ -494,7 +494,7 @@ class NicheEcologySystemTest {
 
     @Test
     void reentryStabilizationDelaysImmediateRecollapse() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
         NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
                 .orElseThrow();
@@ -513,8 +513,8 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void recentCollapseBlocksImmediateSameParentRebifurcation() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+    void recentCollapseDoesNotClockGateSameParentRebifurcation() {
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
         NicheBifurcation first = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
                 .orElseThrow();
@@ -526,33 +526,30 @@ class NicheEcologySystemTest {
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 12);
         assertEquals(0, registry.dynamicNicheCount(), "Both children should collapse after sustained empty windows");
 
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isEmpty(),
-                "Immediate re-bifurcation should be blocked after a recent collapse");
-        assertTrue(registry.evaluateBifurcation("RITUAL_STRANGE_UTILITY", 0.20D, 0.10D, 0.20D, 8, nowMs + 61_000L).isPresent(),
-                "Cooldown should remain local to the collapsed parent niche after the global gate elapses");
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isPresent(),
+                "A collapse must not hold the parent back on a clock; sustained pressure splits it again");
     }
 
     @Test
-    void cooldownPreventsImmediateRebifurcation() {
-        // cooldownMs=60_000 (1 minute) — the second evaluation is immediate, should be blocked
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
+    void secondEvaluationIsNotDecidedByAClock() {
+        // There is no split cooldown: the next evaluation is decided by pressure, not time.
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         long nowMs = System.currentTimeMillis();
         tracker.evaluateBifurcations(nowMs);
         assertEquals(1, registry.bifurcations().size(), "First bifurcation should occur");
 
-        // Immediate second attempt — cooldown not yet expired
         tracker.evaluateBifurcations(nowMs + 1L);
-        assertEquals(1, registry.bifurcations().size(),
-                "Second bifurcation should be blocked by cooldown");
+        String gate = registry.lastGate("NAVIGATION").orElseThrow().gate();
+        assertFalse(gate.endsWith("COOLDOWN"), "Second evaluation was decided by " + gate);
     }
 
     @Test
     void sustainedPressureRequirementPreventsEarlyBifurcation() {
         // sustainedWindowsRequired=2 with parent-share below adaptive threshold:
         // first window builds up, second triggers.
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 2);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(2);
 
         long nowMs = System.currentTimeMillis();
         assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs).isEmpty(),
@@ -562,25 +559,23 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void maxNicheCapPreventsUnlimitedSpawning() {
-        // Cap at 2 dynamic niches: only one bifurcation (produces 2 children) should succeed
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(2, 0L, 1);
+    void noNicheCapDecidesTheNextSplit() {
+        // There is no niche-count cap: pressure decides the next evaluation.
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         long nowMs = System.currentTimeMillis();
         tracker.evaluateBifurcations(nowMs);
-        assertEquals(1, registry.bifurcations().size(), "First bifurcation uses both slots");
-        assertEquals(2, registry.dynamicNicheCount());
+        assertEquals(1, registry.bifurcations().size(), "First bifurcation should occur");
 
-        // Attempt further bifurcation after cooldown — cap is now full
         tracker.evaluateBifurcations(nowMs + 200L);
-        assertEquals(1, registry.bifurcations().size(),
-                "No further bifurcation when niche cap is reached");
+        String gate = registry.lastGate("NAVIGATION").orElseThrow().gate();
+        assertFalse(gate.endsWith("_CAP"), "Second evaluation was decided by " + gate);
     }
 
     @Test
     void bifurcationSeedsLineageAffinityAndAppliesBoundedFitnessInversion() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = new NichePopulationTracker(
                 new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
 
@@ -620,7 +615,7 @@ class NicheEcologySystemTest {
                     "When no migration occurs in this cohort, no child inversion should apply");
         }
 
-        NicheBifurcationRegistry agedRegistry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry agedRegistry = new NicheBifurcationRegistry(1);
         NichePopulationTracker agedTracker = buildSaturatedNavigationEcosystem(agedRegistry);
         long agedNow = System.currentTimeMillis() - 25_000L;
         agedTracker.evaluateBifurcations(agedNow);
@@ -645,7 +640,7 @@ class NicheEcologySystemTest {
 
     @Test
     void migratedArtifactsStayLockedToChildForBoundedWindows() {
-        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 0L, 1);
+        NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
         long nowMs = System.currentTimeMillis();
