@@ -74,6 +74,7 @@ public class NicheBifurcationRegistry {
 
     private final int  maxDynamicNiches;
     private final int  maxDynamicNichesPerParent;
+    /** No longer read: splits are not clock-gated (owner, 2026-10-26). Kept so existing constructors compile. */
     private final long cooldownMs;
     private final int  sustainedWindowsRequired;
     private final int  childZeroWindowsToCollapse;
@@ -96,8 +97,6 @@ public class NicheBifurcationRegistry {
     private final Map<String, AtomicInteger> highPressureWindowsByNiche = new ConcurrentHashMap<>();
 
     /** Last bifurcation timestamp per parent niche (for cooldown enforcement). */
-    private final Map<String, Long> lastBifurcationTimeByNiche = new ConcurrentHashMap<>();
-    private volatile long lastGlobalBifurcationTimeMs = Long.MIN_VALUE;
     private final Map<String, AtomicInteger> zeroPopulationWindowsByChild = new ConcurrentHashMap<>();
 
     /** Tracks the evaluation window in which each child niche was born. */
@@ -227,18 +226,7 @@ public class NicheBifurcationRegistry {
         }
 
 
-        // Guard: per-parent cooldown
-        Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
-        if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
-            observe(parentNiche, "PARENT_COOLDOWN", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
-            return Optional.empty();
-        }
-
-        // Guard: global cooldown to prevent rapid cross-niche cascades
-        if (lastGlobalBifurcationTimeMs != Long.MIN_VALUE && (nowMs - lastGlobalBifurcationTimeMs) < cooldownMs) {
-            observe(parentNiche, "GLOBAL_COOLDOWN", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
-            return Optional.empty();
-        }
+        // No clock gate: pressure and sustained pressure decide when a niche splits (owner, 2026-10-26).
 
         // Pressure gate
         boolean highSaturation     = saturationPressure    >= SATURATION_THRESHOLD;
@@ -302,8 +290,6 @@ public class NicheBifurcationRegistry {
         reentryStabilizationWindowsByChild.put(childB, new AtomicInteger(0));
         occupancyStateByChild.put(childA, new ChildOccupancyState());
         occupancyStateByChild.put(childB, new ChildOccupancyState());
-        lastBifurcationTimeByNiche.put(parentNiche, nowMs);
-        lastGlobalBifurcationTimeMs = nowMs;
         occupancyStateByChild.put(childA, new ChildOccupancyState());
         occupancyStateByChild.put(childB, new ChildOccupancyState());
         storeVariants(parentNiche, childA, childB, seq);
@@ -615,9 +601,6 @@ public class NicheBifurcationRegistry {
         variantByChildNiche.remove(childNiche);
         occupancyStateByChild.remove(childNiche);
         childrenByParent.values().forEach(children -> children.remove(childNiche));
-        if (parent != null) {
-            lastBifurcationTimeByNiche.put(parent, clock.getAsLong());
-        }
     }
 
     private String parentByChild(String childNiche) {

@@ -513,7 +513,7 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void recentCollapseBlocksImmediateSameParentRebifurcation() {
+    void recentCollapseDoesNotClockGateSameParentRebifurcation() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
         long nowMs = System.currentTimeMillis();
         NicheBifurcation first = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
@@ -526,15 +526,13 @@ class NicheEcologySystemTest {
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 12);
         assertEquals(0, registry.dynamicNicheCount(), "Both children should collapse after sustained empty windows");
 
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isEmpty(),
-                "Immediate re-bifurcation should be blocked after a recent collapse");
-        assertTrue(registry.evaluateBifurcation("RITUAL_STRANGE_UTILITY", 0.20D, 0.10D, 0.20D, 8, nowMs + 61_000L).isPresent(),
-                "Cooldown should remain local to the collapsed parent niche after the global gate elapses");
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isPresent(),
+                "A collapse must not hold the parent back on a clock; sustained pressure splits it again");
     }
 
     @Test
-    void cooldownPreventsImmediateRebifurcation() {
-        // cooldownMs=60_000 (1 minute) — the second evaluation is immediate, should be blocked
+    void secondEvaluationIsNotDecidedByAClock() {
+        // A configured cooldown is no longer read: the next evaluation is decided by pressure, not time.
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(8, 60_000L, 1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
@@ -542,10 +540,9 @@ class NicheEcologySystemTest {
         tracker.evaluateBifurcations(nowMs);
         assertEquals(1, registry.bifurcations().size(), "First bifurcation should occur");
 
-        // Immediate second attempt — cooldown not yet expired
         tracker.evaluateBifurcations(nowMs + 1L);
-        assertEquals(1, registry.bifurcations().size(),
-                "Second bifurcation should be blocked by cooldown");
+        String gate = registry.lastGate("NAVIGATION").orElseThrow().gate();
+        assertFalse(gate.endsWith("COOLDOWN"), "Second evaluation was decided by " + gate);
     }
 
     @Test
