@@ -57,7 +57,7 @@ class NicheScaffoldingAblationTest {
     @Test
     void retiredChildDoesNotPaceItsParent() {
         AtomicLong clock = new AtomicLong(START_MS);
-        var registry = new NicheBifurcationRegistry(8, 4, 60_000L, 1, 1, 0, clock::get);
+        var registry = new NicheBifurcationRegistry(1, 1, 0, clock::get);
         assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get()).isPresent());
         String child = registry.dynamicNiches().iterator().next();
         clock.addAndGet(120_000L);
