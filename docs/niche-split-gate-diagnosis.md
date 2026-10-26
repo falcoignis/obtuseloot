@@ -33,7 +33,7 @@ After the cooldowns expire, every niche fails the pressure gate. That gate needs
 
 There are 14 niche tags, and about 13 are evaluated per window. All 9 splits happened in window 1, at shares from 0.131 to 0.147. After about window 2, no niche reaches the 0.13 share gate.
 
-**The saturation path almost never opens.** Saturation was above zero in only 41 of 4,747 evaluations, all in windows 0 and 1. The 37 evaluations at or above 0.05 were blocked by low population.
+**The saturation path is the same share.** `EcosystemSaturationModel.pressureFor` sets `saturationPenalty = clamp(share - 0.14, 0, 0.45)`, using the same membership share. Across all 4,747 evaluations, the recorded saturation equals that expression to within 3e-17. It was above zero in only 41 evaluations, all in windows 0 and 1, where share was at least 0.1407. The 37 of those at or above 0.05 were blocked by low population. Both routes through the pressure gate depend on the diluted share, so there is one cause, not two.
 
 ## Interpretation and limits
 
@@ -42,4 +42,4 @@ The second-split blocker is structural, not a near miss. It comes from cumulativ
 - weight each artifact's memberships by its utility mass, summing to one per artifact;
 - let old signals decay, so membership reflects current use.
 
-Why saturation stays at zero after window 1 is a separate open question. These results come from the offline harness with simulated outcomes; live play is untested. Whether other consumers of share would be affected by redefining it has not been checked.
+The same membership share also feeds `nicheCompetitionFactor` (outcome relevance), `AdaptiveSupportAllocator` and `ExperienceEvolutionEngine`. A redefinition should change it at its source so those readers stay consistent, and it should be measured across all of them. These results come from the offline harness with simulated outcomes; live play is untested. 
