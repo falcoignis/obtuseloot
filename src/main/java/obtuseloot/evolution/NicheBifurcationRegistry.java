@@ -117,6 +117,9 @@ public class NicheBifurcationRegistry {
     /** Persistent occupancy continuity state for each child niche. */
     private final Map<String, ChildOccupancyState> occupancyStateByChild = new ConcurrentHashMap<>();
 
+    /** Latest gate outcome per parent niche; written on every evaluation, never read by selection. */
+    private final Map<String, GateObservation> lastGateByParent = new ConcurrentHashMap<>();
+
     /** Monotonically-increasing sequence counter used to produce unique child names. */
     private final AtomicInteger sequence = new AtomicInteger(0);
 
@@ -213,11 +216,13 @@ public class NicheBifurcationRegistry {
 
         // Guard: global niche cap (counts pairs, so headroom must be >= 2)
         if (dynamicNiches.size() + 2 > maxDynamicNiches) {
+            observe(parentNiche, "GLOBAL_CAP", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
         // Guard: per-parent cap
         if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
+            observe(parentNiche, "PARENT_CAP", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
@@ -225,11 +230,13 @@ public class NicheBifurcationRegistry {
         // Guard: per-parent cooldown
         Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
         if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
+            observe(parentNiche, "PARENT_COOLDOWN", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
         // Guard: global cooldown to prevent rapid cross-niche cascades
         if (lastGlobalBifurcationTimeMs != Long.MIN_VALUE && (nowMs - lastGlobalBifurcationTimeMs) < cooldownMs) {
+            observe(parentNiche, "GLOBAL_COOLDOWN", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
@@ -244,6 +251,10 @@ public class NicheBifurcationRegistry {
         if ((!highSaturation && !highShare) || !highSpecialization || !sufficientPop || !sufficientShare) {
             // Pressure dropped — reset sustained-pressure counter
             highPressureWindowsByNiche.remove(parentNiche);
+            String gate = !highSaturation && !highShare ? "LOW_PRESSURE"
+                    : !highSpecialization ? "LOW_SPECIALIZATION"
+                    : !sufficientPop ? "LOW_POPULATION" : "LOW_SHARE";
+            observe(parentNiche, gate, saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
@@ -257,6 +268,7 @@ public class NicheBifurcationRegistry {
                 : sustainedWindowsRequired;
 
         if (windows < effectiveSustainedWindows) {
+            observe(parentNiche, "SUSTAINING", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
             return Optional.empty();
         }
 
@@ -295,8 +307,22 @@ public class NicheBifurcationRegistry {
         occupancyStateByChild.put(childA, new ChildOccupancyState());
         occupancyStateByChild.put(childB, new ChildOccupancyState());
         storeVariants(parentNiche, childA, childB, seq);
+        observe(parentNiche, "SPLIT", saturationPressure, specializationPressure, nichePopulationShare, activeArtifacts, nowMs);
 
         return Optional.of(event);
+    }
+
+    /** The latest evaluation of a parent: which gate decided it and the inputs it saw. Diagnostic only. */
+    public record GateObservation(String gate, double saturationPressure, double specializationPressure,
+                                  double populationShare, int activeArtifacts, long nowMs) { }
+
+    public Optional<GateObservation> lastGate(String parentNiche) {
+        return Optional.ofNullable(lastGateByParent.get(parentNiche));
+    }
+
+    private void observe(String parentNiche, String gate, double saturation, double specialization,
+                         double share, int activeArtifacts, long nowMs) {
+        lastGateByParent.put(parentNiche, new GateObservation(gate, saturation, specialization, share, activeArtifacts, nowMs));
     }
 
     // ---------- queries ----------

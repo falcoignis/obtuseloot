@@ -39,7 +39,7 @@ class NicheScaffoldingAblationTest {
     @EnabledIfSystemProperty(named = "obtuseloot.experiments", matches = "true")
     private @interface Experiment { }
 
-    record Run(List<String> windows, List<String> children) { }
+    record Run(List<String> windows, List<String> children, List<String> gates) { }
 
     @Test
     void scenarioReplaysExactlyWithFreshState() {
@@ -48,6 +48,7 @@ class NicheScaffoldingAblationTest {
         Run second = simulate(0x4E49434845L, 6, 12);
         assertEquals(first.windows(), second.windows());
         assertEquals(first.children(), second.children());
+        assertEquals(first.gates(), second.gates());
         assertEquals(6, first.windows().size());
     }
 
@@ -78,16 +79,20 @@ class NicheScaffoldingAblationTest {
         Files.createDirectories(out);
         List<String> windows = new ArrayList<>();
         List<String> children = new ArrayList<>();
+        List<String> gates = new ArrayList<>();
         windows.add("seed,window,live_children,births,collapses,live_niches,simpson,effective_niches,children");
         children.add("seed,child,parent,birth_window,collapse_window");
+        gates.add("seed,window,niche,gate,saturation,specialization,share,active_artifacts,children_of_parent,live_children");
         for (int s = firstSeed; s <= lastSeed; s++) {
             long seed = 0x4E49434845L + s * 0x9E3779B97F4A7C15L;
             Run run = simulate(seed, WINDOWS, ARTIFACTS);
             windows.addAll(run.windows());
             children.addAll(run.children());
+            gates.addAll(run.gates());
         }
         Files.write(out.resolve("windows.csv"), windows);
         Files.write(out.resolve("children.csv"), children);
+        Files.write(out.resolve("gates.csv"), gates);
         System.out.println("NICHE_SCAFFOLDING_ABLATION arm=" + arm + " rows=" + (windows.size() - 1) + " children=" + (children.size() - 1));
     }
 
@@ -131,6 +136,7 @@ class NicheScaffoldingAblationTest {
 
         var reputation = new ArtifactReputation();
         var windows = new ArrayList<String>();
+        var gates = new ArrayList<String>();
         var birthWindow = new TreeMap<String, Integer>();
         var parentOf = new TreeMap<String, String>();
         var collapseWindow = new TreeMap<String, Integer>();
@@ -174,6 +180,16 @@ class NicheScaffoldingAblationTest {
                 }
             }
             previous = live;
+            // Which gate decided each parent evaluated in this window, with the inputs it saw.
+            long windowStart = START_MS + (window + 1L) * WINDOW_MS;
+            for (MechanicNicheTag tag : MechanicNicheTag.values()) {
+                var observed = registry.lastGate(tag.name());
+                if (observed.isEmpty() || observed.get().nowMs() < windowStart || observed.get().nowMs() >= windowStart + WINDOW_MS) continue;
+                var gate = observed.get();
+                gates.add(String.format(Locale.ROOT, "%d,%d,%s,%s,%.6f,%.6f,%.6f,%d,%d,%d", seed, window, tag.name(), gate.gate(),
+                        gate.saturationPressure(), gate.specializationPressure(), gate.populationShare(), gate.activeArtifacts(),
+                        registry.childrenOf(tag.name()).size(), live.size()));
+            }
             var occupancy = new TreeMap<String, Integer>();
             for (Artifact artifact : artifacts) occupancy.merge(tracker.effectiveNicheName(artifact.getArtifactSeed()), 1, Integer::sum);
             var diversity = NicheDiversityMetrics.diversity(occupancy);
@@ -184,7 +200,7 @@ class NicheScaffoldingAblationTest {
         var children = new ArrayList<String>();
         birthWindow.forEach((child, born) -> children.add(seed + "," + child + "," + parentOf.get(child) + ","
                 + born + "," + collapseWindow.getOrDefault(child, -1)));
-        return new Run(windows, children);
+        return new Run(windows, children, gates);
     }
 
     private static double mix(double lineageBias, Random random) {

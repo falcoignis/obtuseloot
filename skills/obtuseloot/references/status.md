@@ -1,5 +1,12 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-26 UTC: why no niche splits a second time (diagnostic)
+
+- Branch `diag/second-split-gate` from main `c207c78`. The registry records the gate that decided each parent's latest evaluation (`lastGate`, read-only), and the niche harness writes it per window to `gates.csv`. No selection rule changes; harness windows and children outputs are byte-identical to #428's both_off arm.
+- GitHub Actions run 40260927128: after each first split, cooldowns hold every niche for 9 windows, then every niche fails the pressure gate. Share is members over all memberships, and an artifact joins every niche its recorded signals touch, so memberships per artifact grow from 2.6 to 10.3 of 14 tags and top share falls from 0.131 to 0.096, below the 0.13 gate. Saturation is `clamp(share - 0.14)`, so it shares the cause. See `docs/niche-split-gate-diagnosis.md`.
+- The same share feeds competition, support allocation and evolution feedback. Next proposed: a pre-registered comparison of count-once versus utility-weighted share, changed at its source. Not started.
+- Full suite on GitHub at `319742d`: 606 tests, 0 failures, 0 errors, 9 opt-in skipped. Merge authorized ("merge") after PR CI; no standing permission.
+
 ## 2026-10-25 UTC (late): niche scaffolding ablation; #425 to #427 merged
 
 - **#425, #426, #427 merged** under the scoped "merge it all" authorization: status refresh (`c6cac6c`), holder-specialization sweep (`ca49b37`; 75% own-site holders shown 12/16, 50% not, 1/16), soft-cap removal (`992c547`; capped 1.30% vs removed 0.00% largest relative diversity drop). Their branches were deleted.
