@@ -955,10 +955,17 @@ public class NichePopulationTracker {
             if (profile == null || signalMap == null || signalMap.isEmpty()) {
                 continue;
             }
+            // Members count per niche; occupancy splits one artifact across its niches by utility mass.
+            double totalMass = 0.0D;
+            for (MechanicNicheTag niche : profile.niches()) {
+                totalMass += Math.max(0.0D, profile.nicheScores().getOrDefault(niche, 0.0D));
+            }
             for (MechanicNicheTag niche : profile.niches()) {
                 MutableRollup rollup = mutable.computeIfAbsent(niche, ignored -> new MutableRollup());
                 rollup.activeArtifacts++;
-                rollup.occupancy += 1.0D;
+                rollup.occupancy += totalMass > 0.0D
+                        ? Math.max(0.0D, profile.nicheScores().getOrDefault(niche, 0.0D)) / totalMass
+                        : 1.0D / profile.niches().size();
             }
             // Each signal's outcomes count only toward the niches that signal belongs to.
             for (Map.Entry<String, MechanicUtilitySignal> entry : signalMap.entrySet()) {
