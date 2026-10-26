@@ -1,0 +1,53 @@
+name: Niche split gate diagnostic
+
+# One-off diagnostic (why no niche splits a second time). Runs the opt-in harness on this branch
+# and uploads gates.csv per seed group; removed before review.
+on:
+  push:
+    branches: [diag/second-split-gate]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  seeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seeds: ['0-3', '4-7', '8-11', '12-15']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Run harness
+        run: >
+          mvn -B -ntp test -Dtest='NicheScaffoldingAblationTest#nicheScaffoldingAblation'
+          -Dsurefire.failIfNoSpecifiedTests=false -Dobtuseloot.experiments=true
+          -Dobtuseloot.arm=main -Dobtuseloot.seeds=${{ matrix.seeds }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gates-seeds-${{ matrix.seeds }}
+          path: target/niche-scaffolding-ablation/
+          if-no-files-found: error
+
+  full-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - run: mvn -B -ntp clean package
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
