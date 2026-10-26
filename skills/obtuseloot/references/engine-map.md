@@ -170,6 +170,7 @@ and dated validation status; this is not proof of natural niche formation.
   - a 60,000 ms **wall-clock** cooldown;
   - a pressure gate.
   - **inference:** the effective gate is parent share >= 0.13 with 1 sustained window, and the specialization gate (>= 0.00) is vacuous.
+  - **Share (2026-10-26):** every share reader divides rollup `occupancy` by total occupancy. Occupancy splits each artifact across its niches by utility mass (sums to one), and each signal's outcomes count only toward its own niches. Before this, an artifact counted fully in every niche it touched, which diluted share until no niche could split a second time (`docs/niche-split-gate-diagnosis.md`, `docs/niche-share-at-source.md`).
 - **Evaluation timing.** Evaluation is throttled to 5,000 ms of wall-clock time. Each evaluation is one "window" for grace, establishment, collapse and age.
 - **Forced bifurcation (removed 2026-10-25).** `FORCED_BIFURCATION_WINDOW = 3` guaranteed one bifurcation per tracker instance whatever the pressure. It was removed with one-occupant reconciliation; see `docs/niche-scaffolding-ablation.md`. Evaluation, cooldown and age now read the registry's supplied clock (wall time by default).
 - **Child-niche aids:**
