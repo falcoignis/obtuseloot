@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class NicheScaffoldingAblationTest {
     static final int ARTIFACTS = 48;
     static final int LINEAGES = 8;
-    static final int WINDOWS = 24;
+    /** Research runs can lengthen the horizon with -Dobtuseloot.windows=N; the default keeps earlier runs comparable. */
+    static final int WINDOWS = Integer.getInteger("obtuseloot.windows", 24);
     static final long WINDOW_MS = 6_000L;
     static final long START_MS = 1_000_000_000L;
     static final long STEP_MS = 10L;
