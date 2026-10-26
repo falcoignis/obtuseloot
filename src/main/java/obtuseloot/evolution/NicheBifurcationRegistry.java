@@ -447,68 +447,6 @@ public class NicheBifurcationRegistry {
 
     // ---------- forced bifurcation ----------
 
-    /**
-     * Forces a bifurcation on {@code parentNiche} bypassing pressure and
-     * sustained-window gates, while still respecting the global niche cap,
-     * per-parent cap, and cooldowns.  Used as a last-resort guarantee when no
-     * organic bifurcation has occurred by window {@code N}.
-     */
-    public Optional<NicheBifurcation> forceBifurcation(
-            String parentNiche,
-            double saturationPressure,
-            double specializationPressure,
-            long nowMs) {
-
-        // Guard: global niche cap
-        if (dynamicNiches.size() + 2 > maxDynamicNiches) {
-            return Optional.empty();
-        }
-        // Guard: per-parent cap
-        if (childrenOf(parentNiche).size() + 2 > maxDynamicNichesPerParent) {
-            return Optional.empty();
-        }
-
-        // Guard: per-parent cooldown
-        Long lastTime = lastBifurcationTimeByNiche.get(parentNiche);
-        if (lastTime != null && (nowMs - lastTime) < cooldownMs) {
-            return Optional.empty();
-        }
-        // Guard: global cooldown
-        if (lastGlobalBifurcationTimeMs != Long.MIN_VALUE && (nowMs - lastGlobalBifurcationTimeMs) < cooldownMs) {
-            return Optional.empty();
-        }
-
-        // Pressure gates intentionally bypassed — this is the forced path
-        highPressureWindowsByNiche.remove(parentNiche);
-
-        int seq = sequence.incrementAndGet();
-        String childA = parentNiche + "_A" + seq;
-        String childB = parentNiche + "_B" + seq;
-
-        NicheBifurcation event = new NicheBifurcation(
-                parentNiche, childA, childB,
-                saturationPressure, specializationPressure, nowMs);
-
-        bifurcations.add(event);
-        childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childA);
-        childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childB);
-        dynamicNiches.add(childA);
-        dynamicNiches.add(childB);
-        zeroPopulationWindowsByChild.put(childA, new AtomicInteger(0));
-        zeroPopulationWindowsByChild.put(childB, new AtomicInteger(0));
-        activeWindowsByChild.put(childA, new AtomicInteger(0));
-        activeWindowsByChild.put(childB, new AtomicInteger(0));
-        consecutiveLowPopulationWindowsByChild.put(childA, new AtomicInteger(0));
-        consecutiveLowPopulationWindowsByChild.put(childB, new AtomicInteger(0));
-        reentryStabilizationWindowsByChild.put(childA, new AtomicInteger(0));
-        reentryStabilizationWindowsByChild.put(childB, new AtomicInteger(0));
-        lastBifurcationTimeByNiche.put(parentNiche, nowMs);
-        lastGlobalBifurcationTimeMs = nowMs;
-        storeVariants(parentNiche, childA, childB, seq);
-
-        return Optional.of(event);
-    }
-
     // ---------- variant identity ----------
 
     /**
