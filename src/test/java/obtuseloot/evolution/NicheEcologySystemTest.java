@@ -574,61 +574,27 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void bifurcationSeedsLineageAffinityAndAppliesBoundedFitnessInversion() {
+    void bifurcationSeedsLineageAffinityWithoutInvertingParentFitness() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
-        NichePopulationTracker tracker = new NichePopulationTracker(
-                new EcosystemRoleClassifier(), new EcosystemSaturationModel(), registry);
-
-        for (int i = 0; i < 8; i++) {
-            String lineage = i < 4 ? "lineage-alpha" : "lineage-beta";
-            double utility = i < 4 ? 0.30D : 0.45D;
-            tracker.recordTelemetry(100L + i, lineage, Map.of(
+        NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
+        for (long seed = 10L; seed < 16L; seed++) {
+            tracker.recordTelemetry(seed, seed < 13L ? "lineage-alpha" : "lineage-beta", Map.of(
                     "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
                     new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                            utility, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
-            ));
+                            0.4D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)));
         }
-        tracker.recordTelemetry(999L, "lineage-ritual", Map.of(
-                "RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                new MechanicUtilitySignal("RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                        5.0D, 0.80D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 9L, 6.0D)
-        ));
 
         tracker.evaluateBifurcations(System.currentTimeMillis());
+        assertFalse(registry.bifurcations().isEmpty(), "Expected a split");
 
-        assertEquals(1, registry.bifurcations().size(), "Expected one bifurcation");
-        double childMultiplier = 1.0D;
-        boolean migratedFound = false;
-        for (long seed = 100L; seed < 108L; seed++) {
-            String effective = tracker.effectiveNicheName(seed);
-            if (!"NAVIGATION".equals(effective)) {
-                childMultiplier = tracker.nicheAdoptionFitnessMultiplier(seed);
-                migratedFound = true;
-                break;
+        // A split must not tax the parent's remaining members or reward the child's: outcomes keep their own value.
+        for (long seed = 10L; seed < 16L; seed++) {
+            if ("NAVIGATION".equals(tracker.effectiveNicheName(seed))) {
+                assertEquals(1.0D, tracker.nicheAdoptionFitnessMultiplier(seed), 0.0D,
+                        "Parent member " + seed + " must not carry a post-split fitness inversion");
             }
         }
-        if (migratedFound) {
-            assertTrue(childMultiplier >= 1.10D && childMultiplier <= 1.35D,
-                    "Child niche should receive bounded inversion + lock-in boost");
-        } else {
-            assertEquals(1.0D, childMultiplier, 0.0001D,
-                    "When no migration occurs in this cohort, no child inversion should apply");
-        }
-
-        NicheBifurcationRegistry agedRegistry = new NicheBifurcationRegistry(1);
-        NichePopulationTracker agedTracker = buildSaturatedNavigationEcosystem(agedRegistry);
-        long agedNow = System.currentTimeMillis() - 25_000L;
-        agedTracker.evaluateBifurcations(agedNow);
-        for (int i = 0; i < 5; i++) {
-            agedTracker.evaluateBifurcations(agedNow + ((i + 1L) * 500L));
-        }
-        double decayedMultiplier = agedTracker.nicheAdoptionFitnessMultiplier(10L);
-        assertTrue(decayedMultiplier >= 0.86D && decayedMultiplier <= 1.35D,
-                "Post-bifurcation adoption multiplier should remain bounded after lock/inversion decay");
-
-        double unrelatedMultiplier = tracker.nicheAdoptionFitnessMultiplier(999L);
-        assertEquals(1.0D, unrelatedMultiplier, 0.0001D,
-                "Unrelated niches must not inherit inversion effects");
+        assertEquals(1.0D, tracker.nicheAdoptionFitnessMultiplier(99L), 0.0D, "Unrelated niches are unaffected");
 
         @SuppressWarnings("unchecked")
         Map<String, Map<String, Double>> affinity = (Map<String, Map<String, Double>>) tracker.analyticsSnapshot().get("lineageAffinity");
@@ -639,55 +605,23 @@ class NicheEcologySystemTest {
     }
 
     @Test
-    void migratedArtifactsStayLockedToChildForBoundedWindows() {
+    void migratedArtifactFollowsItsOutcomesImmediately() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
 
-        long nowMs = System.currentTimeMillis();
-        tracker.evaluateBifurcations(nowMs);
-        assertEquals(1, registry.bifurcations().size(), "Expected one bifurcation");
-
-        long migratedSeed = -1L;
-        String lockedChild = null;
-        for (long seed = 10L; seed < 16L; seed++) {
-            String effective = tracker.effectiveNicheName(seed);
-            if (!"NAVIGATION".equals(effective)) {
-                migratedSeed = seed;
-                lockedChild = effective;
-                break;
-            }
-        }
-        assertTrue(migratedSeed > 0L, "Expected at least one migrated artifact");
-
-        for (int i = 0; i < 2; i++) {
-            tracker.recordTelemetry(migratedSeed, Map.of(
-                    "RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                    new MechanicUtilitySignal("RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                            4.8D, 0.75D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 8L, 6.0D)
-            ));
-            assertEquals(lockedChild, tracker.effectiveNicheName(migratedSeed),
-                    "Classifier updates must not override a locked migrated artifact");
-            double lockedMultiplier = tracker.nicheAdoptionFitnessMultiplier(migratedSeed);
-            assertTrue(lockedMultiplier >= 1.10D && lockedMultiplier <= 1.35D,
-                    "Locked migrated artifacts should get a bounded utility reinforcement");
-            tracker.evaluateBifurcations(nowMs + 500L + (i * 500L));
-        }
-
-        for (int i = 0; i < 6; i++) {
-            tracker.evaluateBifurcations(nowMs + 2_000L + (i * 500L));
-        }
+        tracker.evaluateBifurcations(System.currentTimeMillis());
+        assertEquals(1, registry.bifurcations().size(), "Expected one split");
+        long migratedSeed = java.util.stream.LongStream.range(10L, 16L)
+                .filter(seed -> !"NAVIGATION".equals(tracker.effectiveNicheName(seed)))
+                .findFirst().orElseThrow(() -> new AssertionError("Expected at least one child member"));
 
         tracker.recordTelemetry(migratedSeed, Map.of(
                 "RITUAL_CHANNEL@ON_MEMORY_EVENT",
                 new MechanicUtilitySignal("RITUAL_CHANNEL@ON_MEMORY_EVENT",
-                        4.8D, 0.75D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 8L, 6.0D)
-        ));
+                        4.8D, 0.75D, 0.8D, 0.1D, 0.1D, 0.1D, 10L, 8L, 6.0D)));
 
-        String unlockedNiche = tracker.effectiveNicheName(migratedSeed);
-        assertEquals(tracker.nicheProfile(migratedSeed).dominantNiche().name(), unlockedNiche,
-                "After lock decay, effective niche should follow the classifier again");
-        assertNotEquals(lockedChild, unlockedNiche,
-                "After lock decay, artifact should no longer be pinned to its child lock niche");
+        // No lock holds a member in place: its niche follows its measured outcomes at once.
+        assertEquals(tracker.nicheProfile(migratedSeed).dominantNiche().name(), tracker.effectiveNicheName(migratedSeed));
     }
 
     private TelemetryAggregationService telemetryService(TelemetryAggregationBuffer buffer,
