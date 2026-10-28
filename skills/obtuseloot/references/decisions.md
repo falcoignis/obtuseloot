@@ -19,6 +19,15 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 
 ## Evolution design
 
+**Item uniqueness (owner, 2026-10-27):** "we want every single individual item to
+be unique, or at least have a stupid low chance of ever being duplicated". Measure
+duplication probability when changing generation, inheritance, genomes or abilities;
+different invisible seeds alone do not establish distinct player-facing behavior.
+On 2026-10-28 the owner requested implementing both proposed supporting changes:
+small inherited-affinity drift at birth and broader names using existing name pools.
+See `docs/item-affinity-name-variation.md` for the registered comparison and proposed
+implementation scale. This is implementation authority, not merge authority.
+
 | Topic | Decision |
 |---|---|
 | The ~20 corrective/top-down layers in ability selection and ecology (normalization, soft caps, top-3 compression, cold bootstrapping, applicability boosts, exposure rebalance, forced bifurcation, one-occupant reconciliation, etc.) | **Scaffolding to remove.** Replace with outcome-driven selection, then delete. **2026-10-21 follow-up:** after the top-three ablation, the owner approved removing gamma/mean score normalization next, with the soft cap evaluated separately afterward. |

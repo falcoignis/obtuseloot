@@ -11,6 +11,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class ArtifactNamingRefactorTest {
 
     @Test
+    void namingUsesTheFullSignedSeedAndKeepsTheEquipmentRoot() {
+        for (long seed : new long[]{Long.MIN_VALUE, -19L, 1L, Long.MAX_VALUE}) {
+            Artifact first = seeded(seed, "iron_sword");
+            Artifact other = seeded(seed ^ (1L << 48), "iron_sword");
+            String name = first.getDisplayName();
+            assertNotEquals(name, other.getDisplayName());
+            assertTrue(name.contains(first.getNaming().getRootForm()));
+            assertTrue(name.length() <= 48);
+            assertTrue(name.split("\\s+").length <= 4);
+        }
+    }
+
+    @Test
     void namingIsDeterministicForEquivalentIdentity() {
         Artifact left = seeded(99L, "iron_sword");
         Artifact right = seeded(99L, "iron_sword");

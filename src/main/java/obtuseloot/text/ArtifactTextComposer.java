@@ -3,6 +3,7 @@ package obtuseloot.text;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.names.ArtifactNameCompressor;
+import obtuseloot.names.NamePoolManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -14,7 +15,7 @@ public class ArtifactTextComposer {
     public String compose(Artifact artifact, ArtifactTextIdentity identity, ArtifactTextChannel channel, String context) {
         int maxWords = maxWords(channel);
         String raw = switch (channel) {
-            case NAME -> name(identity, context);
+            case NAME -> seededName(artifact, identity, context, maxWords);
             case LORE -> lore(identity);
             case IDENTIFY -> identify(identity);
             case AWAKENING -> awakening(identity, context);
@@ -30,6 +31,26 @@ public class ArtifactTextComposer {
         return channel == ArtifactTextChannel.NAME
                 ? ArtifactNameCompressor.compress(bounded, maxWords)
                 : bounded;
+    }
+
+    private String seededName(Artifact artifact, ArtifactTextIdentity identity, String context, int maxWords) {
+        String root = cap(context);
+        long seed = artifact.getNaming().getNamingSeed();
+        var random = new java.util.SplittableRandom(seed ^ 0x4E414D45504F4F4CL);
+        // Select whole entries that fit. Truncation would silently merge distinct pool entries.
+        List<String> prefixes = NamePoolManager.prefixes().stream()
+                .filter(p -> fitsName(joinNonBlank(p, root), maxWords)).toList();
+        if (prefixes.isEmpty()) return name(identity, context);
+        String prefix = prefixes.get(random.nextInt(prefixes.size()));
+        String start = joinNonBlank(prefix, root);
+        List<String> suffixes = NamePoolManager.suffixes().stream()
+                .filter(s -> fitsName(joinNonBlank(start, s), maxWords)).toList();
+        if (suffixes.isEmpty()) return start;
+        return joinNonBlank(start, suffixes.get(random.nextInt(suffixes.size())));
+    }
+
+    private boolean fitsName(String name, int maxWords) {
+        return name.length() <= 48 && name.trim().split("\\s+").length <= maxWords;
     }
 
     private String name(ArtifactTextIdentity identity, String context) {

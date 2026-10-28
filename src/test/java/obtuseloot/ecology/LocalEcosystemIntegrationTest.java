@@ -37,6 +37,10 @@ class LocalEcosystemIntegrationTest {
         assertEquals(1, child.getInheritanceGeneration());
         assertEquals(0, child.getItemReputation().getTotalScore());
         assertNotEquals(parent.getGenome().traits(), child.getGenome().traits());
+        assertNotEquals(parent.getSeedPrecisionAffinity(), child.getSeedPrecisionAffinity());
+        assertEquals(parent.getSeedPrecisionAffinity(), child.getSeedPrecisionAffinity(), 0.16D);
+        assertEquals(child.getSeedPrecisionAffinity(), store.loadArtifactProfile(child.getArtifactStorageKey()).getSeedPrecisionAffinity());
+        assertEquals(parent.getSeedPrecisionAffinity(), store.loadArtifactProfile(parent.getArtifactStorageKey()).getSeedPrecisionAffinity());
         for (var trait : GenomeTrait.values()) assertTrue(Math.abs(child.getGenome().trait(trait) - parent.getGenome().trait(trait)) < 0.1);
         assertNotEquals(new GenomeResolver().resolve(child.getArtifactSeed()).traits(), child.getGenome().traits(), "Inherited genes must replace seed-only reconstruction");
         assertEquals(child.getGenome().traits(), store.loadArtifactProfile(child.getArtifactStorageKey()).getGenome().traits());
@@ -47,6 +51,7 @@ class LocalEcosystemIntegrationTest {
         assertEquals(childPerformance, model.express(store.loadArtifactProfile(child.getArtifactStorageKey()).getGenome()));
         var replay = reopened.createEquipment(owner, EquipmentArchetype.IRON_AXE, origin, new Random(2));
         assertEquals(child.getGenome().traits(), replay.getGenome().traits());
+        assertEquals(child.getSeedPrecisionAffinity(), replay.getSeedPrecisionAffinity());
         assertEquals(childPerformance, model.express(replay.getGenome()));
     }
 
