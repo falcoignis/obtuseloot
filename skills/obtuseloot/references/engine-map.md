@@ -214,7 +214,7 @@ Agent C counted about 20 corrective layers in ability selection, added 2026-03-1
 
 | Area | Mechanism |
 |---|---|
-| Ecology | ~~Bifurcation caps (8 global / 4 per parent)~~ and ~~split cooldowns~~ removed 2026-10-26 (owner ruling); forced displacement and soft migration; niche locks (x1.30); inversion multipliers (child x1.30 / parent x0.88). Note the owner did rule that timing moves to **game time** and state **persists**. |
+| Ecology | ~~Bifurcation caps (8 global / 4 per parent)~~ and ~~split cooldowns~~ removed 2026-10-26 (owner ruling); forced displacement and soft migration (removal pending a corrected observed-membership design); ~~niche locks (x1.30)~~ and ~~inversion multipliers (child x1.30 / parent x0.88)~~ removed 2026-10-27. Note the owner did rule that timing moves to **game time** and state **persists**. |
 | Safety | Production safety guards / dominance suppression (`safety.*`, combined floor 0.75). These came from the v0.9.41/42 "production hardening" work. |
 | Progression | Fixed tier gates 10/25/45/70; archetype inertia 2.0 and switch margin 4.0; drift cap 0.40 |
 

@@ -1,5 +1,12 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-27 UTC: niche locks and inversion removed; observed-children redo pending
+
+- Owner ruling: remove the remaining fixed niche-ecology rules while keeping the ecology healthy. Pre-registered 72-window comparison, GitHub Actions run 40449757912 (`docs/organic-niche-membership.md`). The control matched the #431 long relief run byte for byte (32/32 files).
+- locks_off: guardrail held, Rules S 15/16, E 15/16, T (late birth and collapse) 13/16. Children born / collapsed 111.2 / 98.6 per seed, final Simpson 0.8643 vs 0.8748, live children rising slowly. Adopted in this PR: niche locks, the continuity sticky lock and inversion multipliers removed.
+- observed (children budded from observed subniches): Rules E 4/16 and T 0/16 not shown (freeze). Implementation defect: the artifact-wide dominant subniche was used instead of the dominant subniche within the parent tag. Redo pending (per-parent subniche, with and without recency). Displacement and migration stay until then.
+- No merge authorization recorded for this PR yet. Wild mutation remains held.
+
 ## 2026-10-26 UTC (afternoon): organic niche splitting (no cooldowns, no caps, parent relief)
 
 - Owner rulings: the split cooldowns must not set the pace, the niche caps go too, and the ecology should be as organic as possible (decision ledger).
