@@ -41,7 +41,15 @@ class ItemUniquenessMeasurementTest {
         try (var connection = database.openConnection()) { new SqlSchemaManager().ensureSchema(connection); }
         PlayerStateStore store = new JdbcPlayerStateStore(database, null, JdbcPlayerStateStore.Dialect.SQLITE);
         var ecosystem = new LocalEcosystem(store, new ArtifactManager(store));
-        var registry = new AbilityRegistry().implementedOnly();
+        // -Dobtuseloot.extraAbilities=id,id makes catalog templates selectable as if implemented (identity only:
+        // they carry no live effect here). Without it this is exactly the plugin's implemented-only registry.
+        Set<String> extra = new TreeSet<>(Arrays.asList(System.getProperty("obtuseloot.extraAbilities", "").split(",")));
+        extra.remove("");
+        var full = new AbilityRegistry();
+        var registry = extra.isEmpty() ? full.implementedOnly() : new AbilityRegistry(full.registrations().stream()
+                .filter(r -> (r.implemented() && (r.liveEffect() == null || r.liveEffect().enabledForSelection()))
+                        || extra.contains(r.template().id()))
+                .toList());
         var resolver = new SeededAbilityResolver(registry, new obtuseloot.memory.ArtifactMemoryEngine(),
                 new obtuseloot.ecosystem.ArtifactEcosystemSelfBalancingEngine(), new obtuseloot.lineage.LineageRegistry(),
                 new obtuseloot.lineage.LineageInfluenceResolver(), null);
@@ -74,7 +82,7 @@ class ItemUniquenessMeasurementTest {
         }
 
         List<String> summary = new ArrayList<>();
-        summary.add("births=" + births + " implemented_templates=" + registry.templates().size()
+        summary.add("births=" + births + " selectable_templates=" + registry.templates().size() + " extra=" + extra
                 + " inherited=" + items.stream().filter(r -> !r.get("generation").equals("0")).count());
         Map<String, Function<Map<String, String>, String>> keys = new LinkedHashMap<>();
         keys.put("seed", r -> r.get("seed"));
@@ -94,7 +102,7 @@ class ItemUniquenessMeasurementTest {
             summary.add(String.format(Locale.ROOT, "%s: distinct=%d items_sharing_a_value=%d (%.2f%%) largest_group=%d",
                     entry.getKey(), counts.size(), duplicated, 100.0D * duplicated / births, largest));
         }
-        Path out = Path.of("target", "item-uniqueness");
+        Path out = Path.of("target", "item-uniqueness", extra.isEmpty() ? "baseline" : "plus-" + extra.size());
         Files.createDirectories(out);
         Files.write(out.resolve("items.csv"), rows);
         Files.write(out.resolve("summary.txt"), summary);

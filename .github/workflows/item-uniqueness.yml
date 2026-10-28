@@ -15,7 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        births: [3000, 20000]
+        births: [3000]
+        extra: ['', 'social.trader_whisper,exploration.biome_attunement']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -26,9 +27,9 @@ jobs:
       - name: Measure
         run: >
           mvn -B -ntp test -Dtest='ItemUniquenessMeasurementTest' -Dsurefire.failIfNoSpecifiedTests=false
-          -Dobtuseloot.experiments=true -Dobtuseloot.births=${{ matrix.births }}
+          -Dobtuseloot.experiments=true -Dobtuseloot.births=${{ matrix.births }} -Dobtuseloot.extraAbilities=${{ matrix.extra }}
       - uses: actions/upload-artifact@v4
         with:
-          name: item-uniqueness-${{ matrix.births }}
+          name: item-uniqueness-${{ matrix.births }}-${{ strategy.job-index }}
           path: target/item-uniqueness/
           if-no-files-found: error
