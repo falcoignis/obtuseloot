@@ -26,10 +26,28 @@ class AbilityPerformanceTest {
         assertNotEquals(model.express(original), model.express(first));
         assertEquals(model.express(first), model.express(replay));
     }
-    @Test void otherCatalogEntriesKeepFixedPerformanceAndRegistrationBuildersRetainTheModel() {
+    @Test void onlyDeclaredTradeoffsVaryAndRegistrationBuildersRetainTheModel() {
         var catalog = new AbilityRegistry();
-        for (var entry : catalog.registrations()) if (!java.util.Set.of("mobility.double_jump", "precision.material_insight").contains(entry.template().id()))
-            assertEquals(AbilityPerformance.FIXED, entry.performanceModel().express(genome(1)));
+        var inherited = Map.of(
+                "mobility.double_jump", GenomeTrait.KINETIC_BIAS,
+                "precision.material_insight", GenomeTrait.PRECISION_AFFINITY,
+                "mobility.footprint_memory", GenomeTrait.MOBILITY_AFFINITY,
+                "survival.weather_omen", GenomeTrait.SURVIVAL_INSTINCT,
+                "survival.herd_instinct", GenomeTrait.RESONANCE,
+                "engineering.redstone_sympathy", GenomeTrait.PRECISION_AFFINITY);
+        for (var entry : catalog.registrations()) {
+            var trait = inherited.get(entry.template().id());
+            if (trait == null) {
+                assertEquals(AbilityPerformance.FIXED, entry.performanceModel().express(genome(1)), entry.template().id());
+                continue;
+            }
+            var low = entry.performanceModel().express(new ArtifactGenome(-42, Map.of(trait, 0.0)));
+            var mid = entry.performanceModel().express(new ArtifactGenome(-42, Map.of(trait, 0.5)));
+            var high = entry.performanceModel().express(new ArtifactGenome(-42, Map.of(trait, 1.0)));
+            assertEquals(AbilityPerformance.FIXED, mid, entry.template().id());
+            assertTrue(low.outputMultiplier() < mid.outputMultiplier() && mid.outputMultiplier() < high.outputMultiplier(), entry.template().id());
+            assertTrue(low.recoveryMultiplier() < mid.recoveryMultiplier() && mid.recoveryMultiplier() < high.recoveryMultiplier(), entry.template().id());
+        }
         var original = catalog.registrationById("mobility.double_jump");
         assertSame(original.performanceModel(), original.withLiveEffect(original.liveEffect()).performanceModel());
         var passive = original.withPassiveEffect(AbilityActivationPolicy.EQUIPMENT, (p, a, d) -> null);

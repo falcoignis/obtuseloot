@@ -79,7 +79,7 @@ settings snapshot.
 
 ## Validation boundary
 
-Focused checks: **110 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
+Focused checks: **115 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
 exercise actual handlers, shared cooldowns, gene-dependent facts/range and recovery,
 denials, visibility, failed-delivery rollback, reentrancy, profile corruption, trades,
 new offspring, revision attribution and positive local reproductive evidence.
@@ -137,5 +137,37 @@ The original study and its rerun precede this correction and are superseded.
 
 ## Results
 
-Pending registered Actions execution. Owner review/merge and live deployment remain
+Actions run [40931547378](https://github.com/falcoignis/obtuseloot/actions/runs/40931547378)
+on `3cee188de32bd575ad7cc079d8750186c1f51b58` passed all eight measurements and all
+eight registered replay/input controls. Each arm/seed repeated every column; paired
+non-ability columns and both historical control samples matched exactly. All nine
+measurement/comparison ZIPs matched their published SHA-256 digests; local
+recomputation reproduced the Actions summary. The study full suite ran 637 tests with one failure, zero errors and ten opt-in skips: an
+older catalog test assumed these four effects had fixed performance. Its correction
+explicitly checks all six declared inherited models, and the final 115 focused tests pass.
+Production code is unchanged; the full-suite recheck runs through the normal PR build.
+Consult its checks for the current result.
+
+| Seed | Catalog | Distinct sets | Observed IDs | Largest set | Equal unordered pairs / 4,498,500 | Pair-match probability |
+|---|---|---:|---:|---:|---:|---:|
+| First | Control | 2 | 3 | 1,726 / 3,000 | 2,299,576 | 51.12% |
+| First | Expanded | 17 | 7 | 2,646 / 3,000 | 3,506,193 | 77.94% |
+| Second | Control | 3 | 3 | 1,696 / 3,000 | 2,285,613 | 50.81% |
+| Second | Expanded | 18 | 7 | 2,667 / 3,000 | 3,561,511 | 79.17% |
+
+The expanded largest set is Fleetfoot + Footprint Memory (88.2% / 88.9%). Catalog
+reach increased, but concentration and ability-pair repetition worsened. No weights
+were tuned to hide that result. Complete per-set counts are in the run's
+`noncombat-catalog-comparison/catalog-summary.json` artifact. Dispatch/recovery and
+actual player usefulness remain separate from birth-set reach.
+
+All four samples have 2,988 distinct names, 3,000 genomes and 3,000 affinity vectors.
+Full-profile duplicates were absent in control too, so that is not an improvement
+attributable to this batch. Expanded name-plus-ability distinct counts are
+2,992 / 2,989 versus 2,992 / 2,992 in control. These are finite samples, not universal
+uniqueness guarantees or evidence of natural niche formation.
+
+Superseded runs 40924823737 and 40925770963 were deliberately cancelled for the
+loaded-chunk guard and reproduced input-combination correction, respectively. They
+do not certify the final source. Owner review/merge and live deployment remain
 separate; neither has been authorized by this implementation request.

@@ -12,8 +12,14 @@
   recovery/fitness. No migration, live-server write, new dependency or wild mutation.
 - Read `docs/noncombat-ability-batch.md` for proposed defaults, targeted validation,
   the registered two-seed/repeated birth comparison and API-double/native boundaries.
-  Full-suite and study results pending. Owner review/merge required; installed mirrors
-  have not been refreshed.
+  Focused checks: 115 passed. Study run 40931547378 on `3cee188` passed all eight
+  3,000-birth measurements and eight replay/input controls. Expanded samples reached
+  17/18 sets versus 2/3, but Fleetfoot + Footprint Memory dominates 88.2%/88.9% and
+  pair repetition worsened. This is birth reach, not balance or ecosystem health.
+  Study full suite: 637 tests, one outdated fixed-performance assertion failed, zero
+  errors, ten skips. The catalog test now checks all six inherited models; 115 focused
+  tests pass with unchanged production code. Consult the final PR build for its full
+  recheck. Owner review/merge required; installed mirrors have not been refreshed.
 
 ## 2026-10-29: ability replay identity inputs
 
