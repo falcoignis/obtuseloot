@@ -6,8 +6,17 @@
   and main run 40636492147 passed (GitHub checked 2026-10-28).
 - The owner requested implementing both supporting uniqueness suggestions: inherited
   affinity drift and wider seeded names. See `docs/item-affinity-name-variation.md`.
-  Focused Java 25 checks: 34 tests, zero failures/errors/skips. Comparison/full-suite
-  run 40789517726 is pending; update from its terminal result before review.
+  Focused Java 25 checks: 36 tests, zero failures/errors/skips. Optimized
+  comparison/full-suite run 40792059771 on `f14668c` passed all six jobs: 612
+  tests, zero failures/errors, 10 skipped. All five 3,000-birth measurement arms
+  passed. Both combined samples have 2,988 distinct names and 3,000 distinct
+  affinity vectors. No complete-profile duplicates observed, also true of the
+  baseline. Existing name/ability repetition is reported separately.
+- Full ability-set neutrality failed: even identical baseline code differs in
+  16 of 3,000 rows between runs. Names/genomes/affinities and recorded birth
+  inputs reproduce across all 15,000 births. Cause unconfirmed; ability-diversity
+  attribution remains open. The summary check stays failing, and the review is
+  a draft with this limitation explicit. The temporary workflow is removed.
 - Recovered the unpushed v2/shift research documents and summarizers from archived
   research commit `caf9527`. Read `docs/organic-niche-membership-v2.md` and
   `docs/organic-niche-environment-shift.md`. Both corrected observed-membership arms

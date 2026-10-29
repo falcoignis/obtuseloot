@@ -50,13 +50,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifacts", type=Path)
     parser.add_argument("--prior-baseline", type=Path)
+    parser.add_argument("--births", type=int, default=3000)
     args = parser.parse_args()
     arms = {name: load(args.artifacts / ("item-variation-" + name))
             for name in ("baseline", "affinities", "names", "both", "replicate")}
+    if any(len(rows) != args.births for rows in arms.values()):
+        raise ValueError(f"Every arm must contain the registered {args.births} births")
     checks = {}
     if args.prior_baseline:
-        checks["baseline_matches_prior"] = matching(arms["baseline"], load(args.prior_baseline),
+        prior = load(args.prior_baseline)
+        checks["baseline_matches_prior"] = matching(arms["baseline"], prior,
                                                     ("seed", "archetype", "generation", "name", "abilities", "genome", "affinities"))
+        for field in ("seed", "archetype", "generation", "name", "abilities", "genome", "affinities"):
+            checks["prior_baseline_" + field + "_identical"] = matching(arms["baseline"], prior, (field,))
     for arm in ("affinities", "names", "both"):
         checks[arm + "_birth_inputs_and_genomes_identical"] = matching(
             arms["baseline"], arms[arm], ("seed", "archetype", "generation", "genome"))
@@ -64,6 +70,9 @@ def main():
         arms["baseline"], arms["names"], ("affinities", "abilities"))
     checks["both_preserves_affinity_only_vectors_and_abilities"] = matching(
         arms["affinities"], arms["both"], ("affinities", "abilities"))
+    checks["names_only_preserves_affinity_vectors"] = matching(arms["baseline"], arms["names"], ("affinities",))
+    checks["both_preserves_affinity_only_vectors"] = matching(arms["affinities"], arms["both"], ("affinities",))
+    checks["names_only_and_both_names_identical"] = matching(arms["names"], arms["both"], ("name",))
     output = {"checks": checks, "arms": {name: metrics(rows) for name, rows in arms.items()}}
     print(json.dumps(output, indent=2))
     if not all(checks.values()):

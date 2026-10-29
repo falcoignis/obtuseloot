@@ -58,7 +58,49 @@ are not established by this birth-only synthetic measurement.
 
 ## Results
 
-RESULT_PENDING
+Original comparison: run [40789517726](https://github.com/falcoignis/obtuseloot/actions/runs/40789517726),
+source `76790c5`. All five measurement jobs passed; the superseded full-suite job
+was canceled after the optimized head's run started. Every downloaded artifact
+matches its published SHA-256 digest.
+
+These are **descriptive sample counts**. The full registered neutrality condition
+failed for ability sets (diagnostic amendment below); no causal ability-diversity
+claim is made.
+
+| Arm (3,000 births each) | Distinct names | Items sharing a name | Distinct affinity vectors | Name-pair collision probability | Complete profile duplicates |
+|---|---:|---:|---:|---:|---:|
+| baseline | 56 | 2,999 (99.97%) | 8 | 0.0283210 | 0 |
+| affinities | 61 | 2,996 (99.87%) | 3,000 | 0.0281850 | 0 |
+| names | 2,988 | 24 (0.80%) | 8 | 0.00000266756 | 0 |
+| both | 2,988 | 24 (0.80%) | 3,000 | 0.00000266756 | 0 |
+| both, second seed | 2,988 | 22 (0.73%) | 3,000 | 0.00000311215 | 0 |
+
+There are 4,498,500 unordered pairs per sample. Names-only and both each have
+12 equal-name pairs; the second seed has 14. Zero complete-profile collisions
+were also observed in the **baseline**, because genomes were already distinct.
+Unique affinity vectors and broader names improve different identity dimensions;
+they do not prove unique gameplay effects. Finite name pools still collide.
+
+The optimized composer reproduces all 3,000 names from the original combined
+corpus exactly in a database-free Java check. The Maven image's entrypoint emitted
+a default-cache permission warning; the Java checker itself exited 0.
+
+Optimized rerun: [40792059771](https://github.com/falcoignis/obtuseloot/actions/runs/40792059771),
+source `f14668c`: **all six jobs passed**. Full `clean package`: **612 tests,
+zero failures/errors, 10 opt-in skipped, across 122 classes**. All six artifacts
+match their published SHA-256 digests. The five measurement samples reproduce
+the original implementation's seeds, archetypes, generations, names, genomes
+and affinities exactly (15,000 births across revisions). Ability sets differ in
+16 to 18 rows per arm; even the unchanged baseline differs in 16 of 3,000.
+Thus the registered full neutrality condition remains **not met**. No ability
+comparison is certified, and no engine weights were tuned to repair it.
+
+The temporary workflow is removed before review. To reproduce the recorded run,
+use the workflow and Java source at `f14668c`; the result summarizer is
+`scripts/summarize-item-variation.py ARTIFACTS --prior-baseline PRIOR_ITEMS_CSV`.
+It prints the domain-specific checks and deliberately exits nonzero when full
+neutrality fails. The pre-registered random-pair probability is
+`sum(count * (count - 1) / 2) / (births * (births - 1) / 2)`.
 
 ### Diagnostic amendment before the optimized rerun
 
