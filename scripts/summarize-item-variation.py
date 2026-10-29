@@ -50,6 +50,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifacts", type=Path)
     parser.add_argument("--prior-baseline", type=Path)
+    parser.add_argument("--replay", type=Path, help="Independent same-input run; compare every recorded column")
     parser.add_argument("--births", type=int, default=3000)
     args = parser.parse_args()
     arms = {name: load(args.artifacts / ("item-variation-" + name))
@@ -57,6 +58,10 @@ def main():
     if any(len(rows) != args.births for rows in arms.values()):
         raise ValueError(f"Every arm must contain the registered {args.births} births")
     checks = {}
+    if args.replay:
+        for name, rows in arms.items():
+            replay = load(args.replay / ("item-variation-" + name))
+            checks[name + "_independent_replay_identical"] = rows == replay
     if args.prior_baseline:
         prior = load(args.prior_baseline)
         checks["baseline_matches_prior"] = matching(arms["baseline"], prior,
@@ -66,6 +71,10 @@ def main():
     for arm in ("affinities", "names", "both"):
         checks[arm + "_birth_inputs_and_genomes_identical"] = matching(
             arms["baseline"], arms[arm], ("seed", "archetype", "generation", "genome"))
+        if "storage_key" in arms["baseline"][0]:
+            checks[arm + "_identities_parentage_and_outcomes_identical"] = matching(
+                arms["baseline"], arms[arm], ("storage_key", "lineage", "parent_key", "parent_seed",
+                                             "parent_revision", "observed_amount", "legacy_delta"))
     checks["names_only_preserves_affinities_and_abilities"] = matching(
         arms["baseline"], arms["names"], ("affinities", "abilities"))
     checks["both_preserves_affinity_only_vectors_and_abilities"] = matching(

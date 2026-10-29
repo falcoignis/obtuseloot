@@ -40,7 +40,11 @@ class ItemUniquenessMeasurementTest {
         var database = new DatabaseManager("jdbc:sqlite:" + temp.resolve("uniqueness.db"), null, null);
         try (var connection = database.openConnection()) { new SqlSchemaManager().ensureSchema(connection); }
         PlayerStateStore store = new JdbcPlayerStateStore(database, null, JdbcPlayerStateStore.Dialect.SQLITE);
-        var ecosystem = new LocalEcosystem(store, new ArtifactManager(store));
+        // Identity affects founder lineage IDs and therefore lineage drift. Control it as a separate
+        // input stream, without consuming birth/parent-choice draws or changing live UUID creation.
+        Random identities = new Random(runSeed ^ 0x4944454E54495459L);
+        var ecosystem = new LocalEcosystem(store, new ArtifactManager(store), new LocalInheritancePool(),
+                () -> "artifact:" + new UUID(identities.nextLong(), identities.nextLong()));
         // -Dobtuseloot.extraAbilities=id,id makes catalog templates selectable as if implemented (identity only:
         // they carry no live effect here). Without it this is exactly the plugin's implemented-only registry.
         Set<String> extra = new TreeSet<>(Arrays.asList(System.getProperty("obtuseloot.extraAbilities", "").split(",")));
@@ -58,15 +62,16 @@ class ItemUniquenessMeasurementTest {
         UUID world = new UUID(0, 77);
         EquipmentArchetype[] archetypes = EquipmentArchetype.values();
         List<String> rows = new ArrayList<>();
-        rows.add("index,seed,archetype,generation,name,abilities,genome,affinities");
+        rows.add("index,seed,archetype,generation,name,abilities,genome,affinities,storage_key,lineage,parent_key,parent_seed,parent_revision,observed_amount,legacy_delta");
         List<Map<String, String>> items = new ArrayList<>();
         for (int i = 0; i < births; i++) {
             // Eight areas far apart (beyond the 20-chunk radius), so lineages stay local within each.
             var origin = new WorldPosition(world, (i % 8) * 4_000, 0);
             var archetype = archetypes[random.nextInt(archetypes.length)];
             Artifact item = ecosystem.createEquipment(new UUID(1, i), archetype, origin, random);
-            ecosystem.observe(LocalInheritancePoolTest.observation(item, origin, true, 1.0D + random.nextDouble() * 9.0D,
-                    random.nextDouble(), "measured-" + i));
+            double amount = 1.0D + random.nextDouble() * 9.0D;
+            double legacyDelta = random.nextDouble();
+            ecosystem.observe(LocalInheritancePoolTest.observation(item, origin, true, amount, legacyDelta, "measured-" + i));
             var profile = resolver.resolve(item, item.getItemReputation());
             Map<String, String> row = new LinkedHashMap<>();
             row.put("seed", Long.toString(item.getArtifactSeed()));
@@ -77,6 +82,13 @@ class ItemUniquenessMeasurementTest {
             row.put("genome", item.getGenome().traits().toString() + item.getGenome().latentTraits());
             row.put("affinities", String.format(Locale.ROOT, "%s/%s/%s/%s/%s/%s", item.getSeedPrecisionAffinity(), item.getSeedBrutalityAffinity(),
                     item.getSeedSurvivalAffinity(), item.getSeedMobilityAffinity(), item.getSeedChaosAffinity(), item.getSeedConsistencyAffinity()));
+            row.put("storage_key", item.getArtifactStorageKey());
+            row.put("lineage", item.getLatentLineage());
+            row.put("parent_key", Objects.toString(item.getParentStorageKey(), ""));
+            row.put("parent_seed", Long.toString(item.getParentGenomeSeed()));
+            row.put("parent_revision", Long.toString(item.getParentGenomeRevision()));
+            row.put("observed_amount", Double.toString(amount));
+            row.put("legacy_delta", Double.toString(legacyDelta));
             items.add(row);
             rows.add(i + "," + String.join(",", row.values().stream().map(v -> v.replace(",", ";")).toList()));
         }
