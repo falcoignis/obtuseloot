@@ -58,6 +58,14 @@ are not established by this birth-only synthetic measurement.
 
 ## Results
 
+**2026-10-29 follow-up:** the failed ability replay was traced to uncontrolled
+random founder lineage identities, an input to ordinary lineage drift. A new
+controlled-identity confirmation reproduces every recorded column across all five
+independent arm pairs and passes all 16 checks (30,000 births). See
+[`ability-replay-inputs.md`](ability-replay-inputs.md) for the correction, study and
+remaining ability repetition. The historical results and failed neutrality below
+remain unchanged.
+
 Original comparison: run [40789517726](https://github.com/falcoignis/obtuseloot/actions/runs/40789517726),
 source `76790c5`. All five measurement jobs passed; the superseded full-suite job
 was canceled after the optimized head's run started. Every downloaded artifact

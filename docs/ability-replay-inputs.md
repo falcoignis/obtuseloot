@@ -59,5 +59,46 @@ separately; do not certify the old ability comparison retroactively.
 
 ## Confirmation result
 
-Pending the registered Actions run. Wild mutation remains held. No merge or live
-deployment authorization is granted by this task.
+Run [40831895982](https://github.com/falcoignis/obtuseloot/actions/runs/40831895982),
+source `f03627401440474ea89989b6b749d0fb661a7ba8`: all ten 3,000-birth measurement
+jobs and the comparison job passed. **All 16 checks passed**, including exact
+reproduction of every recorded column for each arm's independent repeat.
+That is 30,000 measured births in total. The full `clean package` suite also
+passed: **615 tests, zero failures/errors, 10 opt-in skipped, across 123 classes**.
+All 12 downloaded artifact ZIPs match their published SHA-256 digests. The final
+review's `src`, `scripts` and `pom.xml` match this tested source; subsequent changes
+only record results, update the canonical skill and remove the temporary workflow.
+
+| Arm (3,000 births per repeat) | Distinct names | Distinct affinity vectors | Distinct ability sets | Largest ability-set group |
+|---|---:|---:|---:|---:|
+| baseline | 56 | 8 | 2 | 1,726 |
+| affinities | 61 | 3,000 | 2 | 1,726 |
+| names | 2,988 | 8 | 2 | 1,726 |
+| both | 2,988 | 3,000 | 2 | 1,726 |
+| both, second seed | 2,988 | 3,000 | 3 | 1,696 |
+
+The four first-seed arms have exactly the same ability sets, row for row. The
+second seed has one item in the third ability-set group. Ability repetition remains
+high: all 3,000 items share a set in the first-seed arms; 2,999 do in the second.
+The selectable implemented catalog here has three templates, and newborns pick two.
+This birth-only measurement does not assess live utility, long-term evolution or
+the variety of actual effects expressed by inherited genes.
+
+Name and affinity collision counts reproduce #433: both has 12 equal-name pairs
+among 4,498,500 pairs (24 items sharing names), and the second seed has 14 pairs
+(22 items sharing names). Each combined arm has 3,000 distinct affinity vectors.
+Complete profiles have no observed duplicates in any arm, including baseline;
+this is not a proof of global uniqueness.
+
+Against the archived optimized run 40792059771, all 15,000 paired records still
+match in seeds, archetypes, generations, names, genomes and affinities. Abilities
+differ in 12/15/12/12/23 rows across the five arms, as expected when supplying a
+different identity input. The prior CSVs were verified against their archive's
+SHA-256 manifest. No prior ability-neutrality failure is reclassified as a pass.
+
+Focused validation: 22 tests, zero failures/errors/skips. This includes three
+400-birth JVM replays, persistence/ancestry and birth-RNG independence, the
+lineage-ID causal witness, existing inheritance integration and lineage bias tests.
+The summary checker also accepted a synthetic aligned fixture and rejected a
+one-row ability mismatch. Wild mutation remains held. No merge or live deployment
+authorization is granted by this task.

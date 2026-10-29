@@ -1,5 +1,28 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-29: ability replay identity inputs
+
+- #433 is merged as `5bba50883710eec1698b38a20b65ef485eb9db56`.
+  Its main CI run 40805111384 passed. The older draft-state entry below is history.
+- The owner approved diagnosing the ability replay gap and rerunning the comparison.
+  Founder lineage IDs used uncontrolled random storage UUIDs; ordinary lineage drift
+  seeds on that ID. A package-private storage-key supplier lets tests control this
+  input separately. Existing public constructors keep random UUIDs and unchanged
+  ability selection, lineage drift, mutation and persistence behavior.
+- Focused checks: 22 tests, zero failures/errors/skips. Uncontrolled replay differed
+  in 3/400 ability sets; three controlled JVM replays matched every recorded column.
+  Read `docs/ability-replay-inputs.md` for the mechanism and causal witness.
+- Registered Actions confirmation 40831895982 on `f036274`: all ten measurement
+  jobs and all 16 comparison checks passed. Five 3,000-birth arms each reproduce
+  independently (30,000 births). Full `clean package`: 615 tests, zero failures/errors,
+  10 opt-in skipped across 123 classes. All 12 artifact digests verified. The
+  corrected first-seed arms share the same two ability sets row for
+  row; the second seed has three sets. Name/affinity counts reproduce #433.
+- This corrects the research inputs; historical uncontrolled ability comparisons
+  remain uncertified. Live usefulness, ability variety and long-horizon evolution
+  remain separate questions. No new merge or deployment authorization; wild
+  mutation stays held. Installed skill mirrors have not been refreshed.
+
 ## 2026-10-28: item variation implementation and Claude continuation
 
 - #432 is merged as `c7357f7cc159efc05617d5cf57dee0ada362aaed`; its PR CI

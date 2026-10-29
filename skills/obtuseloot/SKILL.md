@@ -139,6 +139,10 @@ docker run --rm --user 1000:1000 -v "$PWD":/src -w /src \
 - **Judge a run by Maven's exit code and the surefire reports.** Grepped log lines are not enough. A shell pipeline that prints the log after Maven fails can still exit 0.
 - **Revert tracked files the tests rewrite, after every test run:** `git checkout -- docs/deep-cold-completion-validation-final.md analytics/`. The full suite rewrites that doc. Even a targeted run including `WorldSimulationHarnessValidationProfileTest` rewrote 5 tracked `analytics/` files on 2026-10-19 (regulatory-gate reports, world-lab gate review, a dashboard meta json). Check `git status` before every commit. The decision is that tests write their reports to `target/` or a temp dir instead; until that lands, never commit the regenerated version.
 - **Probe reproducibility (issue #401).** PR #402 derives owner UUIDs from seeds. PR #403 adds enum-ordered genomes and isolates probe population history; its focused/full outputs matched across separate JVMs. Check which changes are merged on the working branch. Never attribute a count difference to a change without controlling inputs and repeating the run.
+- **Item ability replay:** storage UUIDs determine founder lineage IDs, and lineage
+  drift uses those IDs in its seed. Reproduction/ability measurements must control
+  identity separately from the birth RNG. Keep random UUIDs live; read
+  `docs/ability-replay-inputs.md` for the test fixture and independent-run checks.
 - **Historical sensing-probe flake:** 16 hits on 2026-10-08 and 27 on 2026-10-19. The owner removed its `>= 18` assertion in the baseline PR. Fix uncontrolled inputs rather than tuning the engine to hit a distribution target.
 - **Cleanup:** remove `target/` and any temp clone when done. The `obtuseloot-m2` volume is a reusable cache; mention it rather than silently leaving it.
 
