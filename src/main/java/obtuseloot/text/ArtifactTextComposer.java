@@ -3,6 +3,7 @@ package obtuseloot.text;
 import obtuseloot.artifacts.Artifact;
 import obtuseloot.config.RuntimeSettings;
 import obtuseloot.names.ArtifactNameCompressor;
+import obtuseloot.names.NamePoolManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -10,11 +11,13 @@ import java.util.Locale;
 public class ArtifactTextComposer {
     private final ArtifactExpressionSafetyFilter safetyFilter = new ArtifactExpressionSafetyFilter();
     private final ArtifactTextToneValidator validator = new ArtifactTextToneValidator();
+    private volatile PoolEntries prefixEntries;
+    private volatile PoolEntries suffixEntries;
 
     public String compose(Artifact artifact, ArtifactTextIdentity identity, ArtifactTextChannel channel, String context) {
         int maxWords = maxWords(channel);
         String raw = switch (channel) {
-            case NAME -> name(identity, context);
+            case NAME -> seededName(artifact, identity, context, maxWords);
             case LORE -> lore(identity);
             case IDENTIFY -> identify(identity);
             case AWAKENING -> awakening(identity, context);
@@ -31,6 +34,39 @@ public class ArtifactTextComposer {
                 ? ArtifactNameCompressor.compress(bounded, maxWords)
                 : bounded;
     }
+
+    private String seededName(Artifact artifact, ArtifactTextIdentity identity, String context, int maxWords) {
+        String root = cap(context);
+        int rootWords = root.trim().split("\\s+").length;
+        long seed = artifact.getNaming().getNamingSeed();
+        var random = new java.util.SplittableRandom(seed ^ 0x4E414D45504F4F4CL);
+        // Select whole entries that fit. Truncation would silently merge distinct pool entries.
+        List<NamePart> prefixes = poolEntries(true).parts().stream()
+                .filter(p -> p.length() + root.length() + 1 <= 48 && p.words() + rootWords <= maxWords).toList();
+        if (prefixes.isEmpty()) return name(identity, context);
+        NamePart prefix = prefixes.get(random.nextInt(prefixes.size()));
+        String start = joinNonBlank(prefix.text(), root);
+        List<NamePart> suffixes = poolEntries(false).parts().stream()
+                .filter(s -> start.length() + s.length() + 1 <= 48
+                        && prefix.words() + rootWords + s.words() <= maxWords).toList();
+        if (suffixes.isEmpty()) return start;
+        return joinNonBlank(start, suffixes.get(random.nextInt(suffixes.size())).text());
+    }
+
+    private PoolEntries poolEntries(boolean prefix) {
+        List<String> source = prefix ? NamePoolManager.prefixes() : NamePoolManager.suffixes();
+        PoolEntries current = prefix ? prefixEntries : suffixEntries;
+        if (current == null || current.source() != source) {
+            current = new PoolEntries(source, source.stream()
+                    .map(s -> new NamePart(s, s.trim().split("\\s+").length, s.length())).toList());
+            if (prefix) prefixEntries = current;
+            else suffixEntries = current;
+        }
+        return current;
+    }
+
+    private record NamePart(String text, int words, int length) { }
+    private record PoolEntries(List<String> source, List<NamePart> parts) { }
 
     private String name(ArtifactTextIdentity identity, String context) {
         String motif = cap(stableNameMotif(identity));

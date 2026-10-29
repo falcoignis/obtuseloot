@@ -18,8 +18,8 @@ import java.util.List;
 public final class NamePoolManager {
     public static final String POOL_PREFIXES = "prefixes";
     public static final String POOL_SUFFIXES = "suffixes";
-    private static volatile List<String> prefixes = List.of();
-    private static volatile List<String> suffixes = List.of();
+    private static volatile List<String> prefixes = List.copyOf(Prefixes.get());
+    private static volatile List<String> suffixes = List.copyOf(Suffixes.get());
     private static volatile Path namesDirectory;
 
     private NamePoolManager() {

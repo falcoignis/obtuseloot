@@ -1,6 +1,30 @@
 # ObtuseLoot project status (volatile; dated entries)
 
-## 2026-10-27 UTC: niche locks and inversion removed; observed-children redo pending
+## 2026-10-28: item variation implementation and Claude continuation
+
+- #432 is merged as `c7357f7cc159efc05617d5cf57dee0ada362aaed`; its PR CI
+  and main run 40636492147 passed (GitHub checked 2026-10-28).
+- The owner requested implementing both supporting uniqueness suggestions: inherited
+  affinity drift and wider seeded names. See `docs/item-affinity-name-variation.md`.
+  Focused Java 25 checks: 36 tests, zero failures/errors/skips. Optimized
+  comparison/full-suite run 40792059771 on `f14668c` passed all six jobs: 612
+  tests, zero failures/errors, 10 skipped. All five 3,000-birth measurement arms
+  passed. Both combined samples have 2,988 distinct names and 3,000 distinct
+  affinity vectors. No complete-profile duplicates observed, also true of the
+  baseline. Existing name/ability repetition is reported separately.
+- Full ability-set neutrality failed: even identical baseline code differs in
+  16 of 3,000 rows between runs. Names/genomes/affinities and recorded birth
+  inputs reproduce across all 15,000 births. Cause unconfirmed; ability-diversity
+  attribution remains open. The summary check stays failing, and the review is
+  a draft with this limitation explicit. The temporary workflow is removed.
+- Recovered the unpushed v2/shift research documents and summarizers from archived
+  research commit `caf9527`. Read `docs/organic-niche-membership-v2.md` and
+  `docs/organic-niche-environment-shift.md`. Both corrected observed-membership arms
+  failed the registered extinction rules. They were not adopted; displacement and
+  migration stay. These are archived research results, separate from this item change.
+- No new merge or live-deployment authorization. Wild mutation remains held.
+
+## 2026-10-27 UTC: niche locks and inversion removed (historical pre-merge snapshot)
 
 - Owner ruling: remove the remaining fixed niche-ecology rules while keeping the ecology healthy. Pre-registered 72-window comparison, GitHub Actions run 40449757912 (`docs/organic-niche-membership.md`). The control matched the #431 long relief run byte for byte (32/32 files).
 - locks_off: guardrail held, Rules S 15/16, E 15/16, T (late birth and collapse) 13/16. Children born / collapsed 111.2 / 98.6 per seed, final Simpson 0.8643 vs 0.8748, live children rising slowly. Adopted in this PR: niche locks, the continuity sticky lock and inversion multipliers removed.

@@ -78,12 +78,7 @@ public final class LocalEcosystem {
             child.setParentGenomeRevision(parent.getGenomeRevision());
             child.setParentGenomeSeed(parent.getArtifactSeed());
             child.setInheritanceGeneration(Math.addExact(parent.getInheritanceGeneration(), 1));
-            child.setSeedPrecisionAffinity(parent.getSeedPrecisionAffinity());
-            child.setSeedBrutalityAffinity(parent.getSeedBrutalityAffinity());
-            child.setSeedSurvivalAffinity(parent.getSeedSurvivalAffinity());
-            child.setSeedMobilityAffinity(parent.getSeedMobilityAffinity());
-            child.setSeedChaosAffinity(parent.getSeedChaosAffinity());
-            child.setSeedConsistencyAffinity(parent.getSeedConsistencyAffinity());
+            new ArtifactSeedFactory().inheritAffinities(child, parent);
             child.addLoreHistory("Descended from " + parent.getDisplayName());
         }
         child.setNaming(ArtifactNameResolver.initialize(child));

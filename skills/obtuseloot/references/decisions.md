@@ -19,6 +19,15 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 
 ## Evolution design
 
+**Item uniqueness (owner, 2026-10-27):** "we want every single individual item to
+be unique, or at least have a stupid low chance of ever being duplicated". Measure
+duplication probability when changing generation, inheritance, genomes or abilities;
+different invisible seeds alone do not establish distinct player-facing behavior.
+On 2026-10-28 the owner requested implementing both proposed supporting changes:
+small inherited-affinity drift at birth and broader names using existing name pools.
+See `docs/item-affinity-name-variation.md` for the registered comparison and proposed
+implementation scale. This is implementation authority, not merge authority.
+
 | Topic | Decision |
 |---|---|
 | The ~20 corrective/top-down layers in ability selection and ecology (normalization, soft caps, top-3 compression, cold bootstrapping, applicability boosts, exposure rebalance, forced bifurcation, one-occupant reconciliation, etc.) | **Scaffolding to remove.** Replace with outcome-driven selection, then delete. **2026-10-21 follow-up:** after the top-three ablation, the owner approved removing gamma/mean score normalization next, with the soft cap evaluated separately afterward. |
@@ -96,7 +105,7 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 ## Still open (do not decide these yourself; ask)
 
 - **Organic niche splitting (owner, 2026-10-26).** "I don't want the cooldown to set pace, it needs to be organic"; "we should probably get rid of niche caps too and let them set themselves organically somehow"; "we want as much of this to be organic evolution as possible". The split cooldowns and niche caps are removed; a split relieves its parent's pressure, so niche count and pace come from pressure and extinction (`docs/organic-niche-splitting.md`). Prefer outcome-driven mechanisms over fixed limits throughout.
-- **Remaining niche-ecology rules (owner, 2026-10-26/27).** "Lets try to remove them all and make sure we retain a healthy ecology" (forced displacement and migration, niche locks, inversion multipliers). The owner chose children defined by observed behavior (option 2). After the 72-window comparison (`docs/organic-niche-membership.md`): niche locks, the continuity sticky lock and inversion multipliers are removed (all health rules held). Option 2 failed health as first built and is being redone with per-parent-tag subniches, with and without recency. Forced displacement and soft migration stay until a corrected option 2 passes.
+- **Remaining niche-ecology rules (owner, 2026-10-26/27).** "Lets try to remove them all and make sure we retain a healthy ecology" (forced displacement and migration, niche locks, inversion multipliers). The owner chose children defined by observed behavior (option 2). After the 72-window comparison (`docs/organic-niche-membership.md`): niche locks, the continuity sticky lock and inversion multipliers are removed (all health rules held; #432 merged). Corrected per-parent-tag and recency arms also failed the registered extinction rules, including under environmental change (`docs/organic-niche-membership-v2.md`, `docs/organic-niche-environment-shift.md`). Those research arms were not adopted. Forced displacement and soft migration stay; no replacement policy was approved.
 - **Top-down mechanisms not covered by the scaffolding ruling.** These are: forced displacement/migration (removal pending, see above), production safety guards / dominance suppression, progression tier gates, archetype inertia/switch margin, and the drift cap. For each one, ask: remove, replace, or keep as a game rule? (See engine-map.md section 6b.)
 - **Additional AuraSkills XP:** preserving normal XP is required. Whether artifact outcomes should grant extra skill XP remains undecided; no extra awards are implemented.
 - **Branch naming convention** for new work. History uses `codex/<task>` and `claude/<task>-<id>`.

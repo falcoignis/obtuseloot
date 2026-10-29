@@ -28,6 +28,11 @@ The owner's core goal is **a truly emergent evolution engine**. Emergence counts
 
 The owner's second goal is **a healthy ecosystem with a wide range of options and niches**. The two goals go together: diversity has to emerge and be measured, not be imposed. A collapse in diversity is a real defect to fix through mechanisms such as outcome-driven competition and niche partitioning. It is never fixed by adding a quota.
 
+**Item uniqueness is also required** (owner, 2026-10-27). Measure duplication when
+changing generation, inheritance, genomes or abilities. The affinity/name follow-up
+is described in `docs/item-affinity-name-variation.md`; a unique hidden seed is not
+proof of a distinctive player experience.
+
 The codebase history went the other way. Between 2026-03-18 and 03-24, about 20 corrective layers were added to make distribution numbers pass: normalization, top-3 compression, cold boosts, forced bifurcation, and one-occupant reconciliation that satisfies its own success metric by construction. The docs then reported those numbers as success.
 
 The owner has ruled that those layers are scaffolding to remove, and that the distribution targets are tuning artifacts. That gives these working rules:
