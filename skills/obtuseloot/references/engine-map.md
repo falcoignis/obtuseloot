@@ -1,5 +1,13 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-28 item variation follow-up:** inherited seed affinities receive small
+birth-only deltas on a separate seeded stream; parent choice and ordinary genome
+mutation are unchanged. The name composer uses the stored naming seed with the
+existing operator prefix/suffix pools and complete-entry length checks. Read
+[`docs/item-affinity-name-variation.md`](../../../docs/item-affinity-name-variation.md)
+for the measured collision rates and limitations. Exact hidden identity and
+distinct visible names/abilities are different measurements.
+
 **2026-10-24 holder target context:** ecology samples (storage version 6) record
 holder and exact action-target material. `LocalInheritancePool.selectionCandidates`
 weights each competing parent's per-target fitness by the receiving holder's recent

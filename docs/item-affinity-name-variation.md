@@ -59,3 +59,20 @@ are not established by this birth-only synthetic measurement.
 ## Results
 
 RESULT_PENDING
+
+### Diagnostic amendment before the optimized rerun
+
+The first run (40789517726, implementation `76790c5`) reproduces the prior
+baseline's 3,000 seeds, archetypes, generations, names, genomes and affinity
+vectors. It does **not** reproduce all ability sets: 13 differ. Two standalone
+400-birth replays on the combined implementation also differ in three ability
+sets while matching every other recorded column. The cause is unconfirmed.
+The registered full neutrality condition has therefore not passed. Do not
+attribute small ability-count differences to this change or silently relax
+the check; exact name/affinity reproduction is a separate result.
+
+Before rerunning, the composer caches pool-entry lengths and word counts against
+the immutable pool snapshot. Filtering and seeded choices retain the same order;
+pool replacement invalidates the cache. This removes repeated candidate-string
+construction and regex work from name refreshes without tuning a distribution.
+Focused checks on the optimized source: 36 tests, zero failures/errors/skips.
