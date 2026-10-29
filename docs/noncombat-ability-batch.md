@@ -48,7 +48,7 @@ fitness coefficients or wild-mutation settings are changed.
 
 Walking sensing now recognizes actual chunk crossings, including ordinary sub-block
 steps and negative coordinates. It previously required a four-block displacement in
-one move event. Deferred work retains the move event and rechecks cancellation/world;
+one move event. Destination chunks must already be loaded. Deferred work retains the move event and rechecks cancellation/world;
 cancelled work releases its pending chunk marker. Entity input uses the general
 `PlayerInteractEntityEvent`, including its more-specific subclass, with existing
 per-input duplicate suppression. Ordinary block right-clicks route the waypoint
@@ -75,7 +75,7 @@ settings snapshot.
 
 ## Validation boundary
 
-Focused checks: **108 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
+Focused checks: **109 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
 exercise actual handlers, shared cooldowns, gene-dependent facts/range and recovery,
 denials, visibility, failed-delivery rollback, reentrancy, profile corruption, trades,
 new offspring, revision attribution and positive local reproductive evidence.

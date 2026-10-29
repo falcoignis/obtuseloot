@@ -19,9 +19,17 @@ class NonCombatChunkCrossingTest {
         assertFalse(NonCombatAbilityListener.crossesChunk(new Location(world, 15, 64, 0), new Location(world(2), 16, 64, 0)));
         assertFalse(NonCombatAbilityListener.crossesChunk(new Location(world, 0, 64, 0), null));
     }
+    @Test void anUnloadedDestinationDoesNotBecomeASensingChunkLoad() {
+        World world = world(1, false);
+        assertFalse(NonCombatAbilityListener.crossesChunk(new Location(world, 15.99, 64, 0), new Location(world, 16.01, 64, 0)));
+    }
     private World world(long id) {
+        return world(id, true);
+    }
+    private World world(long id, boolean loaded) {
         return (World) Proxy.newProxyInstance(World.class.getClassLoader(), new Class<?>[]{World.class}, (proxy, method, args) -> {
             if (method.getName().equals("getUID")) return new UUID(0, id);
+            if (method.getName().equals("isChunkLoaded")) return loaded;
             throw new AssertionError("Unexpected world access " + method.getName());
         });
     }

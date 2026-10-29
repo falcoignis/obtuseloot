@@ -61,7 +61,8 @@ public class NonCombatAbilityListener implements Listener {
     static boolean crossesChunk(Location from, Location to) {
         return from != null && to != null && from.getWorld() != null && to.getWorld() != null
                 && from.getWorld().getUID().equals(to.getWorld().getUID())
-                && (from.getBlockX() >> 4 != to.getBlockX() >> 4 || from.getBlockZ() >> 4 != to.getBlockZ() >> 4);
+                && (from.getBlockX() >> 4 != to.getBlockX() >> 4 || from.getBlockZ() >> 4 != to.getBlockZ() >> 4)
+                && to.getWorld().isChunkLoaded(to.getBlockX() >> 4, to.getBlockZ() >> 4);
     }
 
     private void scheduleChunkAwareSense(Player player, Chunk chunk, boolean coalesced, PlayerMoveEvent event) {
