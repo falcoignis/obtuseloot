@@ -193,7 +193,7 @@ public final class EquipmentAbilityService {
                 && context.activation().allows(registration) && definitions(token.player(), binding.artifact()).contains(definition);
     }
     private String target(Event event, Token token) {
-        if (event instanceof org.bukkit.event.player.PlayerInteractAtEntityEvent interaction)
+        if (event instanceof org.bukkit.event.player.PlayerInteractEntityEvent interaction)
             return "entity:" + interaction.getRightClicked().getUniqueId();
         if (event instanceof org.bukkit.event.player.PlayerInteractEvent interaction && interaction.getClickedBlock() != null) {
             var block = interaction.getClickedBlock();

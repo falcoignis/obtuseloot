@@ -1,0 +1,104 @@
+name: Noncombat ability batch validation
+
+# Temporary study workflow; preserve its source commit and remove before review.
+on:
+  push:
+    branches: [feat/noncombat-ability-batch]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        catalog: [control, expanded]
+        seed: [first, second]
+        repeat: [a, b]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Select catalog arm
+        env:
+          CATALOG: ${{ matrix.catalog }}
+        run: |
+          if [[ "$CATALOG" == control ]]; then
+            git restore --source=3030d74609033d70e8f3a3e217ca9dca9350827a -- src/main/java/obtuseloot/abilities/AbilityRegistry.java
+          fi
+          git diff --stat
+      - name: Measure births
+        env:
+          SEED: ${{ matrix.seed }}
+        run: |
+          seed=366385647957
+          if [[ "$SEED" == second ]]; then seed=366385647958; fi
+          mvn -B -ntp test -Dtest=ItemUniquenessMeasurementTest -Dsurefire.failIfNoSpecifiedTests=false -Dobtuseloot.experiments=true -Dobtuseloot.births=3000 -Dobtuseloot.uniquenessSeed="$seed"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: catalog-${{ matrix.catalog }}-${{ matrix.seed }}-${{ matrix.repeat }}
+          path: |
+            target/item-uniqueness/
+            target/surefire-reports/
+          if-no-files-found: error
+  compare:
+    needs: measure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: catalog-*
+          path: target/catalog-results
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40831895982
+          github-token: ${{ github.token }}
+          name: item-variation-both-first
+          path: target/catalog-results/prior-first
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40831895982
+          github-token: ${{ github.token }}
+          name: item-variation-replicate-first
+          path: target/catalog-results/prior-second
+      - name: Verify all registered controls and summarize
+        run: python3 -B scripts/summarize-noncombat-ability-batch.py target/catalog-results > target/catalog-summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: noncombat-catalog-comparison
+          path: target/catalog-summary.json
+          if-no-files-found: error
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - run: mvn -B -ntp clean package
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: noncombat-batch-suite
+          path: |
+            target/surefire-reports/
+            target/*.jar
+          if-no-files-found: error

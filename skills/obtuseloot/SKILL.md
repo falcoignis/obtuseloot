@@ -46,6 +46,9 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
 
 1. **Green build and safety fixes:** signed seeds, analytics fixtures, storage-load failure (fatal at startup; at runtime refuse that player's artifact and retry), the permission root gate. Baseline safety fixes landed in PR #400; see `references/status.md` for the probe/health follow-up and current PR state.
 2. **Real ability effects** with outcome feedback into selection. Prioritize social, interaction and exploration; keep combat effects minimal (owner, 2026-10-20). Gentle Harvest and Material Insight implement the first slice. The follow-up adds game-tick noncombat timing and a shared catalog for easy ability add/remove; see `docs/noncombat-evolution-timing.md`. See `references/status.md` for validation and refresh publication/merge state before relying on it.
+   The owner's next request implements four existing utility templates, with durable
+   per-item waypoints and inherited range/detail versus recovery. Read
+   `docs/noncombat-ability-batch.md`; it does not establish live usefulness or healthy ecology.
 3. **Per-item identity and reproduction.** The owner approved new loot inheriting from successful local lineages, with variation, and a configurable **20-chunk radius**. The follow-up adds persistent item genomes/reputation/ancestry and local measured-outcome parent selection. Read `docs/local-artifact-inheritance.md` and refresh the PR state in `references/status.md`. No migration is needed; no player data exists anywhere.
 4. **Remove scaffolding,** each layer behind an ablation test. The first follow-up
    removes the final top-three weight compressor. The next removes gamma/mean

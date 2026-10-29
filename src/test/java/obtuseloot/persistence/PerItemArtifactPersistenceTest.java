@@ -32,7 +32,7 @@ class PerItemArtifactPersistenceTest {
         var artifact = item(1, -12);
         String encoded = ArtifactProfileCodec.encode(artifact);
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
-                encoded.replace("profile-version: 4", "profile-version: 90")));
+                encoded.replace("profile-version: 5", "profile-version: 90")));
         assertThrows(PlayerStateLoadException.class, () -> ArtifactProfileCodec.decode(artifact.getArtifactStorageKey(),
                 encoded.replace("SURVIVAL_INSTINCT: 0.23", "SURVIVAL_INSTINCT: .NaN")));
         assertThrows(IllegalArgumentException.class, () -> ArtifactStorageKeys.itemId("artifact:../../unsafe"));

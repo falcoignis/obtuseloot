@@ -1,5 +1,20 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-29: four implemented utility effects (review work)
+
+- Owner request: implement more abilities. This branch follows open PR #434
+  (`3030d74`, replay correction, both study and PR CI passed); it does not merge it.
+- Footprint Memory, Weather Omen, Herd Instinct and Redstone Sympathy use the existing
+  catalog, measured outcomes and inherited performance models. Default selectable
+  implemented templates grow from three to seven; Double Jump stays opt-in.
+- Per-item codec format 5 persists waypoints through save/load and trades; giving the
+  item away shares its saved return point. New offspring start without waypoints or
+  recovery/fitness. No migration, live-server write, new dependency or wild mutation.
+- Read `docs/noncombat-ability-batch.md` for proposed defaults, targeted validation,
+  the registered two-seed/repeated birth comparison and API-double/native boundaries.
+  Full-suite and study results pending. Owner review/merge required; installed mirrors
+  have not been refreshed.
+
 ## 2026-10-29: ability replay identity inputs
 
 - #433 is merged as `5bba50883710eec1698b38a20b65ef485eb9db56`.

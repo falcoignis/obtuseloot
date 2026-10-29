@@ -28,6 +28,13 @@ small inherited-affinity drift at birth and broader names using existing name po
 See `docs/item-affinity-name-variation.md` for the registered comparison and proposed
 implementation scale. This is implementation authority, not merge authority.
 
+**Additional abilities (owner, 2026-10-29):** "we need to impliment more abilities".
+Continue the real noncombat-effects priority through the existing catalog. The next
+implementation batch uses Footprint Memory, Weather Omen, Herd Instinct and Redstone
+Sympathy with inherited output/recovery tradeoffs. The batch/defaults are implementation
+choices for review, not a new owner-confirmed balance policy. Read
+`docs/noncombat-ability-batch.md`. No merge or live-deployment authority.
+
 | Topic | Decision |
 |---|---|
 | The ~20 corrective/top-down layers in ability selection and ecology (normalization, soft caps, top-3 compression, cold bootstrapping, applicability boosts, exposure rebalance, forced bifurcation, one-occupant reconciliation, etc.) | **Scaffolding to remove.** Replace with outcome-driven selection, then delete. **2026-10-21 follow-up:** after the top-three ablation, the owner approved removing gamma/mean score normalization next, with the soft cap evaluated separately afterward. |
