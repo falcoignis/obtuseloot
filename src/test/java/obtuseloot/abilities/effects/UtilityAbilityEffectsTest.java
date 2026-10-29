@@ -55,9 +55,9 @@ class UtilityAbilityEffectsTest {
             ArtifactIdentityTransition.regenerate(restored, replacement);
             assertEquals(remembered, replacement.abilityWaypoint(FOOT));
             assertEquals(160, replacement.abilityReadyAt(FOOT));
-            f.sneaking = false; f.x = -100; f.y = 60;
-            assertEquals(AbilityExecutionStatus.SUPPRESSED, f.execute(FOOT, replacement, 159, f.blockEvent(EquipmentSlot.HAND)).status());
-            var recall = f.execute(FOOT, replacement, 160, f.blockEvent(EquipmentSlot.HAND));
+            f.sneaking = true; f.x = -100; f.y = 60;
+            assertEquals(AbilityExecutionStatus.SUPPRESSED, f.execute(FOOT, replacement, 159, f.blockEvent(EquipmentSlot.HAND, BlockFace.NORTH)).status());
+            var recall = f.execute(FOOT, replacement, 160, f.blockEvent(EquipmentSlot.HAND, BlockFace.NORTH));
             assertEquals(AbilityOutcomeType.NAVIGATION_HINT, recall.outcomeType());
             assertTrue(recall.outputText().contains("east, 100 blocks; 4 blocks up"));
             var newIdentity = f.item(.5); ArtifactIdentityTransition.regenerate(replacement, newIdentity);
@@ -68,15 +68,16 @@ class UtilityAbilityEffectsTest {
 
     @Test void inheritedRecallRangeIsRealAndNeverCrossesWorldsOrLoadsTheAnchor() throws Exception {
         try (var f = new Fixture()) {
+            f.sneaking = true;
             var low = f.item(0); var high = f.item(1);
             var point = new ArtifactWaypoint(Fixture.WORLD, 200, 64, 0);
             low.setAbilityWaypoint(FOOT, point); high.setAbilityWaypoint(FOOT, point);
-            assertEquals(0, f.execute(FOOT, low, 100, f.blockEvent(EquipmentSlot.HAND)).observedAmount());
+            assertEquals(0, f.execute(FOOT, low, 100, f.blockEvent(EquipmentSlot.HAND, BlockFace.NORTH)).observedAmount());
             assertEquals(0, low.abilityReadyAt(FOOT));
-            var delivered = f.execute(FOOT, high, 100, f.blockEvent(EquipmentSlot.HAND));
+            var delivered = f.execute(FOOT, high, 100, f.blockEvent(EquipmentSlot.HAND, BlockFace.NORTH));
             assertEquals(1, delivered.observedAmount()); assertEquals(90, delivered.performance().recoveryTicks());
             high.setAbilityWaypoint(FOOT, new ArtifactWaypoint(new UUID(0, 123), 0, 64, 0));
-            assertEquals(0, f.execute(FOOT, high, 190, f.blockEvent(EquipmentSlot.HAND)).observedAmount());
+            assertEquals(0, f.execute(FOOT, high, 190, f.blockEvent(EquipmentSlot.HAND, BlockFace.NORTH)).observedAmount());
         }
     }
 
@@ -111,12 +112,24 @@ class UtilityAbilityEffectsTest {
     @Test void anotherAbilitysRecoveryBlocksEveryNewEffectOnTheSameItem() throws Exception {
         try (var f = new Fixture()) {
             for (String id : List.of(FOOT, WEATHER, HERD, REDSTONE)) {
+                f.sneaking = id.equals(FOOT);
                 var item = f.item(.5); item.setAbilityReadyAt("precision.material_insight", 200);
                 var result = f.execute(id, item, 199, f.eventFor(id));
                 assertEquals(AbilityExecutionStatus.SUPPRESSED, result.status(), id);
                 assertNull(result.observedAmount()); assertEquals(0, item.abilityReadyAt(id));
             }
             assertTrue(f.messages.isEmpty());
+        }
+    }
+
+    @Test void normalInspectionIsNotStolenByTheSameItemsWaypointAbility() throws Exception {
+        try (var f = new Fixture()) {
+            var item = f.item(.5); item.setAbilityWaypoint(FOOT, new ArtifactWaypoint(Fixture.WORLD, 0, 64, 0));
+            assertFalse(f.executor.eligible(f.definition(FOOT), f.context(f.definition(FOOT), item, 100, f.blockEvent(EquipmentSlot.HAND))));
+            var waypoint = f.execute(FOOT, item, 100, f.blockEvent(EquipmentSlot.HAND));
+            assertEquals(AbilityExecutionStatus.SUPPRESSED, waypoint.status());
+            assertNull(waypoint.observedAmount()); assertTrue(item.abilityRecoverySnapshot().isEmpty());
+            assertEquals(AbilityExecutionStatus.SUCCESS, f.execute(REDSTONE, item, 100, f.blockEvent(EquipmentSlot.HAND)).status());
         }
     }
 
@@ -354,7 +367,8 @@ class UtilityAbilityEffectsTest {
             return new AbilityDefinition(t.id(), t.name(), t.family(), t.trigger(), t.mechanic(), t.effectPattern(),
                     "", "", "", "", "", List.of(), List.of(), t.metadata(), "1", "2", "3", "4", "5");
         }
-        PlayerInteractEvent blockEvent(EquipmentSlot hand) { return new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.UP, hand); }
+        PlayerInteractEvent blockEvent(EquipmentSlot hand) { return blockEvent(hand, BlockFace.UP); }
+        PlayerInteractEvent blockEvent(EquipmentSlot hand, BlockFace face) { return new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, face, hand); }
         PlayerInteractEntityEvent animalEvent() { return new PlayerInteractEntityEvent(player, animal, EquipmentSlot.HAND); }
         Event eventFor(String id) { return id.equals(WEATHER) ? null : id.equals(HERD) ? animalEvent() : blockEvent(EquipmentSlot.HAND); }
         AbilityEventContext context(AbilityDefinition definition, Artifact item, long tick, Event event) {

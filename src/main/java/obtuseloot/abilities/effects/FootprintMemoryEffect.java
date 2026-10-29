@@ -3,21 +3,27 @@ package obtuseloot.abilities.effects;
 import obtuseloot.abilities.*;
 import obtuseloot.artifacts.ArtifactWaypoint;
 import org.bukkit.entity.Player;
+import org.bukkit.block.BlockFace;
+import org.bukkit.Bukkit;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import java.util.Locale;
 import java.util.Objects;
 
-/** Sneak-right-click a block to mark; right-click a block normally to read a same-world return bearing. */
+/** Sneak-right-click a block top to mark, or another face to read a same-world return bearing. */
 public final class FootprintMemoryEffect extends MeasuredUtilityEffect {
     public FootprintMemoryEffect() { super("footprint-memory", 256, 60); }
+    @Override public boolean applicable(AbilityEventContext context) {
+        return context.liveEvent() instanceof PlayerInteractEvent event && event.getAction() == Action.RIGHT_CLICK_BLOCK
+                && event.getClickedBlock() != null && Bukkit.isPrimaryThread() && event.getPlayer().isSneaking();
+    }
     @Override protected Report prepare(AbilityDefinition definition, AbilityEventContext context, Player player, double output) {
         if (!(context.liveEvent() instanceof PlayerInteractEvent event) || event.getAction() != Action.RIGHT_CLICK_BLOCK
                 || event.getClickedBlock() == null || !event.getClickedBlock().getWorld().getUID().equals(player.getWorld().getUID())) return null;
         var location = player.getLocation();
         var item = context.artifact();
         var previous = item.abilityWaypoint(definition.id());
-        if (player.isSneaking()) {
+        if (event.getBlockFace() == BlockFace.UP) {
             var point = new ArtifactWaypoint(player.getWorld().getUID(), location.getX(), location.getY(), location.getZ());
             return new Report("Footprint Memory: return point remembered", "mark:" + point,
                     1, AbilityOutcomeType.MEMORY_MARK,

@@ -51,6 +51,7 @@ abstract class MeasuredUtilityEffect implements LiveAbilityEffect {
                                                         int stage, AbilityPerformance performance) {
         if (!context.liveExecution()) return suppressed(definition, context, "live-context-required");
         if (!Bukkit.isPrimaryThread()) return suppressed(definition, context, "server-thread-required");
+        if (!applicable(context)) return suppressed(definition, context, "input-not-applicable");
         Event event = context.liveEvent();
         if (event instanceof Cancellable cancelled && cancelled.isCancelled())
             return suppressed(definition, context, "event-denied");

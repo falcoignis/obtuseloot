@@ -7,7 +7,7 @@ an owner-reviewed prerequisite, not an authorization to merge either change.
 
 | Ability | Actual effect and input | Inherited benefit versus recovery |
 |---|---|---|
-| Footprint Memory | With the item in the interacting hand, sneak-right-click a block to remember your current position. Right-click a block normally to read a same-world return bearing, horizontal distance and elevation difference. | Mobility affinity increases recall range and committed recovery. |
+| Footprint Memory | With the item in the interacting hand, sneak-right-click a block top to remember your current position. Sneak-right-click a side face to read a same-world return bearing, horizontal distance and elevation difference. | Mobility affinity increases recall range and committed recovery. |
 | Weather Omen | While equipped, crossing a chunk boundary reports the holder world's actual weather state and applicable server timers. Paused/unknown natural weather cycling does not produce a timed forecast. | Survival instinct increases information depth and recovery. |
 | Herd Instinct | Right-click the animal being inspected to read its actual type, health, age/growth and breeding condition. | Resonance increases information depth and recovery. |
 | Redstone Sympathy | Right-click an inspected circuit block for applicable power, delay, lock, comparator mode, piston/hopper state, facing or wire-connection data. | Precision affinity increases information depth and recovery. |
@@ -34,7 +34,9 @@ silently losing an anchor. No migration is included under the existing owner dec
 that there is no real player data. Deploy readers together; older builds cannot read
 new profiles. No live server or existing operator files are changed here.
 
-All four effects use the item's existing shared game-tick recovery. A delivery
+All four effects use the item's existing shared game-tick recovery. Multiple eligible
+effects competing for one input can be limited by dispatch order and that recovery;
+a distinct birth ability set does not guarantee a useful combination. A delivery
 reservation blocks same-item reentrancy even at zero configured recovery. A failed
 delivery restores owned state/recovery without overwriting unrelated callback changes.
 Producing genome revisions stay attached to results if evolution occurs during
@@ -42,7 +44,9 @@ delivery; new untested genes cannot inherit the old revision's fitness.
 
 Countdown updates alone keep the same weather/animal observation identity, retaining
 repeat-use penalties. Real condition changes can create a different observation.
-Recorded benefits are committed waypoint operations or delivered applicable facts;
+Weather readings describe world-wide flags and timers, not biome-specific precipitation
+or a guarantee against later world/plugin changes. Recorded benefits are committed
+waypoint operations or delivered applicable facts;
 delivery is **not proof of player usefulness**. No selection weights, diversity quotas,
 fitness coefficients or wild-mutation settings are changed.
 
@@ -51,8 +55,8 @@ steps and negative coordinates. It previously required a four-block displacement
 one move event. Destination chunks must already be loaded. Deferred work retains the move event and rechecks cancellation/world;
 cancelled work releases its pending chunk marker. Entity input uses the general
 `PlayerInteractEntityEvent`, including its more-specific subclass, with existing
-per-input duplicate suppression. Ordinary block right-clicks route the waypoint
-gesture while preserving the previous door/campfire source labels and vanilla input.
+per-input duplicate suppression. Block right-clicks route the explicit waypoint
+gesture; ordinary non-sneaking clicks remain available for inspection while preserving the previous door/campfire source labels and vanilla input.
 
 ## Proposed configurable defaults
 
@@ -75,7 +79,7 @@ settings snapshot.
 
 ## Validation boundary
 
-Focused checks: **109 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
+Focused checks: **110 tests, zero failures/errors/skips**. Stateful Bukkit API doubles
 exercise actual handlers, shared cooldowns, gene-dependent facts/range and recovery,
 denials, visibility, failed-delivery rollback, reentrancy, profile corruption, trades,
 new offspring, revision attribution and positive local reproductive evidence.
@@ -120,6 +124,16 @@ natural use/selection of the new effects, changing player opportunities, live us
 or a healthy emergent ecology. Actual new-effect feedback is checked separately by
 the handler/inheritance tests above. No complete-profile uniqueness or global
 collision-free claim follows from the sample.
+
+## Input-combination correction before final confirmation
+
+A failing same-item witness showed that an automatic waypoint recall on ordinary
+right-click spent the shared recovery before an inspection could run. Waypoint use
+now requires the explicit sneak/top-or-side gesture. Catalog-owned input applicability
+is checked before attempts and budgets, so unrelated clicks create no waypoint attempt
+or biological outcome. Genuine attempted recalls can still fail and retain their
+normal measured no-op/failure handling. This changes input routing, not selection weights.
+The original study and its rerun precede this correction and are superseded.
 
 ## Results
 

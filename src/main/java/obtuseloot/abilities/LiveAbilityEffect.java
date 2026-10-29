@@ -4,6 +4,8 @@ package obtuseloot.abilities;
 @FunctionalInterface
 public interface LiveAbilityEffect {
     default boolean enabledForSelection() { return true; }
+    /** Input applicability is checked before an attempt or budget is recorded. */
+    default boolean applicable(AbilityEventContext context) { return true; }
     default AbilityExecutionResult execute(AbilityDefinition definition, AbilityEventContext context, int stage,
                                             AbilityPerformance performance) {
         return execute(definition, context, stage);

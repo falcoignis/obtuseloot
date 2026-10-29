@@ -42,7 +42,7 @@ public class AbilityRegistry {
                                 obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY, 0.50D, 0.50D)),
 
                 template("mobility.footprint_memory", "Footprint Memory", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.NAVIGATION_ANCHOR,
-                        "Sneak-right-click a block to remember a return point; normal right-click reads its bearing", "wider recall range costs longer recovery", "recalled bearings remain same-world", "remembers one return point per item", "remembered position stays with traded gear", "persistent return-point memory",
+                        "Sneak-right-click: block top marks a return point; block side reveals its bearing", "wider recall range costs longer recovery", "recalled bearings remain same-world", "remembers one return point per item", "remembered position stays with traded gear", "persistent return-point memory",
                         metadata(Set.of("navigation", "memory-history"), Set.of("gesture-based"), Set.of("memory", "exploration", "worldkeeper"), 0.79D, 0.88D, 0.52D, 0.35D, 0.22D, 0.55D))
                         .withLiveEffect(new obtuseloot.abilities.effects.FootprintMemoryEffect())
                         .withPerformanceModel(AbilityPerformanceModel.tradeoff(
@@ -72,7 +72,7 @@ public class AbilityRegistry {
                         "Moving through unfamiliar terrain leaves subtle return-thread trails", "longer route memory", "drift can braid false trails", "awakening steadies reliable routes", "convergence interleaves nearby trail maps", "memory stores trusted route threads",
                         metadata(Set.of("navigation", "memory-history"), Set.of("movement-throttled"), Set.of("exploration", "memory"), 0.75D, 0.90D, 0.62D, 0.28D, 0.30D, 0.55D)),
                 template("survival.weather_omen", "Weather Omen", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.INSIGHT_REVEAL,
-                        "Reads actual local weather conditions and remaining server weather timers", "deeper weather readings cost longer recovery", "reports actual conditions without invented omens", "distinguishes paused weather from running timers", "reads only the holder world", "observes weather as it changes",
+                        "Reads world weather conditions and remaining weather timers", "deeper weather readings cost longer recovery", "reports actual conditions without invented omens", "distinguishes paused weather from running timers", "reads only the holder world", "observes weather as it changes",
                         metadata(Set.of("environmental-sensing", "information"), Set.of("weather-poll"), Set.of("watchful", "support"), 0.66D, 0.58D, 0.84D, 0.31D, 0.42D, 0.63D))
                         .withLiveEffect(new obtuseloot.abilities.effects.WeatherOmenEffect())
                         .withPerformanceModel(AbilityPerformanceModel.tradeoff(

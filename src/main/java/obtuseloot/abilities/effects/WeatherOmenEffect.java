@@ -20,7 +20,7 @@ public final class WeatherOmenEffect extends MeasuredUtilityEffect {
         if (world.getEnvironment() != World.Environment.NORMAL) return null;
         var facts = new ArrayList<String>();
         boolean storm = world.hasStorm(), thunder = world.isThundering();
-        facts.add(storm ? "rain or snow active" : "dry weather");
+        facts.add(storm ? "world storm active" : "world weather clear");
         facts.add("thunder " + thunder);
         Boolean cycle = weatherCycle.apply(world);
         facts.add("natural weather cycle " + (Boolean.TRUE.equals(cycle) ? "running" : "paused or unavailable"));

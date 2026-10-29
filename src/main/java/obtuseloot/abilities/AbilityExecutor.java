@@ -8,8 +8,9 @@ public final class AbilityExecutor {
     public AbilityExecutor(AbilityRegistry registry) { this.registry = registry; }
     public boolean eligible(AbilityDefinition definition, AbilityEventContext context) {
         var registration = registry.registrationById(definition.id());
-        return !context.liveExecution() || context.activation() == null
-                || registration != null && context.activation().allows(registration);
+        if (!context.liveExecution()) return true;
+        if (context.activation() != null && (registration == null || !context.activation().allows(registration))) return false;
+        return registration == null || registration.liveEffect() == null || registration.liveEffect().applicable(context);
     }
 
     public AbilityExecutionResult execute(AbilityDefinition definition, AbilityEventContext context, int stage) {
@@ -53,6 +54,11 @@ public final class AbilityExecutor {
         if (registration != null && registration.liveEffect() != null) {
             if (!registration.supports(definition)) {
                 return unimplemented(definition, context, "effect-variant-not-implemented");
+            }
+            if (context.liveExecution() && !registration.liveEffect().applicable(context)) {
+                return new AbilityExecutionResult(definition.id(), definition.mechanic(), context.trigger(),
+                        context.artifact().getArtifactStorageKey(), context.artifact().getOwnerId(),
+                        AbilityExecutionStatus.SUPPRESSED, AbilityOutcomeType.FLAVOR_ONLY, false, "input-not-applicable", null);
             }
             return registration.liveEffect().execute(definition, context, stage,
                     registration.performanceModel().express(context.artifact().getGenome()));
