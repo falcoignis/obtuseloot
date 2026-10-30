@@ -10,6 +10,7 @@ import obtuseloot.persistence.PlayerStateStore;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
 /** Reproduction changes future item ancestry; it never removes an owned item. */
@@ -17,13 +18,20 @@ public final class LocalEcosystem {
     private final PlayerStateStore store;
     private final ArtifactManager artifacts;
     private final LocalInheritancePool pool;
+    private final Supplier<String> storageKeys;
     private final GenomeMutationEngine mutation = new GenomeMutationEngine();
     public LocalEcosystem(PlayerStateStore store, ArtifactManager artifacts) {
         this(store, artifacts, LocalInheritancePool.decode(store.loadEcologyState()));
     }
     public LocalEcosystem(PlayerStateStore store, ArtifactManager artifacts, LocalInheritancePool pool) {
+        this(store, artifacts, pool, ArtifactStorageKeys::create);
+    }
+    /** Tests can replay item identities independently of the birth/parent-choice RNG. */
+    LocalEcosystem(PlayerStateStore store, ArtifactManager artifacts, LocalInheritancePool pool,
+                   Supplier<String> storageKeys) {
         this.store = Objects.requireNonNull(store); this.artifacts = Objects.requireNonNull(artifacts);
         this.pool = Objects.requireNonNull(pool);
+        this.storageKeys = Objects.requireNonNull(storageKeys);
     }
     public LocalInheritancePool pool() { return pool; }
     public LocalEcosystemHealth healthSnapshot(WorldPosition origin) {
@@ -64,7 +72,7 @@ public final class LocalEcosystem {
         long seed;
         do { seed = random.nextLong(); } while (seed == 0);
         Artifact child = new Artifact(initialHolder, Objects.requireNonNull(archetype));
-        child.setArtifactStorageKey(ArtifactStorageKeys.create());
+        child.setArtifactStorageKey(storageKeys.get());
         new ArtifactSeedFactory().applySeedProfile(child, seed);
         if (parent == null) {
             child.setLatentLineage("lineage-" + ArtifactStorageKeys.itemId(child.getArtifactStorageKey()));

@@ -1,5 +1,11 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-29 replay inputs:** founder lineage IDs include a random storage UUID;
+ordinary lineage drift seeds on the lineage ID as well as the artifact seed.
+Item measurements now control identity on a separate input stream through a
+package-private test constructor; public constructors keep random UUIDs. Read
+[`docs/ability-replay-inputs.md`](../../../docs/ability-replay-inputs.md).
+
 **2026-10-28 item variation follow-up:** inherited seed affinities receive small
 birth-only deltas on a separate seeded stream; parent choice and ordinary genome
 mutation are unchanged. The name composer uses the stored naming seed with the
