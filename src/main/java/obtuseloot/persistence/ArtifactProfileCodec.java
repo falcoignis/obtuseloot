@@ -18,7 +18,15 @@ public final class ArtifactProfileCodec {
         var yaml = new YamlConfiguration();
         writeArtifact(yaml, artifact);
         writeReputation(yaml, artifact.getItemReputation());
-        yaml.set("profile-version", 4);
+        yaml.set("profile-version", 5);
+        yaml.set("ability-waypoints.count", artifact.abilityWaypointsSnapshot().size());
+        int waypointIndex = 0;
+        for (var entry : artifact.abilityWaypointsSnapshot().entrySet()) {
+            String path = "ability-waypoints.entries." + waypointIndex++ + ".";
+            var point = entry.getValue();
+            yaml.set(path + "id", entry.getKey()); yaml.set(path + "world", point.world().toString());
+            yaml.set(path + "x", point.x()); yaml.set(path + "y", point.y()); yaml.set(path + "z", point.z());
+        }
         yaml.set("ability-recovery.count", artifact.abilityRecoverySnapshot().size());
         int recoveryIndex = 0;
         for (var entry : artifact.abilityRecoverySnapshot().entrySet()) {
@@ -47,7 +55,7 @@ public final class ArtifactProfileCodec {
         try {
             var yaml = new YamlConfiguration();
             yaml.loadFromString(encoded);
-            if (yaml.getInt("profile-version", 0) != 4 || !key.equals(yaml.getString("artifact.storage-key"))) {
+            if (yaml.getInt("profile-version", 0) != 5 || !key.equals(yaml.getString("artifact.storage-key"))) {
                 throw new IllegalArgumentException("Invalid per-item profile identity/version");
             }
             if (!yaml.isString("artifact.owner-id") || !yaml.isString("artifact.latent-lineage")
@@ -105,6 +113,22 @@ public final class ArtifactProfileCodec {
                 artifact.setAbilityReadyAt(ability, ready);
             }
             artifact.setItemReputation(readReputation(yaml));
+            var waypoints = yaml.getConfigurationSection("ability-waypoints.entries");
+            int waypointCount = waypoints == null ? 0 : waypoints.getKeys(false).size();
+            if (!yaml.isInt("ability-waypoints.count") || yaml.getInt("ability-waypoints.count") != waypointCount)
+                throw new IllegalArgumentException("Incomplete waypoint state");
+            var waypointIds = new HashSet<String>();
+            for (String name : waypoints == null ? Set.<String>of() : waypoints.getKeys(false)) {
+                String path = "ability-waypoints.entries." + name + ".";
+                String ability = yaml.getString(path + "id");
+                if (ability == null || ability.isBlank() || !waypointIds.add(ability) || !yaml.isString(path + "world"))
+                    throw new IllegalArgumentException("Invalid waypoint identity");
+                for (String axis : List.of("x", "y", "z"))
+                    if (!(yaml.get(path + axis) instanceof Number value) || !Double.isFinite(value.doubleValue()))
+                        throw new IllegalArgumentException("Invalid waypoint coordinate");
+                artifact.setAbilityWaypoint(ability, new ArtifactWaypoint(UUID.fromString(yaml.getString(path + "world")),
+                        yaml.getDouble(path + "x"), yaml.getDouble(path + "y"), yaml.getDouble(path + "z")));
+            }
             return artifact;
         } catch (Exception exception) {
             throw new PlayerStateLoadException(id, "Unreadable per-item artifact profile " + key, exception);

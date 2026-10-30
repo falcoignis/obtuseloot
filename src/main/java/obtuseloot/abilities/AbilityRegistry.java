@@ -42,8 +42,11 @@ public class AbilityRegistry {
                                 obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY, 0.50D, 0.50D)),
 
                 template("mobility.footprint_memory", "Footprint Memory", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_RITUAL_INTERACT, AbilityMechanic.NAVIGATION_ANCHOR,
-                        "Sneak-use marks a location and later points back to it", "longer recall range", "drift can misalign memory", "awakening anchors dimension-safe recall", "convergence broadcasts anchor to allies", "memory persists trusted waypoints",
-                        metadata(Set.of("navigation", "memory-history"), Set.of("gesture-based"), Set.of("memory", "exploration", "worldkeeper"), 0.79D, 0.88D, 0.52D, 0.35D, 0.22D, 0.55D)),
+                        "Sneak-right-click: block top marks a return point; block side reveals its bearing", "wider recall range costs longer recovery", "recalled bearings remain same-world", "remembers one return point per item", "remembered position stays with traded gear", "persistent return-point memory",
+                        metadata(Set.of("navigation", "memory-history"), Set.of("gesture-based"), Set.of("memory", "exploration", "worldkeeper"), 0.79D, 0.88D, 0.52D, 0.35D, 0.22D, 0.55D))
+                        .withLiveEffect(new obtuseloot.abilities.effects.FootprintMemoryEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.MOBILITY_AFFINITY, 0.50D, 0.50D)),
                 template("mobility.compass_stories", "Compass of Stories", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_MEMORY_EVENT, AbilityMechanic.NAVIGATION_ANCHOR,
                         "Points toward recorded notable events and lineage residues", "locks stronger event traces", "drift surfaces contradictory trails", "awakening resolves ancestral signatures", "convergence blends shared story maps", "memory prioritizes meaningful landmarks",
                         metadata(Set.of("navigation", "memory-history", "structure-awareness"), Set.of("memory-driven"), Set.of("memory", "lineage", "ritual"), 0.86D, 0.82D, 0.63D, 0.48D, 0.26D, 0.39D)),
@@ -69,8 +72,11 @@ public class AbilityRegistry {
                         "Moving through unfamiliar terrain leaves subtle return-thread trails", "longer route memory", "drift can braid false trails", "awakening steadies reliable routes", "convergence interleaves nearby trail maps", "memory stores trusted route threads",
                         metadata(Set.of("navigation", "memory-history"), Set.of("movement-throttled"), Set.of("exploration", "memory"), 0.75D, 0.90D, 0.62D, 0.28D, 0.30D, 0.55D)),
                 template("survival.weather_omen", "Weather Omen", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_WORLD_SCAN, AbilityMechanic.INSIGHT_REVEAL,
-                        "Sky pressure cues forecast short-term weather turns", "longer forecast horizon", "drift adds dramatic false omens", "awakening filters chaotic fronts", "convergence syncs omens across artifacts", "memory records recurring climate loops",
-                        metadata(Set.of("environmental-sensing", "information"), Set.of("weather-poll"), Set.of("watchful", "support"), 0.66D, 0.58D, 0.84D, 0.31D, 0.42D, 0.63D)),
+                        "Reads world weather conditions and remaining weather timers", "deeper weather readings cost longer recovery", "reports actual conditions without invented omens", "distinguishes paused weather from running timers", "reads only the holder world", "observes weather as it changes",
+                        metadata(Set.of("environmental-sensing", "information"), Set.of("weather-poll"), Set.of("watchful", "support"), 0.66D, 0.58D, 0.84D, 0.31D, 0.42D, 0.63D))
+                        .withLiveEffect(new obtuseloot.abilities.effects.WeatherOmenEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.SURVIVAL_INSTINCT, 0.50D, 0.50D)),
                 template("precision.artifact_sympathy", "Artifact Sympathy", AbilityCategory.SENSING_INFORMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_SOCIAL_INTERACT, AbilityMechanic.SOCIAL_ATTUNEMENT,
                         "Nearby artifacts reveal affinity hints during intentional greetings", "deeper affinity hints", "drift yields contradictory impressions", "awakening clarifies emotional residue", "convergence links sympathy contexts", "memory retains known signatures",
                         metadata(Set.of("social-flavor", "information"), Set.of("player-intent"), Set.of("support", "memory", "watchful"), 0.71D, 0.52D, 0.77D, 0.24D, 0.91D, 0.35D)),
@@ -81,8 +87,11 @@ public class AbilityRegistry {
                         "Ruins and dungeons project directional echo gradients", "higher structure certainty", "drift can offset bearings", "awakening locks ancient signatures", "convergence triangulates echoes", "memory keeps stable structure routes",
                         metadata(Set.of("structure-awareness", "navigation"), Set.of("chunk-structure-entry"), Set.of("exploration", "watchful"), 0.78D, 0.88D, 0.71D, 0.40D, 0.29D, 0.52D)),
                 template("survival.herd_instinct", "Herd Instinct", AbilityCategory.SURVIVAL_ADAPTATION, AbilityFamily.SURVIVAL, AbilityTrigger.ON_ENTITY_INSPECT, AbilityMechanic.INSIGHT_REVEAL,
-                        "Animal groups reveal migration and safety tendencies", "deeper migration context", "drift overstates danger", "awakening improves behavior confidence", "convergence blends herd observations", "memory stores seasonal movement",
-                        metadata(Set.of("environmental-sensing", "social-world-behavior"), Set.of("entity-interact"), Set.of("support", "watchful", "worldkeeper"), 0.63D, 0.74D, 0.82D, 0.20D, 0.58D, 0.70D)),
+                        "Inspects the targeted animal condition, growth and breeding readiness", "deeper animal readings cost longer recovery", "reports observed animal condition", "separates young animals from breeding adults", "inspects only the intentionally targeted animal", "recognizes changing animal condition",
+                        metadata(Set.of("environmental-sensing", "social-world-behavior"), Set.of("entity-interact"), Set.of("support", "watchful", "worldkeeper"), 0.63D, 0.74D, 0.82D, 0.20D, 0.58D, 0.70D))
+                        .withLiveEffect(new obtuseloot.abilities.effects.HerdInstinctEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.RESONANCE, 0.50D, 0.50D)),
 
                 template("exploration.trail_sense", "Trail Sense", AbilityCategory.TRAVERSAL_MOBILITY, AbilityFamily.MOBILITY, AbilityTrigger.ON_CHUNK_ENTER, AbilityMechanic.TRAIL_SENSE,
                         "Entering new or rarely visited chunks reveals bounded unexplored direction hints", "extends frontier hint horizon", "drift can bias stale frontier echoes", "awakening stabilizes uncharted bearings", "convergence shares local frontier vectors", "memory logs exploration chain opportunities",
@@ -250,8 +259,11 @@ public class AbilityRegistry {
                         metadata(Set.of("logistics", "waste-detection", "process-audit"), Set.of("intentional-interact", "storage-audit", "farm-check"), Set.of("farmer", "builder", "information"), 0.77D, 0.43D, 0.94D, 0.10D, 0.29D, 0.97D)),
 
                 template("engineering.redstone_sympathy", "Redstone Sympathy", AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION, AbilityFamily.PRECISION, AbilityTrigger.ON_BLOCK_INSPECT, AbilityMechanic.STRUCTURE_ATTUNEMENT,
-                        "Workshop inspection highlights likely machine intent and missing links", "improves machine-state confidence", "drift can admire decorative noise", "awakening separates logic from ornament", "convergence shares workshop diagnostics", "memory catalogs stable machine motifs",
-                        metadata(Set.of("engineering", "machine-diagnostics"), Set.of("intentional-interact", "workshop-inspect"), Set.of("builder", "automation", "information"), 0.79D, 0.49D, 0.94D, 0.14D, 0.27D, 0.86D)),
+                        "Reads inspected redstone signal, facing, delay and connection states", "deeper diagnostics cost longer recovery", "reports actual block state", "reads available signal and timing details", "keeps inspection local to one block", "recognizes changing circuit state",
+                        metadata(Set.of("engineering", "machine-diagnostics"), Set.of("intentional-interact", "workshop-inspect"), Set.of("builder", "automation", "information"), 0.79D, 0.49D, 0.94D, 0.14D, 0.27D, 0.86D))
+                        .withLiveEffect(new obtuseloot.abilities.effects.RedstoneSympathyEffect())
+                        .withPerformanceModel(AbilityPerformanceModel.tradeoff(
+                                obtuseloot.abilities.genome.GenomeTrait.PRECISION_AFFINITY, 0.50D, 0.50D)),
                 template("engineering.pattern_forge", "Pattern Forge", AbilityCategory.CRAFTING_ENGINEERING_AUTOMATION, AbilityFamily.CONSISTENCY, AbilityTrigger.ON_REPEATED_BLOCK_PATTERN, AbilityMechanic.PATTERN_RESONANCE,
                         "Repeated construction motifs condense into a bounded fabrication cadence bonus", "extends build cadence chains", "drift can reinforce inefficient loops", "awakening trims wasteful pattern echoes", "convergence shares template cadence with nearby builders", "memory favors repeatable workshop routines",
                         metadata(Set.of("engineering", "fabrication-cadence"), Set.of("pattern-repeat", "build-loop"), Set.of("builder", "automation", "support"), 0.72D, 0.58D, 0.75D, 0.26D, 0.46D, 0.93D)),

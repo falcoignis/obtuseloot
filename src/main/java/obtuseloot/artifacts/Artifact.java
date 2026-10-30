@@ -14,10 +14,12 @@ public class Artifact {
 
     private Map<String, Long> abilityRecovery = new TreeMap<>();
     private Set<String> executingAbilities = new HashSet<>();
+    private Map<String, ArtifactWaypoint> abilityWaypoints = new TreeMap<>();
     // A new genome instance for the same physical identity continues even an in-flight lease.
     void continueAbilityRuntimeFrom(Artifact previous) {
         abilityRecovery = previous.abilityRecovery;
         executingAbilities = previous.executingAbilities;
+        abilityWaypoints = previous.abilityWaypoints;
     }
     public long abilityReadyAt(String ability) { return abilityRecovery.getOrDefault(ability, 0L); }
     /** Abilities on one item share recovery: the item is ready only once every recorded recovery has elapsed. */
@@ -29,6 +31,14 @@ public class Artifact {
     }
     public boolean beginAbilityExecution(String ability) { return executingAbilities.add(Objects.requireNonNull(ability)); }
     public void endAbilityExecution(String ability) { executingAbilities.remove(ability); }
+    public ArtifactWaypoint abilityWaypoint(String ability) { return abilityWaypoints.get(ability); }
+    public Map<String, ArtifactWaypoint> abilityWaypointsSnapshot() {
+        return Collections.unmodifiableMap(new TreeMap<>(abilityWaypoints));
+    }
+    public void setAbilityWaypoint(String ability, ArtifactWaypoint waypoint) {
+        if (ability == null || ability.isBlank()) throw new IllegalArgumentException("Invalid waypoint ability");
+        if (waypoint == null) abilityWaypoints.remove(ability); else abilityWaypoints.put(ability, waypoint);
+    }
 
     private ArtifactGenome inheritedGenome;
     private long genomeRevision;

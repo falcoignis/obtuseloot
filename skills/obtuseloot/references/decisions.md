@@ -19,6 +19,14 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 
 ## Evolution design
 
+**Outcome-evidence correction (owner, 2026-10-30):** "we gotta fix that", following
+the generated-ability concentration check. Correct the mechanism behind the
+dominant pair and measure the result; do not impose shares or tune coefficients
+to pass. The reproduced empty-history NAVIGATION fallback is removed in the
+follow-up, preserving outcome-derived roles and independent memory/lineage scoring.
+Read `docs/outcome-evidence-niche-fix.md`. This request grants no merge or live-write
+authority and does not establish a new balance target.
+
 **Item uniqueness (owner, 2026-10-27):** "we want every single individual item to
 be unique, or at least have a stupid low chance of ever being duplicated". Measure
 duplication probability when changing generation, inheritance, genomes or abilities;
@@ -27,6 +35,13 @@ On 2026-10-28 the owner requested implementing both proposed supporting changes:
 small inherited-affinity drift at birth and broader names using existing name pools.
 See `docs/item-affinity-name-variation.md` for the registered comparison and proposed
 implementation scale. This is implementation authority, not merge authority.
+
+**Additional abilities (owner, 2026-10-29):** "we need to impliment more abilities".
+Continue the real noncombat-effects priority through the existing catalog. The next
+implementation batch uses Footprint Memory, Weather Omen, Herd Instinct and Redstone
+Sympathy with inherited output/recovery tradeoffs. The batch/defaults are implementation
+choices for review, not a new owner-confirmed balance policy. Read
+`docs/noncombat-ability-batch.md`. No merge or live-deployment authority.
 
 | Topic | Decision |
 |---|---|

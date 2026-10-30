@@ -123,7 +123,7 @@ class MaterialInsightLivePerformanceTest {
                 var yaml = new YamlConfiguration(); yaml.loadFromString(encoded); yaml.set(field, null);
                 assertThrows(RuntimeException.class, () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), yaml.saveToString()));
             }
-            assertThrows(RuntimeException.class, () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), encoded.replace("profile-version: 4", "profile-version: 3")));
+            assertThrows(RuntimeException.class, () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), encoded.replace("profile-version: 5", "profile-version: 3")));
             assertThrows(RuntimeException.class, () -> ArtifactProfileCodec.decode(item.getArtifactStorageKey(), encoded.replace("ready-at: 700", "ready-at: -1")));
         }
     }

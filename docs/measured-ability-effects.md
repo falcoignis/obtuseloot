@@ -1,5 +1,9 @@
 # First measured interaction effects
 
+This is the historical first-effects slice. The later
+[four-ability utility batch](noncombat-ability-batch.md) adds navigation, weather,
+animal and circuit handlers with inherited tradeoffs and per-item format 5 waypoints.
+
 This slice implements two existing templates. It follows the owner's focus on social,
 interaction and exploration, with minimal combat effects. It does not add combat effects
 or wild mutation.

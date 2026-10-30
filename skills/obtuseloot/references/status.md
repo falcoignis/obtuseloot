@@ -1,5 +1,43 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-30: outcome-evidence correction in the abilities PR
+
+- Owner requested fixing concentration after run 40999403843. Three failing
+  witnesses reproduced an invented NAVIGATION role for items without outcomes,
+  including niche weights 2.2 (Fleetfoot) versus 0.693 (Redstone Sympathy).
+- The correction keeps the classifier's unobserved GENERALIST role and reuses the
+  outcome-derived profile in unseen-template qualification. Actual memory and
+  measured-role behavior remain; no numeric selection coefficient changes.
+- Focused checks: 22 tests, zero failures/errors, one research skip. The complete
+  ability-set diagnostic exposes secondary abilities hidden by dominant-tag ties.
+- Registered source `c623783`, Actions run 41010363869, crosses baseline/corrected
+  source with eligible-neutral/measured selection, plus paired birth measurements
+  and the full package. Use that run and PR #435 for terminal validation and review
+  state; the versioned numerical report is on `fix/generated-ability-concentration`.
+- No merge or deployment is authorized. #434 remains a prerequisite while open.
+  Installed skill mirrors have not been refreshed from this unreviewed change.
+
+## 2026-10-29: four implemented utility effects (review work)
+
+- Owner request: implement more abilities. This branch follows open PR #434
+  (`3030d74`, replay correction, both study and PR CI passed); it does not merge it.
+- Footprint Memory, Weather Omen, Herd Instinct and Redstone Sympathy use the existing
+  catalog, measured outcomes and inherited performance models. Default selectable
+  implemented templates grow from three to seven; Double Jump stays opt-in.
+- Per-item codec format 5 persists waypoints through save/load and trades; giving the
+  item away shares its saved return point. New offspring start without waypoints or
+  recovery/fitness. No migration, live-server write, new dependency or wild mutation.
+- Read `docs/noncombat-ability-batch.md` for proposed defaults, targeted validation,
+  the registered two-seed/repeated birth comparison and API-double/native boundaries.
+  Focused checks: 115 passed. Study run 40931547378 on `3cee188` passed all eight
+  3,000-birth measurements and eight replay/input controls. Expanded samples reached
+  17/18 sets versus 2/3, but Fleetfoot + Footprint Memory dominates 88.2%/88.9% and
+  pair repetition worsened. This is birth reach, not balance or ecosystem health.
+  Study full suite: 637 tests, one outdated fixed-performance assertion failed, zero
+  errors, ten skips. The catalog test now checks all six inherited models; 115 focused
+  tests pass with unchanged production code. Consult the final PR build for its full
+  recheck. Owner review/merge required; installed mirrors have not been refreshed.
+
 ## 2026-10-29: ability replay identity inputs
 
 - #433 is merged as `5bba50883710eec1698b38a20b65ef485eb9db56`.

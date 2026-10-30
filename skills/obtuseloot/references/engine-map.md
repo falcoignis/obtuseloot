@@ -1,5 +1,21 @@
 # ObtuseLoot engine map (baseline verified at HEAD fab9f2b, 2026-10-19)
 
+**2026-10-30 outcome evidence:** unobserved items retain the classifier's GENERALIST
+profile; the memory/lineage-inferred niche fallback is removed. Empty memory formerly
+broke ties as NAVIGATION, favoring mobility before any use. Unseen-template
+qualification now receives the same outcome-derived profile. Existing memory,
+lineage and utility scoring remain; coefficients and regulatory gates do not change.
+The generated-cohort diagnostic also reports complete ability-set Simpson beside
+the legacy dominant-tag value. See `docs/outcome-evidence-niche-fix.md` and its run.
+
+**2026-10-29 utility batch:** four existing templates gain live catalog handlers and
+genome-owned output/recovery models. Per-item format 5 adds validated ID-keyed
+waypoints; shared recovery and current-revision fitness remain. Generic utility
+delivery reserves owned state/recovery before sending and rolls back failed delivery.
+Chunk sensing accepts ordinary boundary crossings and retains final cancellation;
+entity inspection uses the general interaction event. Read
+[`docs/noncombat-ability-batch.md`](../../../docs/noncombat-ability-batch.md).
+
 **2026-10-29 replay inputs:** founder lineage IDs include a random storage UUID;
 ordinary lineage drift seeds on the lineage ID as well as the artifact seed.
 Item measurements now control identity on a separate input stream through a

@@ -363,3 +363,18 @@ abilities:
   material-insight:
     base-facts: 4
     recovery-ticks: 60
+  # Utility defaults are implementation choices. Genes express output and recovery together.
+  # Footprint output is recall range in blocks; the other outputs are maximum applicable facts.
+  utility:
+    footprint-memory:
+      base-output: 256
+      recovery-ticks: 60
+    weather-omen:
+      base-output: 4
+      recovery-ticks: 200
+    herd-instinct:
+      base-output: 4
+      recovery-ticks: 80
+    redstone-sympathy:
+      base-output: 4
+      recovery-ticks: 80

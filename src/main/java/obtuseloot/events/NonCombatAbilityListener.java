@@ -8,6 +8,7 @@ import obtuseloot.obtuseengine.ArtifactProcessor;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -17,7 +18,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockDropItemEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -30,10 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class NonCombatAbilityListener implements Listener {
     private static final long STRUCTURE_THROTTLE_MS = 3500L;
-    private static final double MOVE_DISTANCE_SQ = 16.0D;
 
     private final Map<UUID, Long> lastStructureSense = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> lastChunkKey = new ConcurrentHashMap<>();
+    private record WorldChunk(UUID world, int x, int z) { }
+    private final Map<UUID, WorldChunk> lastChunkKey = new ConcurrentHashMap<>();
 
     private final TriggerWorkCoalescer coalescer;
     private final StructureSenseService structureSenseService;
@@ -47,25 +48,31 @@ public class NonCombatAbilityListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onMove(PlayerMoveEvent event) {
-        if (event.getTo() == null || event.getFrom().getWorld() == null || event.getTo().getWorld() == null) return;
-        if (event.getFrom().distanceSquared(event.getTo()) < MOVE_DISTANCE_SQ) return;
+        if (!crossesChunk(event.getFrom(), event.getTo())) return;
         Player player = event.getPlayer();
-        if (!allowProbe(player, AbilityTrigger.ON_WORLD_SCAN, AbilitySource.MOVE_WORLD_SCAN.id(), 0.8D, false)) return;
-
-        int chunkKey = (event.getTo().getBlockX() >> 4) * 7340033 ^ (event.getTo().getBlockZ() >> 4);
-        int previous = lastChunkKey.getOrDefault(player.getUniqueId(), Integer.MIN_VALUE);
-        if (previous != chunkKey) {
+        var chunkKey = new WorldChunk(event.getTo().getWorld().getUID(), event.getTo().getBlockX() >> 4, event.getTo().getBlockZ() >> 4);
+        if (!chunkKey.equals(lastChunkKey.get(player.getUniqueId()))
+                && allowProbe(player, AbilityTrigger.ON_WORLD_SCAN, AbilitySource.MOVE_WORLD_SCAN.id(), 0.8D, false)) {
             lastChunkKey.put(player.getUniqueId(), chunkKey);
-            scheduleChunkAwareSense(player, event.getTo().getChunk(), true);
+            scheduleChunkAwareSense(player, event.getTo().getChunk(), true, event);
         }
     }
 
-    private void scheduleChunkAwareSense(Player player, Chunk chunk, boolean coalesced) {
+    static boolean crossesChunk(Location from, Location to) {
+        return from != null && to != null && from.getWorld() != null && to.getWorld() != null
+                && from.getWorld().getUID().equals(to.getWorld().getUID())
+                && (from.getBlockX() >> 4 != to.getBlockX() >> 4 || from.getBlockZ() >> 4 != to.getBlockZ() >> 4)
+                && to.getWorld().isChunkLoaded(to.getBlockX() >> 4, to.getBlockZ() >> 4);
+    }
+
+    private void scheduleChunkAwareSense(Player player, Chunk chunk, boolean coalesced, PlayerMoveEvent event) {
         var service = ObtuseLoot.get().getEquipmentAbilities();
         var token = service.capture(player, obtuseloot.abilities.AbilityInput.event());
-        String workKey = "sense:" + player.getUniqueId() + ":" + chunk.getChunkKey();
+        var capturedChunk = new WorldChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+        String workKey = "sense:" + player.getUniqueId() + ":" + capturedChunk;
         coalescer.coalesce(workKey, 4L, () -> {
-            if (!player.isOnline()) {
+            if (!player.isOnline() || event.isCancelled() || !player.getWorld().getUID().equals(chunk.getWorld().getUID())) {
+                lastChunkKey.remove(player.getUniqueId(), capturedChunk);
                 return;
             }
             service.dispatch(
@@ -73,7 +80,7 @@ public class NonCombatAbilityListener implements Listener {
                     AbilityTrigger.ON_WORLD_SCAN,
                     1.0D,
                     AbilitySource.CHUNK_WORLD_SCAN.id(),
-                    AbilityRuntimeContext.chunkAware(AbilitySource.CHUNK_WORLD_SCAN, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name()), null
+                    AbilityRuntimeContext.chunkAware(AbilitySource.CHUNK_WORLD_SCAN, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name()), event
             );
             long now = System.currentTimeMillis();
             if (now - lastStructureSense.getOrDefault(player.getUniqueId(), 0L) >= STRUCTURE_THROTTLE_MS
@@ -85,7 +92,7 @@ public class NonCombatAbilityListener implements Listener {
                         AbilityTrigger.ON_STRUCTURE_SENSE,
                         1.0D,
                         AbilitySource.STRUCTURE_SENSE.id(),
-                        AbilityRuntimeContext.chunkAware(AbilitySource.STRUCTURE_SENSE, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name()), null
+                        AbilityRuntimeContext.chunkAware(AbilitySource.STRUCTURE_SENSE, chunk.getChunkKey(), coalesced, chunk.getWorld().getName(), chunk.getWorld().getEnvironment().name()), event
                 );
             }
         });
@@ -104,12 +111,13 @@ public class NonCombatAbilityListener implements Listener {
             var runtime = AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT, player.getWorld().getName(), player.getWorld().getEnvironment().name());
             if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                 Block block = event.getClickedBlock();
-                if (Tag.DOORS.isTagged(block.getType()) || Tag.TRAPDOORS.isTagged(block.getType()) || Tag.FENCE_GATES.isTagged(block.getType())) {
+                boolean socialBlock = Tag.DOORS.isTagged(block.getType()) || Tag.TRAPDOORS.isTagged(block.getType()) || Tag.FENCE_GATES.isTagged(block.getType());
+                if (socialBlock) {
                     service.dispatch(player, token, AbilityTrigger.ON_SOCIAL_INTERACT, 1, AbilitySource.SOCIAL_INTERACT.id(), runtime, event);
-                    service.dispatch(player, token, AbilityTrigger.ON_RITUAL_INTERACT, 1, AbilitySource.SOCIAL_INTERACT.id(), runtime, event);
                 }
-                if (block.getType() == Material.CAMPFIRE || block.getType() == Material.SOUL_CAMPFIRE)
-                    service.dispatch(player, token, AbilityTrigger.ON_RITUAL_INTERACT, 1, AbilitySource.SOCIAL_INTERACT.id(), runtime, event);
+                boolean existingRitual = socialBlock || block.getType() == Material.CAMPFIRE || block.getType() == Material.SOUL_CAMPFIRE;
+                service.dispatch(player, token, AbilityTrigger.ON_RITUAL_INTERACT, 1,
+                        existingRitual ? AbilitySource.SOCIAL_INTERACT.id() : AbilitySource.RITUAL_GESTURE.id(), runtime, event);
                 service.dispatch(player, token, AbilityTrigger.ON_BLOCK_INSPECT, 1, AbilitySource.BLOCK_INSPECT.id(), runtime, event);
             } else if (player.isSneaking()) {
                 service.dispatch(player, token, AbilityTrigger.ON_RITUAL_INTERACT, 1, AbilitySource.RITUAL_GESTURE.id(), runtime, event);
@@ -118,7 +126,7 @@ public class NonCombatAbilityListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onEntityInspect(PlayerInteractAtEntityEvent event) {
+    public void onEntityInspect(PlayerInteractEntityEvent event) {
         var plugin = ObtuseLoot.get(); var service = plugin.getEquipmentAbilities(); var player = event.getPlayer();
         var token = service.capture(player, obtuseloot.abilities.AbilityInput.secondary(event.getHand(), null));
         Bukkit.getScheduler().runTask(plugin, () -> {
