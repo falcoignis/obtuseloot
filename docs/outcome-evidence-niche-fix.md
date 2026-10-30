@@ -67,7 +67,10 @@ hide old failures or treat the new measurement as a biology fix.
 
 ## Boundaries and results
 
-Pending registered execution. This fixes unearned scoring evidence, not every
+The registered run is [41010363869](https://github.com/falcoignis/obtuseloot/actions/runs/41010363869)
+on source `c62378386a5cd3be7e362cf05a4c2c1dd5355577`. Terminal numerical results are
+recorded with PR #435 and the versioned report on `fix/generated-ability-concentration`;
+the temporary study workflow is preserved in that source commit. This fixes unearned scoring evidence, not every
 remaining scaffold or all emergence criteria. Existing category/lineage weights,
 recency and other aids remain. The controlled world still lacks harvest-use and
 passive-speed measurements, retains fixed cohort replacement, bypasses wall-clock

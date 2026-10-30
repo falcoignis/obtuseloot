@@ -1,5 +1,22 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-30: outcome-evidence correction in the abilities PR
+
+- Owner requested fixing concentration after run 40999403843. Three failing
+  witnesses reproduced an invented NAVIGATION role for items without outcomes,
+  including niche weights 2.2 (Fleetfoot) versus 0.693 (Redstone Sympathy).
+- The correction keeps the classifier's unobserved GENERALIST role and reuses the
+  outcome-derived profile in unseen-template qualification. Actual memory and
+  measured-role behavior remain; no numeric selection coefficient changes.
+- Focused checks: 22 tests, zero failures/errors, one research skip. The complete
+  ability-set diagnostic exposes secondary abilities hidden by dominant-tag ties.
+- Registered source `c623783`, Actions run 41010363869, crosses baseline/corrected
+  source with eligible-neutral/measured selection, plus paired birth measurements
+  and the full package. Use that run and PR #435 for terminal validation and review
+  state; the versioned numerical report is on `fix/generated-ability-concentration`.
+- No merge or deployment is authorized. #434 remains a prerequisite while open.
+  Installed skill mirrors have not been refreshed from this unreviewed change.
+
 ## 2026-10-29: four implemented utility effects (review work)
 
 - Owner request: implement more abilities. This branch follows open PR #434

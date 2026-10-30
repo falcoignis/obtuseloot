@@ -49,6 +49,8 @@ The owner has ruled that those layers are scaffolding to remove, and that the di
    The owner's next request implements four existing utility templates, with durable
    per-item waypoints and inherited range/detail versus recovery. Read
    `docs/noncombat-ability-batch.md`; it does not establish live usefulness or healthy ecology.
+   The concentration follow-up removes an invented niche for unobserved items;
+   read `docs/outcome-evidence-niche-fix.md` and the linked run/PR for current results.
 3. **Per-item identity and reproduction.** The owner approved new loot inheriting from successful local lineages, with variation, and a configurable **20-chunk radius**. The follow-up adds persistent item genomes/reputation/ancestry and local measured-outcome parent selection. Read `docs/local-artifact-inheritance.md` and refresh the PR state in `references/status.md`. No migration is needed; no player data exists anywhere.
 4. **Remove scaffolding,** each layer behind an ablation test. The first follow-up
    removes the final top-three weight compressor. The next removes gamma/mean
