@@ -78,3 +78,87 @@ budgets and native transport, and does not model natural item retirement or prov
 open-ended native niches. No native server, live file, source image or external
 service is changed. Wild mutation remains held. #434 and #435 remain prerequisites
 for owner review; this request does not authorize merging them.
+
+
+## Registered results
+
+[Study 41010363869](https://github.com/falcoignis/obtuseloot/actions/runs/41010363869)
+passed all 18 jobs on `c62378386a5cd3be7e362cf05a4c2c1dd5355577`.
+All **108 controls** passed, including exact historical baseline reproduction,
+independent replays, prescribed input/founder alignment, pre-change prefixes,
+complete-profile metric reconstruction and non-ability birth-column neutrality.
+The separately capped local recomputation reproduced every summary field.
+All 18 study artifact ZIPs matched their published SHA-256 digests.
+
+The study full package passed **645 tests across 127 classes, zero failures/errors,
+11 opt-in skips**. [PR build 41011108568](https://github.com/falcoignis/obtuseloot/actions/runs/41011108568)
+also passed 645 tests, zero failures/errors, 11 skips on
+`900147503cad800b66b44f80ed29ada9d90eb942`. The production source, tests, scripts and
+manifest match the measured source exactly; only documentation and workflow removal
+follow it. The downloaded plugin artifact also matched its published digest.
+
+### Generated-use cohorts
+
+Final offspring contain 128 items per row, after generation 15's uses. Distinct
+ability sets and largest-group shares describe those unused newborns; parent and
+observed-cohort metrics describe the generation that produced them.
+
+| Source / selector | World | Final distinct sets | Largest set share | Mean effective parents | Complete-profile loss signal within 25% |
+|---|---|---:|---:|---:|---:|
+| Baseline / measured | Steady | 7 | 92.19% | 10.60 | 0/16 |
+| Corrected / measured | Steady | 20 | 11.72% | 20.21 | 16/16 |
+| Baseline / measured | Changing | 8 | 90.63% | 14.44 | 0/16 |
+| Corrected / measured | Changing | 19 | 14.06% | 17.90 | 16/16 |
+| Baseline / eligible-neutral | Steady | 8 | 91.41% | 11.59 | 0/16 |
+| Corrected / eligible-neutral | Steady | 21 | 14.06% | 20.11 | 16/16 |
+| Baseline / eligible-neutral | Changing | 8 | 91.41% | 10.40 | 0/16 |
+| Corrected / eligible-neutral | Changing | 21 | 11.72% | 18.25 | 16/16 |
+
+The baseline largest pair was Fleetfoot + Footprint Memory. The corrected measured
+largest pair is Redstone Sympathy + Material Insight (15/128 steady, 18/128 changed).
+No population-share requirement selected this result. Equal-chance controls remain
+conditional on current positive evidence and habitat/holder filters.
+
+All added handlers continue to deliver actual measured outcomes on generated
+loadouts. Corrected measured-arm successes, aggregated over four seeds and all
+observed generations:
+
+| Added effect | Steady successes | Changed-world successes |
+|---|---:|---:|
+| Footprint Memory | 931 | 922 |
+| Weather Omen | 323 | 346 |
+| Herd Instinct | 929 | 933 |
+| Redstone Sympathy | 727 | 801 |
+
+The original single-dominant-tag signal is **not cleared**: the corrected measured
+scenario is within its 25% loss signal in only 2/16 steady cells and 1/16 changed
+cells (eligible-neutral: 1/16 in each). Unlike the baseline's 12 zero-baseline cells,
+all corrected cells are assessable. Complete ability-set diversity has positive
+baselines and stays within its independently registered descriptive signal in all
+16 cells. The two measurements answer different questions; complete-profile variety
+does not erase niche-level warnings or certify native ecological health.
+
+### Birth-only uniqueness control
+
+Each sample contains 3,000 births. Paired identities, seeds, names, parentage,
+genomes, affinities and supplied synthetic outcomes match; only abilities differ.
+
+| Seed | Source | Distinct ability sets | Largest group | Matching unordered-pair probability |
+|---|---|---:|---:|---:|
+| First | Baseline | 17 | 2,646 | 77.94% |
+| First | Corrected | 21 | 369 | 6.39% |
+| Second | Baseline | 18 | 2,667 | 79.17% |
+| Second | Corrected | 21 | 369 | 6.25% |
+
+This is the empirical probability that two sampled items share their **ability set**,
+not whole-item duplication probability. Baseline full-profile duplicates were absent
+already; this correction does not claim to improve invisible-identity uniqueness.
+
+**Result:** removing the invented role removes the demonstrated dominant-pair
+concentration under the registered conditions, while preserving measured roles,
+local reproductive wiring and other identity inputs. This does not establish all
+four emergence criteria, replace remaining scaffolding, explain every niche-loss
+signal or validate native play. No coefficient was tuned to improve these tables.
+The code correction is in PR #435 for owner review; neither it nor #434 is merged
+by this task. The numerical report remains on the versioned research branch, while
+PR #435's tested code head is preserved.
