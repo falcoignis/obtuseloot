@@ -1,0 +1,77 @@
+name: Additional ability functional and inheritance check
+on:
+  push:
+    branches: [research/additional-ability-check]
+permissions:
+  contents: read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  MAVEN_OPTS: -Xmx512m
+jobs:
+  cohorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        catalog: [control, expanded]
+        selection: [measured, neutral]
+        repeat: [a, b]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Confirm production source matches the tested ability PR
+        run: git diff --exit-code 48553526e3020c41c2c8f1cf2790eb3b1e5d5c0b -- src/main pom.xml
+      - name: Run generated cohorts
+        env:
+          CATALOG: ${{ matrix.catalog }}
+          SELECTION: ${{ matrix.selection }}
+        run: mvn -B -ntp test -DargLine=-Xmx1536m '-Dtest=GeneratedUtilityEcologyExperimentTest#measureGeneratedUtilityCohorts' -Dobtuseloot.experiments=true -Dobtuseloot.catalog="$CATALOG" -Dobtuseloot.selection="$SELECTION"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: utility-${{ matrix.catalog }}-${{ matrix.selection }}-${{ matrix.repeat }}
+          path: |
+            target/generated-utility-ecology/
+            target/surefire-reports/
+          if-no-files-found: error
+  functional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Run handlers, persistence, reproduction and existing diversity regression
+        run: mvn -B -ntp test -DargLine=-Xmx1536m -Dtest=GeneratedUtilityEcologyExperimentTest,UtilityAbilityEffectsTest,NonCombatChunkCrossingTest,AbilityPerformanceTest,LiveAbilityEffectsTest,MaterialInsightLivePerformanceTest,EquipmentAbilityServiceTest,SeededEcosystemHealthTest,LocalEcosystemHealthTest,LocalInheritancePoolTest,RevisionSpecificFitnessTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: utility-functional-checks
+          path: target/surefire-reports/
+          if-no-files-found: error
+  compare:
+    needs: cohorts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: utility-*
+          path: target/utility-check
+      - run: python3 -B scripts/summarize-generated-utility-check.py target/utility-check > target/utility-check-summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: utility-check-summary
+          path: target/utility-check-summary.json
+          if-no-files-found: error
