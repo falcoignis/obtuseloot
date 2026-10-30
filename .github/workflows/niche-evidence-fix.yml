@@ -1,0 +1,130 @@
+name: Outcome-evidence niche correction
+on:
+  push:
+    branches: [fix/generated-ability-concentration]
+permissions:
+  contents: read
+  actions: read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  MAVEN_OPTS: -Xmx512m
+jobs:
+  cohorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [baseline, fixed]
+        selection: [measured, neutral]
+        repeat: [a, b]
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25', cache: maven}
+      - name: Select source arm
+        env: {ARM: '${{ matrix.arm }}'}
+        run: |
+          if [[ "$ARM" == baseline ]]; then
+            git restore --source=de8ccaf4943e575cfa19a1ef0d060110e7f50b71 -- src/main/java/obtuseloot/abilities/ProceduralAbilityGenerator.java
+          fi
+          git diff --stat
+      - name: Measure generated profiles and actual effects
+        env: {SELECTION: '${{ matrix.selection }}'}
+        run: mvn -B -ntp test -DargLine=-Xmx1536m '-Dtest=GeneratedUtilityEcologyExperimentTest#measureGeneratedUtilityCohorts' -Dobtuseloot.experiments=true -Dobtuseloot.catalog=expanded -Dobtuseloot.selection="$SELECTION"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cohort-${{ matrix.arm }}-${{ matrix.selection }}-${{ matrix.repeat }}
+          path: |
+            target/generated-utility-ecology/
+            target/surefire-reports/
+          if-no-files-found: error
+  births:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [baseline, fixed]
+        seed: [first, second]
+        repeat: [a, b]
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25', cache: maven}
+      - name: Select source arm
+        env: {ARM: '${{ matrix.arm }}'}
+        run: |
+          if [[ "$ARM" == baseline ]]; then
+            git restore --source=de8ccaf4943e575cfa19a1ef0d060110e7f50b71 -- src/main/java/obtuseloot/abilities/ProceduralAbilityGenerator.java
+          fi
+      - name: Measure birth duplication
+        env: {SEED: '${{ matrix.seed }}'}
+        run: |
+          seed=366385647957
+          if [[ "$SEED" == second ]]; then seed=366385647958; fi
+          mvn -B -ntp test -DargLine=-Xmx1536m -Dtest=ItemUniquenessMeasurementTest -Dobtuseloot.experiments=true -Dobtuseloot.births=3000 -Dobtuseloot.uniquenessSeed="$seed"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: birth-${{ matrix.arm }}-${{ matrix.seed }}-${{ matrix.repeat }}
+          path: |
+            target/item-uniqueness/
+            target/surefire-reports/
+          if-no-files-found: error
+  compare:
+    needs: [cohorts, births]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {pattern: 'cohort-*', path: target/niche-evidence}
+      - uses: actions/download-artifact@v4
+        with: {pattern: 'birth-*', path: target/niche-evidence}
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40999403843
+          github-token: ${{ github.token }}
+          name: utility-expanded-measured-a
+          path: target/niche-evidence/prior-cohort-measured
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40999403843
+          github-token: ${{ github.token }}
+          name: utility-expanded-neutral-a
+          path: target/niche-evidence/prior-cohort-neutral
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40931547378
+          github-token: ${{ github.token }}
+          name: catalog-expanded-first-a
+          path: target/niche-evidence/prior-birth-first
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 40931547378
+          github-token: ${{ github.token }}
+          name: catalog-expanded-second-a
+          path: target/niche-evidence/prior-birth-second
+      - run: python3 -B scripts/summarize-niche-evidence-fix.py target/niche-evidence > target/niche-evidence-summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: niche-evidence-summary, path: target/niche-evidence-summary.json, if-no-files-found: error}
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '25', cache: maven}
+      - run: mvn -B -ntp clean package -DargLine=-Xmx1536m
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: niche-evidence-full-suite
+          path: |
+            target/surefire-reports/
+            target/*.jar
+          if-no-files-found: error

@@ -273,74 +273,10 @@ public class ProceduralAbilityGenerator {
     }
 
     private ArtifactNicheProfile resolveScoringNicheProfile(UtilityHistoryRollup utilityHistory, ArtifactMemoryProfile memoryProfile, ArtifactLineage lineage) {
-        ArtifactNicheProfile classified = roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
-        if (utilityHistory.hasUtilityHistory() || classified.dominantNiche() != MechanicNicheTag.GENERALIST) {
-            return classified;
-        }
-
-        MechanicNicheTag inferredDominant = inferDominantNiche(memoryProfile);
-        Map<MechanicNicheTag, Double> scores = new EnumMap<>(MechanicNicheTag.class);
-        scores.put(inferredDominant, 1.0D + dominantNicheWeight(memoryProfile, inferredDominant));
-        scores.put(MechanicNicheTag.GENERALIST, 0.35D);
-        if (lineage != null) {
-            double explorationTendency = lineage.evolutionaryBiasGenome().tendency(LineageBiasDimension.EXPLORATION_PREFERENCE);
-            if (explorationTendency > 0.20D) {
-                double navScore = 1.0D + dominantNicheWeight(memoryProfile, MechanicNicheTag.NAVIGATION)
-                        + (explorationTendency * 1.20D);
-                double currentScore = scores.getOrDefault(inferredDominant, 0.0D);
-                scores.merge(MechanicNicheTag.NAVIGATION, navScore, Math::max);
-                if (navScore > currentScore) {
-                    inferredDominant = MechanicNicheTag.NAVIGATION;
-                }
-            }
-        }
-        EnumSet<MechanicNicheTag> activeNiches = EnumSet.copyOf(scores.keySet());
-        return new ArtifactNicheProfile(
-                inferredDominant,
-                activeNiches,
-                Map.copyOf(scores),
-                classified.specialization());
-    }
-
-    private MechanicNicheTag inferDominantNiche(ArtifactMemoryProfile memoryProfile) {
-        double navigationScore = memoryProfile.mobilityWeight() + (memoryProfile.disciplineWeight() * 0.12D);
-        double ritualScore = memoryProfile.chaosWeight() + (memoryProfile.disciplineWeight() * 0.18D) + (memoryProfile.pressure() * 0.015D);
-        double protectionScore = memoryProfile.survivalWeight() + (memoryProfile.traumaWeight() * 0.18D) + (memoryProfile.bossWeight() * 0.12D);
-        double supportScore = memoryProfile.aggressionWeight() + (memoryProfile.disciplineWeight() * 0.10D);
-
-        MechanicNicheTag dominant = MechanicNicheTag.NAVIGATION;
-        double max = navigationScore;
-        if (ritualScore > max) {
-            dominant = memoryProfile.disciplineWeight() >= memoryProfile.chaosWeight() ? MechanicNicheTag.MEMORY_HISTORY : MechanicNicheTag.RITUAL_STRANGE_UTILITY;
-            max = ritualScore;
-        }
-        if (protectionScore > max) {
-            double combatHazard = memoryProfile.traumaWeight() + memoryProfile.bossWeight();
-            if (memoryProfile.survivalWeight() >= combatHazard * 1.5D) {
-                dominant = MechanicNicheTag.FARMING_WORLDKEEPING;
-            } else if (memoryProfile.survivalWeight() >= combatHazard) {
-                dominant = MechanicNicheTag.ENVIRONMENTAL_ADAPTATION;
-            } else {
-                dominant = MechanicNicheTag.PROTECTION_WARDING;
-            }
-            max = protectionScore;
-        }
-        if (supportScore > max) {
-            dominant = memoryProfile.aggressionWeight() > memoryProfile.disciplineWeight()
-                    ? MechanicNicheTag.PROTECTION_WARDING
-                    : MechanicNicheTag.SUPPORT_COHESION;
-        }
-        return dominant;
-    }
-
-    private double dominantNicheWeight(ArtifactMemoryProfile memoryProfile, MechanicNicheTag dominant) {
-        return switch (dominant) {
-            case NAVIGATION, ENVIRONMENTAL_SENSING -> memoryProfile.mobilityWeight() * 0.20D;
-            case RITUAL_STRANGE_UTILITY, MEMORY_HISTORY -> Math.max(memoryProfile.chaosWeight(), memoryProfile.disciplineWeight()) * 0.18D;
-            case ENVIRONMENTAL_ADAPTATION, PROTECTION_WARDING, FARMING_WORLDKEEPING -> memoryProfile.survivalWeight() * 0.20D;
-            case SUPPORT_COHESION, SOCIAL_WORLD_INTERACTION -> Math.max(memoryProfile.aggressionWeight(), memoryProfile.disciplineWeight()) * 0.15D;
-            default -> 0.10D;
-        };
+        // A memory/ancestry prior is not a measured niche. The classifier keeps an
+        // unobserved item GENERALIST; real outcomes retain their existing role.
+        // Memory and lineage still contribute through their independent scoring paths.
+        return roleClassifier.classify(utilityHistory.signalByMechanicTrigger());
     }
 
     private AbilityDefinition fromTemplate(AbilityTemplate t, AbilityFamily family, int stage) { /* unchanged */
@@ -719,7 +655,7 @@ public class ProceduralAbilityGenerator {
             weights[i] = weight;
         }
         AbilityTemplate selectedTemplate = templates.get(sampleTemplateIndex(weights, random));
-        return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, memoryProfile, lineage, variantProfile, activePool, selected, random);
+        return applyUnseenTemplateOverride(selectedTemplate, templates, samplingScores, artifact, nicheProfile, lineage, variantProfile, activePool, selected, random);
     }
 
     // Sample the supplied weights as-is. Distribution targets must not flatten outcome signals.
@@ -742,7 +678,7 @@ public class ProceduralAbilityGenerator {
                                                         List<AbilityTemplate> templates,
                                                         double[] samplingScores,
                                                         Artifact artifact,
-                                                        ArtifactMemoryProfile memoryProfile,
+                                                        ArtifactNicheProfile nicheProfile,
                                                         ArtifactLineage lineage,
                                                         NicheVariantProfile variantProfile,
                                                         List<AbilityDiversityIndex.AbilitySignature> activePool,
@@ -754,7 +690,7 @@ public class ProceduralAbilityGenerator {
         List<Integer> unseenEligibleIndexes = new ArrayList<>();
         for (int i = 0; i < templates.size(); i++) {
             AbilityTemplate candidate = templates.get(i);
-            if (!isUnseenTemplate(candidate) || !qualifiesForUnseenOverride(candidate, artifact, memoryProfile, lineage, variantProfile, activePool, selected)) {
+            if (!isUnseenTemplate(candidate) || !qualifiesForUnseenOverride(candidate, artifact, nicheProfile, lineage, variantProfile, activePool, selected)) {
                 continue;
             }
             unseenEligibleIndexes.add(i);
@@ -1464,12 +1400,12 @@ public class ProceduralAbilityGenerator {
 
     private boolean qualifiesForUnseenOverride(AbilityTemplate template,
                                                Artifact artifact,
-                                               ArtifactMemoryProfile memoryProfile,
+                                               ArtifactNicheProfile nicheProfile,
                                                ArtifactLineage lineage,
                                                NicheVariantProfile variantProfile,
                                                List<AbilityDiversityIndex.AbilitySignature> activePool,
                                                List<AbilityTemplate> selected) {
-        MechanicNicheTag dominant = memoryProfile == null ? MechanicNicheTag.GENERALIST : inferDominantNiche(memoryProfile);
+        MechanicNicheTag dominant = nicheProfile == null ? MechanicNicheTag.GENERALIST : nicheProfile.dominantNiche();
         AbilityDiversityIndex.AbilitySignature candidate = diversityIndex.fromTemplate(artifact.getArtifactSeed(), lineage == null ? null : lineage.lineageId(), dominant, variantProfile, template);
         AbilitySimilarityProfile similarityProfile = abilitySimilarityProfile(candidate, activePool, selected, artifact, lineage, dominant, variantProfile);
         double intraNovelty = 1.0D - similarityProfile.sameNicheSimilarity();

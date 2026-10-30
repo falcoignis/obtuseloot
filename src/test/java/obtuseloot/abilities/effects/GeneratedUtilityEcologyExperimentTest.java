@@ -56,7 +56,7 @@ class GeneratedUtilityEcologyExperimentTest {
         var inputs = new ArrayList<String>(List.of("seed,changing,generation,site,slot,round,kind,available,rich,x"));
         var activities = new ArrayList<String>(List.of("seed,changing,generation,site,slot,item_seed,ability,opportunities,attempts,suppressed,successes,noops,benefit,recovery,result_digest"));
         var births = new ArrayList<String>(List.of("seed,changing,generation,site,slot,storage_key,item_seed,parent_key,parent_seed,parent_revision,lineage,abilities,genome"));
-        var population = new ArrayList<String>(List.of("seed,changing,generation,site,eligible,effective_parents,max_parent_share,simpson,distinct_sets,largest_set,lineages,fallbacks,mobility,precision,survival,resonance"));
+        var population = new ArrayList<String>(List.of("seed,changing,generation,site,eligible,effective_parents,max_parent_share,simpson,distinct_sets,largest_set,lineages,fallbacks,mobility,precision,survival,resonance,ability_set_simpson"));
         for (long seed : SEEDS) for (boolean changing : List.of(false, true)) {
             var result = run(seed, expanded, neutral, changing, generations, size);
             String prefix = seed + "," + changing + ",";
@@ -180,7 +180,8 @@ class GeneratedUtilityEcologyExperimentTest {
                     population.add(generation + "," + site + "," + health.eligibleParents() + "," + health.effectiveParents() + "," + health.maximumParentShare()
                             + "," + NicheDiversityMetrics.diversity(occupancy).simpsonDiversity() + "," + sets.size() + "," + Collections.max(sets.values())
                             + "," + lineages.size() + "," + fallbacks + "," + mean(cohort.items, GenomeTrait.MOBILITY_AFFINITY) + "," + mean(cohort.items, GenomeTrait.PRECISION_AFFINITY)
-                            + "," + mean(cohort.items, GenomeTrait.SURVIVAL_INSTINCT) + "," + mean(cohort.items, GenomeTrait.RESONANCE));
+                            + "," + mean(cohort.items, GenomeTrait.SURVIVAL_INSTINCT) + "," + mean(cohort.items, GenomeTrait.RESONANCE)
+                            + "," + NicheDiversityMetrics.diversity(sets).simpsonDiversity());
                     next.add(newborns);
                 }
                 ecosystem.save();
