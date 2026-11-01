@@ -1,5 +1,22 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-10-31: #434/#435 merged; utility abilities validated natively
+
+- #434 (ability replay inputs) and #435 (four utility abilities plus the
+  unobserved-niche correction) are merged; main is `83d5753`. Main CI run
+  41098665124 passed: 645 tests, zero failures/errors, 11 skips. The two entries
+  below are historical review snapshots. No deployment is authorized.
+- Owner selected native testing of the four abilities on a disposable local Purpur
+  26.2 server. Fixture `server-tests/utility-abilities/`; results and limitations are
+  in `docs/noncombat-ability-batch.md`. Final run: 22/22 cases, 18 reports, waypoint
+  restart passed. An earlier run also passed but its restart stage was run by hand
+  after launcher-script failures, and its permission case did not prove the crossing
+  was dispatched; the final run added that check.
+- Open for the owner: Redstone Sympathy reads blocks after vanilla's click change, so
+  inspecting a lever or repeater changes it (comparators not tested).
+- Wild mutation remains held. Remaining top-down mechanism: forced displacement/soft
+  migration. AuraSkills extra XP is undecided.
+
 ## 2026-10-30: outcome-evidence correction in the abilities PR
 
 - Owner requested fixing concentration after run 40999403843. Three failing

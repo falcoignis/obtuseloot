@@ -1,0 +1,5 @@
+name: ObtuseLootUtilityProbe
+version: 1
+main: obtuseloot.servertest.UtilityProbe
+api-version: '26.2'
+depend: [ObtuseLoot]

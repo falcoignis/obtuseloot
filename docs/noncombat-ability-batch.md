@@ -90,10 +90,42 @@ documentation has advanced to 26.3; the target JAR was inspected to verify its
 `GameRule.DO_WEATHER_CYCLE` and animal/redstone interfaces. The weather test replaces
 only the registry-backed game-rule read because a plain API-double JVM lacks Paper's
 RegistryAccess bootstrap. Other world data/reporting remains exercised normally.
-No new native server/client or actual protection/skill-plugin combination was tested.
-Before deployment, validate gestures, equipment changes, denied claims/entities,
-walking/chunk transitions, default weather-rule lookup and waypoint restart/trade
-behavior on the owner-selected disposable server. Preserve normal AuraSkills XP.
+No actual protection/skill-plugin combination was tested. Preserve normal AuraSkills XP.
+
+## Native disposable-server validation
+
+The fixture in [server-tests/utility-abilities](../server-tests/utility-abilities/README.md)
+ran against `83d5753` on Purpur `26.2` build 2633 (Java 25), with a controlled 26.1
+protocol client through ViaVersion/ViaBackwards 5.12.1. Expectations were registered
+before the first run. The final run passed all three stages (boot-only, client, restart)
+with every exit zero: **22/22 cases, 18 delivered reports**.
+
+| Ability | Native result |
+|---|---|
+| Footprint Memory | Server saw sneaking; unsneaked click did nothing. Mark, off-hand click during recovery blocked, recall "west, 200 blocks; 0 blocks up" (gene 1, recovery 90). Gene 0: recall beyond 128 blocks delivered nothing and reserved no recovery; recall at 100 blocks delivered (recovery 30). Waypoint and genes survived restart and a codec round trip. |
+| Herd Instinct | One report per click, second click recovering. Facts/recovery 2/40 and 5/120. Adult "breeding ready true"; baby "young; growth in 23988 ticks". Cancelled entity event and ability permission off (OP retained) delivered nothing. |
+| Redstone Sympathy | Piston "extended false" (gene 0, recovery 40) and "extended false \| facing up" (gene 1, recovery 120). Stone, cancelled block/item interaction and permission off delivered nothing. |
+| Weather Omen | One report per chunk crossing: clear (2 facts, recovery 100), running cycle, forced clear window, storm and thunder (5 facts, recovery 300), paused cycle (3 facts). With permission off the crossing reached the server as a move event and delivered nothing; after restoring the permission on the same item, the next crossing delivered one five-fact report. |
+
+Observations for review:
+
+- Redstone Sympathy reports the block after vanilla's right-click change, because the
+  effect runs one tick later. A lever placed unpowered read "powered true", a repeater
+  placed at delay 1 read "delay 2 redstone ticks", and an isolated wire placed in its
+  default state read all four sides. Inspecting a lever or repeater therefore also
+  changes it; comparators were not tested. This is a design question; no production
+  behavior was changed.
+- The 26.1 client's entity click produced `PlayerInteractAtEntityEvent`, which
+  `PlayerInteractEntityEvent` handlers also receive; exactly one report was delivered.
+- `GameRule.DO_WEATHER_CYCLE` is deprecated for removal in the 26.2 API but reads
+  correctly on build 2633.
+- Every start logs a pre-existing dashboard warning for the missing
+  `analytics/ecosystem-balance-data.json`; it predates this batch.
+
+Not covered: a two-player hand-over (trade is covered only by the codec round trip),
+recovery shared between two abilities on one item, walking-scan rejection of unloaded
+destinations, a graphical 26.2 client, LuckPerms/PlaceholderAPI/AuraSkills, claim
+plugins and anticheat. No live deployment is authorized.
 
 API references: [weather timers](https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/World.html),
 [entity interaction hierarchy](https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/event/player/PlayerInteractAtEntityEvent.html),
