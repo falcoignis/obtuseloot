@@ -162,6 +162,26 @@ class UtilityAbilityEffectsTest {
         }
     }
 
+    @Test void redstoneReportsTheClickedStateNotTheStateLeftByVanillasInteraction() throws Exception {
+        try (var f = new Fixture()) {
+            // The live block (delay 3, locked) stands for the state after vanilla handled the click.
+            var clicked = Fixture.api(Repeater.class, (name, args) -> switch (name) {
+                case "getMaterial" -> Material.REPEATER; case "isPowered", "isLocked" -> false;
+                case "getDelay" -> 1; case "getFacing" -> BlockFace.EAST; default -> Fixture.unexpected(name);
+            });
+            var definition = f.definition(REDSTONE);
+            var result = f.executor.execute(definition, f.context(definition, f.item(1), 100, f.blockEvent(EquipmentSlot.HAND), clicked), 1);
+            assertEquals(AbilityExecutionStatus.SUCCESS, result.status());
+            assertEquals("Redstone Sympathy: repeater | powered false | delay 1 redstone ticks | locked false | facing east", f.messages.getLast());
+            var replaced = Fixture.api(Repeater.class, (name, args) -> switch (name) {
+                case "getMaterial" -> Material.LEVER; default -> Fixture.unexpected(name);
+            });
+            var item = f.item(1);
+            assertEquals(0, f.executor.execute(definition, f.context(definition, item, 100, f.blockEvent(EquipmentSlot.HAND), replaced), 1).observedAmount());
+            assertEquals(1, f.messages.size()); assertTrue(item.abilityRecoverySnapshot().isEmpty());
+        }
+    }
+
     @Test void anUnloadedClickedChunkIsNotReadOrLoadedForDiagnostics() throws Exception {
         try (var f = new Fixture()) {
             f.loaded = false; var item = f.item(1);
@@ -372,8 +392,11 @@ class UtilityAbilityEffectsTest {
         PlayerInteractEntityEvent animalEvent() { return new PlayerInteractEntityEvent(player, animal, EquipmentSlot.HAND); }
         Event eventFor(String id) { return id.equals(WEATHER) ? null : id.equals(HERD) ? animalEvent() : blockEvent(EquipmentSlot.HAND); }
         AbilityEventContext context(AbilityDefinition definition, Artifact item, long tick, Event event) {
+            return context(definition, item, tick, event, null);
+        }
+        AbilityEventContext context(AbilityDefinition definition, Artifact item, long tick, Event event, org.bukkit.block.data.BlockData clicked) {
             return new AbilityEventContext(definition.trigger(), item, item.getItemReputation(), 1, "modeled-utility",
-                    AbilityRuntimeContext.intentional(AbilitySource.OTHER), event, true, new WorldPosition(WORLD, x, z)).withGameTick(tick);
+                    AbilityRuntimeContext.intentional(AbilitySource.OTHER, null, null, clicked), event, true, new WorldPosition(WORLD, x, z)).withGameTick(tick);
         }
         AbilityExecutionResult execute(String id, Artifact item, long tick, Event event) {
             var definition = definition(id); return executor.execute(definition, context(definition, item, tick, event), 1);

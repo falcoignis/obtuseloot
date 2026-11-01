@@ -18,7 +18,10 @@ public final class RedstoneSympathyEffect extends MeasuredUtilityEffect {
         var block = event.getClickedBlock();
         if (!block.getWorld().getUID().equals(player.getWorld().getUID())
                 || !block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)) return null;
-        var data = block.getBlockData();
+        // Report the state the player clicked, not the state vanilla's interaction left behind.
+        var clicked = context.runtimeContext() == null ? null : context.runtimeContext().clickedBlockState();
+        if (clicked != null && clicked.getMaterial() != block.getType()) return null;
+        var data = clicked != null ? clicked : block.getBlockData();
         if (!(data instanceof AnaloguePowerable || data instanceof Powerable || data instanceof Switch
                 || data instanceof Repeater || data instanceof org.bukkit.block.data.type.Comparator
                 || data instanceof Piston || data instanceof Hopper)) return null;

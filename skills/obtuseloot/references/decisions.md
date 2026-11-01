@@ -154,3 +154,7 @@ choices for review, not a new owner-confirmed balance policy. Read
 - The owner asked for a downside to items having more abilities. Options offered: shared recovery, per-ability competition, averaging instead of summing, a shared gene budget, a fixed per-ability penalty. The owner chose **shared recovery** and **holder-weighted competition** ("i like 1 and 2"). Holder weighting was then found to add no cost to extra abilities; it is the crop/stone niche mechanism. The owner asked to resolve the shared-recovery gaps ("well figure it out").
 - **Plasticity stays out of the PR** (owner choice, 2026-10-25): inherited target plasticity was not confirmed and remains research only.
 - Adopting the formula changes is the owner's PR review decision; no merge authorization. No quotas, floors, boosts or distribution tuning. See `docs/recovery-selection-research.md`.
+
+## 2026-11-01: Redstone Sympathy reads the clicked state
+
+- Native validation showed the report described the block after vanilla's right-click change. The owner chose to report the state as clicked ("do 1"). The listener copies the clicked block data when the event fires; a material change before dispatch delivers nothing. No merge authorization.

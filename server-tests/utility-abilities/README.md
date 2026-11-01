@@ -40,7 +40,7 @@ tradeoff (gene 0 = 0.5x, gene 1 = 1.5x of the defaults in `docs/noncombat-abilit
 | | `herd-deny` / `-permission` | Cancelled entity event or ability permission off (OP retained): no report, no recovery. |
 | Redstone Sympathy | `redstone-low` / `-high` | Piston: "piston \| extended false" (recovery 40) / "piston \| extended false \| facing up" (recovery 120). |
 | | `redstone-stone`, `-deny-block`, `-deny-item`, `-permission` | No report, no recovery. |
-| | `redstone-lever` / `-repeater` / `-wire` | Exactly one report. Contents are recorded, not asserted: vanilla right-click changes these blocks, and the report runs one tick later. |
+| | `redstone-lever` / `-repeater` / `-wire` | Exactly one report. Contents are recorded, not asserted: vanilla right-click changes these blocks, and the report runs one tick later. **Superseded after the pre-click fix (registered before its run):** the report shows the clicked state ("lever \| powered false \| facing east"; "repeater \| powered false \| delay 1 redstone ticks \| locked false \| facing east"; "redstone wire \| signal 0/15 \| north none \| east none \| south none \| west none") while the block itself still changes (lever powered, repeater delay 2, wire connected sides). |
 | Weather Omen | `weather-low` | One chunk crossing: "world weather clear \| thunder false", recovery 100. |
 | | `weather-high` / `-forced` / `-storm` | Five facts, recovery 300: running cycle with weather timers / forced clear window / storm and thunder. |
 | | `weather-paused` | Three facts ending "natural weather cycle paused or unavailable". |
