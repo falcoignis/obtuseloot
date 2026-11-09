@@ -1,5 +1,26 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-11-08: #436 merged; two owner-requested changes await review
+
+- #436 (native utility-ability fixture and recorded results) is merged; main is
+  `c926879`. PR CI run 41282452963 and main CI run 41284743422 passed. No
+  deployment is authorized.
+- Redstone Sympathy (open item in the 10-31 entry): on 2026-11-01 the owner asked
+  for the report to describe the block as it was before the click. A local branch
+  copies the clicked block state at event time; the native fixture rerun passed
+  22/22 with the pre-click lever/repeater/wire state asserted while vanilla still
+  changes the block. It is not yet published; the owner reviews the diff and
+  result before any push. Comparators remain untested.
+- Remaining top-down mechanism: on 2026-11-01 the owner chose to replace forced
+  displacement and soft migration with a measured child-membership rule (an item
+  joins a child niche only while it measurably does better there than in the
+  parent), tested on the environment-shift harness plus the existing health
+  checks on GitHub Actions, pre-registered first. A pre-registered implementation
+  exists locally with only a one-seed wiring check; it is not published or
+  measured. Until it merges, forced displacement and soft migration remain on
+  main, and its decision-ledger entry travels with that branch.
+- Wild mutation remains held. AuraSkills extra XP is undecided.
+
 ## 2026-10-31: #434/#435 merged; utility abilities validated natively
 
 - #434 (ability replay inputs) and #435 (four utility abilities plus the
