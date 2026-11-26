@@ -1,5 +1,14 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-11-26: Redstone pre-click fix published; measured child-membership arms started
+
+- The owner asked for pending work to be pushed and merged where possible. The Redstone
+  Sympathy pre-click branch was rebased onto `59ddc7b` and published for merge with the
+  normal PR suite; its native rerun (22/22) is unchanged.
+- The measured child-membership branch is published so its pre-registered arms run on
+  GitHub Actions. It is not proposed for merge until those results are read against the
+  registered rules and the owner reviews them; its branch-pinned workflow is removed first.
+
 ## 2026-11-08: #436 merged; two owner-requested changes await review
 
 - #436 (native utility-ability fixture and recorded results) is merged; main is
