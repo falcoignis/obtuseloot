@@ -105,10 +105,14 @@ public class NonCombatAbilityListener implements Listener {
         var service = plugin.getEquipmentAbilities();
         Player player = event.getPlayer();
         var token = service.capture(player, obtuseloot.abilities.AbilityInput.secondary(event.getHand(), event.getAction()));
+        // Vanilla applies the click (lever toggle, repeater delay) after this event; dispatch runs a tick later.
+        var clickedState = event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
+                ? event.getClickedBlock().getBlockData().clone() : null;
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline() || event.useInteractedBlock() == org.bukkit.event.Event.Result.DENY
                     || event.useItemInHand() == org.bukkit.event.Event.Result.DENY) return;
-            var runtime = AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT, player.getWorld().getName(), player.getWorld().getEnvironment().name());
+            var runtime = AbilityRuntimeContext.intentional(AbilitySource.BLOCK_INSPECT, player.getWorld().getName(),
+                    player.getWorld().getEnvironment().name(), clickedState);
             if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                 Block block = event.getClickedBlock();
                 boolean socialBlock = Tag.DOORS.isTagged(block.getType()) || Tag.TRAPDOORS.isTagged(block.getType()) || Tag.FENCE_GATES.isTagged(block.getType());

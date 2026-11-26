@@ -109,12 +109,16 @@ with every exit zero: **22/22 cases, 18 delivered reports**.
 
 Observations for review:
 
-- Redstone Sympathy reports the block after vanilla's right-click change, because the
-  effect runs one tick later. A lever placed unpowered read "powered true", a repeater
-  placed at delay 1 read "delay 2 redstone ticks", and an isolated wire placed in its
-  default state read all four sides. Inspecting a lever or repeater therefore also
-  changes it; comparators were not tested. This is a design question; no production
-  behavior was changed.
+- On `83d5753`, Redstone Sympathy reported the block after vanilla's right-click change,
+  because the effect runs one tick later: a lever placed unpowered read "powered true", a
+  repeater placed at delay 1 read "delay 2 redstone ticks", and an isolated wire placed in
+  its default state read all four sides. The owner chose to report the clicked state
+  (2026-11-01). The listener now copies the clicked block's data when the event fires and
+  the effect reads that copy; if the block's material changed before dispatch, nothing is
+  reported. A rerun with expectations registered before it showed "powered false",
+  "delay 1 redstone ticks" and "north none | east none | south none | west none", while
+  vanilla still toggled each block. Inspecting a lever or repeater still changes it, as any
+  right-click does; comparators were not tested.
 - The 26.1 client's entity click produced `PlayerInteractAtEntityEvent`, which
   `PlayerInteractEntityEvent` handlers also receive; exactly one report was delivered.
 - `GameRule.DO_WEATHER_CYCLE` is deprecated for removal in the 26.2 API but reads

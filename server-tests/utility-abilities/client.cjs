@@ -77,8 +77,13 @@ const one=(n,recovery)=>(got,samples)=>{assert(got.length===1,'Expected one repo
  await run('redstone-high','Redstone Sympathy',circuit,(got,samples)=>{one(3,120)(got,samples);assert(got[0]==='Redstone Sympathy: piston | extended false | facing up','Wrong high reading '+got[0]);});
  await run('redstone-stone','Redstone Sympathy',circuit,(got,_samples,state)=>{assert(got.length===0&&state.readyAt===0,'Non-circuit block delivered');});
  for(const role of ['redstone-deny-block','redstone-deny-item','redstone-permission'])await run(role,'Redstone Sympathy',circuit,none);
- for(const role of ['redstone-lever','redstone-repeater','redstone-wire'])await run(role,'Redstone Sympathy',circuit,(got,samples)=>{
-  assert(got.length===1&&samples.length===1&&samples[0].count===1,'Expected one circuit reading '+JSON.stringify(got));});
+ // Pre-click fix: the report shows the clicked state; vanilla still changes the block.
+ const clicked={'redstone-lever':['Redstone Sympathy: lever | powered false | facing east','powered=true'],
+  'redstone-repeater':['Redstone Sympathy: repeater | powered false | delay 1 redstone ticks | locked false | facing east','delay=2'],
+  'redstone-wire':['Redstone Sympathy: redstone wire | signal 0/15 | north none | east none | south none | west none','north=side']};
+ for(const [role,[text,after]] of Object.entries(clicked))await run(role,'Redstone Sympathy',circuit,(got,samples,state)=>{
+  assert(got.length===1&&samples.length===1&&samples[0].count===1,'Expected one circuit reading '+JSON.stringify(got));
+  assert(got[0]===text,'Wrong clicked-state reading '+got[0]);assert(state.block.includes(after),'Vanilla click did not change the block '+state.block);});
  // Weather Omen: one chunk crossing per case into a chunk not visited before.
  const crossing=async()=>{await walk(17);};
  await run('weather-low','Weather Omen',crossing,(got,samples)=>{one(2,100)(got,samples);assert(got[0]==='Weather Omen: world weather clear | thunder false','Wrong low forecast '+got[0]);});

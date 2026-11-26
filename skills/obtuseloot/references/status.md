@@ -1,5 +1,14 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-11-26: Redstone pre-click fix published; measured child-membership arms started
+
+- The owner asked for pending work to be pushed and merged where possible. The Redstone
+  Sympathy pre-click branch was rebased onto `59ddc7b` and published for merge with the
+  normal PR suite; its native rerun (22/22) is unchanged.
+- The measured child-membership branch is published so its pre-registered arms run on
+  GitHub Actions. It is not proposed for merge until those results are read against the
+  registered rules and the owner reviews them; its branch-pinned workflow is removed first.
+
 ## 2026-11-08: #436 merged; two owner-requested changes await review
 
 - #436 (native utility-ability fixture and recorded results) is merged; main is
@@ -33,8 +42,10 @@
   restart passed. An earlier run also passed but its restart stage was run by hand
   after launcher-script failures, and its permission case did not prove the crossing
   was dispatched; the final run added that check.
-- Open for the owner: Redstone Sympathy reads blocks after vanilla's click change, so
-  inspecting a lever or repeater changes it (comparators not tested).
+- Redstone Sympathy read blocks after vanilla's click change. Owner chose (2026-11-01)
+  to report the clicked state; the follow-up snapshots the block data at event time and
+  passed a registered native rerun (22/22). A lever or repeater is still toggled by the
+  click itself; comparators were not tested.
 - Wild mutation remains held. Remaining top-down mechanism: forced displacement/soft
   migration. AuraSkills extra XP is undecided.
 
