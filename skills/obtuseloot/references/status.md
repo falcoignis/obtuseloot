@@ -1,5 +1,28 @@
 # ObtuseLoot project status (volatile; dated entries)
 
+## 2026-11-27: observed partitions and interval-measured membership merged
+
+- The 2026-11-26 measured child-membership arms (run 45902238858) were not adoptable
+  (R 1/16, X 1/16). Diagnosis: name hash parity left one child unreachable for
+  single-subniche parents, so 98.3% of measured births had no eligible child.
+- An exploratory sweep (runs 45914103866, 45932780597, 45941048059; seeds 0-15) varied
+  one component at a time. Partition repair alone kept R/X near control with about half
+  the empty child births; lifetime or since-birth memory suppressed the response; a
+  one-interval window gave the most populated births. Results chose a direction only.
+- #439 merged (`be03fed`): child niches come from a persistent partition of observed
+  subniches; a parent with fewer than two observed subniches does not split.
+- The owner approved a revised success rule (see `decisions.md`, 2026-11-27): guardrail
+  unchanged, X mandatory at 12/16, R at 12/16 or a pooled rate at least control's,
+  populated share of births at least control's.
+- Pre-registered run 45959529970 on fresh seeds 16-31: ADOPT. Revised X 12/16 (control
+  5/16), R 10/16 via pooled rate (18.31 vs 2.56 populated post-shift births per seed),
+  populated share 79.84% vs 13.98%, guardrail held. Post-shift births are concentrated:
+  5 of 16 seeds had none. The summarizer's fresh-seed check was corrected before the
+  verdict (it compared literal indices with derived seed values); no rule changed.
+- #440 merged (`390ae09`): interval-measured membership replaces forced displacement;
+  the environment-shift harness is on main. Moving ecology to game time and persisting
+  it remain open (decision ledger). No deployment is authorized.
+
 ## 2026-11-26: Redstone pre-click fix published; measured child-membership arms started
 
 - The owner asked for pending work to be pushed and merged where possible. The Redstone
