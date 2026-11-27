@@ -41,14 +41,14 @@ class EcosystemSaturationModelTest {
                 0.60D,
                 0.08D,
                 navigation.activeArtifacts(),
-                1_000L);
+                1_000L, java.util.Set.of("route_guidance", "frontier_pathfinding"));
         Optional<NicheBifurcation> secondWindow = registry.evaluateBifurcation(
                 MechanicNicheTag.NAVIGATION.name(),
                 pressure.saturationPenalty(),
                 0.60D,
                 0.08D,
                 navigation.activeArtifacts(),
-                1_001L);
+                1_001L, java.util.Set.of("route_guidance", "frontier_pathfinding"));
 
         assertTrue(firstWindow.isEmpty(), "first sustained-pressure window should accumulate without bifurcation");
         assertTrue(secondWindow.isPresent(), "second sustained-pressure window should trigger bifurcation");

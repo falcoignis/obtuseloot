@@ -19,6 +19,15 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 
 ## Evolution design
 
+**Observed subniche partition repair (owner, 2026-11-27):** "impliment partition repair".
+Port only the partition repair from `d9ee102` relative to `d137927`: freeze
+distinct observed parent-subniche identities across both children, refuse splits
+with fewer than two identities, and preserve the latest partition through sibling
+retirement. Forced displacement and soft migration stay; the environment-shift
+harness, workflows and membership-rule replacements are excluded. See
+`docs/observed-subniche-partition.md` for the diagnosis and prior V2 sweep evidence.
+Implementation only; no push, merge or live-deployment authorization.
+
 **Outcome-evidence correction (owner, 2026-10-30):** "we gotta fix that", following
 the generated-ability concentration check. Correct the mechanism behind the
 dominant pair and measure the result; do not impose shares or tune coefficients

@@ -82,6 +82,9 @@ public class NicheBifurcationRegistry {
     /** parent-niche-name → ordered list of child niche names. */
     private final Map<String, List<String>> childrenByParent = new ConcurrentHashMap<>();
 
+    /** Frozen identities for each split; retirement never rebuilds a partition. */
+    private final Map<String, Map<String, String>> latestPartitionByParent = new ConcurrentHashMap<>();
+
     /** All currently-active dynamic niche names. */
     private final Set<String> dynamicNiches = ConcurrentHashMap.newKeySet();
 
@@ -170,6 +173,7 @@ public class NicheBifurcationRegistry {
      *                              {@link EcosystemSaturationModel}
      * @param specializationPressure current specializationPressure value
      * @param activeArtifacts       current artifact count in this niche
+     * @param observedSubniches     distinct subniches observed in this parent at split time
      * @param nowMs                 current wall-clock time in milliseconds
      * @return an {@link Optional} containing the bifurcation record if one was
      *         triggered, or {@link Optional#empty()} if conditions were not met
@@ -180,7 +184,16 @@ public class NicheBifurcationRegistry {
             double specializationPressure,
             double nichePopulationShare,
             int activeArtifacts,
-            long nowMs) {
+            long nowMs,
+            Set<String> observedSubniches) {
+
+        TreeSet<String> distinctSubniches = new TreeSet<>(observedSubniches);
+        if (distinctSubniches.size() < 2) {
+            highPressureWindowsByNiche.remove(parentNiche);
+            observe(parentNiche, "INSUFFICIENT_SUBNICHES", saturationPressure, specializationPressure,
+                    nichePopulationShare, activeArtifacts, nowMs);
+            return Optional.empty();
+        }
 
         // No count caps: how many niches exist is left to pressure and extinction (owner, 2026-10-26).
 
@@ -233,6 +246,16 @@ public class NicheBifurcationRegistry {
                 saturationPressure,
                 specializationPressure,
                 nowMs);
+
+        Map<String, String> partition = new java.util.LinkedHashMap<>();
+        // Alternate sorted distinct observations across the two sides. This partitions identities,
+        // not items: there is no population target or forced membership.
+        boolean toA = true;
+        for (String subniche : distinctSubniches) {
+            partition.put(subniche, toA ? childA : childB);
+            toA = !toA;
+        }
+        latestPartitionByParent.put(parentNiche, Collections.unmodifiableMap(partition));
 
         bifurcations.add(event);
         childrenByParent.computeIfAbsent(parentNiche, k -> Collections.synchronizedList(new ArrayList<>())).add(childA);
@@ -297,22 +320,12 @@ public class NicheBifurcationRegistry {
     }
 
     /**
-     * Assigns an artifact to one of the two most-recently-created child niches
-     * of its parent, using the artifact's dominant sub-niche as a tie-breaker.
-     * Returns the child niche name, or {@code null} if the parent has no children.
+     * The frozen mapping from the latest split, including retired siblings. An unseen
+     * subniche has no child. Callers must check that a returned child is still active.
      */
     public String assignChildNiche(String parentNiche, String dominantSubniche) {
-        List<String> children = childrenByParent.get(parentNiche);
-        if (children == null || children.isEmpty()) {
-            return null;
-        }
-        // Use the last bifurcation pair (last two children)
-        int last = children.size() - 1;
-        String childB = children.get(last);
-        String childA = last >= 1 ? children.get(last - 1) : childB;
-        // Deterministic split based on subniche name hash
-        int hash = dominantSubniche == null ? 0 : dominantSubniche.hashCode();
-        return (Math.abs(hash) % 2 == 0) ? childA : childB;
+        return dominantSubniche == null ? null
+                : latestPartitionByParent.getOrDefault(parentNiche, Map.of()).get(dominantSubniche);
     }
 
     /** Total number of currently-registered dynamic niche names. */
