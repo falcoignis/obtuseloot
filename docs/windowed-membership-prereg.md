@@ -100,3 +100,18 @@ The port resolves `subnicheForSignal(String, MechanicNicheTag)` in
 and `assignChildNiche(String, String)`, `isDynamicNiche(String)` and
 `evaluateBifurcation(String, double, double, double, int, long, Set<String>)`
 in [`NicheBifurcationRegistry.java`](../src/main/java/obtuseloot/evolution/NicheBifurcationRegistry.java).
+
+## Result (2026-11-27)
+
+Run [45959529970](https://github.com/falcoignis/obtuseloot/actions/runs/45959529970), seeds 16-31, all arm jobs and the full suite on the revised commit passed. Verdict: **ADOPT**.
+
+| Arm | Guardrail | X (populated collapse after shift) | R (populated birth after shift) | Pooled post-shift populated births/seed | Populated share of births |
+|---|---|---|---|---|---|
+| control (`cc58056`) | held | 5/16 | 9/16 | 2.56 | 13.98% (144/1030) |
+| revised (`a4994e0`) | held (0/16 over) | **12/16** | 10/16 (passes via pooled rate) | **18.31** | **79.84%** (586/734) |
+
+Per-seed post-shift populated births are concentrated: 5 of 16 revised seeds had none.
+
+Summarizer correction before the verdict was computed: the fresh-seed check compared the CSV seed column with the literal indices 16-31, but the harness writes the derived seed values (`0x4E49434845 + index * 0x9E3779B97F4A7C15`). The check now derives those values; no rule or threshold changed.
+
+The branch-pinned workflow that produced this run was removed in the review commit; it is preserved in commit `9089430`.

@@ -16,7 +16,7 @@ ARMS = ("control", "per_parent", "recency")
 SHIFT = 36
 THRESHOLD = 12
 WINDOWS = 72
-FRESH_SEEDS = list(range(16, 32))
+FRESH_SEEDS = sorted(((0x4E49434845 + s * 0x9E3779B97F4A7C15 + (1 << 63)) % (1 << 64)) - (1 << 63) for s in range(16, 32))  # harness-derived seed values for indices 16-31
 
 
 def read(directory, name, arm, preregistered):
