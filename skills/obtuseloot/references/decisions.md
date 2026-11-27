@@ -19,6 +19,18 @@ The project owner (falcoignis) made these decisions on 2026-10-19 after an inges
 
 ## Evolution design
 
+**Windowed membership pre-registration (owner, 2026-11-27).** The owner approved
+testing the one-interval membership rule against displacement on the repaired
+partition, using fresh seeds 16–31. Adopt only if all 16 revised seeds hold the
+25% paired Simpson guardrail, at least 12 show a post-shift populated collapse
+(X is mandatory, “we want to make sure extinction is a thing”), and at least 12
+show a post-shift populated birth or the pooled post-shift populated births per
+seed equal or exceed control (R). The populated share of all births must also
+equal or exceed control. Report the per-seed post-shift populated birth spread
+without judging it. Seeds 0–15 were exploratory. See
+[`docs/windowed-membership-prereg.md`](../../../docs/windowed-membership-prereg.md)
+for the pinned arms and scoring protocol.
+
 **Observed subniche partition repair (owner, 2026-11-27):** "impliment partition repair".
 Port only the partition repair from `d9ee102` relative to `d137927`: freeze
 distinct observed parent-subniche identities across both children, refuse splits

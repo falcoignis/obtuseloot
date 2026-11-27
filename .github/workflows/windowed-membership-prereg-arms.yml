@@ -1,0 +1,59 @@
+name: Windowed membership pre-registered arms
+
+# One-off pre-registered run (docs/windowed-membership-prereg.md), removed before review.
+on:
+  push:
+    branches: [claude/windowed-membership-prereg]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  arm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        arm:
+          - { name: control, ref: cc5805666042dc7735dafd6f81027e3e194e34a2 }
+          - { name: revised, ref: a4994e004de17d443c2b8cda446074c8eb7038e7 }
+        seeds: ['16-17', '18-19', '20-21', '22-23', '24-25', '26-27', '28-29', '30-31']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.arm.ref }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Run arm
+        run: >
+          mvn -B -ntp test -Dtest='NicheScaffoldingAblationTest#nicheScaffoldingAblation'
+          -Dsurefire.failIfNoSpecifiedTests=false -Dobtuseloot.experiments=true -Dobtuseloot.windows=72
+          -Dobtuseloot.shiftWindow=36 -Dobtuseloot.arm=${{ matrix.arm.name }} -Dobtuseloot.seeds=${{ matrix.seeds }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.arm.name }}-seeds-${{ matrix.seeds }}
+          path: target/niche-scaffolding-ablation/
+          if-no-files-found: error
+
+  full-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a4994e004de17d443c2b8cda446074c8eb7038e7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - run: mvn -B -ntp clean package
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-revised
+          path: target/surefire-reports/
