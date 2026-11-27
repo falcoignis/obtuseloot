@@ -83,7 +83,7 @@ class NicheScaffoldingAblationTest {
         List<String> gates = new ArrayList<>();
         List<String> competition = new ArrayList<>();
         windows.add("seed,window,live_children,births,collapses,live_niches,simpson,effective_niches,children");
-        children.add("seed,child,parent,birth_window,collapse_window");
+        children.add("seed,child,parent,birth_window,collapse_window,max_members");
         competition.add("seed,window,mean_competition_factor,max_competition_factor");
         gates.add("seed,window,niche,gate,saturation,specialization,share,active_artifacts,children_of_parent,live_children");
         for (int s = firstSeed; s <= lastSeed; s++) {
@@ -115,6 +115,10 @@ class NicheScaffoldingAblationTest {
         // Hidden environment: how often each niche tag's abilities produce a meaningful outcome.
         var successRate = new EnumMap<MechanicNicheTag, Double>(MechanicNicheTag.class);
         for (MechanicNicheTag tag : MechanicNicheTag.values()) successRate.put(tag, 0.2D + 0.7D * random.nextDouble());
+        // Environment change for response tests: from window -Dobtuseloot.shiftWindow on, success rates are redrawn
+        // from a separate stream, so every earlier window is identical to an unshifted run.
+        int shiftWindow = Integer.getInteger("obtuseloot.shiftWindow", -1);
+        Random shiftRandom = new Random(seed ^ 0x5348494654L);
 
         double[][] lineageBias = new double[LINEAGES][6];
         for (double[] bias : lineageBias) for (int i = 0; i < bias.length; i++) bias[i] = random.nextDouble();
@@ -145,11 +149,15 @@ class NicheScaffoldingAblationTest {
         var competition = new ArrayList<String>();
         var birthWindow = new TreeMap<String, Integer>();
         var parentOf = new TreeMap<String, String>();
+        var maxMembers = new TreeMap<String, Integer>();
         var collapseWindow = new TreeMap<String, Integer>();
         Set<String> previous = new TreeSet<>();
         int seenBifurcations = 0;
         for (int window = 0; window < windowCount; window++) {
             clock.set(START_MS + (window + 1L) * WINDOW_MS);
+            if (window == shiftWindow) {
+                for (MechanicNicheTag tag : MechanicNicheTag.values()) successRate.put(tag, 0.2D + 0.7D * shiftRandom.nextDouble());
+            }
             for (int i = 0; i < artifacts.size(); i++) {
                 Artifact artifact = artifacts.get(i);
                 AbilityProfile profile = generator.generate(artifact, Math.min(5, 2 + window / 4), memories.get(i));
@@ -207,6 +215,9 @@ class NicheScaffoldingAblationTest {
             competition.add(String.format(Locale.ROOT, "%d,%d,%.6f,%.6f", seed, window, competitionSum / artifacts.size(), competitionMax));
             var occupancy = new TreeMap<String, Integer>();
             for (Artifact artifact : artifacts) occupancy.merge(tracker.effectiveNicheName(artifact.getArtifactSeed()), 1, Integer::sum);
+            occupancy.forEach((name, count) -> {
+                if (parentOf.containsKey(name)) maxMembers.merge(name, count, Math::max);
+            });
             var diversity = NicheDiversityMetrics.diversity(occupancy);
             windows.add(String.format(Locale.ROOT, "%d,%d,%d,%d,%d,%d,%.6f,%.6f,%s", seed, window, live.size(), births,
                     collapses, diversity.liveNiches(), diversity.simpsonDiversity(), diversity.effectiveNiches(),
@@ -214,7 +225,7 @@ class NicheScaffoldingAblationTest {
         }
         var children = new ArrayList<String>();
         birthWindow.forEach((child, born) -> children.add(seed + "," + child + "," + parentOf.get(child) + ","
-                + born + "," + collapseWindow.getOrDefault(child, -1)));
+                + born + "," + collapseWindow.getOrDefault(child, -1) + "," + maxMembers.getOrDefault(child, 0)));
         return new Run(windows, children, gates, competition);
     }
 
