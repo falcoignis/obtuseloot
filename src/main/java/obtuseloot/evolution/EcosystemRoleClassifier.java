@@ -63,6 +63,13 @@ public class EcosystemRoleClassifier {
         return taxonomy.nichesFor(parseMechanic(signalKey), parseTrigger(signalKey));
     }
 
+    /** The subniche one recorded mechanic signal occupies within {@code niche}, or null if it is not in that niche. */
+    public String subnicheForSignal(String signalKey, MechanicNicheTag niche) {
+        AbilityMechanic mechanic = parseMechanic(signalKey);
+        AbilityTrigger trigger = parseTrigger(signalKey);
+        return taxonomy.nichesFor(mechanic, trigger).contains(niche) ? subnicheClassifier.classify(niche, mechanic, trigger) : null;
+    }
+
     private AbilityMechanic parseMechanic(String key) {
         String[] parts = key.split("@");
         if (parts.length == 0) {

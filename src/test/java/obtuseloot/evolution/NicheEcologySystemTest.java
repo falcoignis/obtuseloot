@@ -111,7 +111,8 @@ class NicheEcologySystemTest {
 
     /**
      * Helpers: build a saturated NAVIGATION ecosystem suitable for triggering bifurcation.
-     * 6 NAVIGATION artifacts with low utility + 1 RITUAL artifact with high utility.
+     * 6 NAVIGATION artifacts across two observed subniches with low utility
+     * + 1 RITUAL artifact with high utility.
      * This produces:
      *   NAVIGATION share ≈ 0.857 → saturationPenalty ≈ 0.45 (well above SATURATION_THRESHOLD=0.15)
      *   NAVIGATION artifacts have a single mechanic → specializationScore ≈ 1.0
@@ -123,11 +124,12 @@ class NicheEcologySystemTest {
                 new EcosystemSaturationModel(),
                 registry);
 
-        // 6 crowded NAVIGATION artifacts with low utility
+        // 6 crowded NAVIGATION artifacts with low utility and two observed identities
         for (int i = 0; i < 6; i++) {
+            String key = (i % 2 == 0 ? "NAVIGATION_ANCHOR" : "MOVEMENT_ECHO") + "@ON_WORLD_SCAN";
             tracker.recordTelemetry(10L + i, Map.of(
-                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    key,
+                    new MechanicUtilitySignal(key,
                             0.4D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
             ));
         }
@@ -250,9 +252,10 @@ class NicheEcologySystemTest {
 
         for (int i = 0; i < 8; i++) {
             double utility = 0.10D + (i * 0.10D);
+            String key = (i % 2 == 0 ? "NAVIGATION_ANCHOR" : "MOVEMENT_ECHO") + "@ON_WORLD_SCAN";
             tracker.recordTelemetry(200L + i, Map.of(
-                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    key,
+                    new MechanicUtilitySignal(key,
                             utility, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)
             ));
         }
@@ -409,7 +412,7 @@ class NicheEcologySystemTest {
     void occupancyStateTracksEstablishedSupportedChildrenAcrossWindows() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
-        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs, java.util.Set.of("route_guidance", "frontier_pathfinding"))
                 .orElseThrow();
 
         for (int window = 1; window <= NicheBifurcationRegistry.ESTABLISHED_CHILD_WINDOWS; window++) {
@@ -470,7 +473,7 @@ class NicheEcologySystemTest {
     void establishedChildrenRequireMultipleEmptyWindowsBeforeCollapse() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
-        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs, java.util.Set.of("route_guidance", "frontier_pathfinding"))
                 .orElseThrow();
         registry.setChildBirthWindow(bifurcation.childNicheA(), 1);
 
@@ -496,7 +499,7 @@ class NicheEcologySystemTest {
     void reentryStabilizationDelaysImmediateRecollapse() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
-        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+        NicheBifurcation bifurcation = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs, java.util.Set.of("route_guidance", "frontier_pathfinding"))
                 .orElseThrow();
         registry.setChildBirthWindow(bifurcation.childNicheA(), 1);
 
@@ -516,7 +519,7 @@ class NicheEcologySystemTest {
     void recentCollapseDoesNotClockGateSameParentRebifurcation() {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         long nowMs = System.currentTimeMillis();
-        NicheBifurcation first = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs)
+        NicheBifurcation first = registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs, java.util.Set.of("route_guidance", "frontier_pathfinding"))
                 .orElseThrow();
         registry.setChildBirthWindow(first.childNicheA(), 1);
         registry.setChildBirthWindow(first.childNicheB(), 1);
@@ -526,7 +529,7 @@ class NicheEcologySystemTest {
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 12);
         assertEquals(0, registry.dynamicNicheCount(), "Both children should collapse after sustained empty windows");
 
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L).isPresent(),
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.20D, 8, nowMs + 1_000L, java.util.Set.of("route_guidance", "frontier_pathfinding")).isPresent(),
                 "A collapse must not hold the parent back on a clock; sustained pressure splits it again");
     }
 
@@ -552,9 +555,9 @@ class NicheEcologySystemTest {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(2);
 
         long nowMs = System.currentTimeMillis();
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs).isEmpty(),
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs, java.util.Set.of("route_guidance", "frontier_pathfinding")).isEmpty(),
                 "No bifurcation after only 1 high-pressure window when parent share is below adaptive fast-path");
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs + 100L).isPresent(),
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 0.20D, 0.10D, 0.08D, 8, nowMs + 100L, java.util.Set.of("route_guidance", "frontier_pathfinding")).isPresent(),
                 "Bifurcation should trigger after 2 sustained windows when parent share is below adaptive fast-path");
     }
 
@@ -578,9 +581,10 @@ class NicheEcologySystemTest {
         NicheBifurcationRegistry registry = new NicheBifurcationRegistry(1);
         NichePopulationTracker tracker = buildSaturatedNavigationEcosystem(registry);
         for (long seed = 10L; seed < 16L; seed++) {
+            String key = (seed % 2 == 0 ? "NAVIGATION_ANCHOR" : "MOVEMENT_ECHO") + "@ON_WORLD_SCAN";
             tracker.recordTelemetry(seed, seed < 13L ? "lineage-alpha" : "lineage-beta", Map.of(
-                    "NAVIGATION_ANCHOR@ON_WORLD_SCAN",
-                    new MechanicUtilitySignal("NAVIGATION_ANCHOR@ON_WORLD_SCAN",
+                    key,
+                    new MechanicUtilitySignal(key,
                             0.4D, 0.05D, 0.4D, 0.4D, 0.4D, 0.3D, 12L, 1L, 10.0D)));
         }
 

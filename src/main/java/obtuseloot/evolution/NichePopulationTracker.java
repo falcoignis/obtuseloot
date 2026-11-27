@@ -204,7 +204,8 @@ public class NichePopulationTracker {
                     meanSpecialization,
                     nicheShare,
                     nicheRollup.activeArtifacts(),
-                    nowMs);
+                    nowMs,
+                    observedSubniches(nicheTag));
 
             maybeBifurcation.ifPresent(bifurcation -> {
                 emitBifurcationEvent(bifurcation);
@@ -288,6 +289,20 @@ public class NichePopulationTracker {
             }
         }
         return count == 0 ? 0.0D : total / count;
+    }
+
+    /** Distinct subniches actually observed on active items within this parent, not just dominant labels. */
+    private Set<String> observedSubniches(MechanicNicheTag parent) {
+        Set<String> observed = new TreeSet<>();
+        for (Long seed : activeArtifacts) {
+            for (String key : signalsByArtifact.getOrDefault(seed, Map.of()).keySet()) {
+                String subniche = classifier.subnicheForSignal(key, parent);
+                if (subniche != null) {
+                    observed.add(subniche);
+                }
+            }
+        }
+        return observed;
     }
 
     // ---------- dynamic-niche assignment ----------

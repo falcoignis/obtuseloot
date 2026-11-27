@@ -58,14 +58,14 @@ class NicheScaffoldingAblationTest {
     void retiredChildDoesNotPaceItsParent() {
         AtomicLong clock = new AtomicLong(START_MS);
         var registry = new NicheBifurcationRegistry(1, 1, 0, clock::get);
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get()).isPresent());
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get(), Set.of("route_guidance", "frontier_pathfinding")).isPresent());
         String child = registry.dynamicNiches().iterator().next();
         clock.addAndGet(120_000L);
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 10);
         registry.collapseUnderpopulatedChildren(Map.of(), Map.of(), 11);
         assertFalse(registry.isDynamicNiche(child), "Both children are empty past grace and should retire");
         // Retirement no longer starts a parent cooldown: sustained pressure splits it again immediately.
-        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get() + 1L).isPresent());
+        assertTrue(registry.evaluateBifurcation("NAVIGATION", 1.0D, 1.0D, 0.5D, 10, clock.get() + 1L, Set.of("route_guidance", "frontier_pathfinding")).isPresent());
     }
 
     @Experiment
