@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -24,6 +23,13 @@ public class NichePopulationTracker {
     private final Map<Long, ArtifactNicheProfile> nicheProfilesByArtifact = new ConcurrentHashMap<>();
     private final EcosystemCarryingCapacityModel carryingCapacityModel = new EcosystemCarryingCapacityModel();
     private final Map<Long, Map<String, MechanicUtilitySignal>> signalsByArtifact = new ConcurrentHashMap<>();
+    /** Utility and budget deltas accumulated since the last ecology evaluation. */
+    private final Map<Long, Map<String, IntervalEvidence>> intervalEvidenceByArtifact = new TreeMap<>();
+    private record IntervalEvidence(double utility, double budget) {
+        IntervalEvidence plus(IntervalEvidence other) {
+            return new IntervalEvidence(utility + other.utility, budget + other.budget);
+        }
+    }
     private final Map<Long, Double> specializationScoreByArtifact = new ConcurrentHashMap<>();
     private final Set<Long> activeArtifacts = ConcurrentHashMap.newKeySet();
     private volatile EcosystemTelemetryEmitter telemetryEmitter;
@@ -42,11 +48,6 @@ public class NichePopulationTracker {
     private final Map<String, String> parentByChildNiche = new ConcurrentHashMap<>();
     private final Map<String, Long> birthMsByChildNiche = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Double>> lineageAffinityByParent = new ConcurrentHashMap<>();
-    private final Random migrationRandom = new Random(0xC0FFEE1234ABCDEFL);
-    private static final double STRUCTURAL_CHILD_PARTITION_TARGET = 0.15D;
-    private static final double STRUCTURAL_CHILD_PARTITION_MIN = 0.10D;
-    private static final double STRUCTURAL_CHILD_PARTITION_MAX = 0.20D;
-    private static final double STRUCTURAL_ACTIVATION_SATURATION_GATE = NicheBifurcationRegistry.SATURATION_THRESHOLD * 0.90D;
 
     /**
      * Throttle: bifurcation evaluation is only run when at least this many
@@ -95,26 +96,33 @@ public class NichePopulationTracker {
         activeArtifacts.add(artifactSeed);
     }
 
-    public void markDiscarded(long artifactSeed) {
+    public synchronized void markDiscarded(long artifactSeed) {
         activeArtifacts.remove(artifactSeed);
         specializationScoreByArtifact.remove(artifactSeed);
         dynamicNicheByArtifact.remove(artifactSeed);
         lineageByArtifact.remove(artifactSeed);
+        intervalEvidenceByArtifact.remove(artifactSeed);
     }
 
     public void recordTelemetry(long artifactSeed, Map<String, MechanicUtilitySignal> signals) {
         recordTelemetry(artifactSeed, null, signals);
     }
 
-    public void recordTelemetry(long artifactSeed, String lineageId, Map<String, MechanicUtilitySignal> signals) {
+    public synchronized void recordTelemetry(long artifactSeed, String lineageId, Map<String, MechanicUtilitySignal> signals) {
         if (signals == null || signals.isEmpty()) {
             return;
+        }
+        // Close the completed interval before ingesting its triggering observation.
+        long nowMs = bifurcationRegistry.nowMs();
+        if (nowMs - lastBifurcationEvalMs >= BIFURCATION_EVAL_INTERVAL_MS) {
+            evaluateBifurcations(nowMs);
         }
         if (lineageId != null && !lineageId.isBlank()) {
             lineageByArtifact.put(artifactSeed, lineageId);
         }
         activeArtifacts.add(artifactSeed);
         ArtifactNicheProfile previous = nicheProfilesByArtifact.get(artifactSeed);
+        accumulateIntervalEvidence(artifactSeed, signals);
         signalsByArtifact.put(artifactSeed, java.util.Collections.unmodifiableMap(new TreeMap<>(signals)));
         ArtifactNicheProfile next = classifier.classify(signals);
         nicheProfilesByArtifact.put(artifactSeed, next);
@@ -122,8 +130,11 @@ public class NichePopulationTracker {
         double specializationTrajectory = next.specialization().specializationScore() - previousSpecialization;
         specializationScoreByArtifact.put(artifactSeed, next.specialization().specializationScore());
 
-        // Refresh dynamic-niche assignment whenever the artifact's dominant niche changes
-        refreshDynamicNicheAssignment(artifactSeed, next);
+        // A changed parent invalidates an old child immediately; new membership waits for interval close.
+        String currentChild = dynamicNicheByArtifact.get(artifactSeed);
+        if (currentChild != null && !next.dominantNiche().name().equals(parentByChildNiche.get(currentChild))) {
+            dynamicNicheByArtifact.remove(artifactSeed);
+        }
 
         // Update lineage-to-child-niche affinity from observed outcomes
         updateLineageAffinityFromSignals(artifactSeed, signals);
@@ -141,11 +152,18 @@ public class NichePopulationTracker {
                             "context_tags", "niche-reclassification"));
         }
 
-        // Throttled bifurcation evaluation
-        long nowMs = bifurcationRegistry.nowMs();
-        if (nowMs - lastBifurcationEvalMs >= BIFURCATION_EVAL_INTERVAL_MS) {
-            lastBifurcationEvalMs = nowMs;
-            evaluateBifurcations(nowMs);
+    }
+
+    private void accumulateIntervalEvidence(long seed, Map<String, MechanicUtilitySignal> signals) {
+        Map<String, MechanicUtilitySignal> previous = signalsByArtifact.getOrDefault(seed, Map.of());
+        Map<String, IntervalEvidence> interval = intervalEvidenceByArtifact.computeIfAbsent(seed, ignored -> new TreeMap<>());
+        for (Map.Entry<String, MechanicUtilitySignal> entry : signals.entrySet()) {
+            MechanicUtilitySignal next = entry.getValue();
+            MechanicUtilitySignal before = previous.get(entry.getKey());
+            // The input is a cumulative snapshot; never count an unchanged signal again.
+            double utility = next.validatedUtility() - (before == null ? 0.0D : before.validatedUtility());
+            double budget = next.budgetConsumed() - (before == null ? 0.0D : before.budgetConsumed());
+            interval.merge(entry.getKey(), new IntervalEvidence(utility, budget), IntervalEvidence::plus);
         }
     }
 
@@ -166,12 +184,14 @@ public class NichePopulationTracker {
      * <p>This method is also exposed publicly so that integration tests can
      * drive bifurcation directly without depending on real-time waits.</p>
      */
-    public void evaluateBifurcations(long nowMs) {
-        // Advance the window counter on every evaluation call
+    public synchronized void evaluateBifurcations(long nowMs) {
+        // Explicit evaluations and throttled evaluations close the same existing interval.
+        lastBifurcationEvalMs = nowMs;
         evaluationWindowCount++;
 
         Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
         if (allRollups.isEmpty()) {
+            intervalEvidenceByArtifact.clear();
             return;
         }
 
@@ -214,32 +234,24 @@ public class NichePopulationTracker {
                 // Record birth window for grace-period tracking
                 bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheA(), evaluationWindowCount);
                 bifurcationRegistry.setChildBirthWindow(bifurcation.childNicheB(), evaluationWindowCount);
-                // Re-assign all artifacts in the parent niche to one of the two children
-                for (Long seed : activeArtifacts) {
-                    ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
-                    if (profile != null && profile.dominantNiche() == nicheTag) {
-                        refreshDynamicNicheAssignment(seed, profile);
-                    }
-                }
             });
             if (maybeBifurcation.isPresent()) {
                 bifurcatedThisCycle = true;
             }
         }
 
+        // Preserve the existing occupancy bookkeeping before and after membership evaluation.
         Map<String, Long> dynamicPopulation = new LinkedHashMap<>();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         refreshOccupancyState(dynamicPopulation);
-        applyForcedDisplacement();
-        dynamicPopulation.clear();
-        dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
-        refreshOccupancyState(dynamicPopulation);
-        applySoftMigrationPressure(dynamicPopulation);
-        // Re-apply structural partition bounds so soft migration cannot stack child occupancy past cap.
-        applyForcedDisplacement();
-        dynamicPopulation.clear();
-        dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
-        refreshOccupancyState(dynamicPopulation);
+        // Measure exactly once using only the completed interval, including newly born children.
+        for (Long seed : new TreeSet<>(activeArtifacts)) {
+            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
+            if (profile != null) {
+                refreshDynamicNicheAssignment(seed, profile);
+            }
+        }
+        intervalEvidenceByArtifact.clear();
         dynamicPopulation.clear();
         dynamicNicheByArtifact.forEach((seed, childNiche) -> dynamicPopulation.merge(childNiche, 1L, Long::sum));
         refreshOccupancyState(dynamicPopulation);
@@ -291,6 +303,21 @@ public class NichePopulationTracker {
         return count == 0 ? 0.0D : total / count;
     }
 
+    // ---------- dynamic-niche assignment ----------
+
+    /**
+     * If the artifact's parent niche has bifurcated, assign (or re-assign)
+     * the artifact using measured advantage in the completed interval.
+     */
+    private void refreshDynamicNicheAssignment(long artifactSeed, ArtifactNicheProfile profile) {
+        String child = measuredChildFor(artifactSeed, profile.dominantNiche());
+        if (child == null) {
+            dynamicNicheByArtifact.remove(artifactSeed);
+        } else {
+            dynamicNicheByArtifact.put(artifactSeed, child);
+        }
+    }
+
     /** Distinct subniches actually observed on active items within this parent, not just dominant labels. */
     private Set<String> observedSubniches(MechanicNicheTag parent) {
         Set<String> observed = new TreeSet<>();
@@ -305,194 +332,51 @@ public class NichePopulationTracker {
         return observed;
     }
 
-    // ---------- dynamic-niche assignment ----------
-
     /**
-     * If the artifact's parent niche has bifurcated, assign (or re-assign)
-     * the artifact to one of the child niches based on its dominant subniche.
+     * Strict utility/budget advantage over the item's remaining parent work in the completed interval.
+     * The latest split's frozen mapping survives sibling retirement; a retired child is ineligible.
      */
-    private void refreshDynamicNicheAssignment(long artifactSeed, ArtifactNicheProfile profile) {
-        String parentName = profile.dominantNiche().name();
-        List<String> children = bifurcationRegistry.childrenOf(parentName);
-        String existingChild = dynamicNicheByArtifact.get(artifactSeed);
-        if (existingChild != null) {
-            // Keep the assignment unless the child niche was retired or the artifact's
-            // current parent niche has children of its own (meaning the artifact belongs
-            // to a different bifurcated family and can be assigned there instead).
-            boolean childStillExists = bifurcationRegistry.isDynamicNiche(existingChild);
-            String existingChildParent = parentByChildNiche.get(existingChild);
-            boolean childBelongsToCurrentParent = parentName.equals(existingChildParent);
-            if (!childStillExists
-                    || !childBelongsToCurrentParent
-                    || (childBelongsToCurrentParent && !children.contains(existingChild))) {
-                // Child retired, artifact reclassified into a different parent family, or current parent no longer owns it.
-                dynamicNicheByArtifact.remove(artifactSeed);
-            } else {
-                // Existing child assignment is still valid for the current parent family.
-                return;
+    private String measuredChildFor(long artifactSeed, MechanicNicheTag parent) {
+        Map<String, IntervalEvidence> signals = intervalEvidenceByArtifact.getOrDefault(artifactSeed, Map.of());
+        String best = null;
+        double bestAdvantage = 0.0D;
+        Set<String> candidates = new TreeSet<>();
+        for (String key : signals.keySet()) {
+            String subniche = classifier.subnicheForSignal(key, parent);
+            String child = bifurcationRegistry.assignChildNiche(parent.name(), subniche);
+            if (child != null && bifurcationRegistry.isDynamicNiche(child)) {
+                candidates.add(child);
             }
         }
-        if (children.isEmpty()) {
-            // No bifurcation for this niche yet — nothing to assign
-            return;
-        }
-    }
-
-    private void applyForcedDisplacement() {
-        Map<MechanicNicheTag, NicheUtilityRollup> allRollups = rollups();
-        if (allRollups.isEmpty()) {
-            return;
-        }
-        for (MechanicNicheTag parentTag : MechanicNicheTag.values()) {
-            String parentName = parentTag.name();
-            List<String> children = bifurcationRegistry.childrenOf(parentName);
-            if (children.size() < 2) {
-                continue;
-            }
-            NicheUtilityRollup parentRollup = allRollups.get(parentTag);
-            if (parentRollup == null) {
-                continue;
-            }
-            RolePressureMetrics pressure = saturationModel.pressureFor(parentTag, parentRollup, allRollups);
-            // During the grace period, bypass the saturation gate so child niches are
-            // seeded even in low-saturation scenarios (e.g. explorer-heavy).
-            boolean anyChildInGrace = children.stream()
-                    .anyMatch(c -> bifurcationRegistry.isInGracePeriod(c, evaluationWindowCount));
-            if (!anyChildInGrace && pressure.saturationPenalty() < STRUCTURAL_ACTIVATION_SATURATION_GATE) {
-                continue;
-            }
-            List<Long> parentArtifacts = activeArtifacts.stream()
-                    .filter(seed -> {
-                        ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
-                        return profile != null && profile.dominantNiche() == parentTag;
-                    })
-                    .toList();
-            if (parentArtifacts.isEmpty()) {
-                continue;
-            }
-            List<Long> lowUtilityOrdered = parentArtifacts.stream()
-                    .sorted(java.util.Comparator.comparingDouble(this::utilityDensityFor))
-                    .toList();
-            if (lowUtilityOrdered.isEmpty()) {
-                continue;
-            }
-
-            int minPartition = Math.max(1, (int) Math.ceil(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_MIN));
-            int maxPartition = Math.max(minPartition, (int) Math.floor(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_MAX));
-            int targetPartition = (int) Math.round(parentArtifacts.size() * STRUCTURAL_CHILD_PARTITION_TARGET);
-            int boundedTarget = Math.max(minPartition, Math.min(maxPartition, targetPartition));
-
-            java.util.Set<Long> parentArtifactSet = java.util.Set.copyOf(parentArtifacts);
-            List<Long> assignedChildren = parentArtifacts.stream()
-                    .filter(seed -> {
-                        String child = dynamicNicheByArtifact.get(seed);
-                        return child != null && children.contains(child);
-                    })
-                    .toList();
-
-            if (assignedChildren.size() < boundedTarget) {
-                int lowerHalfCutoff = Math.max(1, (int) Math.ceil(lowUtilityOrdered.size() * 0.5D));
-                List<Long> lowerHalf = lowUtilityOrdered.subList(0, lowerHalfCutoff);
-                int needed = boundedTarget - assignedChildren.size();
-                for (Long artifactSeed : lowerHalf) {
-                    if (needed <= 0) {
-                        break;
-                    }
-                    if (!parentArtifactSet.contains(artifactSeed)) {
-                        continue;
-                    }
-                    String existing = dynamicNicheByArtifact.get(artifactSeed);
-                    if (existing != null && children.contains(existing)) {
-                        continue;
-                    }
-                    ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
-                    if (profile == null) {
-                        continue;
-                    }
-                    String lineageId = lineageByArtifact.get(artifactSeed);
-                    String child = chooseBalancedChildNiche(parentName, profile.specialization().dominantSubniche(), lineageId, artifactSeed, children);
-                    if (child != null) {
-                        dynamicNicheByArtifact.put(artifactSeed, child);
-                        needed--;
-                    }
-                }
-            }
-
-            List<Long> currentAssignedChildren = parentArtifacts.stream()
-                    .filter(seed -> {
-                        String child = dynamicNicheByArtifact.get(seed);
-                        return child != null && children.contains(child);
-                    })
-                    .toList();
-
-            if (currentAssignedChildren.size() > maxPartition) {
-                List<Long> demotionOrder = currentAssignedChildren.stream()
-                        .sorted(java.util.Comparator.comparingDouble(this::utilityDensityFor).reversed())
-                        .toList();
-                int toDemote = currentAssignedChildren.size() - maxPartition;
-                for (int i = 0; i < toDemote && i < demotionOrder.size(); i++) {
-                    Long artifactSeed = demotionOrder.get(i);
-                    dynamicNicheByArtifact.remove(artifactSeed);
-                }
-            }
-
-            for (Long artifactSeed : lowUtilityOrdered) {
-                String assigned = dynamicNicheByArtifact.get(artifactSeed);
-                if (assigned != null && children.contains(assigned)) {
+        for (String child : candidates) {
+            double childUtility = 0.0D;
+            double childBudget = 0.0D;
+            double remainingUtility = 0.0D;
+            double remainingBudget = 0.0D;
+            for (Map.Entry<String, IntervalEvidence> entry : signals.entrySet()) {
+                String subniche = classifier.subnicheForSignal(entry.getKey(), parent);
+                if (subniche == null) {
                     continue;
                 }
-                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(artifactSeed);
-                if (profile != null) {
-                    refreshDynamicNicheAssignment(artifactSeed, profile);
+                IntervalEvidence evidence = entry.getValue();
+                if (child.equals(bifurcationRegistry.assignChildNiche(parent.name(), subniche))) {
+                    childUtility += evidence.utility();
+                    childBudget += evidence.budget();
+                } else {
+                    remainingUtility += evidence.utility();
+                    remainingBudget += evidence.budget();
                 }
             }
+            if (childBudget <= 0.0D || remainingBudget <= 0.0D) {
+                continue;
+            }
+            double advantage = childUtility / childBudget - remainingUtility / remainingBudget;
+            if (advantage > bestAdvantage) {
+                bestAdvantage = advantage;
+                best = child;
+            }
         }
-    }
-
-    private String chooseBalancedChildNiche(String parentName,
-                                            String dominantSubniche,
-                                            String lineageId,
-                                            long artifactSeed,
-                                            List<String> children) {
-        String baseline = chooseChildNiche(parentName, dominantSubniche, lineageId, artifactSeed);
-        String childA = children.get(children.size() - 2);
-        String childB = children.get(children.size() - 1);
-        long populationA = dynamicNicheByArtifact.values().stream().filter(childA::equals).count();
-        long populationB = dynamicNicheByArtifact.values().stream().filter(childB::equals).count();
-        if (Math.abs(populationA - populationB) <= 1L) {
-            return baseline;
-        }
-        String underrepresented = populationA < populationB ? childA : childB;
-        return migrationRandom.nextDouble() < 0.85D ? underrepresented : baseline;
-    }
-
-    private String chooseChildNiche(String parentName, String dominantSubniche, String lineageId, long artifactSeed) {
-        String baseline = bifurcationRegistry.assignChildNiche(parentName, dominantSubniche);
-        List<String> children = bifurcationRegistry.childrenOf(parentName);
-        if (children.size() < 2 || lineageId == null || lineageId.isBlank()) {
-            return baseline;
-        }
-        Map<String, Double> affinity = lineageAffinityByParent
-                .getOrDefault(parentName, Map.of())
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().startsWith(lineageId + "|"))
-                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        if (affinity.isEmpty()) {
-            return baseline;
-        }
-        String childA = children.get(children.size() - 2);
-        String childB = children.get(children.size() - 1);
-        double affinityA = affinity.getOrDefault(lineageId + "|" + childA, 0.0D);
-        double affinityB = affinity.getOrDefault(lineageId + "|" + childB, 0.0D);
-        if (Math.abs(affinityA - affinityB) < 0.10D) {
-            return baseline;
-        }
-        String preferred = affinityA >= affinityB ? childA : childB;
-        double confidence = clamp(0.55D + (Math.abs(affinityA - affinityB) * 0.45D), 0.55D, 0.90D);
-        long seed = Math.abs((artifactSeed * 31L) ^ preferred.hashCode());
-        double roll = (seed % 10_000L) / 10_000.0D;
-        return roll < confidence ? preferred : baseline;
+        return best;
     }
 
     private void registerChildNicheMetadata(NicheBifurcation bifurcation, long nowMs) {
@@ -532,83 +416,6 @@ public class NichePopulationTracker {
             double bShare = 1.0D - aShare;
             affinity.put(lineageId + "|" + bifurcation.childNicheA(), aShare);
             affinity.put(lineageId + "|" + bifurcation.childNicheB(), bShare);
-        }
-    }
-
-    private void applySoftMigrationPressure(Map<String, Long> dynamicPopulation) {
-        if (activeArtifacts.size() < 10 || dynamicPopulation.isEmpty()) {
-            return;
-        }
-        Map<String, Double> meanDensityByParent = new LinkedHashMap<>();
-        for (MechanicNicheTag parent : MechanicNicheTag.values()) {
-            String parentName = parent.name();
-            List<String> children = bifurcationRegistry.childrenOf(parentName);
-            if (children.isEmpty()) {
-                continue;
-            }
-            double totalDensity = 0.0D;
-            int count = 0;
-            for (Long seed : activeArtifacts) {
-                ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
-                if (profile != null && profile.dominantNiche() == parent) {
-                    totalDensity += utilityDensityFor(seed);
-                    count++;
-                }
-            }
-            if (count > 0) {
-                meanDensityByParent.put(parentName, totalDensity / count);
-            }
-        }
-        int migrated = 0;
-        int migrationCap = Math.max(1, (int) Math.round(activeArtifacts.size() * 0.08D));
-        for (Long seed : activeArtifacts) {
-            if (migrated >= migrationCap) {
-                break;
-            }
-            ArtifactNicheProfile profile = nicheProfilesByArtifact.get(seed);
-            if (profile == null) {
-                continue;
-            }
-            String parentName = profile.dominantNiche().name();
-            List<String> children = bifurcationRegistry.childrenOf(parentName);
-            if (children.size() < 2) {
-                continue;
-            }
-            long parentPopulation = activeArtifacts.stream()
-                    .filter(id -> {
-                        ArtifactNicheProfile p = nicheProfilesByArtifact.get(id);
-                        return p != null && p.dominantNiche().name().equals(parentName);
-                    })
-                    .count();
-            double parentShare = parentPopulation / (double) Math.max(1, activeArtifacts.size());
-            if (parentShare < 0.17D) {
-                continue;
-            }
-            double meanUtility = meanDensityByParent.getOrDefault(parentName, 0.0D);
-            double utility = utilityDensityFor(seed);
-            if (utility >= meanUtility) {
-                continue;
-            }
-            String currentChild = dynamicNicheByArtifact.get(seed);
-            String weakerChild = children.get(children.size() - 2);
-            String strongerChild = children.get(children.size() - 1);
-            if (dynamicPopulation.getOrDefault(weakerChild, 0L) > dynamicPopulation.getOrDefault(strongerChild, 0L)) {
-                String swap = weakerChild;
-                weakerChild = strongerChild;
-                strongerChild = swap;
-            }
-            if (weakerChild.equals(currentChild)) {
-                continue;
-            }
-            double migrationChance = clamp((parentShare - 0.17D) * 1.9D + (meanUtility - utility) * 0.50D, 0.04D, 0.30D);
-            if (migrationRandom.nextDouble() < migrationChance) {
-                dynamicNicheByArtifact.put(seed, weakerChild);
-                dynamicPopulation.merge(weakerChild, 1L, Long::sum);
-                if (currentChild != null) {
-                    dynamicPopulation.merge(currentChild, -1L, Long::sum);
-                }
-                migrated++;
-            }
         }
     }
 
